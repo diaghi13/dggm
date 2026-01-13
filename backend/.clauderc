@@ -1,0 +1,562 @@
+# .clauderc - Configurazione e Linee Guida Progetto ERP Cantieri
+# Questo file definisce le regole e le convenzioni per lo sviluppo
+
+project:
+  name: "ERP Gestionale Cantieri"
+  version: "1.0.0"
+  description: "Sistema ERP completo per gestione azienda edile con focus su cantieri"
+
+stack:
+  backend:
+    framework: "Laravel 11.x"
+    php_version: "8.2+"
+    database: "MySQL 8.0+ / PostgreSQL 14+"
+
+  frontend:
+    framework: "Next.js 14+ (App Router)"
+    language: "TypeScript"
+    rendering: "SSR + CSR (hybrid)"
+
+coding_standards:
+  php:
+    # Seguire PSR-12 per stile codice
+    style_guide: "PSR-12"
+
+    # Naming conventions
+    naming:
+      classes: "PascalCase"
+      methods: "camelCase"
+      variables: "camelCase"
+      constants: "SCREAMING_SNAKE_CASE"
+      database_tables: "snake_case_plural"  # es. 'construction_sites', 'time_entries'
+      database_columns: "snake_case"
+
+    # Best practices
+    practices:
+      - "Usa Type hints per parametri e return types"
+      - "Strict types declaration all'inizio dei file: declare(strict_types=1)"
+      - "Dependency Injection tramite constructor"
+      - "Single Responsibility Principle per ogni classe"
+      - "Evita logica business nei Controller (usa Service classes)"
+      - "Repository pattern per accesso database complesso"
+      - "Form Request per validazione invece di validare nel Controller"
+      - "API Resources per trasformare model in JSON"
+      - "Policies per authorization checks"
+      - "Jobs per task asincroni (email, PDF generation, report)"
+      - "Events & Listeners per azioni collaterali (es. invio notifica dopo creazione cantiere)"
+
+  typescript:
+    # TypeScript strict mode
+    strict_mode: true
+
+    naming:
+      interfaces: "PascalCase con prefisso I (opzionale)"  # es. IUser o User
+      types: "PascalCase"
+      enums: "PascalCase"
+      components: "PascalCase"
+      hooks: "camelCase con prefisso use"  # es. useAuth, useCantieri
+      functions: "camelCase"
+      variables: "camelCase"
+      constants: "SCREAMING_SNAKE_CASE"
+
+    practices:
+      - "Definisci types per tutte le entities (User, Cantiere, Preventivo, etc.)"
+      - "Usa interfaces per props dei componenti"
+      - "Evita 'any' type, usa 'unknown' se tipo non noto"
+      - "Componenti funzionali con arrow functions"
+      - "Hooks custom per logica riutilizzabile"
+      - "Memo per componenti pesanti (tabelle grandi)"
+      - "Lazy load per route e componenti pesanti"
+      - "Error boundaries per gestione errori React"
+
+architecture:
+  backend_structure: |
+    app/
+    ├── Http/
+    │   ├── Controllers/
+    │   │   └── Api/
+    │   │       ├── V1/
+    │   │       │   ├── CantiereController.php
+    │   │       │   ├── PreventivoController.php
+    │   │       │   ├── MagazzinoController.php
+    │   │       │   └── ...
+    │   ├── Requests/
+    │   │   ├── StoreCantiereRequest.php
+    │   │   └── ...
+    │   ├── Resources/
+    │   │   ├── CantiereResource.php
+    │   │   ├── CantiereCollection.php
+    │   │   └── ...
+    │   └── Middleware/
+    ├── Models/
+    │   ├── Cantiere.php
+    │   ├── Preventivo.php
+    │   ├── Cliente.php
+    │   └── ...
+    ├── Services/
+    │   ├── CantiereService.php
+    │   ├── PreventivoService.php
+    │   └── ConsuntivoService.php
+    ├── Repositories/
+    │   ├── CantiereRepository.php
+    │   └── ...
+    ├── Jobs/
+    │   ├── SendPreventivoEmail.php
+    │   ├── GenerateConsuntivoPDF.php
+    │   └── ...
+    ├── Events/
+    │   └── CantiereCreated.php
+    ├── Listeners/
+    │   └── SendCantiereNotification.php
+    └── Policies/
+        ├── CantierePolicy.php
+        └── ...
+
+  frontend_structure: |
+    src/
+    ├── app/                 # Next.js App Router
+    │   ├── (auth)/          # Route group - autenticazione
+    │   │   ├── login/
+    │   │   └── register/
+    │   ├── (dashboard)/     # Route group - area autenticata
+    │   │   ├── layout.tsx   # Layout con sidebar
+    │   │   ├── page.tsx     # Dashboard home
+    │   │   ├── cantieri/
+    │   │   │   ├── page.tsx
+    │   │   │   ├── [id]/
+    │   │   │   └── nuovo/
+    │   │   ├── preventivi/
+    │   │   ├── magazzino/
+    │   │   ├── timbrature/
+    │   │   └── ...
+    │   ├── api/             # API routes (se necessario)
+    │   │   └── ...
+    │   └── layout.tsx       # Root layout
+    ├── components/
+    │   ├── ui/              # Componenti base (shadcn/ui style)
+    │   │   ├── button.tsx
+    │   │   ├── input.tsx
+    │   │   ├── modal.tsx
+    │   │   └── ...
+    │   ├── layout/          # Layout components
+    │   │   ├── header.tsx
+    │   │   ├── sidebar.tsx
+    │   │   └── ...
+    │   └── features/        # Feature-specific components
+    │       ├── cantieri/
+    │       ├── preventivi/
+    │       └── ...
+    ├── lib/                 # Utilities e configurazioni
+    │   ├── api.ts           # API client setup
+    │   ├── utils.ts
+    │   └── constants.ts
+    ├── hooks/               # Custom hooks
+    │   ├── use-auth.ts
+    │   ├── use-cantieri.ts
+    │   └── ...
+    ├── types/               # TypeScript types
+    │   ├── entities.ts
+    │   └── api.ts
+    ├── stores/              # State management (Zustand)
+    │   ├── auth-store.ts
+    │   └── ...
+    └── middleware.ts        # Next.js middleware (auth, etc.)
+
+database:
+  naming_conventions:
+    tables: "snake_case_plural"  # users, construction_sites, time_entries
+    columns: "snake_case"
+    foreign_keys: "singular_table_id"  # user_id, cantiere_id
+    pivot_tables: "alphabetical_order"  # cantiere_user (not user_cantiere)
+
+  best_practices:
+    - "Usa migrations per tutte le modifiche schema"
+    - "Mai modificare migration già in produzione, crea nuova migration"
+    - "Foreign keys con ON DELETE appropriato (CASCADE, SET NULL, RESTRICT)"
+    - "Indici su colonne usate in WHERE, JOIN, ORDER BY"
+    - "Timestamp (created_at, updated_at) su tutte le tabelle"
+    - "Soft deletes (deleted_at) per entità che non vanno cancellate fisicamente"
+    - "Usa ENUM o lookup tables per stati/categorie"
+    - "Considera JSON columns per dati flessibili/metadata"
+
+api_conventions:
+  rest_principles:
+    base_url: "/api/v1"
+
+    endpoints_naming:
+      - "Usa nomi plurali: /cantieri, /preventivi, /materiali"
+      - "Risorse nidificate solo se senso logico: /cantieri/{id}/materiali"
+      - "Evita più di 2 livelli di nidificazione"
+
+    http_methods:
+      GET: "Retrieve resources (lista o singolo)"
+      POST: "Create new resource"
+      PUT: "Update entire resource (replace)"
+      PATCH: "Partial update resource"
+      DELETE: "Delete resource"
+
+    status_codes:
+      200: "Success"
+      201: "Created (POST success)"
+      204: "No Content (DELETE success)"
+      400: "Bad Request (invalid input)"
+      401: "Unauthorized (not authenticated)"
+      403: "Forbidden (not authorized)"
+      404: "Not Found"
+      422: "Unprocessable Entity (validation errors)"
+      500: "Internal Server Error"
+
+    response_format:
+      success: |
+        {
+          "data": {...},
+          "message": "Success message",
+          "meta": {
+            "timestamp": "2025-01-06T10:00:00Z"
+          }
+        }
+
+      error: |
+        {
+          "error": {
+            "message": "Validation failed",
+            "code": "VALIDATION_ERROR",
+            "details": {
+              "field": ["error message"]
+            }
+          }
+        }
+
+      pagination: |
+        {
+          "data": [...],
+          "meta": {
+            "current_page": 1,
+            "per_page": 15,
+            "total": 150,
+            "last_page": 10
+          },
+          "links": {
+            "first": "...",
+            "last": "...",
+            "prev": null,
+            "next": "..."
+          }
+        }
+
+    features:
+      - "Paginazione: ?page=1&per_page=15"
+      - "Sorting: ?sort=nome&order=asc"
+      - "Filtering: ?status=in_corso&cliente_id=5"
+      - "Search: ?q=termo-ricerca"
+      - "Include relations: ?include=cliente,materiali"
+      - "Specific fields: ?fields=id,nome,data_inizio"
+
+security:
+  authentication:
+    - "Laravel Sanctum per token-based auth"
+    - "Token in header: Authorization: Bearer {token}"
+    - "Token expiration configurabile"
+    - "Refresh token mechanism"
+
+  authorization:
+    - "Spatie Laravel Permission per ruoli e permessi"
+    - "Gate e Policy per controlli granulari"
+    - "Middleware per proteggere route"
+
+  best_practices:
+    - "HTTPS obbligatorio in produzione"
+    - "Validazione input sempre (client E server)"
+    - "Rate limiting su API (throttle middleware)"
+    - "CORS configurato correttamente"
+    - "Sanitizzazione input per prevenire XSS"
+    - "Prepared statements per SQL (Eloquent fa già questo)"
+    - "Hashing password con bcrypt (Laravel default)"
+    - "Sensitive data encrypted nel DB (password, API keys)"
+    - "Logging accessi e azioni sensibili"
+    - "Backup automatici database"
+
+performance:
+  backend:
+    - "Eager loading per N+1 query problem: ->with(['relation'])"
+    - "Query scoping per filtri comuni"
+    - "Database indexing su colonne ricercate"
+    - "Redis per caching (config, liste relativamente statiche)"
+    - "Queue per task pesanti (email, PDF, import/export)"
+    - "Pagination sempre per liste lunghe"
+    - "Chunk per processare grandi dataset"
+    - "Optimize autoload: composer dump-autoload -o"
+
+  frontend:
+    - "Code splitting con lazy loading: React.lazy()"
+    - "Memoization: useMemo, useCallback, React.memo"
+    - "Virtual scrolling per liste molto lunghe"
+    - "Debounce su input search/autocomplete"
+    - "React Query per caching automatico server state"
+    - "Ottimizzazione immagini (formato, dimensioni)"
+    - "Bundle analysis per ridurre size"
+
+testing:
+  backend:
+    framework: "PHPUnit / Pest"
+    coverage_target: "70%+"
+
+    test_types:
+      - "Unit tests per Service classes e utilities"
+      - "Feature tests per API endpoints"
+      - "Test database con RefreshDatabase trait"
+      - "Factory per dati di test (User, Cantiere, etc.)"
+
+    command: "php artisan test"
+
+  frontend:
+    framework: "Vitest + React Testing Library"
+
+    test_types:
+      - "Component tests per UI components"
+      - "Integration tests per features complete"
+      - "Test hooks custom"
+      - "Mock API calls con MSW (Mock Service Worker)"
+
+    command: "npm run test"
+
+ui_ux_guidelines:
+  design_system:
+    colors:
+      primary: "#1890ff"      # Blu corporate
+      success: "#52c41a"      # Verde
+      warning: "#faad14"      # Arancio
+      error: "#f5222d"        # Rosso
+      neutral_dark: "#262626"
+      neutral_light: "#f0f0f0"
+
+    typography:
+      font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      sizes:
+        h1: "32px"
+        h2: "24px"
+        h3: "20px"
+        body: "14px"
+        small: "12px"
+
+    spacing:
+      unit: "8px"
+      scale: "4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px"
+
+  components:
+    buttons:
+      - "Primary per azioni principali (Salva, Conferma)"
+      - "Secondary per azioni secondarie"
+      - "Danger per azioni distruttive (Elimina)"
+      - "Loading state con spinner"
+      - "Disabled state visivamente chiaro"
+
+    forms:
+      - "Label sempre visibili (no placeholder as label)"
+      - "Validazione inline real-time dopo primo tentativo"
+      - "Error messages chiari e actionable"
+      - "Required fields con asterisco (*)"
+      - "Help text sotto input se necessario"
+
+    tables:
+      - "Header sticky su scroll"
+      - "Paginazione con info (Mostrando 1-15 di 150)"
+      - "Sorting cliccando header colonne"
+      - "Filtri posizionati sopra tabella"
+      - "Actions column per operazioni su righe"
+      - "Empty state quando nessun dato"
+
+    notifications:
+      - "Toast per feedback azioni: success, error, info"
+      - "Posizionamento top-right"
+      - "Auto-dismiss dopo 3-5 secondi"
+      - "Possibilità chiusura manuale"
+
+  responsive:
+    breakpoints:
+      mobile: "< 768px"
+      tablet: "768px - 1024px"
+      desktop: "> 1024px"
+
+    behavior:
+      - "Mobile-first approach"
+      - "Sidebar collassabile su mobile"
+      - "Tabelle scrollabili horizontal su mobile"
+      - "Forms single column su mobile"
+
+git_workflow:
+  branch_strategy: "GitFlow"
+
+  branches:
+    main: "Produzione, sempre deployable"
+    develop: "Sviluppo, integrazione features"
+    feature/*: "Nuove features: feature/cantieri-module"
+    bugfix/*: "Bug fixes: bugfix/timbratura-gps"
+    hotfix/*: "Fix urgenti su produzione"
+
+  commit_conventions:
+    format: "type(scope): subject"
+
+    types:
+      - "feat: nuova feature"
+      - "fix: bug fix"
+      - "refactor: refactoring codice"
+      - "style: formattazione, no logic change"
+      - "test: aggiunta/modifica test"
+      - "docs: documentazione"
+      - "chore: task manutenzione (build, config)"
+
+    examples:
+      - "feat(cantieri): add consuntivo generation"
+      - "fix(timbrature): resolve GPS coordinate validation"
+      - "refactor(api): improve response format consistency"
+
+  pull_requests:
+    - "Descrizione chiara del problema e soluzione"
+    - "Screenshot per modifiche UI"
+    - "Test automatici devono passare"
+    - "Code review richiesto prima del merge"
+    - "Merge in develop, non direttamente in main"
+
+documentation:
+  code_comments:
+    - "Commenta il PERCHÉ, non il COSA"
+    - "DocBlocks per funzioni pubbliche (parametri, return, throws)"
+    - "Evita commenti ovvi (// incrementa i; i++;)"
+    - "TODO: per task da completare con ticket reference"
+
+  api_documentation:
+    tool: "OpenAPI/Swagger (L5-Swagger per Laravel)"
+    requirements:
+      - "Tutti gli endpoints documentati"
+      - "Request/Response examples"
+      - "Authentication requirements"
+      - "Error responses possibili"
+
+  readme:
+    - "Setup instructions passo-passo"
+    - "Environment variables required"
+    - "Comandi utili (migrate, seed, test)"
+    - "Deployment procedure"
+    - "Troubleshooting common issues"
+
+deployment:
+  environments:
+    development: "Local machine"
+    staging: "Test environment (pre-production)"
+    production: "Live environment"
+
+  checklist:
+    pre_deploy:
+      - "Tests passano"
+      - "Code review completata"
+      - "Database migrations testate"
+      - "Environment variables configurate"
+      - "Backup database produzione"
+
+    post_deploy:
+      - "Smoke test funzionalità critiche"
+      - "Monitoring logs per errori"
+      - "Performance monitoring"
+
+  tools:
+    - "Laravel Forge / Envoyer (consigliato)"
+    - "GitHub Actions per CI/CD"
+    - "Docker per containerization"
+
+communication:
+  principles:
+    - "Comunicazione trasparente e onesta"
+    - "Condividere blocchi e difficoltà appena emergono"
+    - "Daily sync (anche 15 min) per allineamento"
+    - "Feedback costruttivo e rispettoso"
+    - "Documentare decisioni tecniche importanti"
+
+  tools:
+    - "Git commits e PR descriptions (documentazione tecnica)"
+    - "README e docs per guide"
+    - "Issues/Tickets per task tracking"
+    - "Chat (Slack/Discord) per comunicazione veloce"
+    - "Video call per discussioni complesse"
+
+quality_standards:
+  code_review:
+    checklist:
+      - "Codice pulito e leggibile?"
+      - "Nomi variabili/funzioni descrittivi?"
+      - "Logica facilmente comprensibile?"
+      - "Test presenti e passano?"
+      - "Performance considerata?"
+      - "Security vulnerabilities?"
+      - "Documentation adeguata?"
+      - "Consistent con il resto del codebase?"
+
+  definition_of_done:
+    - "Codice scritto e testato"
+    - "Test automatici passano"
+    - "Code review approvata"
+    - "Documentazione aggiornata"
+    - "Deployed su staging e verificato"
+    - "Product owner/cliente ha validato (se necessario)"
+
+libraries_recommendations:
+  backend:
+    essential:
+      - "spatie/laravel-permission: Gestione ruoli e permessi"
+      - "spatie/laravel-query-builder: Query building from request"
+      - "spatie/laravel-activitylog: Audit trail"
+      - "barryvdh/laravel-debugbar: Debug toolbar"
+      - "laravel/horizon: Queue monitoring"
+      - "laravel/sanctum: API authentication"
+
+    optional:
+      - "maatwebsite/excel: Excel import/export"
+      - "barryvdh/laravel-dompdf: PDF generation"
+      - "guzzlehttp/guzzle: HTTP client (per integrazioni esterne)"
+      - "league/flysystem-aws-s3-v3: S3 storage"
+
+  frontend:
+    essential:
+      - "@tanstack/react-query: Server state management"
+      - "react-hook-form: Form management"
+      - "zod: Schema validation"
+      - "@tanstack/react-table: Tabelle avanzate"
+      - "axios: HTTP client"
+      - "next-auth: Authentication (opzionale, alternativa a custom)"
+
+    ui:
+      option_a: "antd + @ant-design/icons (consigliato per ERP)"
+      option_b: "@mui/material + @mui/icons-material"
+      option_c: "tailwindcss + shadcn/ui components (consigliato con Next.js)"
+
+    utilities:
+      - "date-fns: Date manipulation"
+      - "recharts: Charts"
+      - "react-leaflet: Maps"
+      - "@react-pdf/renderer: PDF generation"
+      - "zustand: Client state (alternative: Jotai)"
+      - "sonner: Toast notifications (react-hot-toast alternative)"
+      - "nuqs: URL state management (next-usequerystate)"
+
+priorities:
+  always:
+    - "Security sopra tutto"
+    - "User experience conta"
+    - "Codice leggibile > Codice clever"
+    - "Test per logiche critiche"
+    - "Performance matters"
+
+  avoid:
+    - "Over-engineering (KISS principle)"
+    - "Premature optimization"
+    - "Codice duplicato (DRY principle)"
+    - "Soluzioni troppo custom (usa packages affidabili)"
+    - "Commit direttamente su main/develop"
+
+notes: |
+  Questo file serve come riferimento per mantenere consistenza e qualità
+  nel progetto. Non tutte le regole sono rigide al 100%, ma rappresentano
+  le best practices da seguire. In caso di dubbi o necessità di deviare
+  dalle linee guida, discutere apertamente per trovare soluzione migliore.
+
+  Remember: Clean code, clear communication, continuous improvement.

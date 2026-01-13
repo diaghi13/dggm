@@ -1,0 +1,11 @@
+backend/vendor/
+backend/node_modules/
+frontend/node_modules/
+node_modules/
+vendor/
+.env
+.env.*
+storage/
+.DS_Store
+dist/
+build/
