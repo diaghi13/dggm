@@ -49,8 +49,8 @@ class MaterialDependencyTypeController extends Controller
     public function update(Request $request, MaterialDependencyType $type): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255|unique:material_dependency_types,name,' . $type->id,
-            'code' => 'sometimes|required|string|max:255|unique:material_dependency_types,code,' . $type->id,
+            'name' => 'sometimes|required|string|max:255|unique:material_dependency_types,name,'.$type->id,
+            'code' => 'sometimes|required|string|max:255|unique:material_dependency_types,code,'.$type->id,
             'description' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',

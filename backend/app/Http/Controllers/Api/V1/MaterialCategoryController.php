@@ -49,8 +49,8 @@ class MaterialCategoryController extends Controller
     public function update(Request $request, MaterialCategory $category): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255|unique:material_categories,name,' . $category->id,
-            'code' => 'sometimes|required|string|max:255|unique:material_categories,code,' . $category->id,
+            'name' => 'sometimes|required|string|max:255|unique:material_categories,name,'.$category->id,
+            'code' => 'sometimes|required|string|max:255|unique:material_categories,code,'.$category->id,
             'description' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',

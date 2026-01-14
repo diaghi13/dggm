@@ -16,6 +16,18 @@ class SupplierService
             $query->where('is_active', $filters['is_active']);
         }
 
+        if (! empty($filters['supplier_type'])) {
+            $query->where('supplier_type', $filters['supplier_type']);
+        }
+
+        if (! empty($filters['personnel_type'])) {
+            $query->where('personnel_type', $filters['personnel_type']);
+        }
+
+        if (! empty($filters['specialization'])) {
+            $query->whereJsonContains('specializations', $filters['specialization']);
+        }
+
         if (! empty($filters['search'])) {
             $this->applySearch($query, $filters['search']);
         }

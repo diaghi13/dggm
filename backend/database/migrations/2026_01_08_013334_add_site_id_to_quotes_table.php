@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('quotes', function (Blueprint $table) {
-            $table->foreignId('site_id')->nullable()->after('template_id')->constrained('sites')->nullOnDelete();
+            $table->foreignId('site_id')->nullable()->constrained('sites')->nullOnDelete();
         });
     }
 

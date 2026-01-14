@@ -6,14 +6,14 @@ enum WorkerType: string
 {
     case Employee = 'employee';
     case Freelancer = 'freelancer';
-    case ContractorCompany = 'contractor_company';
+    case External = 'external';
 
     public function label(): string
     {
         return match ($this) {
             self::Employee => 'Dipendente',
             self::Freelancer => 'Libero Professionista',
-            self::ContractorCompany => 'Cooperativa/Ditta',
+            self::External => 'Esterno (Fornitore)',
         };
     }
 
@@ -22,9 +22,9 @@ enum WorkerType: string
         return $this === self::Employee;
     }
 
-    public function requiresContractor(): bool
+    public function requiresSupplier(): bool
     {
-        return $this === self::ContractorCompany;
+        return $this === self::External;
     }
 
     public function icon(): string
@@ -32,7 +32,7 @@ enum WorkerType: string
         return match ($this) {
             self::Employee => 'briefcase',
             self::Freelancer => 'user-check',
-            self::ContractorCompany => 'building',
+            self::External => 'building',
         };
     }
 
@@ -41,7 +41,7 @@ enum WorkerType: string
         return match ($this) {
             self::Employee => 'blue',
             self::Freelancer => 'green',
-            self::ContractorCompany => 'purple',
+            self::External => 'purple',
         };
     }
 }

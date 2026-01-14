@@ -12,14 +12,14 @@ class UserController extends Controller
 {
     public function __construct(
         private readonly UserService $userService
-    ){}
+    ) {}
 
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //$this->authorize('viewAny', User::class);
+        // $this->authorize('viewAny', User::class);
 
         $users = $this->userService->getAll();
 

@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -73,6 +75,26 @@ class Site extends Model implements HasMedia
         return $this->belongsTo(User::class, 'project_manager_id');
     }
 
+    public function workers(): BelongsToMany
+    {
+        return $this->belongsToMany(Worker::class, 'site_workers')
+            ->withPivot([
+                'site_role',
+                'assigned_from',
+                'assigned_to',
+                'hourly_rate_override',
+                'estimated_hours',
+                'is_active',
+                'notes',
+            ])
+            ->withTimestamps();
+    }
+
+    public function laborCosts(): HasMany
+    {
+        return $this->hasMany(SiteLaborCost::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {
@@ -118,7 +140,34 @@ class Site extends Model implements HasMedia
         return ($this->margin / $this->estimated_amount) * 100;
     }
 
+    public function getTotalLaborCostAttribute(): float
+    {
+        return $this->laborCosts()->sum('total_cost') ?? 0;
+    }
+
+    public function getInternalLaborCostAttribute(): float
+    {
+        return $this->laborCosts()
+            ->internalLabor()
+            ->sum('total_cost') ?? 0;
+    }
+
+    public function getContractorCostAttribute(): float
+    {
+        return $this->laborCosts()
+            ->contractorLabor()
+            ->sum('total_cost') ?? 0;
+    }
+
     // Helper methods
+    public function updateActualCost(): void
+    {
+        // TODO: Add material costs when implemented
+        // For now, only labor costs
+        $this->actual_cost = $this->total_labor_cost;
+        $this->saveQuietly(); // Don't trigger events
+    }
+
     public function isWithinGpsRange(float $latitude, float $longitude): bool
     {
         if (! $this->latitude || ! $this->longitude) {

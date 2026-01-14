@@ -92,6 +92,29 @@ class RoleAndPermissionSeeder extends Seeder
             'progress-billings.edit',
             'progress-billings.approve',
 
+            // Worker management
+            'workers.view',
+            'workers.create',
+            'workers.edit',
+            'workers.delete',
+            'workers.view-rates',
+            'workers.manage-rates',
+            'workers.view-payroll',
+            'workers.manage-payroll',
+
+            // Contractor management
+            'contractors.view',
+            'contractors.create',
+            'contractors.edit',
+            'contractors.delete',
+
+            // Labor costs (for consuntivi)
+            'labor-costs.view',
+            'labor-costs.create',
+            'labor-costs.edit',
+            'labor-costs.delete',
+            'labor-costs.approve',
+
             // Reports
             'reports.view',
             'reports.financial',
@@ -133,6 +156,9 @@ class RoleAndPermissionSeeder extends Seeder
             'invoices.view',
             'vehicles.view',
             'progress-billings.view', 'progress-billings.create', 'progress-billings.edit',
+            'workers.view', 'workers.create', 'workers.edit', 'workers.view-rates', 'workers.manage-rates',
+            'contractors.view', 'contractors.create', 'contractors.edit',
+            'labor-costs.view', 'labor-costs.create', 'labor-costs.edit', 'labor-costs.delete',
             'reports.view', 'reports.sites', 'reports.time-tracking',
         ]);
 
@@ -143,6 +169,7 @@ class RoleAndPermissionSeeder extends Seeder
             'time-trackings.view', 'time-trackings.create', 'time-trackings.edit',
             'warehouse.view',
             'vehicles.view',
+            'workers.view', // Can see workers on their sites
         ]);
 
         // Worker (Operaio) - time tracking only
@@ -159,6 +186,9 @@ class RoleAndPermissionSeeder extends Seeder
             'suppliers.view',
             'invoices.view', 'invoices.create', 'invoices.edit', 'invoices.send',
             'progress-billings.view',
+            'workers.view', 'workers.view-payroll', // View payroll data
+            'contractors.view',
+            'labor-costs.view', 'labor-costs.approve', // Approve contractor invoices
             'reports.view', 'reports.financial',
         ]);
 

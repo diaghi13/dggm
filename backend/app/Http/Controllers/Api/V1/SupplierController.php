@@ -25,6 +25,9 @@ class SupplierController extends Controller
         $filters = [
             'is_active' => $request->has('is_active') ? $request->boolean('is_active') : null,
             'search' => $request->input('search'),
+            'supplier_type' => $request->input('supplier_type'),
+            'personnel_type' => $request->input('personnel_type'),
+            'specialization' => $request->input('specialization'),
             'sort_by' => $request->get('sort_by', 'created_at'),
             'sort_order' => $request->get('sort_order', 'desc'),
         ];
@@ -78,6 +81,48 @@ class SupplierController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Supplier deleted successfully',
+        ]);
+    }
+
+    public function getWorkers(Supplier $supplier): JsonResponse
+    {
+        $this->authorize('view', $supplier);
+
+        $workers = $supplier->workers()->with(['rates', 'supplier'])->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => \App\Http\Resources\WorkerResource::collection($workers),
+        ]);
+    }
+
+    public function getRates(Supplier $supplier): JsonResponse
+    {
+        $this->authorize('view', $supplier);
+
+        $rates = $supplier->contractorRates()
+            ->orderBy('valid_from', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $rates,
+        ]);
+    }
+
+    public function getStatistics(Supplier $supplier): JsonResponse
+    {
+        $this->authorize('view', $supplier);
+
+        $statistics = [
+            'active_workers_count' => $supplier->workers()->active()->count(),
+            'total_workers_count' => $supplier->workers()->count(),
+            'rates_count' => $supplier->contractorRates()->count(),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $statistics,
         ]);
     }
 }

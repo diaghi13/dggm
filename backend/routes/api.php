@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ContractorController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DdtController;
 use App\Http\Controllers\Api\V1\InventoryController;
@@ -12,9 +13,11 @@ use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\SiteController;
 use App\Http\Controllers\Api\V1\SiteDdtController;
 use App\Http\Controllers\Api\V1\SiteMaterialController;
+use App\Http\Controllers\Api\V1\SiteWorkerController;
 use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\WarehouseController;
+use App\Http\Controllers\Api\V1\WorkerController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -53,6 +56,9 @@ Route::prefix('v1')->group(function () {
 
         // Suppliers
         Route::apiResource('suppliers', SupplierController::class);
+        Route::get('suppliers/{supplier}/workers', [SupplierController::class, 'getWorkers']);
+        Route::get('suppliers/{supplier}/rates', [SupplierController::class, 'getRates']);
+        Route::get('suppliers/{supplier}/statistics', [SupplierController::class, 'getStatistics']);
 
         // Quotes
         Route::apiResource('quotes', QuoteController::class);
@@ -130,11 +136,73 @@ Route::prefix('v1')->group(function () {
         Route::post('sites/{site}/materials/{material}/return', [SiteMaterialController::class, 'returnMaterial']);
         Route::post('sites/{site}/materials/{material}/transfer', [SiteMaterialController::class, 'transferToSite']);
 
+        // Site Workers (Team Management)
+        Route::get('sites/{site}/workers', [SiteWorkerController::class, 'indexBySite']);
+        Route::post('sites/{site}/workers', [SiteWorkerController::class, 'store']);
+        Route::get('workers/{worker}/sites', [SiteWorkerController::class, 'indexByWorker']);
+        Route::get('site-workers/{site_worker}', [SiteWorkerController::class, 'show']);
+        Route::put('site-workers/{site_worker}', [SiteWorkerController::class, 'update']);
+        Route::delete('site-workers/{site_worker}', [SiteWorkerController::class, 'destroy']);
+        Route::post('site-workers/{site_worker}/accept', [SiteWorkerController::class, 'accept']);
+        Route::post('site-workers/{site_worker}/reject', [SiteWorkerController::class, 'reject']);
+        Route::post('site-workers/{site_worker}/change-status', [SiteWorkerController::class, 'changeStatus']);
+        Route::post('site-workers/{site_worker}/cancel', [SiteWorkerController::class, 'cancel']);
+        Route::post('site-workers/{site_worker}/complete', [SiteWorkerController::class, 'complete']);
+        Route::get('site-workers/{site_worker}/conflicts', [SiteWorkerController::class, 'checkConflicts']);
+        Route::get('site-workers/{site_worker}/effective-rate', [SiteWorkerController::class, 'getEffectiveRate']);
+
         // DDT (Documento Di Trasporto)
         Route::get('ddts/next-number', [DdtController::class, 'getNextNumber']);
         Route::apiResource('ddts', DdtController::class);
         Route::post('ddts/{ddt}/confirm', [DdtController::class, 'confirm']);
         Route::post('ddts/{ddt}/cancel', [DdtController::class, 'cancel']);
         Route::post('ddts/{ddt}/mark-delivered', [DdtController::class, 'markAsDelivered']);
+
+        // Workers (Collaboratori)
+        Route::apiResource('workers', WorkerController::class);
+        Route::post('workers/{worker}/deactivate', [WorkerController::class, 'deactivate']);
+        Route::post('workers/{worker}/reactivate', [WorkerController::class, 'reactivate']);
+        Route::get('workers/{worker}/statistics', [WorkerController::class, 'statistics']);
+        Route::get('workers/available/list', [WorkerController::class, 'available']);
+
+        // Worker Rates
+        Route::get('workers/{worker}/rates', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'index']);
+        Route::get('workers/{worker}/rates/current', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'current']);
+        Route::post('workers/{worker}/rates', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'store']);
+        Route::delete('workers/{worker}/rates/{rate}', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'destroy']);
+        Route::get('workers/{worker}/rates/history', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'history']);
+        Route::post('workers/{worker}/rates/calculate', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'calculate']);
+
+        // Worker Sites
+        Route::get('workers/{worker}/sites', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'index']);
+        Route::post('workers/{worker}/sites', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'store']);
+        Route::delete('workers/{worker}/sites/{site}', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'destroy']);
+        Route::get('workers/{worker}/sites/{site}/statistics', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'statistics']);
+
+        // Contractors (Cooperative/Ditte Esterne)
+        Route::apiResource('contractors', ContractorController::class);
+        Route::get('contractors/{contractor}/statistics', [ContractorController::class, 'statistics']);
+        Route::get('contractors/{contractor}/pending-invoices', [ContractorController::class, 'pendingInvoices']);
+
+        // Contractor Rates
+        Route::get('contractors/{contractor}/rates', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'index']);
+        Route::get('contractors/{contractor}/rates/current', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'current']);
+        Route::post('contractors/{contractor}/rates', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'store']);
+        Route::get('contractors/{contractor}/rates/history', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'history']);
+
+        // Site Workers
+        Route::get('sites/{site}/workers', [\App\Http\Controllers\Api\V1\SiteWorkerController::class, 'index']);
+        Route::post('sites/{site}/workers', [\App\Http\Controllers\Api\V1\SiteWorkerController::class, 'store']);
+        Route::put('sites/{site}/workers/{worker}', [\App\Http\Controllers\Api\V1\SiteWorkerController::class, 'update']);
+        Route::delete('sites/{site}/workers/{worker}', [\App\Http\Controllers\Api\V1\SiteWorkerController::class, 'destroy']);
+
+        // Site Labor Costs
+        Route::get('sites/{site}/labor-costs', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'index']);
+        Route::post('sites/{site}/labor-costs', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'store']);
+        Route::put('sites/{site}/labor-costs/{laborCost}', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'update']);
+        Route::delete('sites/{site}/labor-costs/{laborCost}', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'destroy']);
+        Route::get('sites/{site}/labor-costs/breakdown', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'breakdown']);
+        Route::get('sites/{site}/labor-costs/monthly', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'monthly']);
+        Route::get('sites/{site}/labor-costs/by-worker', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'byWorker']);
     });
 });

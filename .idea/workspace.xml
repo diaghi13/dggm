@@ -5,11 +5,40 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/frontend/LOADING_COMPONENTS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/LOADING_TECHNICAL.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/dashboard/loading-example/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/loading-screen.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/hooks/use-loading.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/857bbb80-15e1-4c7e-aa79-6a081db72702.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/857bbb80-15e1-4c7e-aa79-6a081db72702.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/laravel-idea.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/laravel-idea.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Console/Commands/IdentifyDuplicateMovements.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Console/Commands/IdentifyDuplicateMovements.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Enums/WorkerType.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Enums/WorkerType.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialCategoryController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialCategoryController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialDependencyTypeController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialDependencyTypeController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/SupplierController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/SupplierController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/UserController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/UserController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Requests/StoreSupplierRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Requests/StoreSupplierRequest.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Requests/UpdateSupplierRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Requests/UpdateSupplierRequest.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Resources/SupplierResource.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Resources/SupplierResource.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Models/Site.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/Site.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Models/Supplier.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/Supplier.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Models/User.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/User.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Services/SupplierService.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Services/SupplierService.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/database/migrations/2026_01_08_013334_add_site_id_to_quotes_table.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_08_013334_add_site_id_to_quotes_table.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/database/seeders/RoleAndPermissionSeeder.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/database/seeders/RoleAndPermissionSeeder.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/api.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/suppliers/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/dashboard/suppliers/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/globals.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/dashboard-layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/dashboard-layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/supplier-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/supplier-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/suppliers-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/suppliers-columns.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/api/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/api/suppliers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/suppliers.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/stores/auth-store.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/stores/auth-store.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,8 +50,20 @@
     <execution />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/frontend" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;diaghi13&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/diaghi13/dggm.git&quot;,
+    &quot;accountId&quot;: &quot;2dc8c2de-c8be-42df-b295-9309927fef37&quot;
+  }
+}</component>
   <component name="PhpWorkspaceProjectConfiguration" interpreter_name="/opt/homebrew/bin/php">
     <include_path>
       <path value="$PROJECT_DIR$/vendor/symfony/error-handler" />
@@ -312,31 +353,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "/Users/davidedonghi/Apps/dggm",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
-    "to.speed.mode.migration.done": "true",
-    "ts.external.directory.path": "/Users/davidedonghi/Apps/dggm/frontend/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/davidedonghi/Apps/dggm&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/davidedonghi/Apps/dggm/frontend/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "mysql"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;mysql&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Pest.Main">
     <configuration name="Main" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
       <TestRunner configuration_file="$PROJECT_DIR$/phpunit.xml" scope="XML" use_alternative_configuration_file="true" />
@@ -363,7 +404,8 @@
       <option name="presentableId" value="Default" />
       <updated>1767700817718</updated>
       <workItem from="1767700819741" duration="102228000" />
-      <workItem from="1768219160141" duration="16993000" />
+      <workItem from="1768219160141" duration="47386000" />
+      <workItem from="1768408361007" duration="439000" />
     </task>
     <servers />
   </component>

@@ -8,12 +8,13 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasHydrated: boolean;
 
   setAuth: (user: User, token: string) => void;
   clearAuth: () => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  checkAuth: () => Promise<void>;
+  setHasHydrated: (hydrated: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,15 +24,18 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       isLoading: false,
+      hasHydrated: false,
 
       setAuth: (user, token) => {
-        localStorage.setItem('auth_token', token);
         set({ user, token, isAuthenticated: true });
       },
 
       clearAuth: () => {
-        localStorage.removeItem('auth_token');
         set({ user: null, token: null, isAuthenticated: false });
+      },
+
+      setHasHydrated: (hydrated) => {
+        set({ hasHydrated: hydrated });
       },
 
       login: async (email, password) => {
@@ -56,21 +60,6 @@ export const useAuthStore = create<AuthState>()(
           get().clearAuth();
         }
       },
-
-      checkAuth: async () => {
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-          get().clearAuth();
-          return;
-        }
-
-        try {
-          const user = await authApi.me();
-          set({ user, token, isAuthenticated: true });
-        } catch (error) {
-          get().clearAuth();
-        }
-      },
     }),
     {
       name: 'auth-storage',
@@ -79,6 +68,9 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

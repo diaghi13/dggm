@@ -15,6 +15,8 @@ class StoreSupplierRequest extends FormRequest
     {
         return [
             'company_name' => ['required', 'string', 'max:255'],
+            'supplier_type' => ['required', 'string', 'in:materials,personnel,both'],
+            'personnel_type' => ['nullable', 'required_if:supplier_type,personnel,both', 'string', 'in:cooperative,staffing_agency,rental_with_operator,subcontractor,technical_services'],
             'vat_number' => ['nullable', 'string', 'max:255', 'unique:suppliers,vat_number'],
             'tax_code' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -34,6 +36,8 @@ class StoreSupplierRequest extends FormRequest
             'contact_person' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:255'],
+            'specializations' => ['nullable', 'array'],
+            'specializations.*' => ['string', 'max:255'],
             'notes' => ['nullable', 'string'],
             'is_active' => ['boolean'],
         ];

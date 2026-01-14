@@ -202,7 +202,10 @@ export interface SiteFormData {
 // Supplier Types
 export interface Supplier {
   id: number;
+  code: string;
   company_name: string;
+  supplier_type: SupplierType;
+  personnel_type?: PersonnelType | null;
   vat_number: string | null;
   tax_code: string | null;
   email: string | null;
@@ -223,14 +226,22 @@ export interface Supplier {
   contact_person: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  specializations?: string[];
   notes: string | null;
   is_active: boolean;
+  provides_materials: boolean;
+  provides_personnel: boolean;
+  active_workers_count: number;
+  rates?: ContractorRate[];
+  workers?: Worker[];
   created_at: string;
   updated_at: string;
 }
 
 export interface SupplierFormData {
   company_name: string;
+  supplier_type: SupplierType;
+  personnel_type?: PersonnelType | null;
   vat_number?: string;
   tax_code?: string;
   email?: string;
@@ -250,6 +261,72 @@ export interface SupplierFormData {
   contact_person?: string;
   contact_email?: string;
   contact_phone?: string;
+  specializations?: string[];
+  notes?: string;
+  is_active?: boolean;
+  rates?: Array<{
+    service_type: string;
+    rate_type: RateType;
+    rate_amount: number;
+    currency?: string;
+    minimum_hours?: number | null;
+    minimum_amount?: number | null;
+    is_forfait?: boolean;
+    valid_from: string;
+    notes?: string | null;
+  }>;
+}
+
+// Contractor Types
+export type ContractorType = 'cooperative' | 'subcontractor' | 'temporary_agency';
+
+export interface Contractor {
+  id: number;
+  code: string;
+  company_name: string;
+  contractor_type: ContractorType;
+  vat_number: string | null;
+  tax_code: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
+  postal_code: string | null;
+  country: string;
+  contact_person: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  iban: string | null;
+  bank_name: string | null;
+  payment_terms: string | null;
+  notes: string | null;
+  is_active: boolean;
+  active_workers_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContractorFormData {
+  company_name: string;
+  contractor_type: ContractorType;
+  vat_number?: string;
+  tax_code?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  address?: string;
+  city?: string;
+  province?: string;
+  postal_code?: string;
+  country?: string;
+  contact_person?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  iban?: string;
+  bank_name?: string;
+  payment_terms?: string;
   notes?: string;
   is_active?: boolean;
 }
@@ -699,4 +776,210 @@ export interface StockMovementFormData {
   supplier_document?: string;
   movement_date: string;
   notes?: string;
+}
+
+// Worker & Supplier Types
+export type WorkerType = 'employee' | 'freelancer' | 'external';
+export type ContractType = 'permanent' | 'fixed_term' | 'seasonal' | 'project_based' | 'internship';
+export type RateType = 'hourly' | 'daily' | 'weekly' | 'monthly' | 'fixed_project';
+export type RateContext = 'internal_cost' | 'customer_billing' | 'payroll';
+export type PayrollFrequency = 'monthly' | 'biweekly' | 'weekly';
+export type SupplierType = 'materials' | 'personnel' | 'both';
+export type PersonnelType = 'cooperative' | 'staffing_agency' | 'rental_with_operator' | 'subcontractor' | 'technical_services';
+export type LaborCostType = 'internal_labor' | 'subcontractor' | 'contractor';
+
+export interface WorkerRate {
+  id: number;
+  worker_id: number;
+  rate_type: RateType;
+  context: RateContext;
+  rate_amount: number;
+  currency: string;
+  project_type?: string | null;
+  overtime_multiplier: number;
+  holiday_multiplier: number;
+  overtime_starts_after_hours?: number | null;
+  overtime_starts_after_time?: string | null;
+  recognizes_overtime: boolean;
+  is_forfait: boolean;
+  valid_from: string;
+  valid_to: string | null;
+  is_current: boolean;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkerPayrollData {
+  gross_monthly_salary: number;
+  net_monthly_salary: number;
+  contract_level: string;
+  ccnl_type: string;
+  payroll_frequency: PayrollFrequency;
+  inps_percentage: number;
+  inail_percentage: number;
+  irpef_percentage: number;
+  meal_voucher_amount: number;
+  transport_allowance: number;
+  iban?: string | null;
+  bank_name?: string | null;
+  notes?: string | null;
+}
+
+export interface Worker {
+  id: number;
+  code: string;
+  worker_type: WorkerType;
+  contract_type: ContractType;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  display_name: string;
+  tax_code?: string | null;
+  vat_number?: string | null;
+  birth_date?: string | null;
+  birth_place?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  postal_code?: string | null;
+  country: string;
+  supplier_id?: number | null;
+  supplier?: {
+    id: number;
+    code: string;
+    company_name: string;
+    supplier_type: SupplierType;
+  };
+  user_id?: number | null;
+  hire_date: string;
+  termination_date?: string | null;
+  contract_end_date?: string | null;
+  job_title?: string | null;
+  job_level?: string | null;
+  specializations?: string[];
+  certifications?: string[];
+  is_active: boolean;
+  can_drive_company_vehicles: boolean;
+  has_safety_training: boolean;
+  safety_training_expires_at?: string | null;
+  safety_training_valid: boolean;
+  notes?: string | null;
+  internal_notes?: string | null;
+  payment_notes?: string | null;
+  payroll_data?: WorkerPayrollData;
+  rates?: WorkerRate[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkerFormData {
+  worker_type: WorkerType;
+  contract_type: ContractType;
+  first_name: string;
+  last_name: string;
+  tax_code?: string | null;
+  vat_number?: string | null;
+  birth_date?: string | null;
+  birth_place?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  postal_code?: string | null;
+  country?: string;
+  supplier_id?: number | null;
+  user_id?: number | null;
+  hire_date: string;
+  termination_date?: string | null;
+  contract_end_date?: string | null;
+  job_title?: string | null;
+  job_level?: string | null;
+  specializations?: string[];
+  certifications?: string[];
+  is_active?: boolean;
+  can_drive_company_vehicles?: boolean;
+  has_safety_training?: boolean;
+  safety_training_expires_at?: string | null;
+  notes?: string | null;
+  internal_notes?: string | null;
+  payment_notes?: string | null;
+  payroll_data?: Partial<WorkerPayrollData>;
+  rates?: Array<{
+    rate_type: RateType;
+    context: RateContext;
+    rate_amount: number;
+    currency?: string;
+    project_type?: string | null;
+    overtime_multiplier?: number;
+    holiday_multiplier?: number;
+    overtime_starts_after_hours?: number | null;
+    overtime_starts_after_time?: string | null;
+    recognizes_overtime?: boolean;
+    is_forfait?: boolean;
+    valid_from: string;
+    notes?: string | null;
+  }>;
+}
+
+export interface ContractorRate {
+  id: number;
+  contractor_id: number;
+  service_type: string;
+  rate_type: RateType;
+  rate_amount: number;
+  currency: string;
+  minimum_hours?: number | null;
+  minimum_amount?: number | null;
+  is_forfait: boolean;
+  valid_from: string;
+  valid_to: string | null;
+  is_current: boolean;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SiteLaborCost {
+  id: number;
+  site_id: number;
+  cost_type: LaborCostType;
+  worker_id?: number | null;
+  contractor_id?: number | null;
+  description: string;
+  work_date: string;
+  hours_worked?: number | null;
+  quantity?: number | null;
+  unit_rate: number;
+  total_cost: number;
+  currency: string;
+  is_overtime: boolean;
+  is_holiday: boolean;
+  cost_category?: string | null;
+  invoice_number?: string | null;
+  invoice_date?: string | null;
+  is_invoiced: boolean;
+  notes?: string | null;
+  worker?: Worker;
+  contractor?: Supplier;
+  site?: Site;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SiteWorkerAssignment {
+  site_id: number;
+  worker_id: number;
+  site_role?: string | null;
+  assigned_from: string;
+  assigned_to?: string | null;
+  hourly_rate_override?: number | null;
+  estimated_hours?: number | null;
+  is_active: boolean;
+  notes?: string | null;
 }

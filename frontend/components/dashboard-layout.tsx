@@ -27,12 +27,15 @@ import {
   ChevronLeft,
   Settings,
   MapPin,
-  Receipt
+  Receipt,
+  UserCheck,
+  Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { storage } from '@/lib/storage';
+import { LoadingScreen } from '@/components/loading-screen';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -43,6 +46,7 @@ const navigation = [
       { name: 'Clienti', href: '/dashboard/customers', icon: Users },
       { name: 'Fornitori', href: '/dashboard/suppliers', icon: Factory },
       { name: 'Cantieri', href: '/dashboard/sites', icon: MapPin },
+      { name: 'Collaboratori', href: '/dashboard/workers', icon: UserCheck },
     ]
   },
   {
@@ -85,7 +89,7 @@ const navigation = [
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated, logout, checkAuth } = useAuthStore();
+  const { user, isAuthenticated, hasHydrated, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Load sidebar collapsed state from localStorage
@@ -116,20 +120,26 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // Redirect to login if not authenticated (only after hydration)
   useEffect(() => {
-    async function verifyAuth() {
-      await checkAuth();
+    if (hasHydrated && (!isAuthenticated || !user)) {
+      router.push('/login');
     }
-    verifyAuth();
-  }, [isAuthenticated, router, checkAuth]);
+  }, [hasHydrated, isAuthenticated, user, router]);
 
   const handleLogout = async () => {
     await logout();
     router.push('/login');
   };
 
+  // Show loading screen while hydrating
+  if (!hasHydrated) {
+    return <LoadingScreen message="Verifica autenticazione..." />;
+  }
+
+  // Redirect to login if not authenticated after hydration
   if (!isAuthenticated || !user) {
-    return null;
+    return <LoadingScreen message="Reindirizzamento..." />;
   }
 
   const userInitials = user.name

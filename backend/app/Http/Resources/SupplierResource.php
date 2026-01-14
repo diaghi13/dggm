@@ -11,7 +11,10 @@ class SupplierResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'code' => $this->code,
             'company_name' => $this->company_name,
+            'supplier_type' => $this->supplier_type,
+            'personnel_type' => $this->personnel_type,
             'vat_number' => $this->vat_number,
             'tax_code' => $this->tax_code,
             'email' => $this->email,
@@ -32,8 +35,12 @@ class SupplierResource extends JsonResource
             'contact_person' => $this->contact_person,
             'contact_email' => $this->contact_email,
             'contact_phone' => $this->contact_phone,
+            'specializations' => $this->specializations,
             'notes' => $this->notes,
             'is_active' => $this->is_active,
+            'provides_materials' => $this->provides_materials,
+            'provides_personnel' => $this->provides_personnel,
+            'active_workers_count' => $this->whenLoaded('workers', fn () => $this->active_workers_count, 0),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

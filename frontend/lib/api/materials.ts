@@ -37,10 +37,6 @@ export const materialsApi = {
     return response.data;
   },
 
-  getCategories: async () => {
-    const response = await apiClient.get('/materials/categories/list');
-    return response.data.data;
-  },
 
   getNeedingReorder: async () => {
     const response = await apiClient.get('/materials-needing-reorder');

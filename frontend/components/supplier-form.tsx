@@ -8,16 +8,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Factory, Mail, Phone, MapPin, Banknote, CreditCard, User, FileText, Globe } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Factory, Mail, Phone, MapPin, Banknote, CreditCard, User, FileText, Globe, Package, Users } from 'lucide-react';
 
 const supplierSchema = z.object({
-  company_name: z.string().min(1, 'Company name is required'),
+  company_name: z.string().min(1, 'Ragione sociale obbligatoria'),
+  supplier_type: z.enum(['materials', 'personnel', 'both']),
+  personnel_type: z.enum(['cooperative', 'staffing_agency', 'rental_with_operator', 'subcontractor', 'technical_services']).optional().nullable(),
   vat_number: z.string().optional().nullable(),
   tax_code: z.string().optional().nullable(),
-  email: z.string().email('Invalid email').optional().nullable().or(z.literal('')),
+  email: z.string().email('Email non valida').optional().nullable().or(z.literal('')),
   phone: z.string().optional().nullable(),
   mobile: z.string().optional().nullable(),
-  website: z.string().url('Invalid URL').optional().nullable().or(z.literal('')),
+  website: z.string().url('URL non valido').optional().nullable().or(z.literal('')),
   address: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
   province: z.string().optional().nullable(),
@@ -29,11 +32,23 @@ const supplierSchema = z.object({
   iban: z.string().optional().nullable(),
   bank_name: z.string().optional().nullable(),
   contact_person: z.string().optional().nullable(),
-  contact_email: z.string().email('Invalid email').optional().nullable().or(z.literal('')),
+  contact_email: z.string().email('Email non valida').optional().nullable().or(z.literal('')),
   contact_phone: z.string().optional().nullable(),
+  specializations: z.array(z.string()).optional().nullable(),
   notes: z.string().optional().nullable(),
   is_active: z.boolean().optional(),
-});
+}).refine(
+  (data) => {
+    if (data.supplier_type === 'personnel' || data.supplier_type === 'both') {
+      return !!data.personnel_type;
+    }
+    return true;
+  },
+  {
+    message: 'Tipo personale obbligatorio per fornitori di personale',
+    path: ['personnel_type'],
+  }
+);
 
 type SupplierFormValues = z.infer<typeof supplierSchema>;
 
@@ -48,12 +63,16 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<SupplierFormValues>({
     resolver: zodResolver(supplierSchema),
     defaultValues: supplier
       ? {
           company_name: supplier.company_name,
+          supplier_type: supplier.supplier_type,
+          personnel_type: supplier.personnel_type,
           vat_number: supplier.vat_number,
           tax_code: supplier.tax_code,
           email: supplier.email,
@@ -77,10 +96,13 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
           is_active: supplier.is_active,
         }
       : {
+          supplier_type: 'materials' as const,
           country: 'Italy',
           is_active: true,
         },
   });
+
+  const supplierType = watch('supplier_type');
 
   const handleFormSubmit = (data: SupplierFormValues) => {
     onSubmit(data as SupplierFormData);
@@ -98,7 +120,7 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="company_name" className="text-sm font-medium text-slate-700">
+          <Label htmlFor="company_name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Ragione Sociale <span className="text-red-500">*</span>
           </Label>
           <Input
@@ -106,13 +128,82 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
             {...register('company_name')}
             disabled={isLoading}
             placeholder="Acme S.r.l."
-            className="h-11 "
+            className="h-11"
           />
           {errors.company_name && (
             <p className="text-sm text-red-600 flex items-center gap-1">
               <span className="text-red-500">⚠</span> {errors.company_name.message}
             </p>
           )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="supplier_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Tipo Fornitore <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={watch('supplier_type') || 'materials'}
+              onValueChange={(value: any) => setValue('supplier_type', value)}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Seleziona tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="materials">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    <span>Materiali</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="personnel">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Personale</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="both">
+                  <div className="flex items-center gap-2">
+                    <Factory className="h-4 w-4" />
+                    <span>Entrambi</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.supplier_type && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <span className="text-red-500">⚠</span> {errors.supplier_type.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="personnel_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Tipo Personale {(supplierType === 'personnel' || supplierType === 'both') && <span className="text-red-500">*</span>}
+            </Label>
+            <Select
+              value={watch('personnel_type') || ''}
+              onValueChange={(value: any) => setValue('personnel_type', value || null)}
+              disabled={isLoading || supplierType === 'materials'}
+            >
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Seleziona tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cooperative">Cooperativa</SelectItem>
+                <SelectItem value="staffing_agency">Agenzia Interinale</SelectItem>
+                <SelectItem value="rental_with_operator">Noleggio con Operatore</SelectItem>
+                <SelectItem value="subcontractor">Subappaltatore</SelectItem>
+                <SelectItem value="technical_services">Servizi Tecnici</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.personnel_type && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <span className="text-red-500">⚠</span> {errors.personnel_type.message}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

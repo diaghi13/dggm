@@ -21,7 +21,8 @@
       "Bash(php artisan:*)",
       "Bash(php create_test_ddt.php:*)",
       "Bash(php -r:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(touch:*)"
     ],
     "deny": [],
     "ask": []

@@ -6,6 +6,7 @@ import { suppliersApi } from '@/lib/api/suppliers';
 import { Supplier, SupplierFormData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Search, Factory } from 'lucide-react';
@@ -18,8 +19,11 @@ import { createSuppliersColumns } from "@/components/suppliers-columns";
 import { useRouter } from "next/navigation";
 
 export default function SuppliersPage() {
-    const router = useRouter();
+  const router = useRouter();
   const [search, setSearch] = useState('');
+  const [supplierTypeFilter, setSupplierTypeFilter] = useState<string>('all');
+  const [personnelTypeFilter, setPersonnelTypeFilter] = useState<string>('all');
+  const [activeFilter, setActiveFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -47,8 +51,16 @@ export default function SuppliersPage() {
   );
 
   const { data, isLoading } = useQuery({
-    queryKey: ['suppliers', { page, search }],
-    queryFn: () => suppliersApi.getAll({ page, search, per_page: 15 }),
+    queryKey: ['suppliers', { page, search, supplierTypeFilter, personnelTypeFilter, activeFilter }],
+    queryFn: () =>
+      suppliersApi.getAll({
+        page,
+        search: search || undefined,
+        supplier_type: supplierTypeFilter !== 'all' ? (supplierTypeFilter as any) : undefined,
+        personnel_type: personnelTypeFilter !== 'all' ? (personnelTypeFilter as any) : undefined,
+        is_active: activeFilter !== 'all' ? activeFilter === 'active' : undefined,
+        per_page: 15,
+      }),
   });
 
   const createMutation = useMutation({
@@ -96,14 +108,57 @@ export default function SuppliersPage() {
 
       {/* Filtri in Card */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-          <Input
-            placeholder="Cerca fornitori..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-11 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
-          />
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Input
+              placeholder="Cerca per nome, P.IVA, email..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="pl-10 h-11 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+            />
+          </div>
+          <Select value={supplierTypeFilter} onValueChange={(value) => { setSupplierTypeFilter(value); setPage(1); }}>
+            <SelectTrigger className="w-full sm:w-48 h-11 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+              <SelectValue placeholder="Tipo Fornitore" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti i tipi</SelectItem>
+              <SelectItem value="materials">Materiali</SelectItem>
+              <SelectItem value="personnel">Personale</SelectItem>
+              <SelectItem value="both">Entrambi</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={personnelTypeFilter}
+            onValueChange={(value) => { setPersonnelTypeFilter(value); setPage(1); }}
+            disabled={supplierTypeFilter === 'materials'}
+          >
+            <SelectTrigger className="w-full sm:w-52 h-11 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+              <SelectValue placeholder="Tipo Personale" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti</SelectItem>
+              <SelectItem value="cooperative">Cooperativa</SelectItem>
+              <SelectItem value="staffing_agency">Agenzia Interinale</SelectItem>
+              <SelectItem value="rental_with_operator">Noleggio con Operatore</SelectItem>
+              <SelectItem value="subcontractor">Subappaltatore</SelectItem>
+              <SelectItem value="technical_services">Servizi Tecnici</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={activeFilter} onValueChange={(value) => { setActiveFilter(value); setPage(1); }}>
+            <SelectTrigger className="w-full sm:w-40 h-11 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+              <SelectValue placeholder="Stato" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti gli stati</SelectItem>
+              <SelectItem value="active">Attivi</SelectItem>
+              <SelectItem value="inactive">Inattivi</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
