@@ -269,7 +269,7 @@ export function DataTable<TData, TValue>({
 
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
-          <Table>
+          <Table style={{ tableLayout: 'fixed', width: table.getTotalSize() }}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
@@ -281,24 +281,31 @@ export function DataTable<TData, TValue>({
                       <TableHead
                         key={header.id}
                         className={cn(
-                          "font-semibold text-slate-900 dark:text-slate-100 relative",
-                          "first:pl-6 last:pr-6"
+                          "font-semibold text-slate-900 dark:text-slate-100 relative h-12",
+                          "first:pl-6 last:pr-6",
+                          index !== headerGroup.headers.length - 1 && "pr-4"
                         )}
-                        style={{ width: header.getSize() }}
+                        style={{
+                          width: header.getSize(),
+                          minWidth: header.column.columnDef.minSize,
+                          maxWidth: header.column.columnDef.maxSize,
+                        }}
                       >
                         {header.isPlaceholder ? null : (
-                          <>
+                          <div className="flex items-center h-full">
                             <div
                               className={cn(
-                                'flex items-center gap-2 pr-2',
+                                'flex items-center gap-2 flex-1 min-w-0',
                                 header.column.getCanSort() &&
                                   'cursor-pointer select-none hover:text-slate-700 dark:hover:text-slate-300'
                               )}
                               onClick={header.column.getToggleSortingHandler()}
                             >
-                              {flexRender(header.column.columnDef.header, header.getContext())}
+                              <span className="truncate">
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                              </span>
                               {header.column.getCanSort() && (
-                                <span className="ml-auto">
+                                <span className="flex-shrink-0">
                                   {header.column.getIsSorted() === 'asc' ? (
                                     <ChevronUp className="h-4 w-4" />
                                   ) : header.column.getIsSorted() === 'desc' ? (
@@ -309,33 +316,28 @@ export function DataTable<TData, TValue>({
                                 </span>
                               )}
                             </div>
-                            {/* Resize Handle - Always subtly visible, prominent on hover */}
+                            {/* Resize Handle */}
                             {index !== headerGroup.headers.length - 1 && (
                               <div
                                 onMouseDown={header.getResizeHandler()}
                                 onTouchStart={header.getResizeHandler()}
                                 className={cn(
-                                  'group/handle absolute right-0 top-1/2 -translate-y-1/2 h-8 w-1 cursor-col-resize select-none touch-none rounded-full',
-                                  'bg-slate-200/60 dark:bg-slate-700/60',
-                                  'hover:bg-blue-500 dark:hover:bg-blue-400 hover:w-1.5 hover:shadow-sm',
-                                  'transition-all duration-200 ease-in-out',
-                                  header.column.getIsResizing() && 'bg-blue-500 dark:bg-blue-400 w-1.5 shadow-sm'
+                                  'absolute right-0 top-0 h-full w-3 cursor-col-resize select-none touch-none',
+                                  'flex items-center justify-center group/resize'
                                 )}
                                 title="Trascina per ridimensionare"
                               >
-                                {/* Visual dots to indicate draggability */}
                                 <div className={cn(
-                                  "absolute inset-0 flex flex-col items-center justify-center gap-0.5",
-                                  "opacity-0 group-hover/handle:opacity-100 transition-opacity duration-200",
-                                  "text-white"
-                                )}>
-                                  <div className="w-0.5 h-0.5 rounded-full bg-current" />
-                                  <div className="w-0.5 h-0.5 rounded-full bg-current" />
-                                  <div className="w-0.5 h-0.5 rounded-full bg-current" />
-                                </div>
+                                  'w-0.5 h-8 rounded-full transition-all duration-150',
+                                  'bg-slate-300 dark:bg-slate-600',
+                                  'group-hover/resize:bg-blue-500 dark:group-hover/resize:bg-blue-400',
+                                  'group-hover/resize:w-1 group-hover/resize:h-10',
+                                  header.column.getIsResizing() && 'bg-blue-500 dark:bg-blue-400 w-1 h-10'
+                                )}
+                                />
                               </div>
                             )}
-                          </>
+                          </div>
                         )}
                       </TableHead>
                     );
@@ -375,8 +377,15 @@ export function DataTable<TData, TValue>({
                         "first:pl-6 last:pr-6",
                         "transition-colors duration-150"
                       )}
+                      style={{
+                        width: cell.column.getSize(),
+                        minWidth: cell.column.columnDef.minSize,
+                        maxWidth: cell.column.columnDef.maxSize,
+                      }}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      <div className="truncate">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </div>
                     </TableCell>
                   ))}
                 </TableRow>

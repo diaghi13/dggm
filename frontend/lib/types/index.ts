@@ -277,59 +277,6 @@ export interface SupplierFormData {
   }>;
 }
 
-// Contractor Types
-export type ContractorType = 'cooperative' | 'subcontractor' | 'temporary_agency';
-
-export interface Contractor {
-  id: number;
-  code: string;
-  company_name: string;
-  contractor_type: ContractorType;
-  vat_number: string | null;
-  tax_code: string | null;
-  email: string | null;
-  phone: string | null;
-  website: string | null;
-  address: string | null;
-  city: string | null;
-  province: string | null;
-  postal_code: string | null;
-  country: string;
-  contact_person: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  iban: string | null;
-  bank_name: string | null;
-  payment_terms: string | null;
-  notes: string | null;
-  is_active: boolean;
-  active_workers_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ContractorFormData {
-  company_name: string;
-  contractor_type: ContractorType;
-  vat_number?: string;
-  tax_code?: string;
-  email?: string;
-  phone?: string;
-  website?: string;
-  address?: string;
-  city?: string;
-  province?: string;
-  postal_code?: string;
-  country?: string;
-  contact_person?: string;
-  contact_email?: string;
-  contact_phone?: string;
-  iban?: string;
-  bank_name?: string;
-  payment_terms?: string;
-  notes?: string;
-  is_active?: boolean;
-}
 
 // Quote Types
 export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'converted';

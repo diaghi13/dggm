@@ -4,41 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/frontend/LOADING_COMPONENTS.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/LOADING_TECHNICAL.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/app/dashboard/loading-example/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/loading-screen.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/hooks/use-loading.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/857bbb80-15e1-4c7e-aa79-6a081db72702.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/857bbb80-15e1-4c7e-aa79-6a081db72702.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/laravel-idea.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/laravel-idea.xml" afterDir="false" />
+    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Next config">
+      <change afterPath="$PROJECT_DIR$/frontend/BUILD_FIX_REPORT.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/CLEANUP_CONTRACTORS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/DATATABLE_FIX.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/SESSION_SUMMARY.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Console/Commands/IdentifyDuplicateMovements.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Console/Commands/IdentifyDuplicateMovements.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Enums/WorkerType.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Enums/WorkerType.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialCategoryController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialCategoryController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialDependencyTypeController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialDependencyTypeController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/SupplierController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/SupplierController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/UserController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/UserController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Requests/StoreSupplierRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Requests/StoreSupplierRequest.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Requests/UpdateSupplierRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Requests/UpdateSupplierRequest.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Resources/SupplierResource.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Resources/SupplierResource.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Models/Site.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/Site.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Models/Supplier.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/Supplier.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Models/User.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/User.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Services/SupplierService.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Services/SupplierService.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/database/migrations/2026_01_08_013334_add_site_id_to_quotes_table.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_08_013334_add_site_id_to_quotes_table.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/database/seeders/RoleAndPermissionSeeder.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/database/seeders/RoleAndPermissionSeeder.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/api.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/suppliers/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/dashboard/suppliers/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/globals.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/dashboard-layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/dashboard-layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/supplier-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/supplier-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/suppliers-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/suppliers-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/api/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/client.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/api/suppliers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/suppliers.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/contractor-form.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/contractors-columns.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/data-table.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/data-table.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/ui/table.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/ui/table.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/api/contractors.ts" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/lib/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/types/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/stores/auth-store.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/stores/auth-store.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -405,8 +382,25 @@
       <updated>1767700817718</updated>
       <workItem from="1767700819741" duration="102228000" />
       <workItem from="1768219160141" duration="47386000" />
-      <workItem from="1768408361007" duration="439000" />
+      <workItem from="1768408361007" duration="5676000" />
     </task>
+    <task id="LOCAL-00001" summary="A lot of things">
+      <option name="closed" value="true" />
+      <created>1768409106460</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1768409106460</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Next config">
+      <option name="closed" value="true" />
+      <created>1768423686606</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1768423686606</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -416,6 +410,9 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/frontend" />
     </ignored-roots>
+    <MESSAGE value="A lot of things" />
+    <MESSAGE value="Next config" />
+    <option name="LAST_COMMIT_MESSAGE" value="Next config" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
