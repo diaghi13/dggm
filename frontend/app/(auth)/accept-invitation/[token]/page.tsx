@@ -39,7 +39,7 @@ type AcceptInvitationFormData = z.infer<typeof acceptInvitationSchema>;
 export default function AcceptInvitationPage() {
   const params = useParams();
   const router = useRouter();
-  const { login: setAuth } = useAuthStore();
+  const { setAuth } = useAuthStore();
   const token = params.token as string;
   const [accepted, setAccepted] = useState(false);
 

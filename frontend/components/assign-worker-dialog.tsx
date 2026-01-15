@@ -44,15 +44,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const assignWorkerSchema = z
   .object({
-    worker_id: z.number({
-      required_error: 'Seleziona un lavoratore',
-    }),
+    worker_id: z.number({ message: 'Seleziona un lavoratore' }),
     role_ids: z.array(z.number()).min(1, 'Seleziona almeno un ruolo'),
-    assigned_from: z.string({
-      required_error: 'Inserisci data inizio',
-    }),
+    assigned_from: z.string({ message: 'Inserisci data inizio' }),
     assigned_to: z.string().optional(),
-    response_days: z.number().min(1).max(30).default(3),
+    response_days: z.number().min(1).max(30),
     hourly_rate_override: z.string().optional(),
     fixed_rate_override: z.string().optional(),
     rate_override_notes: z.string().optional(),
@@ -151,7 +147,7 @@ export function AssignWorkerDialog({ siteId, open, onOpenChange }: AssignWorkerD
     form.setValue('role_ids', newRoles);
   };
 
-  const selectedWorker = workers?.find((w) => w.id === form.watch('worker_id'));
+  const selectedWorker = workers?.data?.find((w) => w.id === form.watch('worker_id'));
   const isExternal = selectedWorker?.worker_type === 'external';
 
   useEffect(() => {
@@ -193,7 +189,7 @@ export function AssignWorkerDialog({ siteId, open, onOpenChange }: AssignWorkerD
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {workers?.map((worker) => (
+                      {workers?.data?.map((worker) => (
                         <SelectItem key={worker.id} value={worker.id.toString()}>
                           {worker.full_name} -{' '}
                           {worker.worker_type === 'employee'

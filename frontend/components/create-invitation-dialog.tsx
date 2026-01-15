@@ -44,10 +44,10 @@ const invitationSchema = z.object({
   last_name: z.string().min(2, 'Il cognome deve avere almeno 2 caratteri'),
   phone: z.string().optional(),
   supplier_id: z.number().optional(),
-  worker_type: z.enum(['employee', 'external', 'freelancer']).default('external'),
-  contract_type: z.enum(['full_time', 'part_time', 'temporary', 'consultant']).optional(),
+  worker_type: z.enum(['employee', 'external', 'freelancer']),
+  contract_type: z.enum(['permanent', 'fixed_term', 'seasonal', 'project_based', 'internship']).optional(),
   job_title: z.string().optional(),
-  expires_in_days: z.number().min(1).max(30).default(7),
+  expires_in_days: z.number().min(1).max(30),
 });
 
 type InvitationFormData = z.infer<typeof invitationSchema>;
@@ -76,7 +76,16 @@ export function CreateInvitationDialog({ open, onOpenChange }: CreateInvitationD
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InvitationFormData) => invitationsApi.create(data),
+    mutationFn: (data: InvitationFormData) => {
+      const payload = {
+        ...data,
+        phone: data.phone || null,
+        supplier_id: data.supplier_id || null,
+        contract_type: data.contract_type || null,
+        job_title: data.job_title || null,
+      };
+      return invitationsApi.create(payload);
+    },
     onSuccess: () => {
       toast.success('Invito inviato con successo');
       queryClient.invalidateQueries({ queryKey: ['invitations'] });
@@ -224,9 +233,9 @@ export function CreateInvitationDialog({ open, onOpenChange }: CreateInvitationD
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {suppliers?.map((supplier) => (
+                        {suppliers?.data?.map((supplier) => (
                           <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                            {supplier.name}
+                            {supplier.company_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -254,10 +263,11 @@ export function CreateInvitationDialog({ open, onOpenChange }: CreateInvitationD
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="full_time">Tempo Pieno</SelectItem>
-                      <SelectItem value="part_time">Part Time</SelectItem>
-                      <SelectItem value="temporary">Tempo Determinato</SelectItem>
-                      <SelectItem value="consultant">Consulente</SelectItem>
+                      <SelectItem value="permanent">Indeterminato</SelectItem>
+                      <SelectItem value="fixed_term">Determinato</SelectItem>
+                      <SelectItem value="seasonal">Stagionale</SelectItem>
+                      <SelectItem value="project_based">A Progetto</SelectItem>
+                      <SelectItem value="internship">Stage</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormDescription className="text-xs">Opzionale</FormDescription>

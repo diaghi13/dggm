@@ -155,11 +155,28 @@ export default function CustomerDetailPage() {
               </CardHeader>
               <CardContent>
                 <CustomerForm
+                  id="customer-form"
                   customer={customer}
                   onSubmit={(data) => updateMutation.mutate(data)}
-                  onCancel={() => setEditMode(false)}
                   isLoading={updateMutation.isPending}
                 />
+                <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditMode(false)}
+                    disabled={updateMutation.isPending}
+                  >
+                    Annulla
+                  </Button>
+                  <Button
+                    type="submit"
+                    form="customer-form"
+                    disabled={updateMutation.isPending}
+                  >
+                    {updateMutation.isPending ? 'Salvataggio...' : 'Salva Modifiche'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : (

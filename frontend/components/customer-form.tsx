@@ -80,12 +80,13 @@ const customerSchema = z.discriminatedUnion('type', [
 type CustomerFormValues = z.infer<typeof customerSchema>;
 
 interface CustomerFormProps {
+  id?: string;
   customer?: Customer;
   onSubmit: (data: CustomerFormData) => void;
   isLoading?: boolean;
 }
 
-export function CustomerForm({ customer, onSubmit, isLoading }: CustomerFormProps) {
+export function CustomerForm({ id, customer, onSubmit, isLoading }: CustomerFormProps) {
   const {
     register,
     handleSubmit,
@@ -169,7 +170,7 @@ export function CustomerForm({ customer, onSubmit, isLoading }: CustomerFormProp
   };
 
   return (
-    <form id="customer-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form id={id || "customer-form"} onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Customer Type */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-200">

@@ -53,6 +53,7 @@ export default function NewCustomerPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6">
         <CustomerForm
+          id="customer-form"
           onSubmit={(data) => createMutation.mutate(data)}
           isLoading={createMutation.isPending}
         />

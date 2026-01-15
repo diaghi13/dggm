@@ -39,20 +39,16 @@ import { toast } from 'sonner';
 import { Loader2, AlertCircle, Package } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import type { MaterialRequestPriority } from '@/lib/types';
+import type { MaterialRequestPriority, Material } from '@/lib/types';
 
 const materialRequestSchema = z.object({
-  site_id: z.number({
-    required_error: 'Il cantiere è obbligatorio',
-  }),
-  material_id: z.number({
-    required_error: 'Seleziona un materiale',
-  }),
+  site_id: z.number({ message: 'Il cantiere è obbligatorio' }),
+  material_id: z.number({ message: 'Seleziona un materiale' }),
   quantity_requested: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
     message: 'La quantità deve essere maggiore di zero',
   }),
   unit_of_measure: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']),
   reason: z.string().min(10, 'Spiega brevemente perché serve questo materiale (min 10 caratteri)'),
   notes: z.string().optional(),
   needed_by: z.string().optional(),
@@ -148,7 +144,7 @@ export function MaterialRequestDialog({
     requestMutation.mutate(data);
   };
 
-  const selectedMaterial = materials?.find((m) => m.id === form.watch('material_id'));
+  const selectedMaterial = materials?.data?.find((m: Material) => m.id === form.watch('material_id'));
 
   // Auto-fill unit of measure when material is selected
   useEffect(() => {
@@ -207,7 +203,7 @@ export function MaterialRequestDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {materials?.map((material) => (
+                      {materials?.data?.map((material: Material) => (
                         <SelectItem key={material.id} value={material.id.toString()}>
                           <div className="flex items-center gap-2">
                             <span>{material.name}</span>

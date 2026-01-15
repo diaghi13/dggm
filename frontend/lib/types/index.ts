@@ -6,6 +6,13 @@ export interface User {
   email_verified_at: string | null;
   roles: string[];
   permissions: string[];
+  worker?: {
+    id: number;
+    code: string;
+    first_name: string;
+    last_name: string;
+    full_name: string;
+  } | null;
   created_at: string;
   updated_at: string;
 }
