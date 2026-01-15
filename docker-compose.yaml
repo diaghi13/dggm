@@ -4,7 +4,7 @@ services:
     image: dggm-frontend:latest
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: DockerFile
     restart: unless-stopped
     ports:
       - "3000:3000"
