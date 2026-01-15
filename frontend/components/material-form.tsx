@@ -18,13 +18,14 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ComboboxSelect } from '@/components/combobox-select';
+import {MaterialType} from "@/lib/types";
 
 interface MaterialFormData {
   code?: string;
   name: string;
   description?: string;
   category: string;
-  product_type?: string;
+  product_type?: MaterialType | undefined;
   unit: string;
   is_kit?: boolean;
   is_package?: boolean;
@@ -92,7 +93,7 @@ export function MaterialForm({
     name: initialData?.name || '',
     description: initialData?.description || '',
     category: initialData?.category || 'general',
-    product_type: initialData?.product_type || 'goods',
+    product_type: initialData?.product_type || 'physical',
     unit: initialData?.unit || 'pz',
     is_kit: initialData?.is_kit || false,
     is_package: initialData?.is_package || false,
@@ -272,13 +273,13 @@ export function MaterialForm({
               <Label htmlFor="product_type">Tipo Prodotto *</Label>
               <Select
                 value={formData.product_type}
-                onValueChange={(value) => setFormData({ ...formData, product_type: value })}
+                onValueChange={(value: MaterialType) => setFormData({ ...formData, product_type: value })}
               >
                 <SelectTrigger id="product_type" className="h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="goods">Bene (Vendita/Acquisto)</SelectItem>
+                  <SelectItem value="physical">Bene (Vendita/Acquisto)</SelectItem>
                   <SelectItem value="service">Servizio</SelectItem>
                 </SelectContent>
               </Select>
@@ -297,7 +298,7 @@ export function MaterialForm({
                 className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
               <Label htmlFor="is_active" className="text-sm cursor-pointer">
-                Materiale attivo e disponibile per l'uso
+                Materiale attivo e disponibile per l&#39;uso
               </Label>
             </div>
 
@@ -314,7 +315,7 @@ export function MaterialForm({
                   Questo è un kit (composto da altri materiali)
                 </Label>
                 <p className="text-xs text-green-700 mt-1">
-                  I kit sono materiali composti da più componenti (vedi tab "Componenti Kit")
+                  I kit sono materiali composti da più componenti (vedi tab &#34;Componenti Kit&#34;)
                 </p>
               </div>
             </div>
@@ -350,7 +351,7 @@ export function MaterialForm({
                   Noleggiabile
                 </Label>
                 <p className="text-xs text-purple-700 mt-1">
-                  Questo materiale può essere noleggiato (vedi sezione "Prezzi Noleggio")
+                  Questo materiale può essere noleggiato (vedi sezione &#34;Prezzi Noleggio&#34;)
                 </p>
               </div>
             </div>

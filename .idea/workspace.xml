@@ -4,25 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Fix docker-compose.yaml">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/857bbb80-15e1-4c7e-aa79-6a081db72702.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/857bbb80-15e1-4c7e-aa79-6a081db72702.xml" afterDir="false" />
+    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Continue implementing worker site assignment implementi crea worker roles crud management">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/AuthController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/AuthController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/SiteWorkerController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/SiteWorkerController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/WorkerSiteController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/WorkerSiteController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Resources/UserResource.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Resources/UserResource.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Policies/WorkerPolicy.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Policies/WorkerPolicy.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Services/SiteWorkerService.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Services/SiteWorkerService.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/database/seeders/RoleAndPermissionSeeder.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/database/seeders/RoleAndPermissionSeeder.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/api.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/worker/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/dashboard/worker/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/assign-worker-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/assign-worker-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/dashboard-layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/dashboard-layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-request-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/material-request-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-requests-tab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/material-requests-tab.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-workers-tab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/site-workers-tab.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/stores/auth-store.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/stores/auth-store.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/material-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/material-form.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -389,7 +373,7 @@
       <updated>1767700817718</updated>
       <workItem from="1767700819741" duration="102228000" />
       <workItem from="1768219160141" duration="47386000" />
-      <workItem from="1768408361007" duration="29937000" />
+      <workItem from="1768408361007" duration="32585000" />
     </task>
     <task id="LOCAL-00001" summary="A lot of things">
       <option name="closed" value="true" />
@@ -463,7 +447,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768501382327</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Continue implementing worker site assignment implementi crea worker roles crud management">
+      <option name="closed" value="true" />
+      <created>1768514765104</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1768514765104</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -481,7 +473,8 @@
     <MESSAGE value="Adding: &#10; - notification center and&#10; - material requests from&#10; - New external worker invitation system with token" />
     <MESSAGE value="Adding: &#10; - Docker support for frontend with DockerFile and docker-compose.yaml" />
     <MESSAGE value="Fix docker-compose.yaml" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix docker-compose.yaml" />
+    <MESSAGE value="Continue implementing worker site assignment implementi crea worker roles crud management" />
+    <option name="LAST_COMMIT_MESSAGE" value="Continue implementing worker site assignment implementi crea worker roles crud management" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
