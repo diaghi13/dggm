@@ -14,6 +14,7 @@ interface AuthState {
   clearAuth: () => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   setHasHydrated: (hydrated: boolean) => void;
 }
 
@@ -58,6 +59,20 @@ export const useAuthStore = create<AuthState>()(
           console.error('Logout error:', error);
         } finally {
           get().clearAuth();
+        }
+      },
+
+      refreshUser: async () => {
+        try {
+          const user = await authApi.me();
+          const currentToken = get().token;
+          if (currentToken) {
+            set({ user, isAuthenticated: true });
+          }
+        } catch (error) {
+          console.error('Failed to refresh user:', error);
+          get().clearAuth();
+          throw error;
         }
       },
     }),

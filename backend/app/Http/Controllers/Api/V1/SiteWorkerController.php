@@ -40,7 +40,15 @@ class SiteWorkerController extends Controller
      */
     public function indexByWorker(Request $request, Worker $worker): AnonymousResourceCollection
     {
-        $this->authorize('viewAny', SiteWorker::class);
+        $user = auth()->user();
+
+        // Allow if user is Admin/PM with proper permissions OR if worker is viewing their own assignments
+        $canViewAny = $user->can('site_workers.view') || $user->hasRole(['SuperAdmin', 'Admin', 'ProjectManager']);
+        $isOwnWorker = $user->worker && $user->worker->id === $worker->id;
+
+        if (! $canViewAny && ! $isOwnWorker) {
+            abort(403, 'Unauthorized to view these assignments');
+        }
 
         $filters = $request->only(['status', 'is_active']);
 

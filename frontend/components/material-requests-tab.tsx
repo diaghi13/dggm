@@ -58,6 +58,7 @@ import {
   Filter,
   X,
   Plus,
+  Edit,
 } from 'lucide-react';
 import type { MaterialRequest, MaterialRequestStatus, MaterialRequestPriority } from '@/lib/types';
 
@@ -72,6 +73,7 @@ export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsT
   const [respondDialog, setRespondDialog] = useState<'approve' | 'reject' | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [editRequest, setEditRequest] = useState<MaterialRequest | null>(null);
   const [responseData, setResponseData] = useState({
     quantity_approved: '',
     response_notes: '',
@@ -415,6 +417,17 @@ export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsT
                             <Eye className="h-4 w-4 mr-2" />
                             Dettagli
                           </DropdownMenuItem>
+                          {request.status === 'pending' && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEditRequest(request);
+                                setRequestDialogOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Modifica
+                            </DropdownMenuItem>
+                          )}
                           {request.can_approve && (
                             <DropdownMenuItem
                               onClick={() => {
@@ -558,12 +571,18 @@ export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsT
         onOpenChange={setDetailsDialogOpen}
       />
 
-      {/* New Request Dialog */}
+      {/* Material Request Dialog (Create or Edit) */}
       <MaterialRequestDialog
         siteId={siteId}
         siteName={siteName}
+        request={editRequest}
         open={requestDialogOpen}
-        onOpenChange={setRequestDialogOpen}
+        onOpenChange={(open) => {
+          setRequestDialogOpen(open);
+          if (!open) {
+            setEditRequest(null); // Reset edit request when closing
+          }
+        }}
       />
     </div>
   );

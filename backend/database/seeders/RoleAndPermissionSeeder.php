@@ -44,6 +44,41 @@ class RoleAndPermissionSeeder extends Seeder
             'sites.delete',
             'sites.view-own', // View only assigned sites
 
+            // Site Workers (Team Management)
+            'site_workers.view',
+            'site_workers.create',
+            'site_workers.update',
+            'site_workers.delete',
+
+            // Site Roles management
+            'site_roles.view',
+            'site_roles.create',
+            'site_roles.update',
+            'site_roles.delete',
+
+            // Site Materials
+            'site_materials.view',
+            'site_materials.create',
+            'site_materials.update',
+            'site_materials.delete',
+
+            // Material Requests
+            'material_requests.view',
+            'material_requests.create',
+            'material_requests.update',
+            'material_requests.approve',
+            'material_requests.reject',
+            'material_requests.deliver',
+            'material_requests.delete',
+
+            // DDT (Documento Di Trasporto)
+            'ddts.view',
+            'ddts.create',
+            'ddts.update',
+            'ddts.delete',
+            'ddts.confirm',
+            'ddts.cancel',
+
             // Quote/Estimate management
             'quotes.view',
             'quotes.create',
@@ -149,6 +184,11 @@ class RoleAndPermissionSeeder extends Seeder
             'customers.view', 'customers.create', 'customers.edit',
             'suppliers.view',
             'sites.view', 'sites.create', 'sites.edit',
+            'site_workers.view', 'site_workers.create', 'site_workers.update', 'site_workers.delete',
+            'site_roles.view', 'site_roles.create', 'site_roles.update', 'site_roles.delete',
+            'site_materials.view', 'site_materials.create', 'site_materials.update', 'site_materials.delete',
+            'material_requests.view', 'material_requests.approve', 'material_requests.reject', 'material_requests.deliver', 'material_requests.delete',
+            'ddts.view', 'ddts.create', 'ddts.update', 'ddts.delete', 'ddts.confirm', 'ddts.cancel',
             'quotes.view', 'quotes.create', 'quotes.edit', 'quotes.approve', 'quotes.convert-to-site',
             'time-trackings.view', 'time-trackings.approve',
             'warehouse.view',
@@ -166,16 +206,22 @@ class RoleAndPermissionSeeder extends Seeder
         $teamLeader = Role::firstOrCreate(['name' => 'team-leader']);
         $teamLeader->givePermissionTo([
             'sites.view-own',
+            'site_workers.view',
+            'site_materials.view',
+            'material_requests.view', 'material_requests.create', 'material_requests.update', 'material_requests.delete',
             'time-trackings.view', 'time-trackings.create', 'time-trackings.edit',
             'warehouse.view',
             'vehicles.view',
             'workers.view', // Can see workers on their sites
         ]);
 
-        // Worker (Operaio) - time tracking only
+        // Worker (Operaio) - time tracking and material requests
         $worker = Role::firstOrCreate(['name' => 'worker']);
         $worker->givePermissionTo([
             'sites.view-own',
+            'site_workers.view',
+            'site_materials.view',
+            'material_requests.view', 'material_requests.create', 'material_requests.update', 'material_requests.delete',
             'time-trackings.view-own', 'time-trackings.create',
         ]);
 
@@ -196,6 +242,10 @@ class RoleAndPermissionSeeder extends Seeder
         $warehousekeeper = Role::firstOrCreate(['name' => 'warehousekeeper']);
         $warehousekeeper->givePermissionTo([
             'suppliers.view',
+            'sites.view',
+            'site_materials.view',
+            'material_requests.view', 'material_requests.approve', 'material_requests.reject', 'material_requests.deliver',
+            'ddts.view', 'ddts.create', 'ddts.update', 'ddts.delete', 'ddts.confirm', 'ddts.cancel',
             'warehouse.view', 'warehouse.create', 'warehouse.edit', 'warehouse.inventory',
             'materials.view', 'materials.create', 'materials.edit', 'materials.delete',
             'vehicles.view',

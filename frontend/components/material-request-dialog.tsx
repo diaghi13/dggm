@@ -39,7 +39,7 @@ import { toast } from 'sonner';
 import { Loader2, AlertCircle, Package } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import type { MaterialRequestPriority, Material } from '@/lib/types';
+import type { MaterialRequestPriority, Material, MaterialRequest } from '@/lib/types';
 
 const materialRequestSchema = z.object({
   site_id: z.number({ message: 'Il cantiere è obbligatorio' }),
@@ -59,6 +59,7 @@ type MaterialRequestFormData = z.infer<typeof materialRequestSchema>;
 interface MaterialRequestDialogProps {
   siteId: number;
   siteName: string;
+  request?: MaterialRequest | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -92,10 +93,12 @@ const priorityConfig: Record<
 export function MaterialRequestDialog({
   siteId,
   siteName,
+  request = null,
   open,
   onOpenChange,
 }: MaterialRequestDialogProps) {
   const queryClient = useQueryClient();
+  const isEditMode = !!request;
   const [selectedPriority, setSelectedPriority] = useState<MaterialRequestPriority>('medium');
 
   const form = useForm<MaterialRequestFormData>({
@@ -117,26 +120,33 @@ export function MaterialRequestDialog({
   const requestMutation = useMutation({
     mutationFn: (data: MaterialRequestFormData) => {
       const payload = {
-        site_id: data.site_id,
-        material_id: data.material_id,
         quantity_requested: parseFloat(data.quantity_requested),
-        unit_of_measure: data.unit_of_measure || undefined,
         priority: data.priority,
         reason: data.reason,
         notes: data.notes || undefined,
         needed_by: data.needed_by || undefined,
       };
-      return materialRequestsApi.create(payload);
+
+      if (isEditMode && request) {
+        return materialRequestsApi.update(request.id, payload);
+      } else {
+        return materialRequestsApi.create({
+          site_id: data.site_id,
+          material_id: data.material_id,
+          ...payload,
+          unit_of_measure: data.unit_of_measure || undefined,
+        });
+      }
     },
     onSuccess: () => {
-      toast.success('Richiesta materiale inviata con successo');
+      toast.success(isEditMode ? 'Richiesta aggiornata con successo' : 'Richiesta materiale inviata con successo');
       queryClient.invalidateQueries({ queryKey: ['material-requests', siteId] });
       queryClient.invalidateQueries({ queryKey: ['my-material-requests'] });
       onOpenChange(false);
       form.reset();
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Errore durante l\'invio della richiesta');
+      toast.error(error?.response?.data?.message || (isEditMode ? 'Errore durante l\'aggiornamento' : 'Errore durante l\'invio della richiesta'));
     },
   });
 
@@ -154,7 +164,21 @@ export function MaterialRequestDialog({
   }, [selectedMaterial, form]);
 
   useEffect(() => {
-    if (!open) {
+    if (open && isEditMode && request) {
+      // Populate form with existing request data
+      form.reset({
+        site_id: request.site_id,
+        material_id: request.material_id,
+        quantity_requested: request.quantity_requested.toString(),
+        unit_of_measure: request.unit_of_measure || '',
+        priority: request.priority,
+        reason: request.reason || '',
+        notes: request.notes || '',
+        needed_by: request.needed_by || '',
+      });
+      setSelectedPriority(request.priority);
+    } else if (!open) {
+      // Reset form when closing
       form.reset({
         site_id: siteId,
         priority: 'medium',
@@ -163,15 +187,18 @@ export function MaterialRequestDialog({
       });
       setSelectedPriority('medium');
     }
-  }, [open, form, siteId]);
+  }, [open, isEditMode, request, form, siteId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Richiedi Materiale</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Modifica Richiesta Materiale' : 'Richiedi Materiale'}</DialogTitle>
           <DialogDescription>
-            Compila il form per richiedere materiale per il cantiere <strong>{siteName}</strong>
+            {isEditMode
+              ? `Modifica la richiesta di ${request?.material?.name} per il cantiere ${request?.site?.name || siteName}`
+              : `Compila il form per richiedere materiale per il cantiere ${siteName}`
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -195,7 +222,7 @@ export function MaterialRequestDialog({
                   <Select
                     onValueChange={(value) => field.onChange(parseInt(value))}
                     value={field.value?.toString()}
-                    disabled={loadingMaterials}
+                    disabled={loadingMaterials || isEditMode}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -215,6 +242,11 @@ export function MaterialRequestDialog({
                       ))}
                     </SelectContent>
                   </Select>
+                  {isEditMode && (
+                    <FormDescription className="text-xs text-slate-500">
+                      Il materiale non può essere modificato dopo la creazione
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -372,7 +404,7 @@ export function MaterialRequestDialog({
               </Button>
               <Button type="submit" disabled={requestMutation.isPending}>
                 {requestMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Invia Richiesta
+                {isEditMode ? 'Salva Modifiche' : 'Invia Richiesta'}
               </Button>
             </DialogFooter>
           </form>

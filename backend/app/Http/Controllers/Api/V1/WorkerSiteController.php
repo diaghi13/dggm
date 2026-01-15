@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\SiteWorkerResource;
 use App\Models\Site;
+use App\Models\SiteWorker;
 use App\Models\Worker;
 use App\Services\WorkerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class WorkerSiteController extends Controller
 {
@@ -15,19 +18,17 @@ class WorkerSiteController extends Controller
         private readonly WorkerService $workerService
     ) {}
 
-    public function index(Worker $worker): JsonResponse
+    public function index(Worker $worker): AnonymousResourceCollection
     {
         $this->authorize('view', $worker);
 
-        $sites = $worker->sites()
-            ->withPivot(['site_role', 'assigned_from', 'assigned_to', 'hourly_rate_override', 'estimated_hours', 'is_active'])
-            ->orderBy('site_workers.assigned_from', 'desc')
+        // Get SiteWorker assignments instead of just sites
+        $siteWorkers = SiteWorker::where('worker_id', $worker->id)
+            ->with(['site', 'worker.user', 'worker.supplier', 'assignedBy', 'roles'])
+            ->orderBy('assigned_from', 'desc')
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $sites,
-        ]);
+        return SiteWorkerResource::collection($siteWorkers);
     }
 
     public function store(Worker $worker, Request $request): JsonResponse

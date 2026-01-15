@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\SiteController;
 use App\Http\Controllers\Api\V1\SiteDdtController;
 use App\Http\Controllers\Api\V1\SiteMaterialController;
+use App\Http\Controllers\Api\V1\SiteRoleController;
 use App\Http\Controllers\Api\V1\SiteWorkerController;
 use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\SupplierController;
@@ -158,6 +159,9 @@ Route::prefix('v1')->group(function () {
         Route::get('site-workers/{site_worker}/conflicts', [SiteWorkerController::class, 'checkConflicts']);
         Route::get('site-workers/{site_worker}/effective-rate', [SiteWorkerController::class, 'getEffectiveRate']);
 
+        // Site Roles (Ruoli Cantiere)
+        Route::apiResource('site-roles', SiteRoleController::class);
+
         // DDT (Documento Di Trasporto)
         Route::get('ddts/next-number', [DdtController::class, 'getNextNumber']);
         Route::apiResource('ddts', DdtController::class);
@@ -224,12 +228,6 @@ Route::prefix('v1')->group(function () {
         Route::get('contractors/{contractor}/rates/current', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'current']);
         Route::post('contractors/{contractor}/rates', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'store']);
         Route::get('contractors/{contractor}/rates/history', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'history']);
-
-        // Site Workers
-        Route::get('sites/{site}/workers', [\App\Http\Controllers\Api\V1\SiteWorkerController::class, 'index']);
-        Route::post('sites/{site}/workers', [\App\Http\Controllers\Api\V1\SiteWorkerController::class, 'store']);
-        Route::put('sites/{site}/workers/{worker}', [\App\Http\Controllers\Api\V1\SiteWorkerController::class, 'update']);
-        Route::delete('sites/{site}/workers/{worker}', [\App\Http\Controllers\Api\V1\SiteWorkerController::class, 'destroy']);
 
         // Site Labor Costs
         Route::get('sites/{site}/labor-costs', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'index']);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { siteWorkersApi } from '@/lib/api/site-workers';
 import { materialRequestsApi } from '@/lib/api/material-requests';
@@ -58,7 +58,7 @@ import type { SiteWorker, MaterialRequest } from '@/lib/types';
 
 export default function WorkerDashboardPage() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const { user, refreshUser } = useAuthStore();
   const [respondDialog, setRespondDialog] = useState<{
     open: boolean;
     assignment: SiteWorker | null;
@@ -79,11 +79,31 @@ export default function WorkerDashboardPage() {
     siteName: '',
   });
 
+  // Debug: Log user data to see if worker is included
+  console.log('🔍 Worker Dashboard - User data:', user);
+  console.log('🔍 Worker ID:', user?.worker?.id);
+
+  // Auto-refresh user data if worker field is missing
+  useEffect(() => {
+    if (user && !user.worker) {
+      console.log('⚠️ Worker field missing, refreshing user data...');
+      refreshUser().then(() => {
+        console.log('✅ User data refreshed');
+      }).catch((error) => {
+        console.error('❌ Failed to refresh user data:', error);
+      });
+    }
+  }, [user, refreshUser]);
+
   // Fetch worker's site assignments
   const { data: assignments, isLoading: loadingAssignments } = useQuery({
     queryKey: ['my-site-assignments'],
     queryFn: async () => {
-      if (!user?.worker?.id) return [];
+      if (!user?.worker?.id) {
+        console.log('⚠️ No worker ID found, returning empty array');
+        return [];
+      }
+      console.log('✅ Fetching assignments for worker ID:', user.worker.id);
       return siteWorkersApi.getSitesByWorker(user.worker.id);
     },
     enabled: !!user?.worker?.id,

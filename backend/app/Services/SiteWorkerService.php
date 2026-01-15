@@ -79,12 +79,25 @@ class SiteWorkerService
         $site = Site::findOrFail($siteId);
         $worker = Worker::with('supplier')->findOrFail($workerId);
 
+        // Check if worker is already assigned to this site on the same start date
+        $existing = SiteWorker::where('site_id', $siteId)
+            ->where('worker_id', $workerId)
+            ->where('assigned_from', $data['assigned_from'])
+            ->first();
+
+        if ($existing) {
+            throw new \Exception(
+                "Il lavoratore {$worker->full_name} è già assegnato a questo cantiere con data inizio {$data['assigned_from']}. ".
+                "Modifica l'assegnazione esistente o usa una data diversa."
+            );
+        }
+
         // Determine initial status based on worker type
         $status = $this->determineInitialStatus($worker);
 
-        // Calculate response due date for external workers (7 days default)
+        // Calculate response due date for external workers and freelancers (7 days default)
         $responseDueAt = null;
-        if ($worker->worker_type === WorkerType::External) {
+        if ($worker->worker_type === WorkerType::External || $worker->worker_type === WorkerType::Freelancer) {
             $responseDueAt = now()->addDays($data['response_days'] ?? 7);
         }
 
@@ -333,9 +346,8 @@ class SiteWorkerService
             return SiteWorkerStatus::Pending;
         }
 
-        // Freelancers can be auto-accepted or pending based on settings
-        // For now, we auto-accept them
-        return SiteWorkerStatus::Accepted;
+        // Freelancers need to accept the assignment (like External workers)
+        return SiteWorkerStatus::Pending;
     }
 
     /**

@@ -41,6 +41,7 @@ import { SiteRoleBadge } from '@/components/site-role-badge';
 import { toast } from 'sonner';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { SiteWorker } from '@/lib/types';
 
 const assignWorkerSchema = z
   .object({
@@ -72,12 +73,14 @@ type AssignWorkerFormData = z.infer<typeof assignWorkerSchema>;
 
 interface AssignWorkerDialogProps {
   siteId: number;
+  assignment?: SiteWorker | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AssignWorkerDialog({ siteId, open, onOpenChange }: AssignWorkerDialogProps) {
+export function AssignWorkerDialog({ siteId, assignment = null, open, onOpenChange }: AssignWorkerDialogProps) {
   const queryClient = useQueryClient();
+  const isEditMode = !!assignment;
   const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
   const [useRateOverride, setUseRateOverride] = useState(false);
   const [rateType, setRateType] = useState<'hourly' | 'fixed'>('hourly');
@@ -120,10 +123,24 @@ export function AssignWorkerDialog({ siteId, open, onOpenChange }: AssignWorkerD
         rate_override_notes: data.rate_override_notes || undefined,
         notes: data.notes || undefined,
       };
-      return siteWorkersApi.assignWorker(siteId, payload);
+
+      console.log('📤 Sending assignment payload:', payload);
+      console.log('Site ID:', siteId);
+      console.log('Is Edit Mode:', isEditMode);
+
+      if (isEditMode && assignment) {
+        // In edit mode, we don't send worker_id (can't change worker)
+        const { worker_id, ...updatePayload } = payload;
+        console.log('📤 Update payload:', updatePayload);
+        return siteWorkersApi.updateAssignment(assignment.id, updatePayload);
+      } else {
+        console.log('📤 Create payload:', payload);
+        return siteWorkersApi.assignWorker(siteId, payload);
+      }
     },
     onSuccess: (data) => {
-      toast.success('Lavoratore assegnato con successo');
+      console.log('✅ Assignment successful!', data);
+      toast.success(isEditMode ? 'Assegnazione aggiornata con successo' : 'Lavoratore assegnato con successo');
       queryClient.invalidateQueries({ queryKey: ['site-workers', siteId] });
       onOpenChange(false);
       form.reset();
@@ -131,7 +148,10 @@ export function AssignWorkerDialog({ siteId, open, onOpenChange }: AssignWorkerD
       setUseRateOverride(false);
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Errore durante l\'assegnazione');
+      console.error('❌ Assignment failed:', error);
+      console.error('Response data:', error?.response?.data);
+      console.error('Response status:', error?.response?.status);
+      toast.error(error?.response?.data?.message || (isEditMode ? 'Errore durante l\'aggiornamento' : 'Errore durante l\'assegnazione'));
     },
   });
 
@@ -151,21 +171,54 @@ export function AssignWorkerDialog({ siteId, open, onOpenChange }: AssignWorkerD
   const isExternal = selectedWorker?.worker_type === 'external';
 
   useEffect(() => {
-    if (!open) {
-      form.reset();
+    if (open && isEditMode && assignment) {
+      // Populate form with existing assignment data
+      const roleIds = assignment.roles?.map(r => r.id) || [];
+      setSelectedRoles(roleIds);
+
+      const hasRateOverride = !!assignment.hourly_rate_override || !!assignment.fixed_rate_override;
+      setUseRateOverride(hasRateOverride);
+
+      if (assignment.fixed_rate_override) {
+        setRateType('fixed');
+      } else if (assignment.hourly_rate_override) {
+        setRateType('hourly');
+      }
+
+      form.reset({
+        worker_id: assignment.worker_id,
+        role_ids: roleIds,
+        assigned_from: assignment.assigned_from,
+        assigned_to: assignment.assigned_to || '',
+        response_days: 3, // Default value for edit mode
+        hourly_rate_override: assignment.hourly_rate_override?.toString() || '',
+        fixed_rate_override: assignment.fixed_rate_override?.toString() || '',
+        rate_override_notes: assignment.rate_override_notes || '',
+        notes: assignment.notes || '',
+      });
+    } else if (!open) {
+      // Reset form when closing
+      form.reset({
+        role_ids: [],
+        response_days: 3,
+        notes: '',
+      });
       setSelectedRoles([]);
       setUseRateOverride(false);
       setRateType('hourly');
     }
-  }, [open, form]);
+  }, [open, isEditMode, assignment, form]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Assegna Lavoratore al Cantiere</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Modifica Assegnazione' : 'Assegna Lavoratore al Cantiere'}</DialogTitle>
           <DialogDescription>
-            Seleziona un lavoratore e configura i dettagli dell'assegnazione
+            {isEditMode
+              ? `Modifica i dettagli dell'assegnazione di ${assignment?.worker?.full_name}`
+              : 'Seleziona un lavoratore e configura i dettagli dell\'assegnazione'
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -181,7 +234,7 @@ export function AssignWorkerDialog({ siteId, open, onOpenChange }: AssignWorkerD
                   <Select
                     onValueChange={(value) => field.onChange(parseInt(value))}
                     value={field.value?.toString()}
-                    disabled={loadingWorkers}
+                    disabled={loadingWorkers || isEditMode}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -201,6 +254,11 @@ export function AssignWorkerDialog({ siteId, open, onOpenChange }: AssignWorkerD
                       ))}
                     </SelectContent>
                   </Select>
+                  {isEditMode && (
+                    <FormDescription className="text-xs text-slate-500">
+                      Il lavoratore non può essere modificato dopo l'assegnazione
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -455,7 +513,7 @@ export function AssignWorkerDialog({ siteId, open, onOpenChange }: AssignWorkerD
               </Button>
               <Button type="submit" disabled={assignMutation.isPending}>
                 {assignMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Assegna
+                {isEditMode ? 'Salva Modifiche' : 'Assegna'}
               </Button>
             </DialogFooter>
           </form>

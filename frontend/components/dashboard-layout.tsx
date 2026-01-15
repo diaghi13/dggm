@@ -84,6 +84,7 @@ const navigation = [
     icon: Settings,
     children: [
       { name: 'Utenti', href: '/dashboard/users', icon: Users },
+      { name: 'Ruoli Cantiere', href: '/dashboard/settings/site-roles', icon: Briefcase },
       { name: 'Impostazioni', href: '/dashboard/settings', icon: Settings },
     ]
   },

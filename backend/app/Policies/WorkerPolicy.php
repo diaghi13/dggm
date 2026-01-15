@@ -14,7 +14,17 @@ class WorkerPolicy
 
     public function view(User $user, Worker $worker): bool
     {
-        return $user->can('workers.view');
+        // Allow if user has workers.view permission
+        if ($user->can('workers.view')) {
+            return true;
+        }
+
+        // Allow workers to view their own data
+        if ($user->worker && $user->worker->id === $worker->id) {
+            return true;
+        }
+
+        return false;
     }
 
     public function create(User $user): bool

@@ -33,6 +33,7 @@ import {
 import { SiteWorkerStatusBadge } from '@/components/site-worker-status-badge';
 import { SiteRoleBadges } from '@/components/site-role-badge';
 import { AssignWorkerDialog } from '@/components/assign-worker-dialog';
+import { ManageWorkerRolesDialog } from '@/components/manage-worker-roles-dialog';
 import { SiteWorker, SiteWorkerStatus } from '@/lib/types';
 import {
   UserPlus,
@@ -47,6 +48,8 @@ import {
   Search,
   Filter,
   X as XIcon,
+  Edit,
+  Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -60,6 +63,9 @@ interface SiteWorkersTabProps {
 export function SiteWorkersTab({ siteId }: SiteWorkersTabProps) {
   const queryClient = useQueryClient();
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [editAssignment, setEditAssignment] = useState<SiteWorker | null>(null);
+  const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
+  const [manageRolesAssignment, setManageRolesAssignment] = useState<SiteWorker | null>(null);
   const [selectedWorker, setSelectedWorker] = useState<SiteWorker | null>(null);
 
   // Filters
@@ -366,6 +372,29 @@ export function SiteWorkersTab({ siteId }: SiteWorkersTabProps) {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Azioni</DropdownMenuLabel>
                           <DropdownMenuSeparator />
+                          {['pending', 'accepted', 'active'].includes(worker.status) && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditAssignment(worker);
+                                  setAssignDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Modifica
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setManageRolesAssignment(worker);
+                                  setRolesDialogOpen(true);
+                                }}
+                              >
+                                <Users className="h-4 w-4 mr-2" />
+                                Gestisci Ruoli
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
                           {worker.status === 'pending' && (
                             <>
                               <DropdownMenuItem
@@ -439,11 +468,30 @@ export function SiteWorkersTab({ siteId }: SiteWorkersTabProps) {
         </CardContent>
       </Card>
 
-      {/* Assign Worker Dialog */}
+      {/* Assign Worker Dialog (Create or Edit) */}
       <AssignWorkerDialog
         siteId={siteId}
+        assignment={editAssignment}
         open={assignDialogOpen}
-        onOpenChange={setAssignDialogOpen}
+        onOpenChange={(open) => {
+          setAssignDialogOpen(open);
+          if (!open) {
+            setEditAssignment(null); // Reset edit assignment when closing
+          }
+        }}
+      />
+
+      {/* Manage Worker Roles Dialog */}
+      <ManageWorkerRolesDialog
+        siteId={siteId}
+        assignment={manageRolesAssignment}
+        open={rolesDialogOpen}
+        onOpenChange={(open) => {
+          setRolesDialogOpen(open);
+          if (!open) {
+            setManageRolesAssignment(null); // Reset when closing
+          }
+        }}
       />
     </div>
   );
