@@ -25,6 +25,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SiteWorkerStatusBadge } from '@/components/site-worker-status-badge';
@@ -44,6 +52,7 @@ import {
   Building2,
   UserPlus,
   Clock,
+  Plus,
 } from 'lucide-react';
 import type { SiteWorker, MaterialRequest } from '@/lib/types';
 
@@ -328,8 +337,40 @@ export default function WorkerDashboardPage() {
         {/* Material Requests Tab */}
         <TabsContent value="requests">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Le Mie Richieste Materiale</CardTitle>
+              {activeAssignments.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nuova Richiesta
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Seleziona Cantiere</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {activeAssignments.map((assignment) => (
+                      <DropdownMenuItem
+                        key={assignment.id}
+                        onClick={() =>
+                          setMaterialRequestDialog({
+                            open: true,
+                            siteId: assignment.site_id,
+                            siteName: assignment.site?.name || '',
+                          })
+                        }
+                      >
+                        <Building2 className="h-4 w-4 mr-2" />
+                        <div>
+                          <div className="font-medium">{assignment.site?.name}</div>
+                          <div className="text-xs text-slate-500">{assignment.site?.code}</div>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </CardHeader>
             <CardContent>
               {loadingRequests ? (

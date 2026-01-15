@@ -789,7 +789,7 @@ export default function SiteDetailPage() {
         </TabsContent>
 
         <TabsContent value="richieste">
-          <MaterialRequestsTab siteId={siteId} />
+          <MaterialRequestsTab siteId={siteId} siteName={site.name} />
         </TabsContent>
 
         <TabsContent value="timesheet">

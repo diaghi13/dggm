@@ -1,11 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { siteWorkersApi } from '@/lib/api/site-workers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -25,7 +33,7 @@ import {
 import { SiteWorkerStatusBadge } from '@/components/site-worker-status-badge';
 import { SiteRoleBadges } from '@/components/site-role-badge';
 import { AssignWorkerDialog } from '@/components/assign-worker-dialog';
-import { SiteWorker } from '@/lib/types';
+import { SiteWorker, SiteWorkerStatus } from '@/lib/types';
 import {
   UserPlus,
   MoreVertical,
@@ -36,6 +44,9 @@ import {
   Play,
   CheckCheck,
   Ban,
+  Search,
+  Filter,
+  X as XIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -51,10 +62,47 @@ export function SiteWorkersTab({ siteId }: SiteWorkersTabProps) {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<SiteWorker | null>(null);
 
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<SiteWorkerStatus | 'all'>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+
   const { data: workers, isLoading } = useQuery({
     queryKey: ['site-workers', siteId],
     queryFn: () => siteWorkersApi.getWorkersBySite(siteId),
   });
+
+  // Filtered workers
+  const filteredWorkers = useMemo(() => {
+    if (!workers) return [];
+
+    return workers.filter((worker) => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = worker.worker?.full_name?.toLowerCase().includes(query);
+        const matchesType = worker.worker?.worker_type?.toLowerCase().includes(query);
+
+        if (!matchesName && !matchesType) {
+          return false;
+        }
+      }
+
+      // Status filter
+      if (statusFilter !== 'all' && worker.status !== statusFilter) {
+        return false;
+      }
+
+      // Role filter
+      if (roleFilter !== 'all') {
+        if (!worker.roles || !worker.roles.some(role => role.slug === roleFilter)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [workers, searchQuery, statusFilter, roleFilter]);
 
   const acceptMutation = useMutation({
     mutationFn: (siteWorkerId: number) => siteWorkersApi.acceptAssignment(siteWorkerId),
@@ -101,7 +149,15 @@ export function SiteWorkersTab({ siteId }: SiteWorkersTabProps) {
     },
   });
 
-  const pendingWorkers = workers?.filter((w) => w.status === 'pending') || [];
+  const pendingWorkers = filteredWorkers?.filter((w) => w.status === 'pending') || [];
+
+  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all' || roleFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setRoleFilter('all');
+  };
 
   if (isLoading) {
     return (
@@ -128,6 +184,83 @@ export function SiteWorkersTab({ siteId }: SiteWorkersTabProps) {
         </Alert>
       )}
 
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtri
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Cerca</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Nome lavoratore..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Stato</label>
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as SiteWorkerStatus | 'all')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tutti gli stati" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti gli stati</SelectItem>
+                  <SelectItem value="pending">In attesa</SelectItem>
+                  <SelectItem value="accepted">Accettato</SelectItem>
+                  <SelectItem value="rejected">Rifiutato</SelectItem>
+                  <SelectItem value="active">Attivo</SelectItem>
+                  <SelectItem value="completed">Completato</SelectItem>
+                  <SelectItem value="cancelled">Annullato</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Role Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ruolo</label>
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tutti i ruoli" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti i ruoli</SelectItem>
+                  <SelectItem value="worker">Operaio</SelectItem>
+                  <SelectItem value="foreman">Caposquadra</SelectItem>
+                  <SelectItem value="supervisor">Supervisore</SelectItem>
+                  <SelectItem value="technician">Tecnico</SelectItem>
+                  <SelectItem value="driver">Autista</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-slate-500">
+                Trovati {filteredWorkers.length} lavoratori su {workers?.length || 0}
+              </p>
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                <XIcon className="h-4 w-4 mr-2" />
+                Pulisci Filtri
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Workers Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -138,13 +271,24 @@ export function SiteWorkersTab({ siteId }: SiteWorkersTabProps) {
           </Button>
         </CardHeader>
         <CardContent>
-          {!workers || workers.length === 0 ? (
+          {!filteredWorkers || filteredWorkers.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
               <UserPlus className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nessun lavoratore assegnato</p>
-              <p className="text-sm mt-1">
-                Clicca su "Assegna Lavoratore" per comporre la squadra
-              </p>
+              {hasActiveFilters ? (
+                <>
+                  <p>Nessun lavoratore trovato</p>
+                  <p className="text-sm mt-1">
+                    Prova a modificare i filtri di ricerca
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>Nessun lavoratore assegnato</p>
+                  <p className="text-sm mt-1">
+                    Clicca su "Assegna Lavoratore" per comporre la squadra
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <Table>
@@ -159,7 +303,7 @@ export function SiteWorkersTab({ siteId }: SiteWorkersTabProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {workers.map((worker) => (
+                {filteredWorkers.map((worker) => (
                   <TableRow key={worker.id}>
                     <TableCell>
                       <div>

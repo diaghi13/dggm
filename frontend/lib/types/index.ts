@@ -1159,3 +1159,22 @@ export interface MaterialRequestStats {
   delivered: number;
   urgent: number;
 }
+
+// Notification Types
+export interface Notification {
+  id: string;
+  type: string;
+  notifiable_type: string;
+  notifiable_id: number;
+  data: Record<string, any>;
+  read_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}

@@ -1,12 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { materialRequestsApi } from '@/lib/api/material-requests';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -33,6 +40,8 @@ import {
 } from '@/components/ui/dialog';
 import { MaterialRequestStatusBadge } from '@/components/material-request-status-badge';
 import { MaterialRequestPriorityBadge } from '@/components/material-request-priority-badge';
+import { MaterialRequestDetailsDialog } from '@/components/material-request-details-dialog';
+import { MaterialRequestDialog } from '@/components/material-request-dialog';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { format } from 'date-fns';
@@ -45,17 +54,24 @@ import {
   Truck,
   AlertTriangle,
   Eye,
+  Search,
+  Filter,
+  X,
+  Plus,
 } from 'lucide-react';
-import type { MaterialRequest } from '@/lib/types';
+import type { MaterialRequest, MaterialRequestStatus, MaterialRequestPriority } from '@/lib/types';
 
 interface MaterialRequestsTabProps {
   siteId: number;
+  siteName?: string;
 }
 
-export function MaterialRequestsTab({ siteId }: MaterialRequestsTabProps) {
+export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsTabProps) {
   const queryClient = useQueryClient();
   const [selectedRequest, setSelectedRequest] = useState<MaterialRequest | null>(null);
   const [respondDialog, setRespondDialog] = useState<'approve' | 'reject' | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [responseData, setResponseData] = useState({
     quantity_approved: '',
     response_notes: '',
@@ -63,10 +79,47 @@ export function MaterialRequestsTab({ siteId }: MaterialRequestsTabProps) {
     quantity_delivered: '',
   });
 
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<MaterialRequestStatus | 'all'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<MaterialRequestPriority | 'all'>('all');
+
   const { data: requests, isLoading } = useQuery({
     queryKey: ['material-requests', siteId],
     queryFn: () => materialRequestsApi.getRequestsBySite(siteId),
   });
+
+  // Filtered requests
+  const filteredRequests = useMemo(() => {
+    if (!requests) return [];
+
+    return requests.filter((request) => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesMaterial = request.material?.name?.toLowerCase().includes(query);
+        const matchesCode = request.material?.code?.toLowerCase().includes(query);
+        const matchesWorker = request.requested_by_worker?.full_name?.toLowerCase().includes(query);
+        const matchesUser = request.requested_by_user?.name?.toLowerCase().includes(query);
+
+        if (!matchesMaterial && !matchesCode && !matchesWorker && !matchesUser) {
+          return false;
+        }
+      }
+
+      // Status filter
+      if (statusFilter !== 'all' && request.status !== statusFilter) {
+        return false;
+      }
+
+      // Priority filter
+      if (priorityFilter !== 'all' && request.priority !== priorityFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [requests, searchQuery, statusFilter, priorityFilter]);
 
   const approveMutation = useMutation({
     mutationFn: ({ requestId, data }: { requestId: number; data: any }) =>
@@ -132,8 +185,16 @@ export function MaterialRequestsTab({ siteId }: MaterialRequestsTabProps) {
     });
   };
 
-  const pendingRequests = requests?.filter((r) => r.status === 'pending') || [];
-  const urgentRequests = requests?.filter((r) => r.priority === 'urgent' && r.status === 'pending') || [];
+  const pendingRequests = filteredRequests?.filter((r) => r.status === 'pending') || [];
+  const urgentRequests = filteredRequests?.filter((r) => r.priority === 'urgent' && r.status === 'pending') || [];
+
+  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all' || priorityFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setPriorityFilter('all');
+  };
 
   if (isLoading) {
     return (
@@ -168,19 +229,108 @@ export function MaterialRequestsTab({ siteId }: MaterialRequestsTabProps) {
         </Alert>
       )}
 
-      {/* Requests Table */}
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Richieste Materiale</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtri
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {!requests || requests.length === 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Cerca</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Materiale, lavoratore..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Stato</label>
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as MaterialRequestStatus | 'all')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tutti gli stati" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti gli stati</SelectItem>
+                  <SelectItem value="pending">In attesa</SelectItem>
+                  <SelectItem value="approved">Approvate</SelectItem>
+                  <SelectItem value="rejected">Rifiutate</SelectItem>
+                  <SelectItem value="delivered">Consegnate</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Priority Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Priorità</label>
+              <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value as MaterialRequestPriority | 'all')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tutte le priorità" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte le priorità</SelectItem>
+                  <SelectItem value="low">Bassa</SelectItem>
+                  <SelectItem value="normal">Normale</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="urgent">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-slate-500">
+                Trovate {filteredRequests.length} richieste su {requests?.length || 0}
+              </p>
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                <X className="h-4 w-4 mr-2" />
+                Pulisci Filtri
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Requests Table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Richieste Materiale</CardTitle>
+          <Button onClick={() => setRequestDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuova Richiesta
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {!filteredRequests || filteredRequests.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
               <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nessuna richiesta materiale</p>
-              <p className="text-sm mt-1">
-                I lavoratori possono richiedere materiale dal loro pannello
-              </p>
+              {hasActiveFilters ? (
+                <>
+                  <p>Nessuna richiesta trovata</p>
+                  <p className="text-sm mt-1">
+                    Prova a modificare i filtri di ricerca
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>Nessuna richiesta materiale</p>
+                  <p className="text-sm mt-1">
+                    I lavoratori possono richiedere materiale dal loro pannello
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <Table>
@@ -196,7 +346,7 @@ export function MaterialRequestsTab({ siteId }: MaterialRequestsTabProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requests.map((request) => (
+                {filteredRequests.map((request) => (
                   <TableRow key={request.id}>
                     <TableCell>
                       <div>
@@ -259,7 +409,7 @@ export function MaterialRequestsTab({ siteId }: MaterialRequestsTabProps) {
                           <DropdownMenuItem
                             onClick={() => {
                               setSelectedRequest(request);
-                              // Show details dialog here if needed
+                              setDetailsDialogOpen(true);
                             }}
                           >
                             <Eye className="h-4 w-4 mr-2" />
@@ -400,6 +550,21 @@ export function MaterialRequestsTab({ siteId }: MaterialRequestsTabProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Details Dialog */}
+      <MaterialRequestDetailsDialog
+        request={selectedRequest}
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+      />
+
+      {/* New Request Dialog */}
+      <MaterialRequestDialog
+        siteId={siteId}
+        siteName={siteName}
+        open={requestDialogOpen}
+        onOpenChange={setRequestDialogOpen}
+      />
     </div>
   );
 }

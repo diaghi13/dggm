@@ -4,19 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Implementing workers module and fix customer form submitting">
-      <change afterPath="$PROJECT_DIR$/frontend/components/ui/slider.tsx" afterDir="false" />
+    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Fix UI workers implementation with some type fixes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/(auth)/accept-invitation/[token]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(auth)/accept-invitation/[token]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/customers/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/dashboard/customers/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/customers/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/dashboard/customers/new/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/assign-worker-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/assign-worker-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/create-invitation-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/create-invitation-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/customer-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/customer-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-request-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/material-request-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/api.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/sites/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/dashboard/sites/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/worker/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/dashboard/worker/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/dashboard-layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/dashboard-layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/material-requests-tab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/material-requests-tab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/site-workers-tab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/site-workers-tab.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/lib/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/types/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -383,7 +379,7 @@
       <updated>1767700817718</updated>
       <workItem from="1767700819741" duration="102228000" />
       <workItem from="1768219160141" duration="47386000" />
-      <workItem from="1768408361007" duration="14864000" />
+      <workItem from="1768408361007" duration="20168000" />
     </task>
     <task id="LOCAL-00001" summary="A lot of things">
       <option name="closed" value="true" />
@@ -417,7 +413,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768440057939</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Fix UI workers implementation with some type fixes">
+      <option name="closed" value="true" />
+      <created>1768441729259</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1768441729259</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -431,7 +435,8 @@
     <MESSAGE value="Next config" />
     <MESSAGE value="Fixing tables layout" />
     <MESSAGE value="Implementing workers module and fix customer form submitting" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implementing workers module and fix customer form submitting" />
+    <MESSAGE value="Fix UI workers implementation with some type fixes" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix UI workers implementation with some type fixes" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

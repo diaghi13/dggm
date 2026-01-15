@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\MaterialController;
 use App\Http\Controllers\Api\V1\MaterialDependencyTypeController;
 use App\Http\Controllers\Api\V1\MaterialRequestController;
 use App\Http\Controllers\Api\V1\MediaController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\SiteController;
 use App\Http\Controllers\Api\V1\SiteDdtController;
@@ -198,6 +199,14 @@ Route::prefix('v1')->group(function () {
         Route::post('material-requests/{material_request}/reject', [MaterialRequestController::class, 'reject']);
         Route::post('material-requests/{material_request}/mark-delivered', [MaterialRequestController::class, 'markDelivered']);
         Route::delete('material-requests/{material_request}', [MaterialRequestController::class, 'destroy']);
+
+        // Notifications
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+        Route::post('notifications/{notification}/mark-read', [NotificationController::class, 'markAsRead']);
+        Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
+        Route::delete('notifications/read/all', [NotificationController::class, 'deleteAllRead']);
 
         // Worker Sites
         Route::get('workers/{worker}/sites', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'index']);

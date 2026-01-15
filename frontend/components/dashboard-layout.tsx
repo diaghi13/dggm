@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { NotificationCenter } from '@/components/notification-center';
 import {
   Users,
   Building2,
@@ -29,7 +30,8 @@ import {
   MapPin,
   Receipt,
   UserCheck,
-  Briefcase
+  Briefcase,
+  Mail
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -47,6 +49,7 @@ const navigation = [
       { name: 'Fornitori', href: '/dashboard/suppliers', icon: Factory },
       { name: 'Cantieri', href: '/dashboard/sites', icon: MapPin },
       { name: 'Collaboratori', href: '/dashboard/workers', icon: UserCheck },
+      { name: 'Inviti', href: '/dashboard/invitations', icon: Mail },
     ]
   },
   {
@@ -305,7 +308,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{user.name}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
                   </div>
-                  <ThemeToggle />
+                  <div className="flex items-center gap-2">
+                    <NotificationCenter />
+                    <ThemeToggle />
+                  </div>
                 </div>
                 <Button
                   onClick={handleLogout}
@@ -324,6 +330,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
+                <NotificationCenter />
                 <ThemeToggle />
                 <Button
                   onClick={handleLogout}
