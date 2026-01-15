@@ -33,8 +33,8 @@ class UpdateCustomerRequest extends FormRequest
 
             // Company fields
             'company_name' => ['required_if:type,company', 'nullable', 'string', 'max:255'],
-            'vat_number' => ['nullable', 'string', 'max:255', Rule::unique('customers', 'vat_number')->ignore($customerId)],
-            'tax_code' => ['nullable', 'string', 'max:255'],
+            'vat_number' => ['required_if:type,company', 'nullable', 'string', 'max:255', Rule::unique('customers', 'vat_number')->ignore($customerId)],
+            'tax_code' => ['required_if:type,individual', 'nullable', 'string', 'max:255'],
 
             // Common fields
             'email' => ['nullable', 'string', 'email', 'max:255'],
@@ -70,7 +70,9 @@ class UpdateCustomerRequest extends FormRequest
             'first_name.required_if' => 'First name is required for individual customers',
             'last_name.required_if' => 'Last name is required for individual customers',
             'company_name.required_if' => 'Company name is required for company customers',
+            'vat_number.required_if' => 'VAT number is required for company customers',
             'vat_number.unique' => 'This VAT number is already registered',
+            'tax_code.required_if' => 'Tax code is required for individual customers',
             'email.email' => 'Please provide a valid email address',
             'province.size' => 'Province must be a 2-letter code',
             'country.max' => 'Country must be a 2-letter code',

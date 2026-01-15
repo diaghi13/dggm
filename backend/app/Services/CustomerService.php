@@ -34,11 +34,28 @@ class CustomerService
 
     public function create(array $data): Customer
     {
+        // Set defaults for non-nullable fields with defaults
+        $data['payment_terms'] = $data['payment_terms'] ?? 0;
+        $data['discount_percentage'] = $data['discount_percentage'] ?? 0;
+        $data['country'] = $data['country'] ?? 'IT';
+        $data['is_active'] = $data['is_active'] ?? true;
+
         return Customer::create($data);
     }
 
     public function update(Customer $customer, array $data): Customer
     {
+        // Set defaults for non-nullable fields with defaults if they are null
+        if (isset($data['payment_terms']) && $data['payment_terms'] === null) {
+            $data['payment_terms'] = '30';
+        }
+        if (isset($data['discount_percentage']) && $data['discount_percentage'] === null) {
+            $data['discount_percentage'] = 0;
+        }
+        if (isset($data['country']) && $data['country'] === null) {
+            $data['country'] = 'IT';
+        }
+
         $customer->update($data);
 
         return $customer->fresh();

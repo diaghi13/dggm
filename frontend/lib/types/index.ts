@@ -919,6 +919,73 @@ export interface SiteLaborCost {
   updated_at: string;
 }
 
+// Site Worker Types
+export type SiteWorkerStatus = 'pending' | 'accepted' | 'rejected' | 'active' | 'completed' | 'cancelled';
+
+export interface SiteRole {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  color?: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SiteWorker {
+  id: number;
+  site_id: number;
+  worker_id: number;
+  status: SiteWorkerStatus;
+  status_label: string;
+  assigned_from: string;
+  assigned_to?: string | null;
+  assigned_by_user_id?: number | null;
+  assigned_by?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  responded_at?: string | null;
+  response_due_at?: string | null;
+  rejection_reason?: string | null;
+  hourly_rate_override?: number | null;
+  fixed_rate_override?: number | null;
+  rate_override_notes?: string | null;
+  estimated_hours?: number | null;
+  is_active: boolean;
+  notes?: string | null;
+  is_pending: boolean;
+  can_respond: boolean;
+  worker?: Worker;
+  site?: Site;
+  roles?: SiteRole[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SiteWorkerFormData {
+  worker_id: number;
+  assigned_from: string;
+  assigned_to?: string | null;
+  role_ids?: number[];
+  hourly_rate_override?: number | null;
+  fixed_rate_override?: number | null;
+  rate_override_notes?: string | null;
+  estimated_hours?: number | null;
+  response_days?: number;
+  notes?: string | null;
+}
+
+export interface SiteWorkerConflict {
+  has_conflicts: boolean;
+  conflict_count: number;
+  conflicts: SiteWorker[];
+}
+
+// Legacy - manteniamo per compatibilità
 export interface SiteWorkerAssignment {
   site_id: number;
   worker_id: number;
@@ -929,4 +996,159 @@ export interface SiteWorkerAssignment {
   estimated_hours?: number | null;
   is_active: boolean;
   notes?: string | null;
+}
+
+// Worker Invitation Types
+export interface WorkerInvitation {
+  id: number;
+  email: string;
+  token: string;
+  first_name: string;
+  last_name: string;
+  phone?: string | null;
+  invited_by_user_id: number;
+  invited_by?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  supplier_id?: number | null;
+  supplier?: {
+    id: number;
+    code: string;
+    company_name: string;
+  };
+  worker_type: WorkerType;
+  contract_type?: ContractType | null;
+  job_title?: string | null;
+  metadata?: Record<string, any> | null;
+  expires_at: string;
+  accepted_at?: string | null;
+  created_user_id?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkerInvitationFormData {
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone?: string | null;
+  supplier_id?: number | null;
+  worker_type?: WorkerType;
+  contract_type?: ContractType | null;
+  job_title?: string | null;
+  metadata?: Record<string, any> | null;
+  expires_in_days?: number;
+}
+
+export interface AcceptInvitationData {
+  password: string;
+  password_confirmation: string;
+}
+
+// Material Request Types
+export type MaterialRequestStatus = 'pending' | 'approved' | 'rejected' | 'delivered';
+export type MaterialRequestPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface MaterialRequest {
+  id: number;
+  site_id: number;
+  site?: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  material_id: number;
+  material?: {
+    id: number;
+    name: string;
+    code: string;
+    unit_of_measure?: string | null;
+  };
+  requested_by_worker_id: number;
+  requested_by_worker?: {
+    id: number;
+    full_name: string;
+    user?: {
+      id: number;
+      name: string;
+      email: string;
+    };
+  };
+  requested_by_user_id: number;
+  requested_by_user?: {
+    id: number;
+    name: string;
+  };
+  quantity_requested: number;
+  unit_of_measure?: string | null;
+  status: MaterialRequestStatus;
+  status_label: string;
+  priority: MaterialRequestPriority;
+  priority_label: string;
+  reason?: string | null;
+  notes?: string | null;
+  needed_by?: string | null;
+  responded_by_user_id?: number | null;
+  responded_by_user?: {
+    id: number;
+    name: string;
+  };
+  responded_at?: string | null;
+  response_notes?: string | null;
+  rejection_reason?: string | null;
+  quantity_approved?: number | null;
+  approved_by_user_id?: number | null;
+  approved_by_user?: {
+    id: number;
+    name: string;
+  };
+  approved_at?: string | null;
+  quantity_delivered?: number | null;
+  delivered_at?: string | null;
+  delivered_by_user_id?: number | null;
+  delivered_by_user?: {
+    id: number;
+    name: string;
+  };
+  created_at: string;
+  updated_at: string;
+  can_approve: boolean;
+  can_reject: boolean;
+  can_deliver: boolean;
+}
+
+export interface MaterialRequestFormData {
+  site_id: number;
+  material_id: number;
+  quantity_requested: number;
+  unit_of_measure?: string | null;
+  priority?: MaterialRequestPriority;
+  reason?: string | null;
+  notes?: string | null;
+  needed_by?: string | null;
+}
+
+export interface UpdateMaterialRequestData {
+  quantity_requested?: number;
+  priority?: MaterialRequestPriority;
+  reason?: string | null;
+  notes?: string | null;
+  needed_by?: string | null;
+}
+
+export interface RespondToMaterialRequestData {
+  quantity_approved?: number | null;
+  response_notes?: string | null;
+  rejection_reason?: string | null;
+}
+
+export interface MaterialRequestStats {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  delivered: number;
+  urgent: number;
 }

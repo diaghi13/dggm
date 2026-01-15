@@ -16,51 +16,76 @@ import {
 } from '@/components/ui/select';
 import { Users, Mail, Phone, MapPin, Building2, User, Banknote, FileText } from 'lucide-react';
 
-const customerSchema = z.object({
-  type: z.enum(['individual', 'company']),
-  first_name: z.string().min(1, 'First name is required').optional().nullable(),
-  last_name: z.string().min(1, 'Last name is required').optional().nullable(),
-  company_name: z.string().min(1, 'Company name is required').optional().nullable(),
-  vat_number: z.string().optional().nullable(),
-  tax_code: z.string().optional().nullable(),
-  email: z.string().email('Invalid email').optional().nullable().or(z.literal('')),
-  phone: z.string().optional().nullable(),
-  mobile: z.string().optional().nullable(),
-  address: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  province: z.string().optional().nullable(),
-  postal_code: z.string().optional().nullable(),
-  country: z.string().optional().nullable(),
-  payment_terms: z.string().optional().nullable(),
-  discount_percentage: z.number().min(0).max(100).optional().nullable(),
-  notes: z.string().optional().nullable(),
-  is_active: z.boolean().optional(),
-}).refine(
-  (data) => {
-    if (data.type === 'individual') {
-      return data.first_name && data.last_name;
-    }
-    if (data.type === 'company') {
-      return data.company_name;
-    }
-    return true;
-  },
-  {
-    message: 'Please fill in required fields based on customer type',
-    path: ['type'],
-  }
-);
+const customerSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('individual'),
+    first_name: z.string().min(1, 'Il nome è obbligatorio'),
+    last_name: z.string().min(1, 'Il cognome è obbligatorio'),
+    company_name: z.string().optional().nullable(),
+    vat_number: z.string().optional().nullable(),
+    tax_code: z.string().min(1, 'Il codice fiscale è obbligatorio'),
+    email: z.string().email('Email non valida').optional().nullable().or(z.literal('')),
+    phone: z.string().optional().nullable(),
+    mobile: z.string().optional().nullable(),
+    address: z.string().optional().nullable(),
+    city: z.string().optional().nullable(),
+    province: z.string()
+      .refine(val => !val || val.length === 2, 'La provincia deve essere di 2 caratteri (es. MI)')
+      .optional().nullable(),
+    postal_code: z.string().optional().nullable(),
+    country: z.string()
+      .refine(val => !val || val.length === 2, 'Il paese deve essere un codice ISO di 2 caratteri (es. IT)')
+      .optional().nullable(),
+    payment_terms: z.string().optional().nullable(),
+    discount_percentage: z.union([
+      z.number().min(0, 'Lo sconto deve essere almeno 0').max(100, 'Lo sconto non può superare 100'),
+      z.nan(),
+      z.undefined(),
+      z.null()
+    ]).optional().nullable(),
+    notes: z.string().optional().nullable(),
+    is_active: z.boolean().optional(),
+  }),
+  z.object({
+    type: z.literal('company'),
+    first_name: z.string().optional().nullable(),
+    last_name: z.string().optional().nullable(),
+    company_name: z.string().min(1, 'La ragione sociale è obbligatoria'),
+    vat_number: z.string().min(1, 'La partita IVA è obbligatoria'),
+    tax_code: z.string().optional().nullable(),
+    email: z.string().email('Email non valida').optional().nullable().or(z.literal('')),
+    phone: z.string().optional().nullable(),
+    mobile: z.string().optional().nullable(),
+    address: z.string().optional().nullable(),
+    city: z.string().optional().nullable(),
+    province: z.string()
+      .refine(val => !val || val.length === 2, 'La provincia deve essere di 2 caratteri (es. MI)')
+      .optional().nullable(),
+    postal_code: z.string().optional().nullable(),
+    country: z.string()
+      .refine(val => !val || val.length === 2, 'Il paese deve essere un codice ISO di 2 caratteri (es. IT)')
+      .optional().nullable(),
+    payment_terms: z.string().optional().nullable(),
+    discount_percentage: z.union([
+      z.number().min(0, 'Lo sconto deve essere almeno 0').max(100, 'Lo sconto non può superare 100'),
+      z.nan(),
+      z.undefined(),
+      z.null()
+    ]).optional().nullable(),
+    notes: z.string().optional().nullable(),
+    is_active: z.boolean().optional(),
+  }),
+]);
 
 type CustomerFormValues = z.infer<typeof customerSchema>;
 
 interface CustomerFormProps {
   customer?: Customer;
   onSubmit: (data: CustomerFormData) => void;
-  onCancel: () => void;
   isLoading?: boolean;
 }
 
-export function CustomerForm({ customer, onSubmit, onCancel, isLoading }: CustomerFormProps) {
+export function CustomerForm({ customer, onSubmit, isLoading }: CustomerFormProps) {
   const {
     register,
     handleSubmit,
@@ -70,41 +95,49 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }: Custom
   } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
     defaultValues: customer
-      ? {
+      ? ({
           type: customer.type,
-          first_name: customer.first_name,
-          last_name: customer.last_name,
-          company_name: customer.company_name,
-          vat_number: customer.vat_number,
-          tax_code: customer.tax_code,
-          email: customer.email,
-          phone: customer.phone,
-          mobile: customer.mobile,
-          address: customer.address,
-          city: customer.city,
-          province: customer.province,
-          postal_code: customer.postal_code,
-          country: customer.country || 'Italy',
-          payment_terms: customer.payment_terms,
+          first_name: customer.first_name || undefined,
+          last_name: customer.last_name || undefined,
+          company_name: customer.company_name || undefined,
+          vat_number: customer.vat_number || undefined,
+          tax_code: customer.tax_code || undefined,
+          email: customer.email || undefined,
+          phone: customer.phone || undefined,
+          mobile: customer.mobile || undefined,
+          address: customer.address || undefined,
+          city: customer.city || undefined,
+          province: customer.province || undefined,
+          postal_code: customer.postal_code || undefined,
+          country: customer.country || 'IT',
+          payment_terms: customer.payment_terms || undefined,
           discount_percentage: customer.discount_percentage ? parseFloat(customer.discount_percentage) : undefined,
-          notes: customer.notes,
+          notes: customer.notes || undefined,
           is_active: customer.is_active,
-        }
-      : {
+        } as CustomerFormValues)
+      : ({
           type: 'individual' as const,
-          country: 'Italy',
+          first_name: '',
+          last_name: '',
+          country: 'IT',
           is_active: true,
-        },
+        } as CustomerFormValues),
   });
 
   const customerType = watch('type');
 
   const handleFormSubmit = (data: CustomerFormValues) => {
+    // Handle discount_percentage: convert NaN, undefined, null to null, keep valid numbers
+    let discountValue = null;
+    if (data.discount_percentage !== undefined &&
+        data.discount_percentage !== null &&
+        !isNaN(data.discount_percentage)) {
+      discountValue = data.discount_percentage;
+    }
+
+    // Base data common to both types
     const formData: CustomerFormData = {
       type: data.type,
-      first_name: data.first_name || null,
-      last_name: data.last_name || null,
-      company_name: data.company_name || null,
       vat_number: data.vat_number || null,
       tax_code: data.tax_code || null,
       email: data.email || null,
@@ -116,10 +149,22 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }: Custom
       postal_code: data.postal_code || null,
       country: data.country || null,
       payment_terms: data.payment_terms || null,
-      discount_percentage: data.discount_percentage || null,
+      discount_percentage: discountValue,
       notes: data.notes || null,
       is_active: data.is_active,
     };
+
+    // Add type-specific fields
+    if (data.type === 'individual') {
+      formData.first_name = data.first_name || null;
+      formData.last_name = data.last_name || null;
+      formData.company_name = null;
+    } else if (data.type === 'company') {
+      formData.company_name = data.company_name || null;
+      formData.first_name = null;
+      formData.last_name = null;
+    }
+
     onSubmit(formData);
   };
 
@@ -203,6 +248,43 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }: Custom
               )}
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="vat_number" className="text-sm font-medium text-slate-700">
+                Partita IVA
+              </Label>
+              <Input
+                id="vat_number"
+                {...register('vat_number')}
+                disabled={isLoading}
+                placeholder="IT12345678901"
+                className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+              {errors.vat_number && (
+                <p className="text-sm text-red-600 flex items-center gap-1">
+                  <span className="text-red-500">⚠</span> {errors.vat_number.message}
+                </p>
+              )}
+              <p className="text-xs text-slate-500">Opzionale per privati</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tax_code" className="text-sm font-medium text-slate-700">
+                Codice Fiscale <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="tax_code"
+                {...register('tax_code')}
+                disabled={isLoading}
+                placeholder="RSSMRA80A01H501U"
+                className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+              {errors.tax_code && (
+                <p className="text-sm text-red-600 flex items-center gap-1">
+                  <span className="text-red-500">⚠</span> {errors.tax_code.message}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -234,7 +316,9 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }: Custom
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="vat_number" className="text-sm font-medium text-slate-700">Partita IVA</Label>
+              <Label htmlFor="vat_number" className="text-sm font-medium text-slate-700">
+                Partita IVA <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="vat_number"
                 {...register('vat_number')}
@@ -242,9 +326,16 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }: Custom
                 placeholder="IT12345678901"
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
               />
+              {errors.vat_number && (
+                <p className="text-sm text-red-600 flex items-center gap-1">
+                  <span className="text-red-500">⚠</span> {errors.vat_number.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tax_code" className="text-sm font-medium text-slate-700">Codice Fiscale</Label>
+              <Label htmlFor="tax_code" className="text-sm font-medium text-slate-700">
+                Codice Fiscale
+              </Label>
               <Input
                 id="tax_code"
                 {...register('tax_code')}
@@ -252,6 +343,12 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }: Custom
                 placeholder="12345678901"
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
               />
+              {errors.tax_code && (
+                <p className="text-sm text-red-600 flex items-center gap-1">
+                  <span className="text-red-500">⚠</span> {errors.tax_code.message}
+                </p>
+              )}
+              <p className="text-xs text-slate-500">Opzionale per aziende</p>
             </div>
           </div>
         </div>
@@ -350,8 +447,14 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }: Custom
               {...register('province')}
               disabled={isLoading}
               placeholder="MI"
-              className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+              maxLength={2}
+              className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
             />
+            {errors.province && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <span className="text-red-500">⚠</span> {errors.province.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="postal_code" className="text-sm font-medium text-slate-700">CAP</Label>
@@ -370,9 +473,16 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }: Custom
             id="country"
             {...register('country')}
             disabled={isLoading}
-            placeholder="Italia"
-            className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="IT"
+            maxLength={2}
+            className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
           />
+          {errors.country && (
+            <p className="text-sm text-red-600 flex items-center gap-1">
+              <span className="text-red-500">⚠</span> {errors.country.message}
+            </p>
+          )}
+          <p className="text-xs text-slate-500">Codice ISO a 2 caratteri (es. IT, FR, DE)</p>
         </div>
       </div>
 

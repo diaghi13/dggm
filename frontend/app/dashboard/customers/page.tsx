@@ -25,14 +25,13 @@ export default function CustomersPage() {
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const perPage = 15;
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['customers', { search, type: typeFilter, active: activeFilter, page, perPage }],
     queryFn: () =>
       customersApi.getAll({
@@ -66,21 +65,6 @@ export default function CustomersPage() {
     [router]
   );
 
-  const createMutation = useMutation({
-    mutationFn: (data: CustomerFormData) => customersApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      setIsCreateDialogOpen(false);
-      toast.success('Cliente creato con successo', {
-        description: 'Il nuovo cliente è stato aggiunto al database',
-      });
-    },
-    onError: (error: any) => {
-      toast.error('Errore', {
-        description: error.response?.data?.message || 'Impossibile creare il cliente',
-      });
-    },
-  });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: CustomerFormData }) =>
@@ -114,7 +98,7 @@ export default function CustomersPage() {
         description="Gestisci l'anagrafica clienti"
         icon={Users}
         actions={
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Button onClick={() => router.push('/dashboard/customers/new')}>
             <Plus className="mr-2 h-4 w-4" />
             Nuovo Cliente
           </Button>
@@ -171,7 +155,7 @@ export default function CustomersPage() {
             title="Nessun cliente trovato"
             description="Inizia aggiungendo il tuo primo cliente al database"
             actionLabel="Nuovo Cliente"
-            onAction={() => setIsCreateDialogOpen(true)}
+            onAction={() => router.push('/dashboard/customers/new')}
           />
         }
       />
@@ -194,43 +178,6 @@ export default function CustomersPage() {
         </div>
       )}
 
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200 dark:border-slate-800">
-            <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">Nuovo Cliente</DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-slate-400">
-              Aggiungi un nuovo cliente al database
-            </DialogDescription>
-          </DialogHeader>
-          <div className="overflow-y-auto flex-1 px-6 py-6">
-            <CustomerForm
-              onSubmit={(data) => createMutation.mutate(data)}
-              onCancel={() => setIsCreateDialogOpen(false)}
-              isLoading={createMutation.isPending}
-            />
-          </div>
-          <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50">
-            <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreateDialogOpen(false)}
-                disabled={createMutation.isPending}
-              >
-                Annulla
-              </Button>
-              <Button
-                type="submit"
-                form="customer-form"
-                disabled={createMutation.isPending}
-              >
-                {createMutation.isPending ? 'Salvataggio...' : 'Crea Cliente'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200 dark:border-slate-800">
@@ -244,10 +191,6 @@ export default function CustomersPage() {
               <CustomerForm
                 customer={selectedCustomer}
                 onSubmit={(data) => updateMutation.mutate({ id: selectedCustomer.id, data })}
-                onCancel={() => {
-                  setIsEditDialogOpen(false);
-                  setSelectedCustomer(null);
-                }}
                 isLoading={updateMutation.isPending}
               />
             )}

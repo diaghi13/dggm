@@ -41,6 +41,38 @@ class Customer extends Model
     }
 
     /**
+     * Set the discount percentage attribute
+     */
+    public function setDiscountPercentageAttribute($value)
+    {
+        $this->attributes['discount_percentage'] = $value === null || $value === '' ? 0 : $value;
+    }
+
+    /**
+     * Set the payment terms attribute
+     */
+    public function setPaymentTermsAttribute($value)
+    {
+        $this->attributes['payment_terms'] = $value === null || $value === '' ? '30' : $value;
+    }
+
+    /**
+     * Set the country attribute
+     */
+    public function setCountryAttribute($value)
+    {
+        $this->attributes['country'] = $value === null || $value === '' ? 'IT' : strtoupper($value);
+    }
+
+    /**
+     * Set the province attribute
+     */
+    public function setProvinceAttribute($value)
+    {
+        $this->attributes['province'] = $value === null || $value === '' ? null : strtoupper($value);
+    }
+
+    /**
      * Get the customer's full name (for individuals) or company name
      */
     public function getDisplayNameAttribute(): string

@@ -37,6 +37,8 @@ import { SiteDocumentsSection } from '@/components/site-documents-section';
 import { SiteMaterialsSection } from '@/components/site-materials-section';
 import { SiteServicesSection } from '@/components/site-services-section';
 import { DdtPendingAlert } from '@/components/ddt-pending-alert';
+import { SiteWorkersTab } from '@/components/site-workers-tab';
+import { MaterialRequestsTab } from '@/components/material-requests-tab';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200',
@@ -273,6 +275,7 @@ export default function SiteDetailPage() {
           <TabsTrigger value="servizi">Servizi</TabsTrigger>
           <TabsTrigger value="documenti">Documenti</TabsTrigger>
           <TabsTrigger value="squadra">Squadra</TabsTrigger>
+          <TabsTrigger value="richieste">Richieste Materiale</TabsTrigger>
           <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
           <TabsTrigger value="costi">Analisi Costi</TabsTrigger>
         </TabsList>
@@ -782,14 +785,11 @@ export default function SiteDetailPage() {
         </TabsContent>
 
         <TabsContent value="squadra">
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-slate-500">
-                <User className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>Sezione squadra in sviluppo...</p>
-              </div>
-            </CardContent>
-          </Card>
+          <SiteWorkersTab siteId={siteId} />
+        </TabsContent>
+
+        <TabsContent value="richieste">
+          <MaterialRequestsTab siteId={siteId} />
         </TabsContent>
 
         <TabsContent value="timesheet">

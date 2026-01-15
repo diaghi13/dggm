@@ -5,9 +5,11 @@ use App\Http\Controllers\Api\V1\ContractorController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DdtController;
 use App\Http\Controllers\Api\V1\InventoryController;
+use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\MaterialCategoryController;
 use App\Http\Controllers\Api\V1\MaterialController;
 use App\Http\Controllers\Api\V1\MaterialDependencyTypeController;
+use App\Http\Controllers\Api\V1\MaterialRequestController;
 use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\SiteController;
@@ -37,6 +39,10 @@ Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
     });
+
+    // Public invitation routes (no authentication)
+    Route::get('invitations/{token}', [InvitationController::class, 'showByToken']);
+    Route::post('invitations/{token}/accept', [InvitationController::class, 'accept']);
 
     // Protected routes (require authentication)
     Route::middleware('auth:sanctum')->group(function () {
@@ -172,6 +178,26 @@ Route::prefix('v1')->group(function () {
         Route::delete('workers/{worker}/rates/{rate}', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'destroy']);
         Route::get('workers/{worker}/rates/history', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'history']);
         Route::post('workers/{worker}/rates/calculate', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'calculate']);
+
+        // Worker Invitations
+        Route::get('invitations', [InvitationController::class, 'index']);
+        Route::post('invitations', [InvitationController::class, 'store']);
+        Route::get('invitations/pending', [InvitationController::class, 'pending']);
+        Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend']);
+        Route::delete('invitations/{invitation}', [InvitationController::class, 'destroy']);
+
+        // Material Requests
+        Route::get('sites/{site}/material-requests', [MaterialRequestController::class, 'indexBySite']);
+        Route::get('sites/{site}/material-requests/pending-count', [MaterialRequestController::class, 'pendingCount']);
+        Route::get('sites/{site}/material-requests/stats', [MaterialRequestController::class, 'stats']);
+        Route::get('my-material-requests', [MaterialRequestController::class, 'myRequests']);
+        Route::post('material-requests', [MaterialRequestController::class, 'store']);
+        Route::get('material-requests/{material_request}', [MaterialRequestController::class, 'show']);
+        Route::patch('material-requests/{material_request}', [MaterialRequestController::class, 'update']);
+        Route::post('material-requests/{material_request}/approve', [MaterialRequestController::class, 'approve']);
+        Route::post('material-requests/{material_request}/reject', [MaterialRequestController::class, 'reject']);
+        Route::post('material-requests/{material_request}/mark-delivered', [MaterialRequestController::class, 'markDelivered']);
+        Route::delete('material-requests/{material_request}', [MaterialRequestController::class, 'destroy']);
 
         // Worker Sites
         Route::get('workers/{worker}/sites', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'index']);
