@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Adding: &#10; - notification center and&#10; - material requests from&#10; - New external worker invitation system with token">
-      <change afterPath="$PROJECT_DIR$/docker-compose.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/DockerFile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Adding: &#10; - Docker support for frontend with DockerFile and docker-compose.yaml" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -374,7 +370,7 @@
       <updated>1767700817718</updated>
       <workItem from="1767700819741" duration="102228000" />
       <workItem from="1768219160141" duration="47386000" />
-      <workItem from="1768408361007" duration="21247000" />
+      <workItem from="1768408361007" duration="21565000" />
     </task>
     <task id="LOCAL-00001" summary="A lot of things">
       <option name="closed" value="true" />
@@ -424,7 +420,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768499397362</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Adding: &#10; - Docker support for frontend with DockerFile and docker-compose.yaml">
+      <option name="closed" value="true" />
+      <created>1768500842606</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1768500842606</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -440,7 +444,8 @@
     <MESSAGE value="Implementing workers module and fix customer form submitting" />
     <MESSAGE value="Fix UI workers implementation with some type fixes" />
     <MESSAGE value="Adding: &#10; - notification center and&#10; - material requests from&#10; - New external worker invitation system with token" />
-    <option name="LAST_COMMIT_MESSAGE" value="Adding: &#10; - notification center and&#10; - material requests from&#10; - New external worker invitation system with token" />
+    <MESSAGE value="Adding: &#10; - Docker support for frontend with DockerFile and docker-compose.yaml" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adding: &#10; - Docker support for frontend with DockerFile and docker-compose.yaml" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
