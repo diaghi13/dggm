@@ -52,6 +52,11 @@ Route::prefix('v1')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/me', [AuthController::class, 'me']);
+
+            // Session management
+            Route::get('/sessions', [AuthController::class, 'sessions']);
+            Route::delete('/sessions/{tokenId}', [AuthController::class, 'revokeSession']);
+            Route::post('/sessions/revoke-others', [AuthController::class, 'revokeOtherSessions']);
         });
 
         Route::apiResource('users', \App\Http\Controllers\Api\V1\UserController::class);

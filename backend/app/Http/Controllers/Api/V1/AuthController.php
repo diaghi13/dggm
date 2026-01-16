@@ -15,6 +15,7 @@ class AuthController extends Controller
 {
     /**
      * Login user and return access token
+     * Allows multiple active sessions (multi-device login)
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -26,11 +27,16 @@ class AuthController extends Controller
             ]);
         }
 
-        // Revoke all previous tokens
-        $user->tokens()->delete();
+        // Allow multiple active sessions - do NOT revoke previous tokens
+        // Each device/session gets its own token
 
-        // Create new token
-        $token = $user->createToken('api-token')->plainTextToken;
+        // Create token name with device info for tracking
+        $deviceName = $request->input('device_name', 'Unknown Device');
+        $userAgent = $request->userAgent() ?? 'Unknown';
+        $tokenName = sprintf('%s (%s)', $deviceName, substr($userAgent, 0, 50));
+
+        // Create new token for this device
+        $token = $user->createToken($tokenName)->plainTextToken;
 
         return response()->json([
             'success' => true,
@@ -65,6 +71,79 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data' => new UserResource($user),
+        ]);
+    }
+
+    /**
+     * Get all active sessions for the authenticated user
+     */
+    public function sessions(Request $request): JsonResponse
+    {
+        $tokens = $request->user()->tokens()
+            ->orderBy('last_used_at', 'desc')
+            ->get()
+            ->map(function ($token) use ($request) {
+                return [
+                    'id' => $token->id,
+                    'name' => $token->name,
+                    'last_used_at' => $token->last_used_at?->diffForHumans(),
+                    'created_at' => $token->created_at->diffForHumans(),
+                    'is_current' => $token->id === $request->user()->currentAccessToken()->id,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $tokens,
+        ]);
+    }
+
+    /**
+     * Revoke a specific session/token
+     */
+    public function revokeSession(Request $request, int $tokenId): JsonResponse
+    {
+        $token = $request->user()->tokens()->find($tokenId);
+
+        if (! $token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Session not found',
+            ], 404);
+        }
+
+        // Prevent revoking current session
+        if ($token->id === $request->user()->currentAccessToken()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot revoke current session. Use logout instead.',
+            ], 400);
+        }
+
+        $token->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Session revoked successfully',
+        ]);
+    }
+
+    /**
+     * Revoke all other sessions except the current one
+     */
+    public function revokeOtherSessions(Request $request): JsonResponse
+    {
+        $currentTokenId = $request->user()->currentAccessToken()->id;
+
+        $revokedCount = $request->user()
+            ->tokens()
+            ->where('id', '!=', $currentTokenId)
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => sprintf('Revoked %d other session(s)', $revokedCount),
+            'revoked_count' => $revokedCount,
         ]);
     }
 }
