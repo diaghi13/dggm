@@ -14,12 +14,16 @@ Monorepo with API-first backend and separate SPA frontend:
 
 ```
 /Apps/dggm/
-├── backend/          → Laravel 11+ API (REST)
-├── frontend/         → Next.js 14+ (App Router, TypeScript)
-└── CLAUDE.md         → This file (general overview)
+├── backend/
+│   ├── CLAUDE.md              → Auto-generato Laravel Boost (sovrascritto)
+│   └── DGGM_GUIDELINES.md     → Custom DGGM (PERSISTENTE)
+├── frontend/
+│   ├── NEXTJS_GUIDELINES.md   → Best practices Next.js 16 (PRIORITÀ)
+│   └── CLAUDE.md              → Convenzioni progetto DGGM
+└── CLAUDE.md                  → This file (general overview)
 ```
 
-Each folder has its own `CLAUDE.md` with specific details.
+**IMPORTANTE**: Leggi SEMPRE i file guidelines appropriati prima di modificare codice.
 
 ### Tech Stack Summary
 
@@ -31,7 +35,7 @@ Each folder has its own `CLAUDE.md` with specific details.
 - Redis (cache & queues)
 
 **Frontend:**
-- Next.js 14+ (App Router, TypeScript)
+- Next.js 16 (App Router, TypeScript)
 - Tailwind CSS 4 + shadcn/ui
 - Zustand + TanStack Query
 - React Hook Form + Zod

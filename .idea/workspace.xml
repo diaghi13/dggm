@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Continue implementing worker site assignment implementi crea worker roles crud management">
-      <change afterPath="$PROJECT_DIR$/MULTI_DEVICE_LOGIN.md" afterDir="false" />
+    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Multi device login">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/AuthController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/AuthController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/api.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/CLAUDE.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -457,7 +456,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768514765104</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Multi device login">
+      <option name="closed" value="true" />
+      <created>1768567588222</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1768567588222</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -476,7 +483,8 @@
     <MESSAGE value="Adding: &#10; - Docker support for frontend with DockerFile and docker-compose.yaml" />
     <MESSAGE value="Fix docker-compose.yaml" />
     <MESSAGE value="Continue implementing worker site assignment implementi crea worker roles crud management" />
-    <option name="LAST_COMMIT_MESSAGE" value="Continue implementing worker site assignment implementi crea worker roles crud management" />
+    <MESSAGE value="Multi device login" />
+    <option name="LAST_COMMIT_MESSAGE" value="Multi device login" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

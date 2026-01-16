@@ -1,12 +1,17 @@
 # CLAUDE.md - Frontend Guidelines
 
+**IMPORTANTE**: Questo file contiene le convenzioni specifiche del progetto DGGM.
+Per le best practices ufficiali di Next.js 16, consulta sempre `NEXTJS_GUIDELINES.md`.
+
 This file provides specific guidance for working with the Next.js frontend application.
 
 ## Frontend Overview
 
-**Technology**: Next.js 14+ with App Router, TypeScript, Tailwind CSS 4, shadcn/ui
+**Technology**: Next.js 16 with App Router, TypeScript, Tailwind CSS 4, shadcn/ui
 
 **Architecture**: SPA (Single Page Application) consuming REST API from Laravel backend.
+
+**LEGGI SEMPRE**: `NEXTJS_GUIDELINES.md` per le best practices ufficiali Next.js 16.
 
 ## Directory Structure
 
