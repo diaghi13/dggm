@@ -9,6 +9,7 @@ export const materialsApi = {
     kits?: boolean;
     low_stock?: boolean;
     search?: string;
+    semantic_search?: string;
     sort_field?: string;
     sort_direction?: string;
     per_page?: number;

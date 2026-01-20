@@ -4,7 +4,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Worker } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Edit, Eye, Trash2, User, Mail, Phone, Briefcase, UserCheck, Users } from 'lucide-react';
-import { StatusBadge } from '@/components/status-badge';
+import { StatusBadge } from '@/components/shared/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { AvatarTextCell, IconTextCell } from '@/components/table-cells';
 

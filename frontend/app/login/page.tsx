@@ -29,10 +29,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-md border-slate-200">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+      <Card className="w-full max-w-md border-slate-200 dark:border-slate-800">
         <CardHeader className="space-y-2 text-center pb-6">
-          <div className="mx-auto w-12 h-12 bg-slate-900 rounded flex items-center justify-center mb-2">
+          <div className="mx-auto w-12 h-12 bg-slate-900 dark:bg-slate-700 rounded flex items-center justify-center mb-2">
             <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
@@ -73,9 +73,9 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded text-sm">
-            <p className="font-medium text-slate-900 mb-2">Credenziali Demo:</p>
-            <ul className="space-y-1 text-slate-600 text-xs">
+          <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-sm">
+            <p className="font-medium text-slate-900 dark:text-slate-100 mb-2">Credenziali Demo:</p>
+            <ul className="space-y-1 text-slate-600 dark:text-slate-400 text-xs">
               <li><strong>Admin:</strong> admin@dggm.com / password</li>
               <li><strong>PM:</strong> pm@dggm.com / password</li>
               <li><strong>Worker:</strong> worker@dggm.com / password</li>

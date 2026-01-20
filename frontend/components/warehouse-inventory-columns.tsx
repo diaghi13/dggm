@@ -57,7 +57,7 @@ export const createWarehouseInventoryColumns = (): ColumnDef<WarehouseInventoryI
     enableHiding: false,
     cell: ({ row }) => (
       <Link
-        href={`/dashboard/materials/${row.original.material.id}`}
+        href={`/frontend/app/(dashboard)/materials/${row.original.material.id}`}
         className="font-medium hover:underline text-blue-600 dark:text-blue-400"
       >
         {row.original.material.code}

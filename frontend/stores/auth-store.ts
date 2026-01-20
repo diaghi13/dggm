@@ -5,12 +5,11 @@ import { authApi } from '@/lib/api/auth';
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   hasHydrated: boolean;
 
-  setAuth: (user: User, token: string) => void;
+  setAuth: (user: User) => void;
   clearAuth: () => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -22,17 +21,16 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      token: null,
       isAuthenticated: false,
       isLoading: false,
       hasHydrated: false,
 
-      setAuth: (user, token) => {
-        set({ user, token, isAuthenticated: true });
+      setAuth: (user) => {
+        set({ user, isAuthenticated: true });
       },
 
       clearAuth: () => {
-        set({ user: null, token: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false });
       },
 
       setHasHydrated: (hydrated) => {
@@ -43,7 +41,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const response = await authApi.login({ email, password });
-          get().setAuth(response.data.user, response.data.token);
+          // Token is now in httpOnly cookie, we only store user data
+          get().setAuth(response.data.user);
         } catch (error) {
           get().clearAuth();
           throw error;
@@ -54,6 +53,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
+          // Backend will clear the httpOnly cookie
           await authApi.logout();
         } catch (error) {
           console.error('Logout error:', error);
@@ -65,10 +65,7 @@ export const useAuthStore = create<AuthState>()(
       refreshUser: async () => {
         try {
           const user = await authApi.me();
-          const currentToken = get().token;
-          if (currentToken) {
-            set({ user, isAuthenticated: true });
-          }
+          set({ user, isAuthenticated: true });
         } catch (error) {
           console.error('Failed to refresh user:', error);
           get().clearAuth();
@@ -79,8 +76,8 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({
+        // Only persist user data, not token (token is in httpOnly cookie)
         user: state.user,
-        token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {

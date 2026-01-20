@@ -16,6 +16,7 @@ class AuthController extends Controller
     /**
      * Login user and return access token
      * Allows multiple active sessions (multi-device login)
+     * Token is stored in httpOnly cookie for security
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -43,13 +44,24 @@ class AuthController extends Controller
             'message' => 'Login successful',
             'data' => [
                 'user' => new UserResource($user),
-                'token' => $token,
+                // Don't send token in response body for httpOnly cookie approach
+                // 'token' => $token,
             ],
-        ]);
+        ])->cookie(
+            'auth_token',                           // name
+            $token,                                  // value
+            60 * 24 * 30,                           // minutes (30 days)
+            '/',                                     // path
+            null,                                    // domain
+            config('app.env') === 'production',     // secure (HTTPS only in production)
+            true,                                    // httpOnly (XSS protection)
+            false,                                   // raw
+            'lax'                                    // sameSite (CSRF protection)
+        );
     }
 
     /**
-     * Logout user (revoke current token)
+     * Logout user (revoke current token and clear cookie)
      */
     public function logout(Request $request): JsonResponse
     {
@@ -58,7 +70,17 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Logged out successfully',
-        ]);
+        ])->cookie(
+            'auth_token',                           // name
+            null,                                    // value (null to delete)
+            -1,                                      // minutes (expire immediately)
+            '/',                                     // path
+            null,                                    // domain
+            config('app.env') === 'production',     // secure
+            true,                                    // httpOnly
+            false,                                   // raw
+            'lax'                                    // sameSite
+        );
     }
 
     /**

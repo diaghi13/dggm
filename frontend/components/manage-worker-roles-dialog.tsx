@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { siteWorkersApi } from '@/lib/api/site-workers';
-import { SiteRoleBadge } from '@/components/site-role-badge';
+import { SiteRoleBadge } from '@/app/(dashboard)/sites/_components/site-role-badge';
 import { toast } from 'sonner';
 import { Loader2, Users } from 'lucide-react';
 import type { SiteWorker, SiteRole } from '@/lib/types';

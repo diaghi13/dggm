@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'embedding' => [
+        'url' => env('EMBEDDING_SERVICE_URL', 'http://localhost:5001'),
+        'timeout' => env('EMBEDDING_SERVICE_TIMEOUT', 30),
+    ],
 ];

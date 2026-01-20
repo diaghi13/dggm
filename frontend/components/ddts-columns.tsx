@@ -112,7 +112,7 @@ export const createDdtsColumns = (
       if (ddt.site) {
         return (
           <Link
-            href={`/dashboard/sites/${ddt.site.id}`}
+            href={`/frontend/app/(dashboard)/sites/${ddt.site.id}`}
             className="hover:underline text-blue-600 dark:text-blue-400 text-sm"
           >
             {ddt.site.code} - {ddt.site.name}
@@ -131,7 +131,7 @@ export const createDdtsColumns = (
       const warehouse = row.original.from_warehouse;
       return warehouse ? (
         <Link
-          href={`/dashboard/warehouses/${warehouse.id}`}
+          href={`/frontend/app/(dashboard)/warehouses/${warehouse.id}`}
           className="hover:underline text-blue-600 dark:text-blue-400 text-sm"
         >
           {warehouse.name}
@@ -149,7 +149,7 @@ export const createDdtsColumns = (
       const warehouse = row.original.to_warehouse;
       return warehouse ? (
         <Link
-          href={`/dashboard/warehouses/${warehouse.id}`}
+          href={`/frontend/app/(dashboard)/warehouses/${warehouse.id}`}
           className="hover:underline text-blue-600 dark:text-blue-400 text-sm"
         >
           {warehouse.name}

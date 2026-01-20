@@ -32,6 +32,7 @@ class MaterialController extends Controller
             'kits',
             'low_stock',
             'search',
+            'semantic_search',
             'sort_field',
             'sort_direction',
         ]);

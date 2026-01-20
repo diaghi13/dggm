@@ -62,7 +62,7 @@ export const createInventoryColumns = (): ColumnDef<InventoryItem>[] => [
     enableHiding: false,
     cell: ({ row }) => (
       <Link
-        href={`/dashboard/materials/${row.original.material.id}`}
+        href={`/frontend/app/(dashboard)/materials/${row.original.material.id}`}
         className="font-medium hover:underline text-blue-600 dark:text-blue-400"
       >
         {row.original.material.code}
@@ -93,7 +93,7 @@ export const createInventoryColumns = (): ColumnDef<InventoryItem>[] => [
     size: 180,
     cell: ({ row }) => (
       <Link
-        href={`/dashboard/warehouses/${row.original.warehouse.id}`}
+        href={`/frontend/app/(dashboard)/warehouses/${row.original.warehouse.id}`}
         className="hover:underline flex items-center gap-1 text-blue-600 dark:text-blue-400"
       >
         <WarehouseIcon className="h-3 w-3" />

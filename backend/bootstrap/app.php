@@ -12,7 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Add middleware to read auth token from httpOnly cookie
+        // This runs before Sanctum authentication, allowing cookie-based auth
+        $middleware->api(prepend: [
+            \App\Http\Middleware\AddBearerTokenFromCookie::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

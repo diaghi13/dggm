@@ -4,17 +4,80 @@ namespace App\Services;
 
 use App\Enums\MaterialType;
 use App\Models\Material;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class MaterialService
 {
+    public function __construct(
+        private EmbeddingService $embeddingService
+    ) {}
+
     /**
      * Get all materials with optional filters and pagination
      */
+//    public function getAll(array $filters = [], int $perPage = 20): LengthAwarePaginator
+//    {
+//        $query = Material::query()->with(['defaultSupplier']);
+//
+//        // Filter by active status
+//        if (isset($filters['is_active'])) {
+//            $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
+//        }
+//
+//        // Filter by category
+//        if (isset($filters['category']) && $filters['category'] !== '') {
+//            $query->where('category', $filters['category']);
+//        }
+//
+//        // Filter by product type
+//        if (isset($filters['product_type']) && $filters['product_type'] !== '') {
+//            $productType = MaterialType::tryFrom($filters['product_type']);
+//            if ($productType) {
+//                $query->byProductType($productType);
+//            }
+//        }
+//
+//        // Filter rentable items only
+//        if (isset($filters['rentable']) && filter_var($filters['rentable'], FILTER_VALIDATE_BOOLEAN)) {
+//            $query->rentable();
+//        }
+//
+//        // Filter kits only
+//        if (isset($filters['kits']) && filter_var($filters['kits'], FILTER_VALIDATE_BOOLEAN)) {
+//            $query->kits();
+//        }
+//
+//        // Filter by low stock
+//        if (isset($filters['low_stock']) && filter_var($filters['low_stock'], FILTER_VALIDATE_BOOLEAN)) {
+//            $query->lowStock();
+//        }
+//
+//        // Search by code, name, or barcode
+//        if (isset($filters['search']) && $filters['search'] !== '') {
+//            $search = $filters['search'];
+//            $query->where(function ($q) use ($search) {
+//                $q->where('code', 'like', "%{$search}%")
+//                    ->orWhere('name', 'like', "%{$search}%")
+//                    ->orWhere('barcode', 'like', "%{$search}%");
+//            });
+//        }
+//
+//        // Sorting
+//        $sortField = $filters['sort_field'] ?? 'code';
+//        $sortDirection = $filters['sort_direction'] ?? 'asc';
+//        $query->orderBy($sortField, $sortDirection);
+//
+//        return $query->paginate($perPage);
+//    }
     public function getAll(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        // Se c'è una ricerca semantica, usa vector search
+        if (isset($filters['semantic_search']) && $filters['semantic_search'] !== '') {
+            return $this->semanticSearch($filters, $perPage);
+        }
+
         $query = Material::query()->with(['defaultSupplier']);
 
         // Filter by active status
@@ -50,7 +113,7 @@ class MaterialService
             $query->lowStock();
         }
 
-        // Search by code, name, or barcode
+        // Search by code, name, or barcode (ricerca classica)
         if (isset($filters['search']) && $filters['search'] !== '') {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
@@ -66,6 +129,96 @@ class MaterialService
         $query->orderBy($sortField, $sortDirection);
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Ricerca semantica basata su descrizione/caratteristiche
+     */
+    private function semanticSearch(array $filters, int $perPage): LengthAwarePaginator
+    {
+        $query = Material::query()->with(['defaultSupplier']);
+
+        // Applica comunque i filtri standard
+        if (isset($filters['is_active'])) {
+            $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if (isset($filters['category']) && $filters['category'] !== '') {
+            $query->where('category', $filters['category']);
+        }
+
+        if (isset($filters['product_type']) && $filters['product_type'] !== '') {
+            $productType = MaterialType::tryFrom($filters['product_type']);
+            if ($productType) {
+                $query->byProductType($productType);
+            }
+        }
+
+        if (isset($filters['rentable']) && filter_var($filters['rentable'], FILTER_VALIDATE_BOOLEAN)) {
+            $query->rentable();
+        }
+
+        if (isset($filters['kits']) && filter_var($filters['kits'], FILTER_VALIDATE_BOOLEAN)) {
+            $query->kits();
+        }
+
+        // Recupera i materiali filtrati
+        $materials = $query->get();
+
+        if ($materials->isEmpty()) {
+            return new LengthAwarePaginator([], 0, $perPage);
+        }
+
+        try {
+            // Calcola similarità semantica
+            $searchQuery = $filters['semantic_search'];
+            $texts = $materials->map(function ($material) {
+                // Combina i campi rilevanti per la ricerca semantica
+                return implode(' ', array_filter([
+                    $material->name,
+                    $material->description,
+                    $material->category,
+                    $material->code
+                ]));
+            })->toArray();
+
+            $similarities = $this->embeddingService->search($searchQuery, $texts);
+
+            // Combina materiali con score di similarità
+            $results = $materials->map(function ($material, $index) use ($similarities) {
+                $material->similarity_score = $similarities[$index];
+                return $material;
+            })
+                ->sortByDesc('similarity_score')
+                ->values();
+
+            // Paginazione manuale
+            $page = request()->get('page', 1);
+            $offset = ($page - 1) * $perPage;
+            $items = $results->slice($offset, $perPage)->values();
+
+            return new LengthAwarePaginator(
+                $items,
+                $results->count(),
+                $perPage,
+                $page,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+
+        } catch (\Exception $e) {
+            // Fallback a ricerca normale in caso di errore
+            \Log::error('Vector search failed: ' . $e->getMessage());
+
+            $query = Material::query()->with(['defaultSupplier']);
+            $search = $filters['semantic_search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+
+            return $query->paginate($perPage);
+        }
     }
 
     /**

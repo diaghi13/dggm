@@ -5,7 +5,7 @@ import { Supplier } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Eye, Factory, Mail, MapPin, Phone, Trash2, Package, Users, Box } from 'lucide-react';
-import { StatusBadge } from '@/components/status-badge';
+import { StatusBadge } from '@/components/shared/status-badge';
 import { AvatarTextCell, IconTextCell, TextCell } from '@/components/table-cells';
 
 export const createSuppliersColumns = (

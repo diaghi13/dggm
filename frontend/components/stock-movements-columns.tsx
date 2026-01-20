@@ -80,7 +80,7 @@ export const createStockMovementsColumns = (): ColumnDef<StockMovement>[] => [
       return material ? (
         <div>
           <Link
-            href={`/dashboard/materials/${material.id}`}
+            href={`/frontend/app/(dashboard)/materials/${material.id}`}
             className="font-medium hover:underline text-blue-600 dark:text-blue-400"
           >
             {material.code}
@@ -119,7 +119,7 @@ export const createStockMovementsColumns = (): ColumnDef<StockMovement>[] => [
             <div className="flex items-center gap-1">
               <ArrowUpRight className="h-3 w-3 text-red-500" />
               <Link
-                href={`/dashboard/warehouses/${movement.from_warehouse?.id}`}
+                href={`/frontend/app/(dashboard)/warehouses/${movement.from_warehouse?.id}`}
                 className="hover:underline text-blue-600 dark:text-blue-400"
               >
                 {movement.from_warehouse?.name}
@@ -128,7 +128,7 @@ export const createStockMovementsColumns = (): ColumnDef<StockMovement>[] => [
             <div className="flex items-center gap-1 mt-1">
               <ArrowDownLeft className="h-3 w-3 text-green-500" />
               <Link
-                href={`/dashboard/warehouses/${movement.to_warehouse?.id}`}
+                href={`/frontend/app/(dashboard)/warehouses/${movement.to_warehouse?.id}`}
                 className="hover:underline text-blue-600 dark:text-blue-400"
               >
                 {movement.to_warehouse?.name}
@@ -140,7 +140,7 @@ export const createStockMovementsColumns = (): ColumnDef<StockMovement>[] => [
 
       return movement.warehouse ? (
         <Link
-          href={`/dashboard/warehouses/${movement.warehouse.id}`}
+          href={`/frontend/app/(dashboard)/warehouses/${movement.warehouse.id}`}
           className="hover:underline flex items-center gap-1 text-blue-600 dark:text-blue-400"
         >
           <Warehouse className="h-3 w-3" />
@@ -170,7 +170,7 @@ export const createStockMovementsColumns = (): ColumnDef<StockMovement>[] => [
       if (movement.site) {
         return (
           <Link
-            href={`/dashboard/sites/${movement.site.id}`}
+            href={`/frontend/app/(dashboard)/sites/${movement.site.id}`}
             className="flex items-center gap-1 hover:underline text-blue-600 dark:text-blue-400"
           >
             <Building2 className="h-3 w-3" />
