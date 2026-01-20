@@ -48,15 +48,15 @@ class AuthController extends Controller
                 // 'token' => $token,
             ],
         ])->cookie(
-            'auth_token',                           // name
-            $token,                                  // value
-            60 * 24 * 30,                           // minutes (30 days)
-            '/',                                     // path
-            null,                                    // domain
-            config('app.env') === 'production',     // secure (HTTPS only in production)
-            true,                                    // httpOnly (XSS protection)
-            false,                                   // raw
-            'lax'                                    // sameSite (CSRF protection)
+            'auth_token',                                    // name
+            $token,                                          // value
+            60 * 24 * 30,                                    // minutes (30 days)
+            config('session.path', '/'),                     // path
+            config('session.domain'),                        // domain (from SESSION_DOMAIN env)
+            config('session.secure', false),                 // secure (from SESSION_SECURE_COOKIE env)
+            true,                                            // httpOnly (XSS protection)
+            false,                                           // raw
+            config('session.same_site', 'lax')               // sameSite (from SESSION_SAME_SITE env)
         );
     }
 
@@ -71,15 +71,15 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Logged out successfully',
         ])->cookie(
-            'auth_token',                           // name
-            null,                                    // value (null to delete)
-            -1,                                      // minutes (expire immediately)
-            '/',                                     // path
-            null,                                    // domain
-            config('app.env') === 'production',     // secure
-            true,                                    // httpOnly
-            false,                                   // raw
-            'lax'                                    // sameSite
+            'auth_token',                                    // name
+            null,                                            // value (null to delete)
+            -1,                                              // minutes (expire immediately)
+            config('session.path', '/'),                     // path
+            config('session.domain'),                        // domain (from SESSION_DOMAIN env)
+            config('session.secure', false),                 // secure
+            true,                                            // httpOnly
+            false,                                           // raw
+            config('session.same_site', 'lax')               // sameSite
         );
     }
 
