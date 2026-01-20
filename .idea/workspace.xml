@@ -4,8 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Adding new feature to manage permission in frontend. User based on own role can see or note some pages and menus. Fix server side components and starting implementig nexjs 16+ best practies. Move many file and starting refactor the frontend with shared layout">
-      <change beforePath="$PROJECT_DIR$/frontend/app/(auth)/accept-invitation/[token]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(auth)/accept-invitation/[token]/page.tsx" afterDir="false" />
+    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Fix setAuth parameters in worker invitation. Now is httpOnly and accept only the user without token">
+      <change beforePath="$PROJECT_DIR$/frontend/docs/PERMISSIONS_QUICK_REFERENCE.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/PERMISSIONS_QUICK_REFERENCE.tsx.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -395,7 +395,7 @@
       <workItem from="1768219160141" duration="47386000" />
       <workItem from="1768408361007" duration="32585000" />
       <workItem from="1768672679767" duration="14430000" />
-      <workItem from="1768831168121" duration="5879000" />
+      <workItem from="1768831168121" duration="6230000" />
     </task>
     <task id="LOCAL-00001" summary="A lot of things">
       <option name="closed" value="true" />
@@ -501,7 +501,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768872725920</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Fix setAuth parameters in worker invitation. Now is httpOnly and accept only the user without token">
+      <option name="closed" value="true" />
+      <created>1768873248444</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1768873248444</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -523,7 +531,8 @@
     <MESSAGE value="Multi device login" />
     <MESSAGE value="Nextjs 16 best practies" />
     <MESSAGE value="Adding new feature to manage permission in frontend. User based on own role can see or note some pages and menus. Fix server side components and starting implementig nexjs 16+ best practies. Move many file and starting refactor the frontend with shared layout" />
-    <option name="LAST_COMMIT_MESSAGE" value="Adding new feature to manage permission in frontend. User based on own role can see or note some pages and menus. Fix server side components and starting implementig nexjs 16+ best practies. Move many file and starting refactor the frontend with shared layout" />
+    <MESSAGE value="Fix setAuth parameters in worker invitation. Now is httpOnly and accept only the user without token" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix setAuth parameters in worker invitation. Now is httpOnly and accept only the user without token" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
