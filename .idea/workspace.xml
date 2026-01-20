@@ -4,14 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Try fixing auth cookie with .env variables">
-      <change afterPath="$PROJECT_DIR$/COMANDI_RAPIDI.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FIX_PRODUCTION_LOGIN_REDIRECT.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/PRODUCTION_SETUP.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/URGENT_PRODUCTION_FIX.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/fix-production-env.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/check-cookie-config.sh" beforeDir="false" afterPath="$PROJECT_DIR$/backend/check-cookie-config.sh" afterDir="false" />
+    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Fix auth cookie with .env variables with check .env script and documentation">
+      <change beforePath="$PROJECT_DIR$/frontend/components/dashboards/admin-dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/dashboards/admin-dashboard.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -401,7 +395,7 @@
       <workItem from="1768219160141" duration="47386000" />
       <workItem from="1768408361007" duration="32585000" />
       <workItem from="1768672679767" duration="14430000" />
-      <workItem from="1768831168121" duration="8332000" />
+      <workItem from="1768831168121" duration="8771000" />
     </task>
     <task id="LOCAL-00001" summary="A lot of things">
       <option name="closed" value="true" />
@@ -531,7 +525,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768874968376</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Fix auth cookie with .env variables with check .env script and documentation">
+      <option name="closed" value="true" />
+      <created>1768875920208</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1768875920208</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -556,7 +558,8 @@
     <MESSAGE value="Fix setAuth parameters in worker invitation. Now is httpOnly and accept only the user without token" />
     <MESSAGE value="Change docs PERMISSIONS_QUICK_REFERENCE.tsx.md with md extension due tue compile error" />
     <MESSAGE value="Try fixing auth cookie with .env variables" />
-    <option name="LAST_COMMIT_MESSAGE" value="Try fixing auth cookie with .env variables" />
+    <MESSAGE value="Fix auth cookie with .env variables with check .env script and documentation" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix auth cookie with .env variables with check .env script and documentation" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
