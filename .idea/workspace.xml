@@ -5,153 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Adding new feature to manage permission in frontend. User based on own role can see or note some pages and menus. Fix server side components and starting implementig nexjs 16+ best practies. Move many file and starting refactor the frontend with shared layout">
-      <change afterPath="$PROJECT_DIR$/HTTPONLY_COOKIE_MIGRATION.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/app/Console/Commands/GenerateMaterialEmbeddings.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/app/Http/Middleware/AddBearerTokenFromCookie.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/app/Services/EmbeddingService.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_18_011521_add_embedding_to_materials.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/docs/TOKEN_REFRESH_IMPLEMENTATION.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/dashboard/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/quotes/_components/quote-form.tsx.tmp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/quotes/_components/quote-items-builder.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/quotes/new/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/site-form.tsx.tmp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/dashboards/admin-dashboard.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/features/auth/can.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/features/auth/protected-route.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/quote-items/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/quote-items/REFACTORING.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/quote-items/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/quote-items/item-form-dialog.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/quote-items/quote-items-builder.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/quote-items/sortable-item.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/quote-items/types.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/quote-items/use-drag-and-drop.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/components/quote-items/utils.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/docs/DASHBOARD_ROLES_IMPLEMENTATION.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/docs/PERMISSIONS_GUIDE.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/docs/PERMISSIONS_IMPLEMENTATION.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/docs/PERMISSIONS_QUICK_REFERENCE.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/docs/PERMISSIONS_TODO.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/docs/QUOTE_ITEMS_DRAG_DROP.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/hooks/use-permissions.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/proxy.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/AuthController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/AuthController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/Services/MaterialService.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Services/MaterialService.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/bootstrap/app.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/bootstrap/app.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/config/services.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/services.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/AUTH_FIX.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/AUTH_FIX.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/BUILD_FIX_REPORT.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/BUILD_FIX_REPORT.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/CLEANUP_CONTRACTORS.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/CLEANUP_CONTRACTORS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/COMPLETATO.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/COMPLETATO.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/COMPONENTS_DESIGN_SYSTEM.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/COMPONENTS_DESIGN_SYSTEM.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/DARK_MODE_COMPLETE.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/DARK_MODE_COMPLETE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/DARK_MODE_FIXED_ALL.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/DARK_MODE_FIXED_ALL.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/DATATABLE_FIX.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/DATATABLE_FIX.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/DESIGN_CHANGES.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/DESIGN_CHANGES.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/FINAL_SYSTEM_COMPLETE.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/FINAL_SYSTEM_COMPLETE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/FINAL_TABLES_VERIFICATION.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/FINAL_TABLES_VERIFICATION.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/FORMS_MODAL_COMPLETE.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/FORMS_MODAL_COMPLETE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/HYDRATION_FIX.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/HYDRATION_FIX.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/LOADING_COMPONENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/LOADING_COMPONENTS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/LOADING_TECHNICAL.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/LOADING_TECHNICAL.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/NEXTJS_GUIDELINES.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/NEXTJS_GUIDELINES.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/QUOTE_DETAIL_FIXED.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/QUOTE_DETAIL_FIXED.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/REFACTORING_SUMMARY.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/REFACTORING_SUMMARY.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/REUSABLE_TABLE_COMPONENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/REUSABLE_TABLE_COMPONENTS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/SESSION_SUMMARY.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/SESSION_SUMMARY.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/TABLES_DARK_MODE_FIX.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/TABLES_DARK_MODE_FIX.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/TABLES_FORMS_COMPLETE.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/TABLES_FORMS_COMPLETE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/VISUAL_GUIDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/VISUAL_GUIDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/VISUAL_HIERARCHY_IMPROVEMENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/VISUAL_HIERARCHY_IMPROVEMENTS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/contractors/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/dashboard/contractors/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/contractors/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/dashboard/contractors/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/customers/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/customers/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/customers/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/customers/new/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/customers/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/customers/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/ddts/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/ddts/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/new/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/ddts/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/inventory/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/inventory/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/invitations/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/invitations/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/loading-example/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/dashboard/loading-example/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/materials/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/materials/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/new/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/materials/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/quotes/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/quotes/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/quotes/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/quotes/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/settings-index/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/settings-index/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/settings/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/settings/site-roles/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/settings/site-roles/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/sites/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/sites/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/stock-movements/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/stock-movements/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/suppliers/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/suppliers/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/suppliers/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/suppliers/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/users/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/warehouses/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/warehouses/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/warehouses/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/warehouses/new/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/warehouses/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/warehouses/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/worker/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/dashboard/worker/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/workers/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/workers/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/dashboard/workers/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/workers/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/login/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/login/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/add-site-material-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/add-site-material-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/assign-worker-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/assign-worker-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/customers-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/customers-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/dashboard-layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/layout/dashboard-layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/data-table-wrapper.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/shared/data-table/data-table-wrapper.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/data-table.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/shared/data-table/data-table.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/ddts-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/ddts-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/empty-state.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/shared/empty-state.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/inventory-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/inventory-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/loading-state.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/shared/loading-state.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/manage-worker-roles-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/manage-worker-roles-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-autocomplete.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-autocomplete.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-dependencies.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-dependencies.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-kit-components.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-kit-components.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-request-details-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-request-details-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-request-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-request-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-request-priority-badge.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-request-priority-badge.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-request-status-badge.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-request-status-badge.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/material-requests-tab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-requests-tab.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/materials-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/materials-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/notification-center.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/layout/notification-center.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/page-header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/layout/page-header.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/pdf-viewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/features/pdf/pdf-viewer.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/quote-attachments-upload.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/quotes/_components/quote-attachments-upload.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/quote-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/quotes/_components/quote-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/quote-form.tsx.tmp" beforeDir="false" afterPath="$PROJECT_DIR$/embedding_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/quote-items-builder.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/quote-status-dropdown.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/quotes/_components/quote-status-dropdown.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/quotes-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/quotes/_components/quotes-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-ddts-table.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/site-ddts-table.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-documents-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/site-documents-section.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/site-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-form.tsx.tmp" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.editorconfig" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-materials-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/site-materials-section.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-role-badge.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/site-role-badge.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-services-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/site-services-section.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-worker-status-badge.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/site-worker-status-badge.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/site-workers-tab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/site-workers-tab.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/sites-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/sites-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/status-badge.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/shared/status-badge.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/stock-movements-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/stock-movements-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/suppliers-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/suppliers-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/table-components.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/shared/data-table/table-components.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/ui/card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/ui/card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/warehouse-inventory-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/warehouse-inventory-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/components/workers-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/workers-columns.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/api/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/client.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/api/materials.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/materials.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/stores/auth-store.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/stores/auth-store.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(auth)/accept-invitation/[token]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(auth)/accept-invitation/[token]/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -541,7 +395,7 @@
       <workItem from="1768219160141" duration="47386000" />
       <workItem from="1768408361007" duration="32585000" />
       <workItem from="1768672679767" duration="14430000" />
-      <workItem from="1768831168121" duration="5389000" />
+      <workItem from="1768831168121" duration="5879000" />
     </task>
     <task id="LOCAL-00001" summary="A lot of things">
       <option name="closed" value="true" />
@@ -639,7 +493,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768583766345</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Adding new feature to manage permission in frontend. User based on own role can see or note some pages and menus. Fix server side components and starting implementig nexjs 16+ best practies. Move many file and starting refactor the frontend with shared layout">
+      <option name="closed" value="true" />
+      <created>1768872725920</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1768872725920</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

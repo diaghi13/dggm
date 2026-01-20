@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { invitationsApi } from '@/lib/api/invitations';
@@ -72,15 +72,24 @@ export default function AcceptInvitationPage() {
       toast.success('Account creato con successo!');
       setAccepted(true);
 
-      // Set auth and redirect
-      setAuth(response.user, response.token);
+      // Set auth and redirect (token is in httpOnly cookie)
+      setAuth(response.user);
 
       setTimeout(() => {
         router.push('/dashboard/worker');
       }, 2000);
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Errore durante la creazione dell\'account');
+    onError: (error: unknown) => {
+      let errorMessage = 'Errore durante la creazione dell\'account';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const err = error as { response?: { data?: { message?: string } } };
+        errorMessage = err.response?.data?.message || errorMessage;
+      }
+
+      toast.error(errorMessage);
     },
   });
 
@@ -120,7 +129,7 @@ export default function AcceptInvitationPage() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                L'invito non è stato trovato o il link non è valido. Contatta chi ti ha invitato
+                L&apos;invito non è stato trovato o il link non è valido. Contatta chi ti ha invitato
                 per ricevere un nuovo link.
               </AlertDescription>
             </Alert>
@@ -295,7 +304,7 @@ export default function AcceptInvitationPage() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              Creando l'account accetti i termini di servizio e la privacy policy.
+              Creando l&apos;account accetti i termini di servizio e la privacy policy.
             </AlertDescription>
           </Alert>
         </CardContent>
