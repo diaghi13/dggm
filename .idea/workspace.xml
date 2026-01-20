@@ -4,8 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Fix setAuth parameters in worker invitation. Now is httpOnly and accept only the user without token">
-      <change beforePath="$PROJECT_DIR$/frontend/docs/PERMISSIONS_QUICK_REFERENCE.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/docs/PERMISSIONS_QUICK_REFERENCE.tsx.md" afterDir="false" />
+    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Try fixing auth cookie with .env variables">
+      <change afterPath="$PROJECT_DIR$/COMANDI_RAPIDI.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/FIX_PRODUCTION_LOGIN_REDIRECT.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/PRODUCTION_SETUP.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/URGENT_PRODUCTION_FIX.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/fix-production-env.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/check-cookie-config.sh" beforeDir="false" afterPath="$PROJECT_DIR$/backend/check-cookie-config.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -395,7 +401,7 @@
       <workItem from="1768219160141" duration="47386000" />
       <workItem from="1768408361007" duration="32585000" />
       <workItem from="1768672679767" duration="14430000" />
-      <workItem from="1768831168121" duration="6230000" />
+      <workItem from="1768831168121" duration="8332000" />
     </task>
     <task id="LOCAL-00001" summary="A lot of things">
       <option name="closed" value="true" />
@@ -509,7 +515,23 @@
       <option name="project" value="LOCAL" />
       <updated>1768873248444</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Change docs PERMISSIONS_QUICK_REFERENCE.tsx.md with md extension due tue compile error">
+      <option name="closed" value="true" />
+      <created>1768873574584</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1768873574584</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Try fixing auth cookie with .env variables">
+      <option name="closed" value="true" />
+      <created>1768874968376</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1768874968376</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -532,7 +554,9 @@
     <MESSAGE value="Nextjs 16 best practies" />
     <MESSAGE value="Adding new feature to manage permission in frontend. User based on own role can see or note some pages and menus. Fix server side components and starting implementig nexjs 16+ best practies. Move many file and starting refactor the frontend with shared layout" />
     <MESSAGE value="Fix setAuth parameters in worker invitation. Now is httpOnly and accept only the user without token" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix setAuth parameters in worker invitation. Now is httpOnly and accept only the user without token" />
+    <MESSAGE value="Change docs PERMISSIONS_QUICK_REFERENCE.tsx.md with md extension due tue compile error" />
+    <MESSAGE value="Try fixing auth cookie with .env variables" />
+    <option name="LAST_COMMIT_MESSAGE" value="Try fixing auth cookie with .env variables" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

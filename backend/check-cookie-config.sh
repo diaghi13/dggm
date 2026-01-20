@@ -18,11 +18,19 @@ NC='\033[0m' # No Color
 check_env_var() {
     local var_name=$1
     local expected=$2
-    local actual=$(php -r "echo env('$var_name') ?? 'NOT_SET';")
+    local actual=$(php artisan tinker --execute="echo config('${var_name/SESSION_/session.}') ?? env('$var_name') ?? 'NOT_SET';" 2>/dev/null | tail -1)
+
+    # Fallback: leggi direttamente dal .env se artisan fallisce
+    if [ -z "$actual" ] || [ "$actual" = "NOT_SET" ]; then
+        actual=$(grep "^${var_name}=" .env 2>/dev/null | cut -d '=' -f2- | head -1)
+        if [ -z "$actual" ]; then
+            actual="NOT_SET"
+        fi
+    fi
 
     echo -n "Checking $var_name... "
 
-    if [ "$actual" = "NOT_SET" ]; then
+    if [ "$actual" = "NOT_SET" ] || [ -z "$actual" ]; then
         echo -e "${RED}✗ NON IMPOSTATA${NC}"
         return 1
     elif [ -n "$expected" ] && [ "$actual" != "$expected" ]; then
@@ -83,7 +91,11 @@ echo ""
 echo "6. Suggerimenti configurazione"
 echo "-----------------------------------"
 
-APP_ENV=$(php -r "echo env('APP_ENV') ?? 'local';")
+# Leggi APP_ENV dal file .env
+APP_ENV=$(grep "^APP_ENV=" .env 2>/dev/null | cut -d '=' -f2 | head -1)
+if [ -z "$APP_ENV" ]; then
+    APP_ENV="local"
+fi
 
 if [ "$APP_ENV" = "production" ]; then
     echo "Configurazione raccomandata per PRODUZIONE:"
@@ -95,9 +107,17 @@ if [ "$APP_ENV" = "production" ]; then
     echo ""
 
     # Controlla se SESSION_SECURE_COOKIE è true
-    SECURE=$(php -r "echo env('SESSION_SECURE_COOKIE') ?? 'false';")
+    SECURE=$(grep "^SESSION_SECURE_COOKIE=" .env 2>/dev/null | cut -d '=' -f2 | head -1)
     if [ "$SECURE" != "true" ]; then
         echo -e "${RED}⚠ ATTENZIONE: SESSION_SECURE_COOKIE dovrebbe essere true in produzione!${NC}"
+    fi
+
+    # Controlla SESSION_DOMAIN
+    SESS_DOMAIN=$(grep "^SESSION_DOMAIN=" .env 2>/dev/null | cut -d '=' -f2 | head -1)
+    if [ "$SESS_DOMAIN" = ".ddns.net" ]; then
+        echo -e "${RED}⚠ ATTENZIONE: SESSION_DOMAIN=.ddns.net è TROPPO GENERICO!${NC}"
+        echo -e "${YELLOW}   Questo permette a TUTTI i siti .ddns.net di leggere il cookie!${NC}"
+        echo -e "${YELLOW}   Usa invece: SESSION_DOMAIN=.dggm-erp.ddns.net${NC}"
     fi
 
 else
