@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { materialsApi } from '@/lib/api/materials';
+import { productsApi } from '@/lib/api/products';
 import { usersApi, companySettingsApi, rolesApi, permissionsApi, Role, Permission } from '@/lib/api/users';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -149,18 +149,18 @@ export default function SettingsPage() {
   // Fetch categories
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
     queryKey: ['material-categories'],
-    queryFn: materialsApi.getCategories,
+    queryFn: productsApi.getCategories,
   });
 
-  // Fetch dependency types
+  // Fetch dependency types (relation types)
   const { data: dependencyTypes = [], isLoading: isLoadingTypes } = useQuery({
-    queryKey: ['material-dependency-types'],
-    queryFn: materialsApi.getDependencyTypes,
+    queryKey: ['product-relation-types'],
+    queryFn: productsApi.getRelationTypes,
   });
 
   // Category mutations
   const createCategoryMutation = useMutation({
-    mutationFn: materialsApi.createCategory,
+    mutationFn: productsApi.createCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['material-categories'] });
       setIsCategoryDialogOpen(false);
@@ -175,7 +175,7 @@ export default function SettingsPage() {
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => materialsApi.updateCategory(id, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => productsApi.updateCategory(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['material-categories'] });
       setIsCategoryDialogOpen(false);
@@ -191,7 +191,7 @@ export default function SettingsPage() {
   });
 
   const deleteCategoryMutation = useMutation({
-    mutationFn: materialsApi.deleteCategory,
+    mutationFn: productsApi.deleteCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['material-categories'] });
       toast.success('Categoria eliminata con successo');
@@ -203,11 +203,12 @@ export default function SettingsPage() {
     },
   });
 
-  // Dependency Type mutations
+  // Dependency Type mutations (Relation Types)
   const createTypeMutation = useMutation({
-    mutationFn: materialsApi.createDependencyType,
+    mutationFn: (data: { name: string; code: string; description?: string; icon?: string; color?: string; sort_order?: number }) =>
+      productsApi.createRelationType(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['material-dependency-types'] });
+      queryClient.invalidateQueries({ queryKey: ['product-relation-types'] });
       setIsTypeDialogOpen(false);
       resetTypeForm();
       toast.success('Tipo dipendenza creato con successo');
@@ -220,9 +221,9 @@ export default function SettingsPage() {
   });
 
   const updateTypeMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => materialsApi.updateDependencyType(id, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => productsApi.updateRelationType(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['material-dependency-types'] });
+      queryClient.invalidateQueries({ queryKey: ['product-relation-types'] });
       setIsTypeDialogOpen(false);
       setEditingType(null);
       resetTypeForm();
@@ -236,9 +237,9 @@ export default function SettingsPage() {
   });
 
   const deleteTypeMutation = useMutation({
-    mutationFn: materialsApi.deleteDependencyType,
+    mutationFn: (id: number) => productsApi.deleteRelationType(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['material-dependency-types'] });
+      queryClient.invalidateQueries({ queryKey: ['product-relation-types'] });
       toast.success('Tipo dipendenza eliminato con successo');
     },
     onError: (error: any) => {

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SiteMaterialResource;
-use App\Models\Material;
 use App\Models\Site;
 use App\Models\SiteMaterial;
 use App\Services\InventoryService;

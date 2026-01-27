@@ -1,53 +1,35 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { stockMovementsApi } from '@/lib/api/stock-movements';
-import { warehousesApi } from '@/lib/api/warehouses';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Settings2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Settings2, Plus } from 'lucide-react';
 import { DataTable } from '@/components/shared/data-table/data-table';
 import { createStockMovementsColumns } from '@/components/stock-movements-columns';
-import { StockMovement } from '@/lib/types';
+import { StockMovementFilters } from '@/components/warehouse/stock-movement-filters';
+import { CreateStockMovementDialog } from '@/components/create-stock-movement-dialog';
+import { BulkIntakeDialog } from '@/components/warehouse/bulk-intake-dialog';
+import { useStockMovements } from "@/hooks/use-stock-movements";
 
 export default function StockMovementsPage() {
-  const [warehouseFilter, setWarehouseFilter] = useState<string>('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [filters, setFilters] = useState<{
+    type?: string;
+    warehouse_id?: number;
+    product_id?: number;
+    from_date?: string;
+    to_date?: string;
+  }>({});
 
   // Define columns
   const columns = useMemo(() => createStockMovementsColumns(), []);
 
-  // Fetch warehouses for filter
-  const { data: warehousesData } = useQuery({
-    queryKey: ['warehouses', { is_active: true, per_page: 100 }],
-    queryFn: () => warehousesApi.getAll({ is_active: true, per_page: 100 }),
-  });
-
-  const warehouses = warehousesData?.data ?? [];
-
-  // Fetch movements data
-  const { data: movementsData, isLoading } = useQuery({
-    queryKey: [
-      'stock-movements',
-      {
-        warehouse_id: warehouseFilter || undefined,
-        type: typeFilter || undefined,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-      },
-    ],
-    queryFn: () =>
-      stockMovementsApi.getAll({
-        warehouse_id: warehouseFilter ? parseInt(warehouseFilter) : undefined,
-        type: typeFilter || undefined,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-        per_page: 100,
-      }),
+  // Fetch movements data using new hook
+  const { data: movementsData, isLoading } = useStockMovements({
+    warehouse_id: filters.warehouse_id,
+    type: filters.type,
+    date_from: filters.from_date,
+    date_to: filters.to_date,
+    per_page: 100,
   });
 
   const movements = movementsData?.data ?? [];
@@ -55,10 +37,10 @@ export default function StockMovementsPage() {
   // Calculate statistics
   const stats = {
     total: movements.length,
-    intake: movements.filter((m: StockMovement) => m.type === 'intake').length,
-    output: movements.filter((m: StockMovement) => m.type === 'output').length,
-    transfer: movements.filter((m: StockMovement) => m.type === 'transfer').length,
-    adjustment: movements.filter((m: StockMovement) => m.type === 'adjustment').length,
+    intake: movements.filter((m: App.Data.StockMovementData) => m.type === 'intake').length,
+    output: movements.filter((m: App.Data.StockMovementData) => m.type === 'output').length,
+    transfer: movements.filter((m: App.Data.StockMovementData) => m.type === 'transfer').length,
+    adjustment: movements.filter((m: App.Data.StockMovementData) => m.type === 'adjustment').length,
   };
 
   return (
@@ -68,6 +50,17 @@ export default function StockMovementsPage() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Movimenti Magazzino</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">Storico completo dei movimenti di magazzino</p>
+        </div>
+        <div className="flex gap-2">
+          <BulkIntakeDialog />
+          <CreateStockMovementDialog
+            trigger={
+              <Button variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Movimento Singolo
+              </Button>
+            }
+          />
         </div>
       </div>
 
@@ -136,56 +129,10 @@ export default function StockMovementsPage() {
           <CardDescription>Filtra i movimenti di magazzino</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <Select
-              value={warehouseFilter || 'all'}
-              onValueChange={(value) => setWarehouseFilter(value === 'all' ? '' : value)}
-            >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Tutti i magazzini" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti i magazzini</SelectItem>
-                {warehouses.map((warehouse: any) => (
-                  <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
-                    {warehouse.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={typeFilter || 'all'}
-              onValueChange={(value) => setTypeFilter(value === 'all' ? '' : value)}
-            >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Tutti i tipi" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti i tipi</SelectItem>
-                <SelectItem value="intake">Carico</SelectItem>
-                <SelectItem value="output">Scarico</SelectItem>
-                <SelectItem value="transfer">Trasferimento</SelectItem>
-                <SelectItem value="adjustment">Rettifica</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Input
-              type="date"
-              placeholder="Data inizio"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="h-11"
-            />
-
-            <Input
-              type="date"
-              placeholder="Data fine"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="h-11"
-            />
-          </div>
+          <StockMovementFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+          />
         </CardContent>
       </Card>
 
@@ -208,7 +155,7 @@ export default function StockMovementsPage() {
                   Nessun movimento trovato
                 </h3>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                  {warehouseFilter || typeFilter || startDate || endDate
+                  {Object.keys(filters).length > 0
                     ? 'Prova a modificare i filtri di ricerca'
                     : 'Nessun movimento registrato'}
                 </p>

@@ -1,0 +1,432 @@
+{
+  "info": {
+    "_postman_id": "dggm-erp-api-2026",
+    "name": "DGGM ERP API",
+    "description": "Collection completa per testare l'API DGGM ERP\n\n## Come usare:\n1. Esegui la request 'Login' per autenticarti\n2. Il token viene salvato automaticamente\n3. Tutte le altre request usano il token automaticamente\n\n## Credenziali:\n- Admin: admin@dggm.com / password\n- PM: pm@dggm.com / password\n- Worker: worker@dggm.com / password",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://dggm-erp.ddns.net/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "base_url_dev",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Estrai il token dal cookie Set-Cookie",
+                  "const setCookieHeader = pm.response.headers.get('Set-Cookie');",
+                  "",
+                  "if (setCookieHeader) {",
+                  "    // Cerca il valore di auth_token nel cookie",
+                  "    const tokenMatch = setCookieHeader.match(/auth_token=([^;]+)/);",
+                  "    ",
+                  "    if (tokenMatch && tokenMatch[1]) {",
+                  "        // Estrai, pulisci e decodifica il token (gestisce %7C -> |)",
+                  "        let token = tokenMatch[1].trim();",
+                  "        token = decodeURIComponent(token);",
+                  "        ",
+                  "        // Salva il token come variabile di environment",
+                  "        pm.environment.set('auth_token', token);",
+                  "        ",
+                  "        console.log('✓ Token estratto e salvato:', token.substring(0, 20) + '...');",
+                  "        console.log('  Token completo:', token);",
+                  "    } else {",
+                  "        console.error('✗ Token non trovato nel cookie');",
+                  "        console.log('  Header ricevuto:', setCookieHeader);",
+                  "    }",
+                  "} else {",
+                  "    console.error('✗ Header Set-Cookie non trovato');",
+                  "    console.log('  Headers disponibili:', Object.keys(pm.response.headers.toObject()));",
+                  "}",
+                  "",
+                  "// Test della risposta",
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('user');",
+                  "});",
+                  "",
+                  "pm.test('User data presente', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.user).to.have.property('email');",
+                  "    pm.expect(jsonData.data.user).to.have.property('name');",
+                  "});",
+                  "",
+                  "pm.test('Token salvato correttamente', function () {",
+                  "    const token = pm.environment.get('auth_token');",
+                  "    pm.expect(token).to.be.a('string');",
+                  "    pm.expect(token).to.have.length.above(10);",
+                  "    // Verifica formato: numero|hash",
+                  "    pm.expect(token).to.match(/^\\d+\\|[a-zA-Z0-9]+$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@dggm.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login come Admin.\nIl token viene estratto dal cookie e salvato automaticamente."
+          }
+        },
+        {
+          "name": "Login (PM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const setCookieHeader = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookieHeader) {",
+                  "    const tokenMatch = setCookieHeader.match(/auth_token=([^;]+)/);",
+                  "    if (tokenMatch && tokenMatch[1]) {",
+                  "        let token = tokenMatch[1].trim();",
+                  "        token = decodeURIComponent(token);",
+                  "        pm.environment.set('auth_token', token);",
+                  "        console.log('✓ PM Token salvato:', token.substring(0, 20) + '...');",
+                  "    }",
+                  "}",
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pm@dggm.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Worker)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const setCookieHeader = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookieHeader) {",
+                  "    const tokenMatch = setCookieHeader.match(/auth_token=([^;]+)/);",
+                  "    if (tokenMatch && tokenMatch[1]) {",
+                  "        let token = tokenMatch[1].trim();",
+                  "        token = decodeURIComponent(token);",
+                  "        pm.environment.set('auth_token', token);",
+                  "        console.log('✓ Worker Token salvato:', token.substring(0, 20) + '...');",
+                  "    }",
+                  "}",
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"worker@dggm.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Ottiene le informazioni dell'utente autenticato"
+          }
+        },
+        {
+          "name": "Get Active Sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "sessions"]
+            },
+            "description": "Lista di tutte le sessioni attive (multi-device login)"
+          }
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Logout successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Rimuovi il token salvato",
+                  "pm.collectionVariables.set('auth_token', '');",
+                  "console.log('✓ Token rimosso');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏗️ Sites",
+      "item": [
+        {
+          "name": "List Sites",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sites",
+              "host": ["{{base_url}}"],
+              "path": ["sites"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👷 Workers",
+      "item": [
+        {
+          "name": "List Workers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/workers",
+              "host": ["{{base_url}}"],
+              "path": ["workers"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Materials",
+      "item": [
+        {
+          "name": "List Materials",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/materials",
+              "host": ["{{base_url}}"],
+              "path": ["materials"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏭 Warehouses",
+      "item": [
+        {
+          "name": "List Warehouses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/warehouses",
+              "host": ["{{base_url}}"],
+              "path": ["warehouses"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

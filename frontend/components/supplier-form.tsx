@@ -13,7 +13,7 @@ import { Factory, Mail, Phone, MapPin, Banknote, CreditCard, User, FileText, Glo
 
 const supplierSchema = z.object({
   company_name: z.string().min(1, 'Ragione sociale obbligatoria'),
-  supplier_type: z.enum(['materials', 'personnel', 'both']),
+  supplier_type: z.enum(['products', 'personnel', 'both']),
   personnel_type: z.enum(['cooperative', 'staffing_agency', 'rental_with_operator', 'subcontractor', 'technical_services']).optional().nullable(),
   vat_number: z.string().optional().nullable(),
   tax_code: z.string().optional().nullable(),
@@ -86,7 +86,7 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
           country: supplier.country || 'Italy',
           payment_terms: supplier.payment_terms,
           delivery_terms: supplier.delivery_terms,
-          discount_percentage: supplier.discount_percentage ? parseFloat(supplier.discount_percentage) : undefined,
+          discount_percentage: supplier.discount_percentage || undefined,
           iban: supplier.iban,
           bank_name: supplier.bank_name,
           contact_person: supplier.contact_person,
@@ -94,9 +94,9 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
           contact_phone: supplier.contact_phone,
           notes: supplier.notes,
           is_active: supplier.is_active,
-        }
+        } as SupplierFormValues
       : {
-          supplier_type: 'materials' as const,
+          supplier_type: 'products' as const,
           country: 'Italy',
           is_active: true,
         },
@@ -185,7 +185,7 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
             <Select
               value={watch('personnel_type') || ''}
               onValueChange={(value: any) => setValue('personnel_type', value || null)}
-              disabled={isLoading || supplierType === 'materials'}
+              disabled={isLoading || supplierType === 'products'}
             >
               <SelectTrigger className="h-11">
                 <SelectValue placeholder="Seleziona tipo" />

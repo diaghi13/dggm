@@ -13,7 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataTable } from '@/components/shared/data-table/data-table';
 import { createWarehouseInventoryColumns } from '@/components/warehouse-inventory-columns';
 import { createStockMovementsColumns } from '@/components/stock-movements-columns';
-import { ArrowLeft, Edit, X, Package, AlertTriangle, TrendingUp } from 'lucide-react';
+import { CreateStockMovementDialog } from '@/components/create-stock-movement-dialog';
+import { BulkIntakeDialog } from '@/components/warehouse/bulk-intake-dialog';
+import { ArrowLeft, Edit, X, Package, AlertTriangle, TrendingUp, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -104,9 +106,13 @@ export default function WarehouseDetailPage() {
     );
   }
 
-  const lowStockItems = inventory.filter((item: any) => item.is_low_stock);
+  const lowStockItems = inventory.filter((item: App.Data.InventoryData) => item.is_low_stock);
   const totalValue = inventory.reduce(
-    (sum: number, item: any) => sum + (item.quantity_available * item.material.standard_cost),
+    (sum: number, item: App.Data.InventoryData) => {
+      const quantity = Number(item.quantity_available || 0);
+      const price = Number(item.product?.purchase_price || 0);
+      return sum + (quantity * price);
+    },
     0
   );
 
@@ -115,7 +121,7 @@ export default function WarehouseDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/frontend/app/(dashboard)/warehouses">
+          <Link href="/warehouses">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -307,10 +313,36 @@ export default function WarehouseDetailPage() {
         <TabsContent value="movements" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Movimenti Magazzino</CardTitle>
-              <CardDescription>
-                Storico completo dei movimenti per questo magazzino
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Movimenti Magazzino</CardTitle>
+                  <CardDescription>
+                    Storico completo dei movimenti per questo magazzino
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <BulkIntakeDialog
+                    warehouseId={id}
+                    onSuccess={() => {
+                      queryClient.invalidateQueries({ queryKey: ['warehouse-movements', id] });
+                      queryClient.invalidateQueries({ queryKey: ['warehouse-inventory', id] });
+                    }}
+                  />
+                  <CreateStockMovementDialog
+                    warehouseId={id}
+                    trigger={
+                      <Button variant="outline">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Movimento Singolo
+                      </Button>
+                    }
+                    onSuccess={() => {
+                      queryClient.invalidateQueries({ queryKey: ['warehouse-movements', id] });
+                      queryClient.invalidateQueries({ queryKey: ['warehouse-inventory', id] });
+                    }}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <DataTable

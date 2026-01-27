@@ -41,6 +41,7 @@ import { LoadingScreen } from '@/components/loading-screen';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useMemo } from 'react';
 import { LucideIcon } from 'lucide-react';
+import { OfflineIndicator } from '@/components/offline-indicator';
 
 interface NavigationItem {
   name: string;
@@ -101,23 +102,53 @@ const navigationConfig: NavigationItem[] = [
         name: 'Preventivi',
         href: '/quotes',
         icon: FileText,
-        permissions: ['quotes.view']
+        permissions: ['quotes.view', 'quotes.view-own']
       },
       {
-        name: 'Fatture',
-        href: '/invoices',
-        icon: Receipt,
-        permissions: ['invoices.view']
-      },
+        name: 'SAL',
+        href: '/sals',
+        icon: FileCheck,
+        permissions: ['sals.view']
+      }
     ]
   },
+  // {
+  //   name: 'Magazzino',
+  //   icon: Warehouse,
+  //   children: [
+  //     {
+  //       name: 'Inventario',
+  //       href: '/inventory',
+  //       icon: Package,
+  //       permissions: ['inventory.view']
+  //     },
+  //     {
+  //       name: 'Movimenti Stock',
+  //       href: '/stock-movements',
+  //       icon: TrendingUp,
+  //       permissions: ['stock_movements.view']
+  //     },
+  //     {
+  //       name: 'DDT',
+  //       href: '/ddts',
+  //       icon: Truck,
+  //       permissions: ['ddts.view']
+  //     },
+  //     {
+  //       name: 'Prodotti',
+  //       href: '/products',
+  //       icon: Package,
+  //       permissions: ['products.view']
+  //     },
+  //   ]
+  // },
   {
     name: 'Magazzino',
     icon: Package,
     children: [
       {
-        name: 'Materiali',
-        href: '/materials',
+        name: 'Prodotti',
+        href: '/products',
         icon: Package,
         permissions: ['materials.view']
       },
@@ -531,6 +562,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
+
+        {/* Offline indicator */}
+        <OfflineIndicator />
       </div>
     </div>
   );

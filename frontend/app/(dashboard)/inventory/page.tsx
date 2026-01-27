@@ -2,22 +2,32 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { inventoryApi } from '@/lib/api/inventory';
+import { useInventory, useInventoryValuation } from '@/hooks/use-inventory';
 import { warehousesApi } from '@/lib/api/warehouses';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Package, AlertTriangle, TrendingUp, DollarSign, Search } from 'lucide-react';
+import { Search, Package } from 'lucide-react';
 import { DataTable } from '@/components/shared/data-table/data-table';
 import { createInventoryColumns } from '@/components/inventory-columns';
+import { InventoryAdjustDialog } from '@/components/warehouse/inventory-adjust-dialog';
+import { InventoryStats } from '@/components/warehouse/inventory-stats';
 
 export default function InventoryPage() {
   const [search, setSearch] = useState('');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('');
   const [showLowStock, setShowLowStock] = useState(false);
+  const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+  const [selectedInventory, setSelectedInventory] = useState<any>(null);
 
-  // Define columns
+  // Define columns with onAdjust callback
   const columns = useMemo(() => createInventoryColumns(), []);
+
+  // Handle adjust click
+  const handleAdjustClick = (inventory: any) => {
+    setSelectedInventory(inventory);
+    setAdjustDialogOpen(true);
+  };
 
   // Fetch warehouses for filter
   const { data: warehousesData } = useQuery({
@@ -27,44 +37,29 @@ export default function InventoryPage() {
 
   const warehouses = warehousesData?.data ?? [];
 
-  // Fetch inventory data
-  const { data: inventoryData, isLoading } = useQuery({
-    queryKey: [
-      'inventory',
-      {
-        search,
-        warehouse_id: warehouseFilter || undefined,
-        low_stock: showLowStock || undefined,
-      },
-    ],
-    queryFn: () =>
-      inventoryApi.getAll({
-        search,
-        warehouse_id: warehouseFilter ? parseInt(warehouseFilter) : undefined,
-        low_stock: showLowStock || undefined,
-        per_page: 100,
-      }),
+  // Fetch inventory data using new hook
+  const { data: inventoryData, isLoading } = useInventory({
+    search,
+    warehouse_id: warehouseFilter ? parseInt(warehouseFilter) : undefined,
+    low_stock: showLowStock || undefined,
+    per_page: 100,
   });
 
   const inventory = inventoryData?.data ?? [];
 
-  // Fetch valuation
-  const { data: valuationData } = useQuery({
-    queryKey: ['inventory-valuation', { warehouse_id: warehouseFilter || undefined }],
-    queryFn: () =>
-      inventoryApi.getValuation({
-        warehouse_id: warehouseFilter ? parseInt(warehouseFilter) : undefined,
-      }),
-  });
+  // Fetch valuation using new hook
+  const { data: valuationData } = useInventoryValuation(
+    warehouseFilter ? parseInt(warehouseFilter) : undefined
+  );
 
-  const valuation = valuationData ?? { total_value: 0, total_quantity: 0 };
+  const valuation = valuationData ?? { total_value: 0, total_units: 0, unique_products: 0 };
 
   // Calculate statistics
   const stats = {
     totalItems: inventory.length,
     totalValue: valuation.total_value || 0,
-    lowStockItems: inventory.filter((item: any) => item.is_low_stock).length,
-    totalStock: inventory.reduce((sum: number, item: any) => sum + Number(item.quantity_available), 0),
+    lowStockItems: inventory.filter((item: App.Data.InventoryData) => item.is_low_stock).length,
+    warehouses: warehouses.length,
   };
 
   return (
@@ -72,63 +67,24 @@ export default function InventoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Inventario</h1>
-          <p className="text-slate-600 mt-1">Vista globale stock e valutazione magazzino</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Inventario</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Vista globale stock e valutazione magazzino</p>
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stock Totale</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalItems}</div>
-            <p className="text-xs text-muted-foreground">Materiali diversi</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valore Inventario</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">€ {stats.totalValue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Valutazione totale</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Scorte Basse</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{stats.lowStockItems}</div>
-            <p className="text-xs text-muted-foreground">Materiali sotto soglia</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Quantità Totale</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalStock.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Unità in stock</p>
-          </CardContent>
-        </Card>
-      </div>
+      <InventoryStats
+        totalItems={stats.totalItems}
+        lowStockItems={stats.lowStockItems}
+        totalValue={stats.totalValue}
+        warehouses={stats.warehouses}
+      />
 
       {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle>Filtri</CardTitle>
-          <CardDescription>Filtra e cerca nell'inventario</CardDescription>
+          <CardDescription>Filtra e cerca nell&#39;inventario</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
@@ -150,8 +106,8 @@ export default function InventoryPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tutti i magazzini</SelectItem>
-                {warehouses.map((warehouse: any) => (
-                  <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
+                {warehouses.map((warehouse: App.Data.WarehouseData) => (
+                  <SelectItem key={warehouse.id} value={warehouse.id!.toString()}>
                     {warehouse.name}
                   </SelectItem>
                 ))}
@@ -201,6 +157,15 @@ export default function InventoryPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Adjust Dialog */}
+      {selectedInventory && (
+        <InventoryAdjustDialog
+          open={adjustDialogOpen}
+          onOpenChange={setAdjustDialogOpen}
+          inventory={selectedInventory}
+        />
+      )}
     </div>
   );
 }

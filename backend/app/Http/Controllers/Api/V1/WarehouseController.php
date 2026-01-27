@@ -2,19 +2,25 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Warehouse\CreateWarehouseAction;
+use App\Actions\Warehouse\DeleteWarehouseAction;
+use App\Actions\Warehouse\UpdateWarehouseAction;
+use App\Data\WarehouseData;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreWarehouseRequest;
-use App\Http\Requests\UpdateWarehouseRequest;
 use App\Http\Resources\WarehouseResource;
 use App\Models\Warehouse;
-use App\Services\WarehouseService;
+use App\Queries\Warehouse\GetWarehouseInventoryQuery;
+use App\Queries\Warehouse\GetWarehousesWithLowStockQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\LaravelData\PaginatedDataCollection;
 
 class WarehouseController extends Controller
 {
     public function __construct(
-        private readonly WarehouseService $warehouseService
+        private readonly CreateWarehouseAction $createAction,
+        private readonly UpdateWarehouseAction $updateAction,
+        private readonly DeleteWarehouseAction $deleteAction,
     ) {}
 
     /**
@@ -24,41 +30,31 @@ class WarehouseController extends Controller
     {
         $this->authorize('viewAny', Warehouse::class);
 
-        $filters = $request->only([
-            'is_active',
-            'type',
-            'search',
-            'sort_field',
-            'sort_direction',
-        ]);
+        $filters = $request->only(['is_active', 'type', 'search']);
+        $perPage = (int) $request->get('per_page', 20);
 
-        $perPage = min($request->input('per_page', 20), 100);
-
-        $warehouses = $this->warehouseService->getAll($filters, $perPage);
+        // $query = new \App\Queries\Warehouse\GetWarehouseQuery;
+        $warehouses = \App\Queries\Warehouse\GetWarehouseQuery::execute($filters, $perPage);
 
         return response()->json([
             'success' => true,
-            'data' => WarehouseResource::collection($warehouses->items()),
-            'meta' => [
-                'current_page' => $warehouses->currentPage(),
-                'last_page' => $warehouses->lastPage(),
-                'per_page' => $warehouses->perPage(),
-                'total' => $warehouses->total(),
-            ],
+            ...WarehouseData::collect($warehouses, PaginatedDataCollection::class)->toArray(),
         ]);
     }
 
     /**
      * Store a newly created warehouse
      */
-    public function store(StoreWarehouseRequest $request): JsonResponse
+    public function store(WarehouseData $data): JsonResponse
     {
-        $warehouse = $this->warehouseService->create($request->validated());
+        $this->authorize('create', Warehouse::class);
+
+        $warehouse = $this->createAction->execute($data);
 
         return response()->json([
             'success' => true,
             'message' => 'Warehouse created successfully',
-            'data' => new WarehouseResource($warehouse),
+            'data' => WarehouseData::from($warehouse),
         ], 201);
     }
 
@@ -69,25 +65,27 @@ class WarehouseController extends Controller
     {
         $this->authorize('view', $warehouse);
 
-        $warehouse = $this->warehouseService->getById($warehouse->id);
+        $warehouse->load(['manager']);
 
         return response()->json([
             'success' => true,
-            'data' => new WarehouseResource($warehouse),
+            'data' => WarehouseData::from($warehouse),
         ]);
     }
 
     /**
      * Update the specified warehouse
      */
-    public function update(UpdateWarehouseRequest $request, Warehouse $warehouse): JsonResponse
+    public function update(WarehouseData $data, Warehouse $warehouse): JsonResponse
     {
-        $warehouse = $this->warehouseService->update($warehouse, $request->validated());
+        $this->authorize('update', $warehouse);
+
+        $updated = $this->updateAction->execute($warehouse->id, $data);
 
         return response()->json([
             'success' => true,
             'message' => 'Warehouse updated successfully',
-            'data' => new WarehouseResource($warehouse),
+            'data' => WarehouseData::from($updated),
         ]);
     }
 
@@ -99,7 +97,7 @@ class WarehouseController extends Controller
         $this->authorize('delete', $warehouse);
 
         try {
-            $this->warehouseService->delete($warehouse);
+            $this->deleteAction->execute($warehouse->id);
 
             return response()->json([
                 'success' => true,
@@ -114,19 +112,38 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Get warehouse inventory
+     * Get warehouse inventory (query complessa → Query Class)
      */
     public function getInventory(Request $request, Warehouse $warehouse): JsonResponse
     {
         $this->authorize('view', $warehouse);
 
-        $filters = $request->only(['low_stock', 'search']);
+        $filters = $request->only(['low_stock', 'search', 'product_id']);
 
-        $inventory = $this->warehouseService->getInventory($warehouse, $filters);
+        // Query complessa: usa Query Class
+        $query = new GetWarehouseInventoryQuery($warehouse);
+        $inventory = $query->execute($filters);
 
         return response()->json([
             'success' => true,
             'data' => $inventory,
+        ]);
+    }
+
+    /**
+     * Get warehouses with low stock (query complessa → Query Class)
+     */
+    public function lowStock(): JsonResponse
+    {
+        $this->authorize('viewAny', Warehouse::class);
+
+        // Query complessa: usa Query Class
+        $query = new GetWarehousesWithLowStockQuery;
+        $warehouses = $query->execute();
+
+        return response()->json([
+            'success' => true,
+            'data' => WarehouseResource::collection($warehouses),
         ]);
     }
 }

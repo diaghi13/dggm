@@ -206,44 +206,8 @@ export interface SiteFormData {
   is_active?: boolean;
 }
 
-// Supplier Types
-export interface Supplier {
-  id: number;
-  code: string;
-  company_name: string;
-  supplier_type: SupplierType;
-  personnel_type?: PersonnelType | null;
-  vat_number: string | null;
-  tax_code: string | null;
-  email: string | null;
-  phone: string | null;
-  mobile: string | null;
-  website: string | null;
-  address: string | null;
-  city: string | null;
-  province: string | null;
-  postal_code: string | null;
-  country: string;
-  full_address: string;
-  payment_terms: string | null;
-  delivery_terms: string | null;
-  discount_percentage: string;
-  iban: string | null;
-  bank_name: string | null;
-  contact_person: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  specializations?: string[];
-  notes: string | null;
-  is_active: boolean;
-  provides_materials: boolean;
-  provides_personnel: boolean;
-  active_workers_count: number;
-  rates?: ContractorRate[];
-  workers?: Worker[];
-  created_at: string;
-  updated_at: string;
-}
+// Supplier Types - REMOVED: interface Supplier duplicated (see line ~1199 for type alias)
+// Using App.Data.SupplierData as the source of truth
 
 export interface SupplierFormData {
   company_name: string;
@@ -401,7 +365,7 @@ export type ReturnReason =
 export interface DdtItem {
   id: number;
   ddt_id: number;
-  material_id: number;
+  product_id: number;
   material?: {
     id: number;
     code: string;
@@ -522,7 +486,7 @@ export interface DdtFormData {
   notes?: string | null;
   items: Array<{
     id?: number;
-    material_id: number;
+    product_id: number;
     quantity: number;
     unit: string;
     unit_cost?: number;
@@ -537,8 +501,8 @@ export type QuantityCalculationType = 'fixed' | 'ratio' | 'formula';
 
 export interface MaterialComponent {
   id: number;
-  kit_material_id: number;
-  component_material_id: number;
+  kit_product_id: number;
+  component_product_id: number;
   component_material?: {
     id: number;
     code: string;
@@ -555,9 +519,9 @@ export interface MaterialComponent {
 
 export interface MaterialDependency {
   id: number;
-  material_id: number;
-  dependency_material_id: number;
-  dependency_material?: {
+  product_id: number;
+  dependency_product_id: number;
+  dependency_product?: {
     id: number;
     code: string;
     name: string;
@@ -652,7 +616,7 @@ export interface MaterialFormData {
 
   // Components for kit creation
   components?: Array<{
-    component_material_id: number;
+    component_product_id: number;
     quantity: number;
     notes?: string | null;
   }>;
@@ -664,7 +628,14 @@ export type MovementType = 'intake' | 'output' | 'transfer' | 'adjustment';
 export interface StockMovement {
   id: number;
   type: MovementType;
-  material_id: number;
+  product_id: number;
+  product?: {
+    id: number;
+    code: string;
+    name: string;
+    unit: string;
+    category: string;
+  };
   material?: {
     id: number;
     code: string;
@@ -719,7 +690,7 @@ export interface StockMovement {
 
 export interface StockMovementFormData {
   type: MovementType;
-  material_id: number;
+  product_id: number;
   warehouse_id?: number;
   from_warehouse_id?: number;
   to_warehouse_id?: number;
@@ -1066,7 +1037,7 @@ export interface MaterialRequest {
     name: string;
     code: string;
   };
-  material_id: number;
+  product_id: number;
   material?: {
     id: number;
     name: string;
@@ -1128,7 +1099,7 @@ export interface MaterialRequest {
 
 export interface MaterialRequestFormData {
   site_id: number;
-  material_id: number;
+  product_id: number;
   quantity_requested: number;
   unit_of_measure?: string | null;
   priority?: MaterialRequestPriority;
@@ -1177,4 +1148,66 @@ export interface NotificationMeta {
   last_page: number;
   per_page: number;
   total: number;
+}
+
+// ============================================
+// PRODUCT TYPES - Re-export from generated.d.ts
+// ============================================
+
+// Type aliases for convenience (actual types are in generated.d.ts)
+export type Product = App.Data.ProductData;
+export type ProductRelation = App.Data.ProductRelationData;
+export type ProductRelationType = App.Data.ProductRelationTypeData;
+export type ProductCategory = App.Data.ProductCategoryData;
+export type ProductComponent = App.Data.ProductComponentData;
+export type Supplier = App.Data.SupplierData;
+
+// Enum aliases
+export type ProductType = App.Enums.ProductType;
+export type ProductRelationQuantityType = App.Enums.ProductRelationQuantityType;
+
+// Form data types (for create/update operations)
+export interface ProductFormData {
+  code: string;
+  name: string;
+  description: string | null;
+  category_id: number | null;
+  product_type: App.Enums.ProductType;
+  unit: string;
+  standard_cost: number;
+  purchase_price: number;
+  markup_percentage: number;
+  sale_price: number;
+  rental_price_daily: number;
+  rental_price_weekly: number;
+  rental_price_monthly: number;
+  barcode: string | null;
+  qr_code: string | null;
+  default_supplier_id: number | null;
+  reorder_level: number;
+  reorder_quantity: number;
+  lead_time_days: number;
+  location: string | null;
+  notes: string | null;
+  is_rentable: boolean;
+  is_active: boolean;
+  is_package: boolean;
+  package_weight: number | null;
+  package_volume: number | null;
+  package_dimensions: string | null;
+}
+
+export interface ProductRelationFormData {
+  related_product_id: number;
+  relation_type_id: number;
+  quantity_type: App.Enums.ProductRelationQuantityType;
+  quantity_value: string;
+  is_visible_in_quote: boolean;
+  is_visible_in_material_list: boolean;
+  is_required_for_stock: boolean;
+  is_optional: boolean;
+  min_quantity_trigger: number | null;
+  max_quantity_trigger: number | null;
+  sort_order: number;
+  notes: string | null;
 }

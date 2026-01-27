@@ -12,7 +12,7 @@ class DdtItem extends Model
 
     protected $fillable = [
         'ddt_id',
-        'material_id',
+        'product_id',
         'quantity',
         'unit',
         'unit_cost',
@@ -33,9 +33,9 @@ class DdtItem extends Model
         return $this->belongsTo(Ddt::class);
     }
 
-    public function material(): BelongsTo
+    public function product(): BelongsTo
     {
-        return $this->belongsTo(Material::class);
+        return $this->belongsTo(Product::class);
     }
 
     // Accessors

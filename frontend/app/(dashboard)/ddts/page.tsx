@@ -22,7 +22,7 @@ export default function DdtsPage() {
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedDdt, setSelectedDdt] = useState<Ddt | null>(null);
+  const [selectedDdt, setSelectedDdt] = useState<{ id?: number; code?: string } | null>(null);
 
   // Define columns
   const columns = useMemo(
@@ -86,10 +86,10 @@ export default function DdtsPage() {
   // Calculate statistics
   const stats = {
     total: ddts.length,
-    draft: ddts.filter((d: Ddt) => d.status === 'draft').length,
-    issued: ddts.filter((d: Ddt) => d.status === 'issued').length,
-    in_transit: ddts.filter((d: Ddt) => d.status === 'in_transit').length,
-    delivered: ddts.filter((d: Ddt) => d.status === 'delivered').length,
+    draft: ddts.filter((d: App.Data.DdtData) => d.status === 'draft').length,
+    issued: ddts.filter((d: App.Data.DdtData) => d.status === 'issued').length,
+    in_transit: ddts.filter((d: App.Data.DdtData) => d.status === 'in_transit').length,
+    delivered: ddts.filter((d: App.Data.DdtData) => d.status === 'delivered').length,
   };
 
   return (
@@ -276,7 +276,16 @@ export default function DdtsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setSelectedDdt(null)}>Annulla</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => selectedDdt && deleteMutation.mutate(selectedDdt.id)}
+              onClick={() => {
+                if (selectedDdt?.id) {
+                  deleteMutation.mutate(selectedDdt.id, {
+                    onSuccess: () => {
+                      setIsDeleteDialogOpen(false);
+                      setSelectedDdt(null);
+                    },
+                  });
+                }
+              }}
               className="bg-red-600 hover:bg-red-700"
             >
               Elimina DDT

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { materialsApi } from '@/lib/api/materials';
+import { productsApi } from '@/lib/api/products';
 import { siteMaterialsApi } from '@/lib/api/site-materials';
 import {
   Dialog,
@@ -46,9 +46,9 @@ export function AddSiteMaterialDialog({
 
   // Fetch materials for selection
   const { data: materialsData, isLoading: isLoadingMaterials } = useQuery({
-    queryKey: ['materials', { is_active: true, search: materialSearch }],
+    queryKey: ['products', { is_active: true, search: materialSearch }],
     queryFn: () =>
-      materialsApi.getAll({
+      productsApi.getAll({
         is_active: true,
         search: materialSearch,
         per_page: 50,

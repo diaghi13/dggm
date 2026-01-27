@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ddtsApi } from '@/lib/api/ddts';
-import type { Ddt, DdtType, DdtStatus, ReturnReason } from '@/lib/types';
+import { useDdt, useConfirmDdt, useCancelDdt, useDeliverDdt } from '@/hooks/use-ddts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DdtConfirmDialog } from '@/components/warehouse/ddt-confirm-dialog';
+import { DdtCancelDialog } from '@/components/warehouse/ddt-cancel-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,9 +39,8 @@ import {
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import Link from 'next/link';
-import { toast } from 'sonner';
 
-const ddtTypeLabels: Record<DdtType, string> = {
+const ddtTypeLabels: Record<App.Enums.DdtType, string> = {
   incoming: 'Carico da Fornitore',
   outgoing: 'Scarico a Cliente/Cantiere',
   internal: 'Trasferimento Interno',
@@ -51,7 +50,7 @@ const ddtTypeLabels: Record<DdtType, string> = {
   return_to_supplier: 'Reso a Fornitore',
 };
 
-const ddtTypeColors: Record<DdtType, string> = {
+const ddtTypeColors: Record<App.Enums.DdtType, string> = {
   incoming: 'bg-green-100 text-green-700 border-green-200',
   outgoing: 'bg-blue-100 text-blue-700 border-blue-200',
   internal: 'bg-purple-100 text-purple-700 border-purple-200',
@@ -61,7 +60,7 @@ const ddtTypeColors: Record<DdtType, string> = {
   return_to_supplier: 'bg-red-100 text-red-700 border-red-200',
 };
 
-const ddtStatusLabels: Record<DdtStatus, string> = {
+const ddtStatusLabels: Record<App.Enums.DdtStatus, string> = {
   draft: 'Bozza',
   issued: 'Emesso',
   in_transit: 'In Transito',
@@ -69,7 +68,7 @@ const ddtStatusLabels: Record<DdtStatus, string> = {
   cancelled: 'Annullato',
 };
 
-const ddtStatusColors: Record<DdtStatus, string> = {
+const ddtStatusColors: Record<App.Enums.DdtStatus, string> = {
   draft: 'bg-slate-100 text-slate-700',
   issued: 'bg-blue-100 text-blue-700',
   in_transit: 'bg-yellow-100 text-yellow-700',
@@ -77,7 +76,7 @@ const ddtStatusColors: Record<DdtStatus, string> = {
   cancelled: 'bg-red-100 text-red-700',
 };
 
-const returnReasonLabels: Record<ReturnReason, string> = {
+const returnReasonLabels: Record<App.Enums.ReturnReason, string> = {
   defective: 'Difettoso',
   wrong_item: 'Articolo Errato',
   excess: 'Eccesso',
@@ -89,70 +88,17 @@ const returnReasonLabels: Record<ReturnReason, string> = {
 export default function DdtDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const ddtId = parseInt(params.id as string);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
-  // Fetch DDT details
-  const { data: ddt, isLoading } = useQuery<Ddt>({
-    queryKey: ['ddt', ddtId],
-    queryFn: () => ddtsApi.getById(ddtId),
-  });
+  // Fetch DDT details using new hook
+  const { data: ddt, isLoading } = useDdt(ddtId);
 
-  // Confirm mutation
-  const confirmMutation = useMutation({
-    mutationFn: () => ddtsApi.confirm(ddtId),
-    onSuccess: () => {
-      toast.success('DDT Confermato', {
-        description: 'Il DDT è stato confermato e i movimenti di magazzino sono stati generati automaticamente.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['ddt', ddtId] });
-      queryClient.invalidateQueries({ queryKey: ['ddts'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
-    },
-    onError: (error: any) => {
-      toast.error('Errore', {
-        description: error.response?.data?.message || 'Impossibile confermare il DDT',
-      });
-    },
-  });
-
-  // Cancel mutation
-  const cancelMutation = useMutation({
-    mutationFn: () => ddtsApi.cancel(ddtId),
-    onSuccess: () => {
-      toast.success('DDT Annullato', {
-        description: 'Il DDT è stato annullato e i movimenti sono stati rollback.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['ddt', ddtId] });
-      queryClient.invalidateQueries({ queryKey: ['ddts'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
-    },
-    onError: (error: any) => {
-      toast.error('Errore', {
-        description:
-          error.response?.data?.message || 'Impossibile annullare il DDT (forse è già stato consegnato?)',
-      });
-    },
-  });
-
-  // Mark as delivered mutation
-  const markDeliveredMutation = useMutation({
-    mutationFn: () => ddtsApi.markAsDelivered(ddtId),
-    onSuccess: () => {
-      toast.success('DDT Consegnato', {
-        description: 'Il DDT è stato marcato come consegnato.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['ddt', ddtId] });
-      queryClient.invalidateQueries({ queryKey: ['ddts'] });
-    },
-    onError: (error: any) => {
-      toast.error('Errore', {
-        description: error.response?.data?.message || 'Impossibile marcare come consegnato',
-      });
-    },
-  });
+  // Use new mutation hooks
+  const confirmMutation = useConfirmDdt();
+  const cancelMutation = useCancelDdt();
+  const deliverMutation = useDeliverDdt();
 
   if (isLoading) {
     return (
@@ -199,122 +145,63 @@ export default function DdtDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className={ddtStatusColors[ddt.status]}>{ddtStatusLabels[ddt.status]}</Badge>
-          <Badge variant="outline" className={ddtTypeColors[ddt.type]}>
-            {ddtTypeLabels[ddt.type]}
+          <Badge className={ddtStatusColors[ddt.status as App.Enums.DdtStatus]}>
+            {ddtStatusLabels[ddt.status as App.Enums.DdtStatus]}
+          </Badge>
+          <Badge variant="outline" className={ddtTypeColors[ddt.type as App.Enums.DdtType]}>
+            {ddtTypeLabels[ddt.type as App.Enums.DdtType]}
           </Badge>
         </div>
       </div>
 
       {/* Critical Actions - PULSANTE A PROVA DI SCEMO */}
       {ddt.can_be_confirmed && (
-        <Card className="border-2 border-green-300 bg-green-50">
+        <Card className="border-2 border-green-300 bg-green-50 dark:bg-green-950">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-900">
+            <CardTitle className="flex items-center gap-2 text-green-900 dark:text-green-100">
               <AlertTriangle className="h-5 w-5" />
               Azione Richiesta: Conferma DDT
             </CardTitle>
-            <CardDescription className="text-green-800">
+            <CardDescription className="text-green-800 dark:text-green-200">
               Questo DDT è in bozza e deve essere confermato per generare i movimenti di magazzino.{' '}
               <strong>Attenzione: questa azione è irreversibile dopo la consegna fisica!</strong>
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  size="lg"
-                  className="bg-green-600 hover:bg-green-700 text-white font-semibold"
-                  disabled={confirmMutation.isPending}
-                >
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                  {confirmMutation.isPending ? 'Conferma in corso...' : 'Conferma DDT e Genera Movimenti'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Sei assolutamente sicuro?</AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-2">
-                    <p>
-                      Confermando questo DDT verranno <strong>automaticamente generati</strong> i
-                      seguenti movimenti di magazzino:
-                    </p>
-                    <ul className="list-disc list-inside space-y-1">
-                      <li>
-                        <strong>Carico/Scarico</strong> automatico in base al tipo di DDT
-                      </li>
-                      <li>
-                        <strong>Aggiornamento quantità</strong> disponibile/riservata/quarantena
-                      </li>
-                      <li>
-                        <strong>Registrazione movimenti</strong> nello storico
-                      </li>
-                    </ul>
-                    <p className="text-red-600 font-semibold mt-4">
-                      ⚠️ Potrai annullare solo se il materiale NON è ancora stato consegnato
-                      fisicamente!
-                    </p>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annulla, non confermare</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => confirmMutation.mutate()}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Sì, conferma e genera movimenti
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold"
+              onClick={() => setConfirmDialogOpen(true)}
+            >
+              <CheckCircle2 className="h-5 w-5 mr-2" />
+              Conferma DDT e Genera Movimenti
+            </Button>
           </CardContent>
         </Card>
       )}
 
       {/* Cancel Action */}
       {ddt.can_be_cancelled && ddt.status === 'issued' && (
-        <Card className="border-2 border-red-300 bg-red-50">
+        <Card className="border-2 border-red-300 bg-red-50 dark:bg-red-950">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-900">
+            <CardTitle className="flex items-center gap-2 text-red-900 dark:text-red-100">
               <XCircle className="h-5 w-5" />
               Annulla DDT
             </CardTitle>
-            <CardDescription className="text-red-800">
+            <CardDescription className="text-red-800 dark:text-red-200">
               Puoi annullare questo DDT perché il materiale non è ancora stato consegnato
               fisicamente. Tutti i movimenti verranno rollback.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  disabled={cancelMutation.isPending}
-                >
-                  <XCircle className="h-5 w-5 mr-2" />
-                  {cancelMutation.isPending ? 'Annullamento...' : 'Annulla DDT e Rollback Movimenti'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confermi l'annullamento?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Annullando questo DDT, tutti i movimenti di magazzino generati verranno
-                    automaticamente rollback. Il DDT passerà allo stato "Annullato".
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>No, mantieni attivo</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => cancelMutation.mutate()}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Sì, annulla DDT
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              variant="destructive"
+              size="lg"
+              onClick={() => setCancelDialogOpen(true)}
+            >
+              <XCircle className="h-5 w-5 mr-2" />
+              Annulla DDT e Rollback Movimenti
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -334,9 +221,9 @@ export default function DdtDetailPage() {
           <CardContent>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="lg" disabled={markDeliveredMutation.isPending}>
+                <Button size="lg" disabled={deliverMutation.isPending}>
                   <Package className="h-5 w-5 mr-2" />
-                  {markDeliveredMutation.isPending ? 'Salvataggio...' : 'Marca come Consegnato'}
+                  {deliverMutation.isPending ? 'Salvataggio...' : 'Marca come Consegnato'}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -349,7 +236,7 @@ export default function DdtDetailPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>No, non ancora</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => markDeliveredMutation.mutate()}>
+                  <AlertDialogAction onClick={() => deliverMutation.mutate(ddtId)}>
                     Sì, consegnato
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -493,7 +380,7 @@ export default function DdtDetailPage() {
             <div>
               <label className="text-sm font-medium text-slate-600">Motivo Reso</label>
               <Badge className="bg-orange-100 text-orange-700">
-                {returnReasonLabels[ddt.return_reason]}
+                {ddt.return_reason && returnReasonLabels[ddt.return_reason as App.Enums.ReturnReason]}
               </Badge>
             </div>
             {ddt.return_notes && (
@@ -502,7 +389,7 @@ export default function DdtDetailPage() {
                 <p className="text-slate-700">{ddt.return_notes}</p>
               </div>
             )}
-            {(['defective', 'warranty'] as ReturnReason[]).includes(ddt.return_reason) && (
+            {ddt.return_reason && (['defective', 'warranty'] as App.Enums.ReturnReason[]).includes(ddt.return_reason as App.Enums.ReturnReason) && (
               <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
                 <p className="text-sm text-yellow-800 font-medium">
                   ⚠️ Materiale marcato come difettoso: verrà messo in QUARANTENA automaticamente
@@ -536,12 +423,24 @@ export default function DdtDetailPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ddt.items?.map((item) => (
+              {ddt.items?.map((item: App.Data.DdtItemData) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-mono text-sm">{item.material?.code}</TableCell>
-                  <TableCell className="font-medium">{item.material?.name}</TableCell>
+                  <TableCell className="font-mono text-sm">{item.product?.code}</TableCell>
+                  <TableCell className="font-medium">{item.product?.name}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{item.material?.category}</Badge>
+                    <Badge
+                      variant="outline"
+                      style={{
+                        backgroundColor: item.product?.category?.color ? `${item.product.category.color}20` : undefined,
+                        borderColor: item.product?.category?.color || undefined,
+                        color: item.product?.category?.color || undefined,
+                      }}
+                    >
+                      {item.product?.category?.icon && (
+                        <span className="mr-1">{item.product.category.icon}</span>
+                      )}
+                      {item.product?.category?.name || 'N/A'}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right font-semibold">{item.quantity}</TableCell>
                   <TableCell>{item.unit}</TableCell>
@@ -610,6 +509,28 @@ export default function DdtDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog Components */}
+      {ddt && (
+        <>
+          <DdtConfirmDialog
+            ddt={ddt}
+            open={confirmDialogOpen}
+            onOpenChange={setConfirmDialogOpen}
+            onSuccess={() => {
+              router.refresh();
+            }}
+          />
+          <DdtCancelDialog
+            ddt={ddt}
+            open={cancelDialogOpen}
+            onOpenChange={setCancelDialogOpen}
+            onSuccess={() => {
+              router.refresh();
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

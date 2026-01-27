@@ -35,10 +35,10 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SiteDocumentsSection } from '@/app/(dashboard)/sites/_components/site-documents-section';
 import { SiteMaterialsSection } from '@/app/(dashboard)/sites/_components/site-materials-section';
-import { SiteServicesSection } from '@/app/(dashboard)/sites/_components/site-services-section';
 import { DdtPendingAlert } from '@/components/ddt-pending-alert';
 import { SiteWorkersTab } from '@/app/(dashboard)/sites/_components/site-workers-tab';
-import { MaterialRequestsTab } from '@/app/(dashboard)/materials/_components/material-requests-tab';
+import { ProductRequestsTab } from '@/app/(dashboard)/products/_components/material-requests-tab';
+import {SiteServicesSection} from "@/app/(dashboard)/sites/_components/site-services-section";
 
 const statusColors: Record<string, string> = {
   draft: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200',
@@ -789,7 +789,7 @@ export default function SiteDetailPage() {
         </TabsContent>
 
         <TabsContent value="richieste">
-          <MaterialRequestsTab siteId={siteId} siteName={site.name} />
+          <ProductRequestsTab siteId={siteId} siteName={site.name} />
         </TabsContent>
 
         <TabsContent value="timesheet">

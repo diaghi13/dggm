@@ -14,7 +14,7 @@ class StockMovement extends Model
     protected $fillable = [
         'code',
         'ddt_id',
-        'material_id',
+        'product_id',
         'warehouse_id',
         'type',
         'quantity',
@@ -41,9 +41,9 @@ class StockMovement extends Model
     }
 
     // Relationships
-    public function material(): BelongsTo
+    public function product(): BelongsTo
     {
-        return $this->belongsTo(Material::class);
+        return $this->belongsTo(Product::class);
     }
 
     public function warehouse(): BelongsTo

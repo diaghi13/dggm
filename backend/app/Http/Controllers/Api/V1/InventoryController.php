@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Inventory\AdjustInventoryAction;
+use App\Data\InventoryData;
+use App\Data\StockMovementData;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\InventoryResource;
 use App\Models\Inventory;
-use App\Services\InventoryService;
+use App\Queries\Inventory\GetInventoryByProductQuery;
+use App\Queries\Inventory\GetInventoryByWarehouseQuery;
+use App\Queries\Inventory\GetInventoryQuery;
+use App\Queries\Inventory\GetLowStockItemsQuery;
+use App\Queries\Inventory\GetStockValuationQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\LaravelData\DataCollection;
 
 class InventoryController extends Controller
 {
-    public function __construct(
-        private readonly InventoryService $inventoryService
-    ) {}
-
     /**
      * Display a listing of inventory
      */
@@ -22,18 +25,18 @@ class InventoryController extends Controller
     {
         $this->authorize('viewAny', Inventory::class);
 
-        $filters = $request->only([
-            'warehouse_id',
-            'material_id',
-            'low_stock',
-            'search',
-        ]);
+        $query = new GetInventoryQuery(
+            warehouseId: $request->input('warehouse_id'),
+            productId: $request->input('product_id'),
+            lowStock: $request->boolean('low_stock'),
+            search: $request->input('search'),
+        );
 
-        $inventory = $this->inventoryService->getAll($filters);
+        $inventory = $query->execute();
 
         return response()->json([
             'success' => true,
-            'data' => InventoryResource::collection($inventory),
+            'data' => InventoryData::collect($inventory, DataCollection::class),
         ]);
     }
 
@@ -44,26 +47,28 @@ class InventoryController extends Controller
     {
         $this->authorize('viewAny', Inventory::class);
 
-        $inventory = $this->inventoryService->getByWarehouse($warehouseId);
+        $query = new GetInventoryByWarehouseQuery($warehouseId);
+        $inventory = $query->execute();
 
         return response()->json([
             'success' => true,
-            'data' => InventoryResource::collection($inventory),
+            'data' => InventoryData::collect($inventory, DataCollection::class),
         ]);
     }
 
     /**
-     * Get inventory for specific material
+     * Get inventory for specific product
      */
-    public function byMaterial(int $materialId): JsonResponse
+    public function byProduct(int $productId): JsonResponse
     {
         $this->authorize('viewAny', Inventory::class);
 
-        $inventory = $this->inventoryService->getByMaterial($materialId);
+        $query = new GetInventoryByProductQuery($productId);
+        $inventory = $query->execute();
 
         return response()->json([
             'success' => true,
-            'data' => InventoryResource::collection($inventory),
+            'data' => InventoryData::collect($inventory, DataCollection::class),
         ]);
     }
 
@@ -74,12 +79,12 @@ class InventoryController extends Controller
     {
         $this->authorize('viewAny', Inventory::class);
 
-        $warehouseId = $request->input('warehouse_id');
-        $items = $this->inventoryService->getLowStockItems($warehouseId);
+        $query = new GetLowStockItemsQuery($request->input('warehouse_id'));
+        $items = $query->execute();
 
         return response()->json([
             'success' => true,
-            'data' => InventoryResource::collection($items),
+            'data' => InventoryData::collect($items, DataCollection::class),
         ]);
     }
 
@@ -90,8 +95,8 @@ class InventoryController extends Controller
     {
         $this->authorize('viewAny', Inventory::class);
 
-        $warehouseId = $request->input('warehouse_id');
-        $valuation = $this->inventoryService->getStockValuation($warehouseId);
+        $query = new GetStockValuationQuery($request->input('warehouse_id'));
+        $valuation = $query->execute();
 
         return response()->json([
             'success' => true,
@@ -102,12 +107,12 @@ class InventoryController extends Controller
     /**
      * Adjust stock
      */
-    public function adjust(Request $request): JsonResponse
+    public function adjust(Request $request, AdjustInventoryAction $action): JsonResponse
     {
         $this->authorize('create', Inventory::class);
 
         $validated = $request->validate([
-            'material_id' => 'required|exists:materials,id',
+            'product_id' => 'required|exists:products,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'quantity' => 'required|numeric',
             'unit_cost' => 'nullable|numeric|min:0',
@@ -115,8 +120,8 @@ class InventoryController extends Controller
         ]);
 
         try {
-            $movement = $this->inventoryService->adjustStock(
-                $validated['material_id'],
+            $movement = $action->execute(
+                $validated['product_id'],
                 $validated['warehouse_id'],
                 $validated['quantity'],
                 $validated['unit_cost'] ?? null,
@@ -126,7 +131,7 @@ class InventoryController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Stock adjusted successfully',
-                'data' => $movement,
+                'data' => StockMovementData::from($movement),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -144,21 +149,67 @@ class InventoryController extends Controller
         $this->authorize('create', Inventory::class);
 
         $validated = $request->validate([
-            'material_id' => 'required|exists:materials,id',
+            'product_id' => 'required|exists:products,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'minimum_stock' => 'required|numeric|min:0',
         ]);
 
-        $inventory = $this->inventoryService->updateMinimumStock(
-            $validated['material_id'],
-            $validated['warehouse_id'],
-            $validated['minimum_stock']
+        $inventory = Inventory::firstOrCreate(
+            [
+                'product_id' => $validated['product_id'],
+                'warehouse_id' => $validated['warehouse_id'],
+            ],
+            [
+                'quantity_available' => 0,
+                'quantity_reserved' => 0,
+                'quantity_in_transit' => 0,
+                'quantity_quarantine' => 0,
+            ]
         );
+
+        $inventory->minimum_stock = $validated['minimum_stock'];
+        $inventory->save();
 
         return response()->json([
             'success' => true,
             'message' => 'Minimum stock updated successfully',
-            'data' => new InventoryResource($inventory),
+            'data' => InventoryData::from($inventory),
+        ]);
+    }
+
+    /**
+     * Update maximum stock level
+     */
+    public function updateMaximumStock(Request $request): JsonResponse
+    {
+        $this->authorize('create', Inventory::class);
+
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'maximum_stock' => 'required|numeric|min:0',
+        ]);
+
+        $inventory = Inventory::firstOrCreate(
+            [
+                'product_id' => $validated['product_id'],
+                'warehouse_id' => $validated['warehouse_id'],
+            ],
+            [
+                'quantity_available' => 0,
+                'quantity_reserved' => 0,
+                'quantity_in_transit' => 0,
+                'quantity_quarantine' => 0,
+            ]
+        );
+
+        $inventory->maximum_stock = $validated['maximum_stock'];
+        $inventory->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Maximum stock updated successfully',
+            'data' => InventoryData::from($inventory),
         ]);
     }
 }

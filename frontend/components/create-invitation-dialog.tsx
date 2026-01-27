@@ -233,8 +233,8 @@ export function CreateInvitationDialog({ open, onOpenChange }: CreateInvitationD
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {suppliers?.data?.map((supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                        {suppliers?.data?.filter(s => s.id).map((supplier) => (
+                          <SelectItem key={supplier.id} value={supplier.id!.toString()}>
                             {supplier.company_name}
                           </SelectItem>
                         ))}

@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Folder, FileText } from 'lucide-react';
-import { MaterialAutocomplete } from '@/app/(dashboard)/materials/_components/material-autocomplete';
+import { ProductAutocomplete } from '@/app/(dashboard)/products/_components/product-autocomplete';
 import { QuoteItem, ItemFormData } from './types';
 import { calculateTotals } from './utils';
 
@@ -122,9 +122,9 @@ export function ItemFormDialog({
           {formData.type === 'item' && (
             <div className="space-y-2">
               <Label className="text-slate-700 font-medium">
-                Materiale dal Magazzino (opzionale)
+                Prodotto dal Magazzino (opzionale)
               </Label>
-              <MaterialAutocomplete
+              <ProductAutocomplete
                 value={formData.material_id}
                 onSelect={(material) => {
                   if (material) {

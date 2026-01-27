@@ -102,11 +102,35 @@ class RoleAndPermissionSeeder extends Seeder
             'warehouse.delete',
             'warehouse.inventory',
 
-            // Materials management
+            // Materials management (deprecated - use products)
             'materials.view',
             'materials.create',
             'materials.edit',
             'materials.delete',
+
+            // Products management (replaces materials)
+            'products.view',
+            'products.create',
+            'products.edit',
+            'products.delete',
+
+            // Product Categories
+            'product-categories.view',
+            'product-categories.create',
+            'product-categories.edit',
+            'product-categories.delete',
+
+            // Product Relation Types
+            'product-relation-types.view',
+            'product-relation-types.create',
+            'product-relation-types.edit',
+            'product-relation-types.delete',
+
+            // Product Relations
+            'product-relations.view',
+            'product-relations.create',
+            'product-relations.edit',
+            'product-relations.delete',
 
             // Invoice management
             'invoices.view',
@@ -193,6 +217,10 @@ class RoleAndPermissionSeeder extends Seeder
             'time-trackings.view', 'time-trackings.approve',
             'warehouse.view',
             'materials.view', 'materials.create', 'materials.edit',
+            'products.view', 'products.create', 'products.edit',
+            'product-categories.view', 'product-categories.create', 'product-categories.edit',
+            'product-relation-types.view', 'product-relation-types.create', 'product-relation-types.edit',
+            'product-relations.view', 'product-relations.create', 'product-relations.edit', 'product-relations.delete',
             'invoices.view',
             'vehicles.view',
             'progress-billings.view', 'progress-billings.create', 'progress-billings.edit',
@@ -248,6 +276,10 @@ class RoleAndPermissionSeeder extends Seeder
             'ddts.view', 'ddts.create', 'ddts.update', 'ddts.delete', 'ddts.confirm', 'ddts.cancel',
             'warehouse.view', 'warehouse.create', 'warehouse.edit', 'warehouse.inventory',
             'materials.view', 'materials.create', 'materials.edit', 'materials.delete',
+            'products.view', 'products.create', 'products.edit', 'products.delete',
+            'product-categories.view',
+            'product-relation-types.view',
+            'product-relations.view', 'product-relations.create', 'product-relations.edit', 'product-relations.delete',
             'vehicles.view',
         ]);
 

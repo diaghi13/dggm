@@ -22,7 +22,13 @@
       "Bash(php create_test_ddt.php:*)",
       "Bash(php -r:*)",
       "Bash(cat:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(composer require:*)",
+      "Bash(php test_product_dto.php:*)",
+      "Bash(php:*)",
+      "Bash(file:*)",
+      "WebFetch(domain:spatie.be)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

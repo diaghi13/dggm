@@ -12,6 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Encrypt cookies (except auth_token for API compatibility)
+        $middleware->encryptCookies(except: [
+            'auth_token',
+        ]);
+
         // Add middleware to read auth token from httpOnly cookie
         // This runs before Sanctum authentication, allowing cookie-based auth
         $middleware->api(prepend: [
@@ -20,4 +25,5 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->create();

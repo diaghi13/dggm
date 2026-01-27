@@ -121,7 +121,7 @@ export default function WarehousesPage() {
           <h1 className="text-3xl font-bold text-slate-900">Magazzini</h1>
           <p className="text-slate-600 mt-1">Gestione multi-magazzino e ubicazioni</p>
         </div>
-        <Link href="/frontend/app/(dashboard)/warehouses/new">
+        <Link href="/warehouses/new">
           <Button className="shadow-md">
             <Plus className="mr-2 h-4 w-4" />
             Nuovo Magazzino
@@ -250,7 +250,7 @@ export default function WarehousesPage() {
                   : 'Inizia creando il tuo primo magazzino'}
               </p>
               {!search && !type && (
-                <Link href="/frontend/app/(dashboard)/warehouses/new">
+                <Link href="/warehouses/new">
                   <Button className="mt-4">
                     <Plus className="mr-2 h-4 w-4" />
                     Crea Primo Magazzino
@@ -310,7 +310,7 @@ export default function WarehousesPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Link href={`/frontend/app/(dashboard)/warehouses/${warehouse.id}`}>
+                          <Link href={`/warehouses/${warehouse.id}`}>
                             <Button variant="outline" size="sm">
                               <Edit className="h-4 w-4" />
                             </Button>

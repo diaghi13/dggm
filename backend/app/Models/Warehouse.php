@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\LaravelData\WithData;
 
 class Warehouse extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, WithData;
 
     protected $fillable = [
         'code',
@@ -87,8 +88,8 @@ class Warehouse extends Model
     public function getTotalValueAttribute(): float
     {
         return (float) $this->inventory()
-            ->join('materials', 'inventory.material_id', '=', 'materials.id')
-            ->selectRaw('SUM(inventory.quantity_available * materials.standard_cost) as total')
+            ->join('products', 'inventory.product_id', '=', 'products.id')
+            ->selectRaw('SUM(inventory.quantity_available * products.standard_cost) as total')
             ->value('total') ?? 0;
     }
 

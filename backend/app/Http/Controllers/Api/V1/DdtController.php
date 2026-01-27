@@ -2,82 +2,168 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Ddt\CancelDdtAction;
+use App\Actions\Ddt\ConfirmDdtAction;
+use App\Actions\Ddt\CreateDdtAction;
+use App\Actions\Ddt\DeleteDdtAction;
+use App\Actions\Ddt\DeliverDdtAction;
+use App\Actions\Ddt\UpdateDdtAction;
+use App\Data\DdtData;
+use App\Enums\DdtStatus;
+use App\Enums\DdtType;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreDdtRequest;
-use App\Http\Requests\UpdateDdtRequest;
-use App\Http\Resources\DdtResource;
 use App\Models\Ddt;
-use App\Services\DdtService;
+use App\Queries\Ddt\GetActiveDdtsBySiteQuery;
+use App\Queries\Ddt\GetDdtByIdQuery;
+use App\Queries\Ddt\GetDdtsQuery;
+use App\Queries\Ddt\GetPendingRentalReturnsQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Spatie\LaravelData\DataCollection;
 
 class DdtController extends Controller
 {
-    public function __construct(
-        private readonly DdtService $ddtService
-    ) {}
-
     /**
      * Display a listing of DDTs
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Ddt::class);
 
-        $filters = $request->only(['type', 'status', 'warehouse_id', 'site_id', 'search', 'sort_by', 'sort_order']);
-        $perPage = $request->input('per_page', 20);
+        $type = $request->input('type') ? DdtType::tryFrom($request->input('type')) : null;
+        $status = $request->input('status') ? DdtStatus::tryFrom($request->input('status')) : null;
 
-        $ddts = $this->ddtService->getAll($filters, $perPage);
+        $query = new GetDdtsQuery(
+            type: $type,
+            status: $status,
+            warehouseId: $request->input('warehouse_id'),
+            siteId: $request->input('site_id'),
+            supplierId: $request->input('supplier_id'),
+            customerId: $request->input('customer_id'),
+            search: $request->input('search'),
+            sortBy: $request->input('sort_by', 'ddt_date'),
+            sortOrder: $request->input('sort_order', 'desc'),
+            perPage: $request->input('per_page', 20),
+        );
 
-        return DdtResource::collection($ddts);
+        $ddts = $query->execute();
+
+        return response()->json([
+            'success' => true,
+            'data' => DdtData::collect($ddts->items(), DataCollection::class),
+            'meta' => [
+                'current_page' => $ddts->currentPage(),
+                'last_page' => $ddts->lastPage(),
+                'per_page' => $ddts->perPage(),
+                'total' => $ddts->total(),
+            ],
+        ]);
     }
 
     /**
      * Store a newly created DDT
      */
-    public function store(StoreDdtRequest $request): JsonResponse
+    public function store(DdtData $data, CreateDdtAction $action): JsonResponse
     {
         $this->authorize('create', Ddt::class);
 
-        $ddt = $this->ddtService->create($request->validated());
+//        $validated = $request->validate([
+//            'type' => 'required|string',
+//            'ddt_number' => 'nullable|string|max:100',
+//            'ddt_date' => 'required|date',
+//            'from_warehouse_id' => 'nullable|exists:warehouses,id',
+//            'to_warehouse_id' => 'nullable|exists:warehouses,id',
+//            'supplier_id' => 'nullable|exists:suppliers,id',
+//            'customer_id' => 'nullable|exists:customers,id',
+//            'site_id' => 'nullable|exists:sites,id',
+//            'transport_type' => 'nullable|string',
+//            'carrier' => 'nullable|string|max:255',
+//            'tracking_number' => 'nullable|string|max:255',
+//            'num_packages' => 'nullable|integer|min:1',
+//            'weight_kg' => 'nullable|numeric|min:0',
+//            'notes' => 'nullable|string',
+//            'items' => 'required|array|min:1',
+//            'items.*.product_id' => 'required|exists:products,id',
+//            'items.*.quantity' => 'required|numeric|min:0.01',
+//            'items.*.unit_cost' => 'nullable|numeric|min:0',
+//            'items.*.description' => 'nullable|string',
+//        ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'DDT creato con successo.',
-            'data' => new DdtResource($ddt),
-        ], 201);
+//        echo "<pre>";
+//        print_r($data);
+//        echo "</pre>";
+//        exit();
+
+        try {
+            //$ddtData = DdtData::from($validated);
+            $ddt = $action->execute($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'DDT created successfully',
+                'data' => DdtData::from($ddt),
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 
     /**
      * Display the specified DDT
      */
-    public function show(Ddt $ddt): JsonResponse
+    public function show(int $id): JsonResponse
     {
-        $this->authorize('view', $ddt);
+        $query = new GetDdtByIdQuery($id);
+        $ddt = $query->execute();
 
-        $ddt = $this->ddtService->getById($ddt->id);
+        $this->authorize('view', $ddt);
 
         return response()->json([
             'success' => true,
-            'data' => new DdtResource($ddt),
+            'data' => DdtData::from($ddt),
         ]);
     }
 
     /**
-     * Update the specified DDT
+     * Update the specified DDT (only Draft)
      */
-    public function update(UpdateDdtRequest $request, Ddt $ddt): JsonResponse
+    public function update(Request $request, Ddt $ddt, UpdateDdtAction $action): JsonResponse
     {
         $this->authorize('update', $ddt);
 
+        $validated = $request->validate([
+            'type' => 'sometimes|string',
+            'ddt_number' => 'nullable|string|max:100',
+            'ddt_date' => 'sometimes|date',
+            'from_warehouse_id' => 'nullable|exists:warehouses,id',
+            'to_warehouse_id' => 'nullable|exists:warehouses,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'customer_id' => 'nullable|exists:customers,id',
+            'site_id' => 'nullable|exists:sites,id',
+            'transport_type' => 'nullable|string',
+            'carrier' => 'nullable|string|max:255',
+            'tracking_number' => 'nullable|string|max:255',
+            'num_packages' => 'nullable|integer|min:1',
+            'weight_kg' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string',
+            'items' => 'sometimes|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.unit_cost' => 'nullable|numeric|min:0',
+            'items.*.description' => 'nullable|string',
+        ]);
+
         try {
-            $ddt = $this->ddtService->update($ddt, $request->validated());
+            $ddtData = DdtData::from($validated);
+            $updatedDdt = $action->execute($ddt, $ddtData);
 
             return response()->json([
                 'success' => true,
-                'message' => 'DDT aggiornato con successo.',
-                'data' => new DdtResource($ddt),
+                'message' => 'DDT updated successfully',
+                'data' => DdtData::from($updatedDdt),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -88,18 +174,18 @@ class DdtController extends Controller
     }
 
     /**
-     * Remove the specified DDT
+     * Remove the specified DDT (only Draft)
      */
-    public function destroy(Ddt $ddt): JsonResponse
+    public function destroy(Ddt $ddt, DeleteDdtAction $action): JsonResponse
     {
         $this->authorize('delete', $ddt);
 
         try {
-            $this->ddtService->delete($ddt);
+            $action->execute($ddt);
 
             return response()->json([
                 'success' => true,
-                'message' => 'DDT eliminato con successo.',
+                'message' => 'DDT deleted successfully',
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -110,19 +196,19 @@ class DdtController extends Controller
     }
 
     /**
-     * Confirm DDT and generate stock movements
+     * Confirm DDT and generate stock movements (Draft → Issued)
      */
-    public function confirm(Ddt $ddt): JsonResponse
+    public function confirm(Ddt $ddt, ConfirmDdtAction $action): JsonResponse
     {
         $this->authorize('update', $ddt);
 
         try {
-            $ddt = $this->ddtService->confirmAndProcess($ddt);
+            $confirmedDdt = $action->execute($ddt);
 
             return response()->json([
                 'success' => true,
-                'message' => 'DDT confermato e movimenti generati con successo.',
-                'data' => new DdtResource($ddt),
+                'message' => 'DDT confirmed and stock movements generated successfully',
+                'data' => DdtData::from($confirmedDdt),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -133,19 +219,23 @@ class DdtController extends Controller
     }
 
     /**
-     * Cancel DDT and rollback stock movements
+     * Cancel DDT and reverse stock movements (Issued/InTransit → Cancelled)
      */
-    public function cancel(Ddt $ddt): JsonResponse
+    public function cancel(Request $request, Ddt $ddt, CancelDdtAction $action): JsonResponse
     {
         $this->authorize('update', $ddt);
 
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
         try {
-            $ddt = $this->ddtService->cancel($ddt);
+            $cancelledDdt = $action->execute($ddt, $validated['reason']);
 
             return response()->json([
                 'success' => true,
-                'message' => 'DDT annullato con successo.',
-                'data' => new DdtResource($ddt),
+                'message' => 'DDT cancelled successfully',
+                'data' => DdtData::from($cancelledDdt),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -156,19 +246,19 @@ class DdtController extends Controller
     }
 
     /**
-     * Mark DDT as delivered (confirm receipt)
+     * Mark DDT as delivered (Issued/InTransit → Delivered)
      */
-    public function markAsDelivered(Ddt $ddt): JsonResponse
+    public function deliver(Ddt $ddt, DeliverDdtAction $action): JsonResponse
     {
         $this->authorize('update', $ddt);
 
         try {
-            $ddt = $this->ddtService->confirm($ddt->id);
+            $deliveredDdt = $action->execute($ddt);
 
             return response()->json([
                 'success' => true,
-                'message' => 'DDT marcato come consegnato.',
-                'data' => new DdtResource($ddt),
+                'message' => 'DDT marked as delivered successfully',
+                'data' => DdtData::from($deliveredDdt),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -176,6 +266,38 @@ class DdtController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * Get active DDTs for a specific site
+     */
+    public function activeBySite(int $siteId): JsonResponse
+    {
+        $this->authorize('viewAny', Ddt::class);
+
+        $query = new GetActiveDdtsBySiteQuery($siteId);
+        $ddts = $query->execute();
+
+        return response()->json([
+            'success' => true,
+            'data' => DdtData::collect($ddts, DataCollection::class),
+        ]);
+    }
+
+    /**
+     * Get pending rental returns
+     */
+    public function pendingRentalReturns(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Ddt::class);
+
+        $query = new GetPendingRentalReturnsQuery($request->input('warehouse_id'));
+        $ddts = $query->execute();
+
+        return response()->json([
+            'success' => true,
+            'data' => DdtData::collect($ddts, DataCollection::class),
+        ]);
     }
 
     /**

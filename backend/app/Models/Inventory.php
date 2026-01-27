@@ -13,7 +13,7 @@ class Inventory extends Model
     protected $table = 'inventory';
 
     protected $fillable = [
-        'material_id',
+        'product_id',
         'warehouse_id',
         'quantity_available',
         'quantity_reserved',
@@ -38,9 +38,9 @@ class Inventory extends Model
     }
 
     // Relationships
-    public function material(): BelongsTo
+    public function product(): BelongsTo
     {
-        return $this->belongsTo(Material::class);
+        return $this->belongsTo(Product::class);
     }
 
     public function warehouse(): BelongsTo
@@ -61,7 +61,7 @@ class Inventory extends Model
 
     public function getStockValueAttribute(): float
     {
-        return $this->quantity_available * ($this->material->standard_cost ?? 0);
+        return $this->quantity_available * ($this->product->standard_cost ?? 0);
     }
 
     // Business methods

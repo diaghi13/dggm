@@ -37,9 +37,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SiteWorkerStatusBadge } from '@/app/(dashboard)/sites/_components/site-worker-status-badge';
 import { SiteRoleBadges } from '@/app/(dashboard)/sites/_components/site-role-badge';
-import { MaterialRequestStatusBadge } from '@/app/(dashboard)/materials/_components/material-request-status-badge';
-import { MaterialRequestPriorityBadge } from '@/app/(dashboard)/materials/_components/material-request-priority-badge';
-import { MaterialRequestDialog } from '@/app/(dashboard)/materials/_components/material-request-dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -55,6 +52,9 @@ import {
   Plus,
 } from 'lucide-react';
 import type { SiteWorker, MaterialRequest } from '@/lib/types';
+import {MaterialRequestPriorityBadge} from "@/app/(dashboard)/products/_components/material-request-priority-badge";
+import {MaterialRequestStatusBadge} from "@/app/(dashboard)/products/_components/material-request-status-badge";
+import {MaterialRequestDialog} from "@/app/(dashboard)/products/_components/material-request-dialog";
 
 export default function WorkerDashboardPage() {
   const queryClient = useQueryClient();

@@ -38,6 +38,7 @@ interface ComboboxSelectProps {
   icon?: React.ReactNode;
   onSearchChange?: (search: string) => void;
   debounceMs?: number;
+  popoverWidth?: string; // Custom width for popover (e.g., "600px", "w-[500px]")
 }
 
 export function ComboboxSelect({
@@ -53,6 +54,7 @@ export function ComboboxSelect({
   icon,
   onSearchChange,
   debounceMs = 300,
+  popoverWidth,
 }: ComboboxSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -130,21 +132,24 @@ export function ComboboxSelect({
         </div>
       )}
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0"
+        className={cn(
+          "p-0",
+          popoverWidth || "w-[var(--radix-popover-trigger-width)]"
+        )}
         align="start"
         onWheel={(e) => e.stopPropagation()}
       >
-        <Command shouldFilter={false}>
+        <Command shouldFilter={false} className="w-full">
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <CommandInput
               placeholder={searchPlaceholder}
               value={search}
               onValueChange={setSearch}
-              className="h-11"
+              className="h-11 w-full"
             />
           </div>
-          <CommandList className="[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <CommandList className="w-full max-h-[300px] overflow-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
             {loading ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
@@ -152,22 +157,22 @@ export function ComboboxSelect({
             ) : filteredOptions.length === 0 ? (
               <CommandEmpty>{emptyText}</CommandEmpty>
             ) : (
-              <CommandGroup>
+              <CommandGroup className="w-full">
                 {filteredOptions.map((option) => (
                   <CommandItem
                     key={option.value}
                     value={option.value}
                     onSelect={handleSelect}
-                    className="cursor-pointer"
+                    className="cursor-pointer w-full"
                   >
                     <Check
                       className={cn(
-                        'mr-2 h-4 w-4',
+                        'mr-2 h-4 w-4 flex-shrink-0',
                         value === option.value ? 'opacity-100' : 'opacity-0'
                       )}
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{option.label}</div>
+                      <div className="font-medium">{option.label}</div>
                       {option.description && (
                         <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
                           {option.description}

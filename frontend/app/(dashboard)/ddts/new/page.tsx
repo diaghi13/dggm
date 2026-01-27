@@ -8,7 +8,7 @@ import { warehousesApi } from '@/lib/api/warehouses';
 import { suppliersApi } from '@/lib/api/suppliers';
 import { customersApi } from '@/lib/api/customers';
 import { sitesApi } from '@/lib/api/sites';
-import { materialsApi } from '@/lib/api/materials';
+import { productsApi } from '@/lib/api/products';
 import type { DdtType, DdtFormData, ReturnReason } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -106,8 +106,8 @@ export default function NewDdtPage() {
   });
 
   const { data: materialsData, isLoading: isLoadingMaterials } = useQuery({
-    queryKey: ['materials', { search: searchMaterial, is_active: true }],
-    queryFn: () => materialsApi.getAll({ search: searchMaterial, is_active: true, per_page: 50 }),
+    queryKey: ['products', { search: searchMaterial, is_active: true }],
+    queryFn: () => productsApi.getAll({ search: searchMaterial, is_active: true, per_page: 50 }),
   });
 
   const warehouses = warehousesData?.data ?? [];
@@ -136,7 +136,7 @@ export default function NewDdtPage() {
         return_notes: data.return_notes || undefined,
         notes: data.notes || undefined,
         items: data.items.map(item => ({
-          material_id: item.material_id,
+          product_id: item.product_id,
           quantity: item.quantity,
           unit: item.unit,
           unit_cost: item.unit_cost,
@@ -164,7 +164,7 @@ export default function NewDdtPage() {
       items: [
         ...formData.items,
         {
-          material_id: material.id,
+          product_id: material.id,
           quantity: 1,
           unit: material.unit,
           unit_cost: material.standard_cost || 0,
@@ -642,7 +642,7 @@ export default function NewDdtPage() {
               </TableHeader>
               <TableBody>
                 {formData.items.map((item, index) => {
-                  const material = materials.find((m: any) => m.id === item.material_id);
+                  const material = materials.find((m: any) => m.id === item.product_id);
                   return (
                     <TableRow key={index}>
                       <TableCell>
@@ -652,7 +652,7 @@ export default function NewDdtPage() {
                             <p className="text-sm text-slate-500">{material.code}</p>
                           </div>
                         ) : (
-                          `ID: ${item.material_id}`
+                          `ID: ${item.product_id}`
                         )}
                       </TableCell>
                       <TableCell>

@@ -299,6 +299,11 @@
       <path value="$PROJECT_DIR$/backend/vendor/doctrine/inflector" />
       <path value="$PROJECT_DIR$/backend/vendor/doctrine/deprecations" />
       <path value="$PROJECT_DIR$/backend/vendor/doctrine/lexer" />
+      <path value="$PROJECT_DIR$/backend/vendor/spatie/php-structure-discoverer" />
+      <path value="$PROJECT_DIR$/backend/vendor/spatie/laravel-data" />
+      <path value="$PROJECT_DIR$/backend/vendor/phpdocumentor/reflection" />
+      <path value="$PROJECT_DIR$/backend/vendor/spatie/laravel-typescript-transformer" />
+      <path value="$PROJECT_DIR$/backend/vendor/spatie/typescript-transformer" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.2" />

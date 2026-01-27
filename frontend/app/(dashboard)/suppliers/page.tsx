@@ -222,8 +222,13 @@ export default function SuppliersPage() {
             <DialogDescription className="text-slate-600 dark:text-slate-400">Aggiorna i dettagli del fornitore</DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto flex-1 px-6 py-6">
-            {selectedSupplier && (
-              <SupplierForm supplier={selectedSupplier} onSubmit={(data) => updateMutation.mutate({ id: selectedSupplier.id, data })} onCancel={() => { setIsEditDialogOpen(false); setSelectedSupplier(null); }} isLoading={updateMutation.isPending} />
+            {selectedSupplier && selectedSupplier.id && (
+              <SupplierForm
+                supplier={selectedSupplier}
+                onSubmit={(data) => updateMutation.mutate({ id: selectedSupplier.id!, data })}
+                onCancel={() => { setIsEditDialogOpen(false); setSelectedSupplier(null); }}
+                isLoading={updateMutation.isPending}
+              />
             )}
           </div>
           <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50">
@@ -246,12 +251,12 @@ export default function SuppliersPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedSupplier(null)}>Annulla</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => selectedSupplier && deleteMutation.mutate(selectedSupplier.id)}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Elimina Fornitore
+              <AlertDialogCancel onClick={() => setSelectedSupplier(null)}>Annulla</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => selectedSupplier?.id && deleteMutation.mutate(selectedSupplier.id)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Elimina Fornitore
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -4,8 +4,331 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Fix auth cookie with .env variables with check .env script and documentation">
-      <change beforePath="$PROJECT_DIR$/frontend/components/dashboards/admin-dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/dashboards/admin-dashboard.tsx" afterDir="false" />
+    <list default="true" id="a5e35e06-dc66-41c4-bed3-c86bb59bc2b1" name="Changes" comment="Many many things:&#10;refactor the entire warehouse system.&#10;- backend:&#10;- change from material to product&#10;- redesign the entire system with query anche actions&#10;- implement event-driven pattern for warehouse&#10;- many refactors&#10;- implementing laravel data by spatie for request and resources. maybe some fix will be add&#10;&#10;frontend:&#10;- fix pages with new product&#10;- change some pages and add new features">
+      <change afterPath="$PROJECT_DIR$/ANALISI_FINALE_PRODOTTI.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ANALISI_PRODUCT_POLICY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ANALISI_SCRIPT_POSTMAN.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BARCODE_IMPLEMENTATION.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BARCODE_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BARCODE_TESTING.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/DGGM_ERP_API.postman_collection.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/DGGM_ERP_Development.postman_environment.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/DGGM_ERP_Production.postman_environment.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/FIX_POSTMAN_401.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/FRONTEND_PRODUCTS_ROADMAP.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/FRONTEND_TASK_1_COMPLETED.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GUIDELINES_INDEX.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/POSTMAN_AUTH_GUIDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/POSTMAN_QUICK_FIX.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/POSTMAN_QUICK_START.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/POSTMAN_TESTING.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/POSTMAN_TUTORIAL.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/PROMPT.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/PWA_SETUP_COMPLETE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SOLUZIONE_401_POSTMAN.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TODO.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/VERIFICA_SCRIPT_POSTMAN.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WAREHOUSE_ANALISI_FINALE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WAREHOUSE_IMPLEMENTATION_ROADMAP.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WAREHOUSE_MODULE_REFACTOR_CHECKLIST.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WAREHOUSE_QUICK_START.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WAREHOUSE_TODO_REMAINING.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/AI_ARCHITECTURE_RULES.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/FINAL_ARCHITECTURE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/SPATIE_DATA_BEST_PRACTICES.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/SPATIE_DATA_REAL_WORLD_LESSONS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/SPATIE_DATA_VALIDATION_GUIDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/VALUE_OBJECTS_AND_SERVICES.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/WAREHOUSE_REFACTORING.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Ddt/CancelDdtAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Ddt/ConfirmDdtAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Ddt/CreateDdtAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Ddt/DeleteDdtAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Ddt/DeliverDdtAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Ddt/UpdateDdtAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Inventory/AdjustInventoryAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Inventory/ReleaseInventoryReservationAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Inventory/ReserveInventoryAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Product/CreateProductAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Product/CreateProductRelationAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Product/DeleteProductAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Product/DeleteProductRelationAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Product/UpdateProductAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Product/UpdateProductRelationAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/StockMovement/ReverseStockMovementAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Warehouse/CreateWarehouseAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Warehouse/DeleteWarehouseAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Actions/Warehouse/UpdateWarehouseAction.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Console/Commands/CreateDomainFolderStructureCommand.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/CustomerData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/DdtData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/DdtItemData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/InventoryData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/ProductCategoryData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/ProductComponentData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/ProductData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/ProductRelationData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/ProductRelationTypeData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/SiteData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/StockMovementData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/SupplierData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/UserData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Data/WarehouseData.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/ARCHITECTURE_FLOW.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/Events/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/IMPLEMENTATION_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/Providers/WarehouseServiceProvider.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/Queries/GetLowStockWarehousesQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/Queries/GetWarehouseInventoryQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/README_DDD.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/Repositories/WarehouseEloquentRepository.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/Repositories/WarehouseRepository.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Enums/ProductRelationQuantityType.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Enums/ProductType.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/DdtCancelled.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/DdtConfirmed.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/DdtCreated.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/DdtDeleted.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/DdtDelivered.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/DdtUpdated.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/InventoryAdjusted.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/InventoryLowStock.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/InventoryReservationReleased.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/InventoryReserved.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/StockMovementCreated.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/StockMovementReversed.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/WarehouseCreated.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/WarehouseDeleted.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Events/WarehouseUpdated.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/ProductCategoryController.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/ProductController.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/ProductRelationController.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/ProductRelationTypeController.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Http/Middleware/EncryptCookies.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Http/Requests/StoreProductRequest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Http/Requests/UpdateProductRequest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Http/Resources/ProductResource.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/CheckLowStockAfterMovementListener.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/GenerateStockMovementsListener.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/LogDdtActivityListener.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/LogInventoryAdjustmentListener.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/LogInventoryReservationListener.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/LogStockMovementListener.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/LogWarehouseActivity.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/NotifyWarehouseManagerListener.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/ReverseStockMovementsListener.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/SendLowStockAlert.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/UpdateSiteMaterialsListener.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Listeners/UpdateWarehouseCache.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Models/Product.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Models/ProductCategory.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Models/ProductComponent.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Models/ProductRelation.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Models/ProductRelationType.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Policies/ProductCategoryPolicy.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Policies/ProductPolicy.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Policies/ProductRelationPolicy.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Policies/ProductRelationTypePolicy.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Providers/EventServiceProvider.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Ddt/GetActiveDdtsBySiteQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Ddt/GetDdtByIdQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Ddt/GetDdtsQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Ddt/GetPendingRentalReturnsQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Inventory/GetInventoryByProductQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Inventory/GetInventoryByWarehouseQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Inventory/GetInventoryQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Inventory/GetLowStockItemsQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Inventory/GetStockValuationQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Product/CalculateProductRelationsQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Product/GetProductRelationsQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Product/GetProductsQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/StockMovement/GetMovementHistoryByProductQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/StockMovement/GetRentalHistoryQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/StockMovement/GetStockMovementsQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Warehouse/GetWarehouseInventoryQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Warehouse/GetWarehouseQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Queries/Warehouse/GetWarehousesWithLowStockQuery.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Services/GeolocationService.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Services/PriceCalculatorService.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/Services/ProductService.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/ValueObjects/Address.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/ValueObjects/Coordinates.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/ValueObjects/DateRange.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/ValueObjects/Money.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/ValueObjects/Percentage.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/ValueObjects/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/config/data.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/config/typescript-transformer.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/create_test_products.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/factories/ProductComponentFactory.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/factories/ProductFactory.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/factories/WarehouseFactory.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_20_130401_update_product_type_enum_and_cleanup.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_20_174454_rename_materials_to_products.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_20_174455_rename_material_components_to_product_components.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_21_122057_rename_material_id_to_product_id_in_inventory_and_related_tables.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_22_170522_create_product_relation_types_table.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_22_170636_create_product_relations_table.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_22_170716_rename_material_categories_to_product_categories.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_22_170749_add_category_id_to_products_table.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_22_180825_drop_obsolete_product_tables.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_22_203253_drop_obsolete_product_dependencies_tables.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/migrations/2026_01_22_210144_drop_category_column_from_products_tables.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/seeders/ProductCategorySeeder.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/database/seeders/ProductRelationTypeSeeder.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/resources/types/generated.d.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/test-ddt-validation.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/Feature/ProductDataTest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/Feature/ProductRelationApiTest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/Feature/WarehouseModuleTest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/fix-product-policy.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/MIGRATION_MATERIALS_TO_PRODUCTS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/PUSH_NOTIFICATIONS_GUIDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/PWA_GUIDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/PWA_IMPLEMENTATION.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/PWA_QUICK_START.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/PWA_ROADMAP.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/[id]/edit/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/inventory/[id]/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/[id]/edit/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/[id]/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/material-request-details-dialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/material-request-dialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/material-request-priority-badge.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/material-request-status-badge.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/material-requests-tab.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-autocomplete.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-category-combobox.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-dependencies.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-form.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-kit-components.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-lists-preview.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-price-calculator.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-relations-tree.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-relations.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/product-type-badge.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/products-columns.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/_components/quantity-type-badge.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/new/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/products/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/app/offline/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/barcode-scanner.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/offline-indicator.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/pwa-register.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/ui/collapsible.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/bulk-intake-dialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/ddt-cancel-dialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/ddt-confirm-dialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/ddt-items-table.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/ddt-status-badge.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/ddt-type-badge.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/ddt-type-select.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/inventory-adjust-dialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/inventory-stats.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/inventory-transfer-dialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/stock-movement-filters.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/components/warehouse/stock-movement-type-badge.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/hooks/use-ddts.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/hooks/use-inventory.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/hooks/use-online.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/hooks/use-stock-movements.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/api/products.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/types/generated.d.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/next-pwa.d.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/apple-touch-icon.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/favicon.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/icons/icon-128x128.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/icons/icon-144x144.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/icons/icon-152x152.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/icons/icon-192x192.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/icons/icon-384x384.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/icons/icon-512x512.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/icons/icon-72x72.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/icons/icon-96x96.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/icons/icon.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/manifest.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/unregister-sw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/scripts/check-pwa.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/scripts/generate-icons.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test-auth.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test-product-relations-api.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/857bbb80-15e1-4c7e-aa79-6a081db72702.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/857bbb80-15e1-4c7e-aa79-6a081db72702.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/laravel-idea.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/laravel-idea.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/php.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Enums/MaterialType.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/DdtController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/DdtController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/InventoryController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/InventoryController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/MaterialController.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/SiteMaterialController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/SiteMaterialController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/StockMovementController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/StockMovementController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/WarehouseController.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Http/Controllers/Api/V1/WarehouseController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Requests/StoreMaterialRequest.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Requests/UpdateMaterialRequest.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Http/Resources/MaterialResource.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Models/DdtItem.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/DdtItem.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Models/Inventory.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/Inventory.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Models/StockMovement.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/StockMovement.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Models/Supplier.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/Supplier.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Models/User.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/User.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Models/Warehouse.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Models/Warehouse.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Services/DdtService.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Services/DdtService.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Services/InventoryService.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Services/InventoryService.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Services/MaterialService.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/Services/WarehouseService.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/Domains/Warehouse/Services/WarehouseService.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/bootstrap/app.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/bootstrap/app.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/bootstrap/providers.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/bootstrap/providers.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/composer.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/composer.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/composer.lock" beforeDir="false" afterPath="$PROJECT_DIR$/backend/composer.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/database/factories/SupplierFactory.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/database/factories/SupplierFactory.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/database/seeders/RoleAndPermissionSeeder.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/database/seeders/RoleAndPermissionSeeder.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/api.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/dashboard/worker/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/dashboard/worker/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/ddts/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/inventory/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/inventory/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/[id]/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-autocomplete.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-dependencies.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-form.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-kit-components.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-request-details-dialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-request-dialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-request-priority-badge.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-request-status-badge.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/material-requests-tab.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/_components/materials-columns.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/new/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/materials/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/settings/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/add-site-material-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/sites/_components/add-site-material-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/stock-movements/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/stock-movements/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/suppliers/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/suppliers/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/warehouses/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/warehouses/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/warehouses/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/warehouses/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/(dashboard)/warehouses/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/(dashboard)/warehouses/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/combobox-select.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/combobox-select.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/create-invitation-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/create-invitation-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/create-stock-movement-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/create-stock-movement-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/ddts-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/ddts-columns.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/inventory-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/inventory-columns.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/layout/dashboard-layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/layout/dashboard-layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/quote-items/item-form-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/quote-items/item-form-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/stock-movements-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/stock-movements-columns.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/supplier-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/supplier-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/warehouse-inventory-columns.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/components/warehouse-inventory-columns.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/api/ddts.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/ddts.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/api/inventory.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/inventory.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/api/stock-movements.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/stock-movements.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/next.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -322,6 +645,11 @@
       <path value="$PROJECT_DIR$/backend/vendor/doctrine/inflector" />
       <path value="$PROJECT_DIR$/backend/vendor/doctrine/deprecations" />
       <path value="$PROJECT_DIR$/backend/vendor/doctrine/lexer" />
+      <path value="$PROJECT_DIR$/backend/vendor/spatie/php-structure-discoverer" />
+      <path value="$PROJECT_DIR$/backend/vendor/spatie/laravel-data" />
+      <path value="$PROJECT_DIR$/backend/vendor/phpdocumentor/reflection" />
+      <path value="$PROJECT_DIR$/backend/vendor/spatie/laravel-typescript-transformer" />
+      <path value="$PROJECT_DIR$/backend/vendor/spatie/typescript-transformer" />
     </include_path>
   </component>
   <component name="ProjectColorInfo">{
@@ -332,38 +660,41 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "/Users/davidedonghi/Apps/dggm/frontend",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.github.copilot.settings.mcp.McpConfigurable",
-    "to.speed.mode.migration.done": "true",
-    "ts.external.directory.path": "/Users/davidedonghi/Apps/dggm/frontend/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/davidedonghi/Apps/dggm/frontend&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;junie.mcp&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/davidedonghi/Apps/dggm/frontend/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "mysql"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;mysql&quot;
+    ],
+    &quot;com.intellij.ide.scratch.LRUPopupBuilder$1/SQL Dialect&quot;: [
+      &quot;MySQL&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/backend/app/Domains/Warehouse" />
       <recent name="$PROJECT_DIR$/frontend/docs" />
       <recent name="$PROJECT_DIR$/frontend/app/(app)/dashboard" />
       <recent name="$PROJECT_DIR$/frontend/app/(app)" />
       <recent name="$PROJECT_DIR$/frontend/app/(dashoard)" />
-      <recent name="$PROJECT_DIR$/frontend/app" />
     </key>
   </component>
   <component name="RunManager" selected="Pest.Main">
@@ -395,7 +726,15 @@
       <workItem from="1768219160141" duration="47386000" />
       <workItem from="1768408361007" duration="32585000" />
       <workItem from="1768672679767" duration="14430000" />
-      <workItem from="1768831168121" duration="8771000" />
+      <workItem from="1768831168121" duration="15105000" />
+      <workItem from="1768921583472" duration="61764000" />
+      <workItem from="1769099749764" duration="21541000" />
+      <workItem from="1769124803167" duration="5165000" />
+      <workItem from="1769130355851" duration="12421000" />
+      <workItem from="1769168318764" duration="17503000" />
+      <workItem from="1769187724606" duration="11056000" />
+      <workItem from="1769356322182" duration="6132000" />
+      <workItem from="1769363718150" duration="22902000" />
     </task>
     <task id="LOCAL-00001" summary="A lot of things">
       <option name="closed" value="true" />
@@ -533,7 +872,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768875920208</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Fix dashboard links">
+      <option name="closed" value="true" />
+      <created>1768876123170</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1768876123170</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -559,7 +906,9 @@
     <MESSAGE value="Change docs PERMISSIONS_QUICK_REFERENCE.tsx.md with md extension due tue compile error" />
     <MESSAGE value="Try fixing auth cookie with .env variables" />
     <MESSAGE value="Fix auth cookie with .env variables with check .env script and documentation" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix auth cookie with .env variables with check .env script and documentation" />
+    <MESSAGE value="Fix dashboard links" />
+    <MESSAGE value="Many many things:&#10;refactor the entire warehouse system.&#10;- backend:&#10;- change from material to product&#10;- redesign the entire system with query anche actions&#10;- implement event-driven pattern for warehouse&#10;- many refactors&#10;- implementing laravel data by spatie for request and resources. maybe some fix will be add&#10;&#10;frontend:&#10;- fix pages with new product&#10;- change some pages and add new features" />
+    <option name="LAST_COMMIT_MESSAGE" value="Many many things:&#10;refactor the entire warehouse system.&#10;- backend:&#10;- change from material to product&#10;- redesign the entire system with query anche actions&#10;- implement event-driven pattern for warehouse&#10;- many refactors&#10;- implementing laravel data by spatie for request and resources. maybe some fix will be add&#10;&#10;frontend:&#10;- fix pages with new product&#10;- change some pages and add new features" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

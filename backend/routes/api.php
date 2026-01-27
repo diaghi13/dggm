@@ -7,11 +7,14 @@ use App\Http\Controllers\Api\V1\DdtController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\MaterialCategoryController;
-use App\Http\Controllers\Api\V1\MaterialController;
 use App\Http\Controllers\Api\V1\MaterialDependencyTypeController;
 use App\Http\Controllers\Api\V1\MaterialRequestController;
 use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\ProductCategoryController;
+use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProductRelationController;
+use App\Http\Controllers\Api\V1\ProductRelationTypeController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\SiteController;
 use App\Http\Controllers\Api\V1\SiteDdtController;
@@ -84,26 +87,30 @@ Route::prefix('v1')->group(function () {
         Route::get('media/{media}/download', [MediaController::class, 'download']);
         Route::delete('media/{media}', [MediaController::class, 'destroy']);
 
-        // Materials
-        Route::apiResource('materials', MaterialController::class);
-        Route::get('materials-needing-reorder', [MaterialController::class, 'needingReorder']);
-        Route::get('materials/{material}/kit-breakdown', [MaterialController::class, 'kitBreakdown']);
-        Route::get('materials/categories/list', [MaterialController::class, 'categories']);
-        Route::post('materials/{material}/calculate-price', [MaterialController::class, 'calculatePrice']);
+        // Products
+        Route::apiResource('products', ProductController::class);
+        Route::get('products-needing-reorder', [ProductController::class, 'needingReorder']);
+        Route::get('products/{product}/composite-breakdown', [ProductController::class, 'compositeBreakdown']);
+        Route::get('products/categories/list', [ProductController::class, 'categories']);
+        Route::post('products/{product}/calculate-price', [ProductController::class, 'calculatePrice']);
 
-        // Kit Components
-        Route::post('materials/{material}/components', [MaterialController::class, 'addComponent']);
-        Route::patch('materials/{material}/components/{componentId}', [MaterialController::class, 'updateComponent']);
-        Route::delete('materials/{material}/components/{componentId}', [MaterialController::class, 'deleteComponent']);
+        // Product Relations (unified relations system)
+        Route::get('products/{product}/relations', [ProductRelationController::class, 'index']);
+        Route::post('products/{product}/relations', [ProductRelationController::class, 'store']);
+        Route::post('products/{product}/relations/calculate', [ProductRelationController::class, 'calculate']);
+        Route::get('products/{product}/relations/quote-list', [ProductRelationController::class, 'quoteList']);
+        Route::get('products/{product}/relations/material-list', [ProductRelationController::class, 'materialList']);
+        Route::get('products/{product}/relations/stock-list', [ProductRelationController::class, 'stockList']);
+        Route::patch('products/{product}/relations/{relation}', [ProductRelationController::class, 'update']);
+        Route::delete('products/{product}/relations/{relation}', [ProductRelationController::class, 'destroy']);
 
-        // Material Dependencies
-        Route::get('materials/{material}/dependencies', [MaterialController::class, 'getDependencies']);
-        Route::post('materials/{material}/dependencies/calculate', [MaterialController::class, 'calculateDependencies']);
-        Route::post('materials/{material}/dependencies', [MaterialController::class, 'addDependency']);
-        Route::patch('materials/{material}/dependencies/{dependencyId}', [MaterialController::class, 'updateDependency']);
-        Route::delete('materials/{material}/dependencies/{dependencyId}', [MaterialController::class, 'deleteDependency']);
+        // Product Relation Types (configurable relation types)
+        Route::apiResource('product-relation-types', ProductRelationTypeController::class);
 
-        // Material Categories
+        // Product Categories (NEW - replaces material-categories)
+        Route::apiResource('product-categories', ProductCategoryController::class);
+
+        // Material Categories (DEPRECATED - use product-categories instead)
         Route::apiResource('material-categories', MaterialCategoryController::class);
 
         // Material Dependency Types
@@ -173,6 +180,7 @@ Route::prefix('v1')->group(function () {
         Route::post('ddts/{ddt}/confirm', [DdtController::class, 'confirm']);
         Route::post('ddts/{ddt}/cancel', [DdtController::class, 'cancel']);
         Route::post('ddts/{ddt}/mark-delivered', [DdtController::class, 'markAsDelivered']);
+        Route::post('ddts/{ddt}/deliver', [DdtController::class, 'deliver']);
 
         // Workers (Collaboratori)
         Route::apiResource('workers', WorkerController::class);

@@ -4,44 +4,10 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { FileText, Eye, Trash2 } from 'lucide-react';
 import { Ddt } from '@/lib/types';
-import { AvatarTextCell, StatusBadgeCell, TextCell } from '@/components/table-cells';
+import { AvatarTextCell, TextCell } from '@/components/table-cells';
+import { DdtTypeBadge } from '@/components/warehouse/ddt-type-badge';
+import { DdtStatusBadge } from '@/components/warehouse/ddt-status-badge';
 import Link from 'next/link';
-
-const ddtTypeLabels: Record<string, string> = {
-  incoming: 'In Entrata',
-  outgoing: 'In Uscita',
-  internal: 'Interno',
-  rental_out: 'Noleggio Out',
-  rental_return: 'Reso Noleggio',
-  return_from_customer: 'Reso da Cliente',
-  return_to_supplier: 'Reso a Fornitore',
-};
-
-const ddtTypeColors: Record<string, string> = {
-  incoming: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700',
-  outgoing: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700',
-  internal: 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700',
-  rental_out: 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700',
-  rental_return: 'bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700',
-  return_from_customer: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700',
-  return_to_supplier: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700',
-};
-
-const ddtStatusLabels: Record<string, string> = {
-  draft: 'Bozza',
-  issued: 'Emesso',
-  in_transit: 'In Transito',
-  delivered: 'Consegnato',
-  cancelled: 'Annullato',
-};
-
-const ddtStatusColors: Record<string, string> = {
-  draft: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700',
-  issued: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700',
-  in_transit: 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700',
-  delivered: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700',
-  cancelled: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700',
-};
 
 export const createDdtsColumns = (
   onView: (ddt: Ddt) => void,
@@ -65,11 +31,7 @@ export const createDdtsColumns = (
     header: 'Tipo',
     size: 150,
     cell: ({ row }) => (
-      <StatusBadgeCell
-        status={row.original.type}
-        statusColors={ddtTypeColors}
-        statusLabels={ddtTypeLabels}
-      />
+      <DdtTypeBadge type={row.original.type as App.Enums.DdtType} />
     ),
   },
   {
@@ -77,11 +39,7 @@ export const createDdtsColumns = (
     header: 'Stato',
     size: 130,
     cell: ({ row }) => (
-      <StatusBadgeCell
-        status={row.original.status}
-        statusColors={ddtStatusColors}
-        statusLabels={ddtStatusLabels}
-      />
+      <DdtStatusBadge status={row.original.status as App.Enums.DdtStatus} />
     ),
   },
   {

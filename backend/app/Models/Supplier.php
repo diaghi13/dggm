@@ -2,16 +2,20 @@
 
 namespace App\Models;
 
+use App\Data\SupplierData;
 use App\Enums\PersonnelType;
 use App\Enums\SupplierType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\LaravelData\WithData;
 
 class Supplier extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, WithData;
+
+    protected string $dataClass = SupplierData::class;
 
     protected $fillable = [
         'code',
