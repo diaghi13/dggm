@@ -25,6 +25,29 @@ class RoleAndPermissionSeeder extends Seeder
             'users.edit',
             'users.delete',
 
+            // Role management
+            'roles.view',
+            'roles.create',
+            'roles.edit',
+            'roles.delete',
+
+            // Permission management
+            'permissions.view',
+            'permissions.create',
+            'permissions.edit',
+            'permissions.delete',
+            'permissions.assign',
+            'permissions.revoke',
+            'permissions.view-roles',
+            'permissions.view-users',
+            'permissions.view-modules',
+            'permissions.view-actions',
+            'permissions.view-resources',
+            'permissions.view-conditions',
+            'permissions.view-contexts',
+            'permissions.view-attributes',
+            'permissions.view-policies',
+
             // Customer management
             'customers.view',
             'customers.create',
@@ -132,6 +155,24 @@ class RoleAndPermissionSeeder extends Seeder
             'product-relations.edit',
             'product-relations.delete',
 
+            // Product Brands
+            'product-brands.view',
+            'product-brands.create',
+            'product-brands.edit',
+            'product-brands.delete',
+
+            // Payment Terms
+            'payment-terms.view',
+            'payment-terms.create',
+            'payment-terms.edit',
+            'payment-terms.delete',
+
+            // Discount Families
+            'discount-families.view',
+            'discount-families.create',
+            'discount-families.edit',
+            'discount-families.delete',
+
             // Invoice management
             'invoices.view',
             'invoices.create',
@@ -180,9 +221,13 @@ class RoleAndPermissionSeeder extends Seeder
             'reports.sites',
             'reports.time-tracking',
 
-            // Settings
+            // Settings (key-value system)
             'settings.view',
+            'settings.create',
             'settings.edit',
+            'settings.delete',
+            'settings.view-global', // View global settings
+            'settings.edit-global', // Edit global settings (admin only)
         ];
 
         foreach ($permissions as $permission) {
@@ -195,10 +240,10 @@ class RoleAndPermissionSeeder extends Seeder
         $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
         $superAdmin->givePermissionTo(Permission::all());
 
-        // Admin - full access except system settings
+        // Admin - full access except system-level global settings
         $admin = Role::firstOrCreate(['name' => 'admin']);
         $admin->givePermissionTo(Permission::whereNotIn('name', [
-            'settings.edit',
+            'settings.edit-global', // Only super-admin can edit global settings
         ])->get());
 
         // Project Manager - manages sites, quotes, teams
@@ -221,6 +266,9 @@ class RoleAndPermissionSeeder extends Seeder
             'product-categories.view', 'product-categories.create', 'product-categories.edit',
             'product-relation-types.view', 'product-relation-types.create', 'product-relation-types.edit',
             'product-relations.view', 'product-relations.create', 'product-relations.edit', 'product-relations.delete',
+            'product-brands.view', 'product-brands.create', 'product-brands.edit',
+            'payment-terms.view',
+            'discount-families.view',
             'invoices.view',
             'vehicles.view',
             'progress-billings.view', 'progress-billings.create', 'progress-billings.edit',
@@ -280,6 +328,9 @@ class RoleAndPermissionSeeder extends Seeder
             'product-categories.view',
             'product-relation-types.view',
             'product-relations.view', 'product-relations.create', 'product-relations.edit', 'product-relations.delete',
+            'product-brands.view', 'product-brands.create', 'product-brands.edit', 'product-brands.delete',
+            'payment-terms.view', 'payment-terms.create', 'payment-terms.edit', 'payment-terms.delete',
+            'discount-families.view', 'discount-families.create', 'discount-families.edit', 'discount-families.delete',
             'vehicles.view',
         ]);
 

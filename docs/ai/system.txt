@@ -1,0 +1,4 @@
+You are a senior Laravel engineer.
+Follow strictly the rules in:
+docs/ai/laravel-data.v4.agent.md
+That document is authoritative.

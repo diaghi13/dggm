@@ -17,6 +17,17 @@ export interface User {
   updated_at: string;
 }
 
+export interface UserSettings {
+  global: Record<string, string | number | boolean>;
+  user: Array<any>;
+}
+
+export interface AuthMeResponse {
+  user: User;
+  settings: UserSettings;
+  features: string[];
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -32,7 +43,7 @@ export interface AuthResponse {
 }
 
 // Customer Types
-export type CustomerType = 'individual' | 'company';
+export type CustomerType = "individual" | "company";
 
 export interface Customer {
   id: number;
@@ -111,8 +122,14 @@ export interface ApiError {
 }
 
 // Site Types
-export type SiteStatus = 'draft' | 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
-export type SitePriority = 'low' | 'medium' | 'high' | 'urgent';
+export type SiteStatus =
+  | "draft"
+  | "planned"
+  | "in_progress"
+  | "on_hold"
+  | "completed"
+  | "cancelled";
+export type SitePriority = "low" | "medium" | "high" | "urgent";
 
 export interface Media {
   id: number;
@@ -248,10 +265,15 @@ export interface SupplierFormData {
   }>;
 }
 
-
 // Quote Types
-export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'converted';
-export type QuoteItemType = 'section' | 'item' | 'labor' | 'material';
+export type QuoteStatus =
+  | "draft"
+  | "sent"
+  | "approved"
+  | "rejected"
+  | "expired"
+  | "converted";
+export type QuoteItemType = "section" | "item" | "labor" | "material";
 
 export interface QuoteItem {
   id: number;
@@ -344,23 +366,28 @@ export interface QuoteFormData {
 
 // DDT (Documento Di Trasporto) Types
 export type DdtType =
-  | 'incoming'
-  | 'outgoing'
-  | 'internal'
-  | 'rental_out'
-  | 'rental_return'
-  | 'return_from_customer'
-  | 'return_to_supplier';
+  | "incoming"
+  | "outgoing"
+  | "internal"
+  | "rental_out"
+  | "rental_return"
+  | "return_from_customer"
+  | "return_to_supplier";
 
-export type DdtStatus = 'draft' | 'issued' | 'in_transit' | 'delivered' | 'cancelled';
+export type DdtStatus =
+  | "draft"
+  | "issued"
+  | "in_transit"
+  | "delivered"
+  | "cancelled";
 
 export type ReturnReason =
-  | 'defective'
-  | 'wrong_item'
-  | 'excess'
-  | 'warranty'
-  | 'customer_dissatisfaction'
-  | 'other';
+  | "defective"
+  | "wrong_item"
+  | "excess"
+  | "warranty"
+  | "customer_dissatisfaction"
+  | "other";
 
 export interface DdtItem {
   id: number;
@@ -495,9 +522,14 @@ export interface DdtFormData {
 }
 
 // Material Types
-export type MaterialType = 'physical' | 'service' | 'kit';
-export type DependencyType = 'container' | 'accessory' | 'cable' | 'consumable' | 'tool';
-export type QuantityCalculationType = 'fixed' | 'ratio' | 'formula';
+export type MaterialType = "physical" | "service" | "kit";
+export type DependencyType =
+  | "container"
+  | "accessory"
+  | "cable"
+  | "consumable"
+  | "tool";
+export type QuantityCalculationType = "fixed" | "ratio" | "formula";
 
 export interface MaterialComponent {
   id: number;
@@ -623,7 +655,7 @@ export interface MaterialFormData {
 }
 
 // Stock Movement Types
-export type MovementType = 'intake' | 'output' | 'transfer' | 'adjustment';
+export type MovementType = "intake" | "output" | "transfer" | "adjustment";
 
 export interface StockMovement {
   id: number;
@@ -704,14 +736,29 @@ export interface StockMovementFormData {
 }
 
 // Worker & Supplier Types
-export type WorkerType = 'employee' | 'freelancer' | 'external';
-export type ContractType = 'permanent' | 'fixed_term' | 'seasonal' | 'project_based' | 'internship';
-export type RateType = 'hourly' | 'daily' | 'weekly' | 'monthly' | 'fixed_project';
-export type RateContext = 'internal_cost' | 'customer_billing' | 'payroll';
-export type PayrollFrequency = 'monthly' | 'biweekly' | 'weekly';
-export type SupplierType = 'materials' | 'personnel' | 'both';
-export type PersonnelType = 'cooperative' | 'staffing_agency' | 'rental_with_operator' | 'subcontractor' | 'technical_services';
-export type LaborCostType = 'internal_labor' | 'subcontractor' | 'contractor';
+export type WorkerType = "employee" | "freelancer" | "external";
+export type ContractType =
+  | "permanent"
+  | "fixed_term"
+  | "seasonal"
+  | "project_based"
+  | "internship";
+export type RateType =
+  | "hourly"
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "fixed_project";
+export type RateContext = "internal_cost" | "customer_billing" | "payroll";
+export type PayrollFrequency = "monthly" | "biweekly" | "weekly";
+export type SupplierType = "materials" | "personnel" | "both";
+export type PersonnelType =
+  | "cooperative"
+  | "staffing_agency"
+  | "rental_with_operator"
+  | "subcontractor"
+  | "technical_services";
+export type LaborCostType = "internal_labor" | "subcontractor" | "contractor";
 
 export interface WorkerRate {
   id: number;
@@ -898,7 +945,13 @@ export interface SiteLaborCost {
 }
 
 // Site Worker Types
-export type SiteWorkerStatus = 'pending' | 'accepted' | 'rejected' | 'active' | 'completed' | 'cancelled';
+export type SiteWorkerStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "active"
+  | "completed"
+  | "cancelled";
 
 export interface SiteRole {
   id: number;
@@ -1026,8 +1079,12 @@ export interface AcceptInvitationData {
 }
 
 // Material Request Types
-export type MaterialRequestStatus = 'pending' | 'approved' | 'rejected' | 'delivered';
-export type MaterialRequestPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type MaterialRequestStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "delivered";
+export type MaterialRequestPriority = "low" | "medium" | "high" | "urgent";
 
 export interface MaterialRequest {
   id: number;

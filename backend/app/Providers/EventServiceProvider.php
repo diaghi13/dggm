@@ -12,6 +12,12 @@ use App\Events\InventoryAdjusted;
 use App\Events\InventoryLowStock;
 use App\Events\InventoryReservationReleased;
 use App\Events\InventoryReserved;
+use App\Events\PasswordChanged;
+use App\Events\PasswordReset;
+use App\Events\PasswordResetRequested;
+use App\Events\SettingCreated;
+use App\Events\SettingDeleted;
+use App\Events\SettingUpdated;
 use App\Events\StockMovementCreated;
 use App\Events\StockMovementReversed;
 use App\Events\WarehouseCreated;
@@ -19,9 +25,11 @@ use App\Events\WarehouseDeleted;
 use App\Events\WarehouseUpdated;
 use App\Listeners\CheckLowStockAfterMovementListener;
 use App\Listeners\GenerateStockMovementsListener;
+use App\Listeners\InvalidateSettingCache;
 use App\Listeners\LogDdtActivityListener;
 use App\Listeners\LogInventoryAdjustmentListener;
 use App\Listeners\LogInventoryReservationListener;
+use App\Listeners\LogPasswordActivity;
 use App\Listeners\LogStockMovementListener;
 use App\Listeners\LogWarehouseActivity;
 use App\Listeners\NotifyWarehouseManagerListener;
@@ -97,6 +105,28 @@ class EventServiceProvider extends ServiceProvider
         ],
         DdtDeleted::class => [
             LogDdtActivityListener::class,
+        ],
+
+        // Setting Events
+        SettingCreated::class => [
+            InvalidateSettingCache::class.'@handleCreated',
+        ],
+        SettingUpdated::class => [
+            InvalidateSettingCache::class.'@handleUpdated',
+        ],
+        SettingDeleted::class => [
+            InvalidateSettingCache::class.'@handleDeleted',
+        ],
+
+        // Password Events
+        PasswordResetRequested::class => [
+            LogPasswordActivity::class,
+        ],
+        PasswordReset::class => [
+            LogPasswordActivity::class,
+        ],
+        PasswordChanged::class => [
+            LogPasswordActivity::class,
         ],
     ];
 

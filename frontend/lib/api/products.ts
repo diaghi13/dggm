@@ -14,6 +14,7 @@ export const productsApi = {
     semantic_search?: string;
     sort_field?: string;
     sort_direction?: string;
+    page?: number;
     per_page?: number;
   }) => {
     const response = await apiClient.get('/products', { params });
@@ -157,6 +158,14 @@ export const productsApi = {
 
   deleteRelationType: async (id: number) => {
     const response = await apiClient.delete(`/product-relation-types/${id}`);
+    return response.data;
+  },
+
+  // Import
+  importFromExcel: async (data: {
+    products: Array<Record<string, any>>;
+  }) => {
+    const response = await apiClient.post('/products/import', data);
     return response.data;
   },
 };

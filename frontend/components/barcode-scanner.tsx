@@ -1,17 +1,21 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { Button } from '@/components/ui/button';
+import { useEffect, useRef, useState } from "react";
+import {
+  BrowserMultiFormatReader,
+  DecodeHintType,
+  BarcodeFormat,
+} from "@zxing/library";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Loader2, Camera, X } from 'lucide-react';
-import { toast } from 'sonner';
+} from "@/components/ui/dialog";
+import { Loader2, Camera, X, Flashlight, FlashlightOff } from "lucide-react";
+import { toast } from "sonner";
 
 interface BarcodeScannerProps {
   open: boolean;
@@ -25,29 +29,64 @@ export function BarcodeScanner({
   open,
   onOpenChange,
   onScan,
-  title = 'Scansiona Barcode',
-  description = 'Posiziona il barcode davanti alla fotocamera',
+  title = "Scansiona Barcode",
+  description = "Posiziona il barcode davanti alla fotocamera",
 }: BarcodeScannerProps) {
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const scannerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const isScanningRef = useRef(false);
   const hasScannedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [hasTorch, setHasTorch] = useState(false);
+
+  const toggleTorch = async () => {
+    if (!streamRef.current || !hasTorch) return;
+
+    try {
+      const track = streamRef.current.getVideoTracks()[0];
+      const capabilities = track.getCapabilities() as any;
+
+      if (capabilities.torch) {
+        await track.applyConstraints({
+          // @ts-ignore - torch non è nel tipo standard ma è supportato
+          advanced: [{ torch: !torchEnabled }],
+        });
+        setTorchEnabled(!torchEnabled);
+      }
+    } catch (err) {
+      console.error("Errore toggle torcia:", err);
+    }
+  };
 
   const stopScanner = async () => {
-    if (scannerRef.current && isScanningRef.current) {
+    isScanningRef.current = false;
+
+    // Stop scanner
+    if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-        scannerRef.current = null;
-        isScanningRef.current = false;
+        scannerRef.current.reset();
       } catch (err) {
-        console.error('Errore stop scanner:', err);
-        // Anche se c'è un errore, resettiamo lo stato
-        scannerRef.current = null;
-        isScanningRef.current = false;
+        // Ignora errori
       }
+      scannerRef.current = null;
     }
+
+    // Stop video stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    // Clear video element
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setTorchEnabled(false);
+    setHasTorch(false);
   };
 
   const startScanner = async () => {
@@ -60,79 +99,156 @@ export function BarcodeScanner({
     hasScannedRef.current = false;
 
     try {
-      // Verifica permessi fotocamera
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      stream.getTracks().forEach(track => track.stop());
-      setHasPermission(true);
+      // Configurazione hints OTTIMIZZATA - NO TRY_HARDER (troppo lento!)
+      const hints = new Map();
+      const formats = [
+        // 1D Barcode lineari
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.CODE_93,
+        BarcodeFormat.ITF,
+        BarcodeFormat.CODABAR,
+        BarcodeFormat.RSS_14,
+        BarcodeFormat.RSS_EXPANDED,
+        // 2D Barcode matriciali
+        BarcodeFormat.QR_CODE,
+        BarcodeFormat.DATA_MATRIX,
+        BarcodeFormat.AZTEC,
+        BarcodeFormat.PDF_417,
+        BarcodeFormat.MAXICODE,
+      ];
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+      // NO TRY_HARDER - rallenta troppo, meglio scan più frequenti
 
-      const scanner = new Html5Qrcode('barcode-reader', {
-        verbose: false,
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.CODE_93,
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-        ],
-      });
-
+      // Crea scanner con hints ottimizzati
+      const scanner = new BrowserMultiFormatReader(hints);
       scannerRef.current = scanner;
 
-      // Configurazione ottimizzata per iOS e Android
-      const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-        disableFlip: false,
-      };
+      // Rileva se siamo su mobile o desktop
+      const isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        );
 
-      await scanner.start(
-        { facingMode: 'environment' }, // Camera posteriore
-        config,
-        (decodedText) => {
-          // Previeni scansioni multiple
-          if (hasScannedRef.current) {
-            return;
+      // Constraints ottimizzati - diversi per mobile e desktop
+      const constraints: MediaStreamConstraints = isMobile
+        ? {
+            video: {
+              facingMode: "environment", // Camera posteriore solo su mobile
+              width: { ideal: 1280, max: 1920 }, // Risoluzione ridotta anche su mobile
+              height: { ideal: 720, max: 1080 },
+              frameRate: { ideal: 30 }, // FPS fisso
+            },
           }
-          hasScannedRef.current = true;
+        : {
+            video: {
+              // Desktop: risoluzione più bassa
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 30 },
+            },
+          };
 
-          // Successo - barcode letto
-          toast.success('Barcode scansionato', {
-            description: decodedText,
-          });
+      // Richiedi accesso fotocamera
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      setHasPermission(true);
 
-          // Stop scanner prima di chiamare onScan
-          stopScanner().then(() => {
-            onScan(decodedText);
-            onOpenChange(false);
-          });
-        },
-        () => {
-          // Errori di scansione normali (ignorali)
-          // Succede continuamente mentre cerca di leggere
-        }
-      );
+      // Verifica supporto torcia (principalmente Android)
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities() as any;
+      if (capabilities.torch) {
+        setHasTorch(true);
+      }
 
-      isScanningRef.current = true;
-      setIsLoading(false);
+      // Collega stream al video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+
+        // Attendi che il video sia pronto
+        await new Promise<void>((resolve) => {
+          if (videoRef.current) {
+            videoRef.current.onloadedmetadata = () => {
+              videoRef.current?.play();
+              resolve();
+            };
+          }
+        });
+
+        // Avvia la scansione continua
+        isScanningRef.current = true;
+        setIsLoading(false);
+
+        // Loop di scansione ottimizzato - più veloce di decodeFromVideoDevice
+        const scanLoop = async () => {
+          if (!isScanningRef.current || hasScannedRef.current) return;
+
+          try {
+            const result = await scanner.decodeFromVideoElement(
+              videoRef.current!,
+            );
+
+            if (result && !hasScannedRef.current) {
+              hasScannedRef.current = true;
+              const code = result.getText();
+
+              // Successo - barcode letto
+              toast.success("Barcode scansionato", {
+                description: code,
+              });
+
+              // Stop scanner prima di chiamare onScan
+              await stopScanner();
+              onScan(code);
+              onOpenChange(false);
+              return;
+            }
+          } catch (err) {
+            // Errori normali durante scan - ignora
+          }
+
+          // Riprova dopo 100ms (10 tentativi/sec = veloce ma non troppo)
+          if (isScanningRef.current) {
+            setTimeout(scanLoop, 100);
+          }
+        };
+
+        // Avvia il loop
+        scanLoop();
+      }
     } catch (err) {
-      console.error('Errore scanner:', err);
+      console.error("Errore scanner:", err);
       setHasPermission(false);
       setIsLoading(false);
       scannerRef.current = null;
+      streamRef.current = null;
       isScanningRef.current = false;
 
       const error = err as { name?: string };
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        toast.error('Permesso fotocamera negato', {
-          description: 'Consenti l&apos;accesso alla fotocamera nelle impostazioni del browser',
+      if (
+        error.name === "NotAllowedError" ||
+        error.name === "PermissionDeniedError"
+      ) {
+        toast.error("Permesso fotocamera negato", {
+          description:
+            "Consenti l'accesso alla fotocamera nelle impostazioni del browser",
+        });
+      } else if (error.name === "NotFoundError") {
+        toast.error("Fotocamera non trovata", {
+          description:
+            "Verifica che il dispositivo abbia una fotocamera disponibile",
+        });
+      } else if (error.name === "NotReadableError") {
+        toast.error("Fotocamera occupata", {
+          description: "La fotocamera è già in uso da un'altra app",
         });
       } else {
-        toast.error('Errore fotocamera', {
-          description: 'Impossibile avviare la fotocamera',
+        toast.error("Errore fotocamera", {
+          description: "Impossibile avviare la fotocamera",
         });
       }
     }
@@ -151,6 +267,7 @@ export function BarcodeScanner({
 
       return () => {
         clearTimeout(timer);
+        stopScanner();
       };
     } else {
       // Cleanup quando si chiude
@@ -174,15 +291,54 @@ export function BarcodeScanner({
             <Camera className="h-5 w-5" />
             {title}
           </DialogTitle>
-          {description && (
-            <DialogDescription>{description}</DialogDescription>
-          )}
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Area Scanner */}
           <div className="relative bg-black rounded-lg overflow-hidden aspect-square">
-            <div id="barcode-reader" className="w-full h-full" />
+            {/* Video element per ZXing */}
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              playsInline
+              muted
+            />
+
+            {/* Overlay scanning box */}
+            {isScanningRef.current && !isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative w-64 h-64 border-2 border-green-500 rounded-lg">
+                  {/* Angoli del box */}
+                  <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-green-500" />
+                  <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-green-500" />
+                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-green-500" />
+                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-green-500" />
+
+                  {/* Linea di scansione animata */}
+                  <div
+                    className="absolute top-0 left-0 right-0 h-0.5 bg-green-500 animate-pulse"
+                    style={{ animation: "scan 2s ease-in-out infinite" }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Pulsante Torcia */}
+            {hasTorch && isScanningRef.current && !isLoading && (
+              <Button
+                size="icon"
+                variant="secondary"
+                className="absolute top-4 right-4 pointer-events-auto"
+                onClick={toggleTorch}
+              >
+                {torchEnabled ? (
+                  <FlashlightOff className="h-4 w-4" />
+                ) : (
+                  <Flashlight className="h-4 w-4" />
+                )}
+              </Button>
+            )}
 
             {/* Loading overlay */}
             {isLoading && (
@@ -199,9 +355,15 @@ export function BarcodeScanner({
               <div className="absolute inset-0 flex items-center justify-center bg-black/90">
                 <div className="text-center text-white p-4">
                   <X className="h-12 w-12 mx-auto mb-3 text-red-500" />
-                  <p className="text-sm font-medium mb-2">Accesso fotocamera negato</p>
+                  <p className="text-sm font-medium mb-2">
+                    Accesso fotocamera negato
+                  </p>
                   <p className="text-xs text-slate-300">
-                    Consenti l&apos;accesso alla fotocamera nelle impostazioni del browser
+                    Consenti l&apos;accesso alla fotocamera nelle impostazioni
+                    del browser
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2">
+                    Nota: Richiede HTTPS per funzionare su PWA
                   </p>
                 </div>
               </div>
@@ -211,19 +373,27 @@ export function BarcodeScanner({
           {/* Istruzioni */}
           {isScanningRef.current && !isLoading && (
             <div className="text-center text-sm text-slate-600 dark:text-slate-400 space-y-1">
-              <p className="font-medium">Inquadra il barcode</p>
+              <p className="font-medium">
+                Inquadra il barcode nel riquadro verde
+              </p>
+              <p className="text-xs font-medium text-primary">
+                📏 Tieni i barcode lineari in orizzontale per lettura più veloce
+              </p>
               <p className="text-xs">
-                Assicurati che ci sia abbastanza luce e che il barcode sia ben visibile
+                💡 Assicurati che ci sia abbastanza luce
+                {hasTorch && " o attiva la torcia"}
+              </p>
+              <p className="text-xs text-slate-500">
+                1D: EAN, UPC, Code 128/39/93, ITF, Codabar, RSS
+              </p>
+              <p className="text-xs text-slate-500">
+                2D: QR Code, DataMatrix, Aztec, PDF417, MaxiCode
               </p>
             </div>
           )}
 
           {/* Bottone Chiudi */}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleClose}
-          >
+          <Button variant="outline" className="w-full" onClick={handleClose}>
             Annulla
           </Button>
         </div>
@@ -231,4 +401,3 @@ export function BarcodeScanner({
     </Dialog>
   );
 }
-

@@ -9,3 +9,4 @@ storage/
 .DS_Store
 dist/
 build/
+*.xlsx

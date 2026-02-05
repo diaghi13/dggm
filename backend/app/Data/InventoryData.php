@@ -32,16 +32,16 @@ class InventoryData extends Data
 
         // Quantities
         #[Min(0)]
-        public ?float $quantity_available = 0,
+        public ?float $quantity_available,
 
         #[Min(0)]
-        public ?float $quantity_reserved = 0,
+        public ?float $quantity_reserved,
 
         #[Min(0)]
-        public ?float $quantity_in_transit = 0,
+        public ?float $quantity_in_transit,
 
         #[Min(0)]
-        public ?float $quantity_quarantine = 0,
+        public ?float $quantity_quarantine,
 
         // Stock levels
         #[Min(0)]

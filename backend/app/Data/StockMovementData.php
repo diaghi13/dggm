@@ -81,10 +81,10 @@ class StockMovementData extends Data
         public Lazy|WarehouseData|null $warehouse = null,
         public Lazy|WarehouseData|null $from_warehouse = null,
         public Lazy|WarehouseData|null $to_warehouse = null,
-        public Lazy|null $site = null, // SiteData when created
+        public ?Lazy $site = null, // SiteData when created
         public Lazy|SupplierData|null $supplier = null,
         public Lazy|UserData|null $user = null,
-        public Lazy|null $ddt = null, // DdtData when created
+        public ?Lazy $ddt = null, // DdtData when created
 
         // Computed properties
         #[Computed]

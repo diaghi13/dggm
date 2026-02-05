@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { FileText, Eye, Trash2 } from 'lucide-react';
-import { Ddt } from '@/lib/types';
-import { AvatarTextCell, TextCell } from '@/components/table-cells';
-import { DdtTypeBadge } from '@/components/warehouse/ddt-type-badge';
-import { DdtStatusBadge } from '@/components/warehouse/ddt-status-badge';
-import Link from 'next/link';
+import { ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { FileText, Eye, Trash2 } from "lucide-react";
+import { Ddt } from "@/lib/types";
+import { AvatarTextCell, TextCell } from "@/components/table-cells";
+import { DdtTypeBadge } from "@/components/warehouse/ddt-type-badge";
+import { DdtStatusBadge } from "@/components/warehouse/ddt-status-badge";
+import Link from "next/link";
 
 export const createDdtsColumns = (
   onView: (ddt: Ddt) => void,
-  onDelete: (ddt: Ddt) => void
+  onDelete: (ddt: Ddt) => void,
 ): ColumnDef<Ddt>[] => [
   {
-    accessorKey: 'code',
-    header: 'Codice',
+    accessorKey: "code",
+    header: "Codice",
     size: 150,
     enableHiding: false,
     cell: ({ row }) => (
@@ -27,34 +27,34 @@ export const createDdtsColumns = (
     ),
   },
   {
-    accessorKey: 'type',
-    header: 'Tipo',
+    accessorKey: "type",
+    header: "Tipo",
     size: 150,
     cell: ({ row }) => (
       <DdtTypeBadge type={row.original.type as App.Enums.DdtType} />
     ),
   },
   {
-    accessorKey: 'status',
-    header: 'Stato',
+    accessorKey: "status",
+    header: "Stato",
     size: 130,
     cell: ({ row }) => (
       <DdtStatusBadge status={row.original.status as App.Enums.DdtStatus} />
     ),
   },
   {
-    accessorKey: 'ddt_date',
-    header: 'Data DDT',
+    accessorKey: "ddt_date",
+    header: "Data DDT",
     size: 120,
     cell: ({ row }) => (
       <TextCell
-        text={new Date(row.original.ddt_date).toLocaleDateString('it-IT')}
+        text={new Date(row.original.ddt_date).toLocaleDateString("it-IT")}
       />
     ),
   },
   {
-    id: 'reference',
-    header: 'Riferimento',
+    id: "reference",
+    header: "Riferimento",
     size: 200,
     cell: ({ row }) => {
       const ddt = row.original;
@@ -70,7 +70,7 @@ export const createDdtsColumns = (
       if (ddt.site) {
         return (
           <Link
-            href={`/frontend/app/(dashboard)/sites/${ddt.site.id}`}
+            href={`/sites/${ddt.site.id}`}
             className="hover:underline text-blue-600 dark:text-blue-400 text-sm"
           >
             {ddt.site.code} - {ddt.site.name}
@@ -82,14 +82,14 @@ export const createDdtsColumns = (
     },
   },
   {
-    accessorKey: 'from_warehouse.name',
-    header: 'Da Magazzino',
+    accessorKey: "from_warehouse.name",
+    header: "Da Magazzino",
     size: 150,
     cell: ({ row }) => {
       const warehouse = row.original.from_warehouse;
       return warehouse ? (
         <Link
-          href={`/frontend/app/(dashboard)/warehouses/${warehouse.id}`}
+          href={`/warehouses/${warehouse.id}`}
           className="hover:underline text-blue-600 dark:text-blue-400 text-sm"
         >
           {warehouse.name}
@@ -100,14 +100,14 @@ export const createDdtsColumns = (
     },
   },
   {
-    accessorKey: 'to_warehouse.name',
-    header: 'A Magazzino',
+    accessorKey: "to_warehouse.name",
+    header: "A Magazzino",
     size: 150,
     cell: ({ row }) => {
       const warehouse = row.original.to_warehouse;
       return warehouse ? (
         <Link
-          href={`/frontend/app/(dashboard)/warehouses/${warehouse.id}`}
+          href={`/warehouses/${warehouse.id}`}
           className="hover:underline text-blue-600 dark:text-blue-400 text-sm"
         >
           {warehouse.name}
@@ -118,7 +118,7 @@ export const createDdtsColumns = (
     },
   },
   {
-    accessorKey: 'total_items',
+    accessorKey: "total_items",
     header: () => <div className="text-right">Articoli</div>,
     size: 100,
     cell: ({ row }) => (
@@ -128,7 +128,7 @@ export const createDdtsColumns = (
     ),
   },
   {
-    accessorKey: 'total_quantity',
+    accessorKey: "total_quantity",
     header: () => <div className="text-right">Quantità</div>,
     size: 100,
     cell: ({ row }) => (
@@ -138,7 +138,7 @@ export const createDdtsColumns = (
     ),
   },
   {
-    id: 'actions',
+    id: "actions",
     header: () => <div className="text-right">Azioni</div>,
     size: 100,
     enableHiding: false,
@@ -158,7 +158,7 @@ export const createDdtsColumns = (
           >
             <Eye className="h-4 w-4" />
           </Button>
-          {ddt.status === 'draft' && (
+          {ddt.status === "draft" && (
             <Button
               variant="ghost"
               size="icon"
@@ -176,4 +176,3 @@ export const createDdtsColumns = (
     },
   },
 ];
-

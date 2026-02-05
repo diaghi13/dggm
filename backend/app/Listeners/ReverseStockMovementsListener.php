@@ -3,7 +3,6 @@
 namespace App\Listeners;
 
 use App\Events\DdtCancelled;
-use App\Events\StockMovementReversed;
 use App\Models\Inventory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -28,7 +27,7 @@ class ReverseStockMovementsListener
 
                 // Mark movement as cancelled (or delete if you prefer)
                 $movement->update([
-                    'notes' => ($movement->notes ?? '') . "\nCANCELLED: {$event->reason}",
+                    'notes' => ($movement->notes ?? '')."\nCANCELLED: {$event->reason}",
                 ]);
 
                 Log::info('Stock movement reversed', [

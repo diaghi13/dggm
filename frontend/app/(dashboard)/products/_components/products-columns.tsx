@@ -1,36 +1,29 @@
-'use client';
+"use client";
 
-import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Edit, MapPin, Package, Trash2 } from 'lucide-react';
-import {
-  AvatarTextCell,
-  MoneyCell,
-  TextCell
-} from '@/components/table-cells';
-import { Can } from '@/components/features/auth/can';
-import type { Product } from '@/lib/types';
+import { ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Edit, MapPin, Package, Trash2 } from "lucide-react";
+import { AvatarTextCell, MoneyCell, TextCell } from "@/components/table-cells";
+import { Can } from "@/components/features/auth/can";
+import type { Product } from "@/lib/types";
 
 export const createProductsColumns = (
   onEdit: (product: Product) => void,
-  onDelete: (product: Product) => void
+  onDelete: (product: Product) => void,
 ): ColumnDef<Product>[] => [
   {
-    accessorKey: 'code',
-    header: 'Codice',
+    accessorKey: "code",
+    header: "Codice",
     size: 150,
     enableHiding: false,
     cell: ({ row }) => (
-      <AvatarTextCell
-        icon={Package}
-        primaryText={row.original.code}
-      />
+      <AvatarTextCell icon={Package} primaryText={row.original.code} />
     ),
   },
   {
-    accessorKey: 'name',
-    header: 'Nome',
+    accessorKey: "name",
+    header: "Nome",
     size: 250,
     cell: ({ row }) => {
       const product = row.original;
@@ -40,7 +33,9 @@ export const createProductsColumns = (
           {product.location && (
             <div className="flex items-center gap-1 mt-1">
               <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500" />
-              <span className="text-xs text-slate-500 dark:text-slate-400">{product.location}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {product.location}
+              </span>
             </div>
           )}
         </div>
@@ -48,8 +43,8 @@ export const createProductsColumns = (
     },
   },
   {
-    accessorKey: 'category',
-    header: 'Categoria',
+    accessorKey: "category",
+    header: "Categoria",
     size: 150,
     cell: ({ row }) => {
       const category = row.original.category;
@@ -71,23 +66,21 @@ export const createProductsColumns = (
     },
   },
   {
-    accessorKey: 'standard_cost',
+    accessorKey: "standard_cost",
     header: () => <div className="text-right">Costo Standard</div>,
     size: 140,
     cell: ({ row }) => (
-      <MoneyCell amount={row.original.standard_cost} />
+      <MoneyCell amount={Number(row.original.standard_cost)} />
     ),
   },
   {
-    accessorKey: 'unit',
-    header: 'Unità',
+    accessorKey: "unit",
+    header: "Unità",
     size: 100,
-    cell: ({ row }) => (
-      <TextCell text={row.original.unit} />
-    ),
+    cell: ({ row }) => <TextCell text={row.original.unit || "-"} />,
   },
   {
-    accessorKey: 'total_stock',
+    accessorKey: "total_stock",
     header: () => <div className="text-right">Stock Totale</div>,
     size: 130,
     cell: ({ row }) => {
@@ -106,17 +99,17 @@ export const createProductsColumns = (
     },
   },
   {
-    accessorKey: 'is_active',
-    header: 'Stato',
+    accessorKey: "is_active",
+    header: "Stato",
     size: 100,
     cell: ({ row }) => (
-      <Badge variant={row.original.is_active ? 'default' : 'secondary'}>
-        {row.original.is_active ? 'Attivo' : 'Inattivo'}
+      <Badge variant={row.original.is_active ? "default" : "secondary"}>
+        {row.original.is_active ? "Attivo" : "Inattivo"}
       </Badge>
     ),
   },
   {
-    id: 'actions',
+    id: "actions",
     header: () => <div className="text-right">Azioni</div>,
     size: 100,
     enableHiding: false,
@@ -156,4 +149,3 @@ export const createProductsColumns = (
     },
   },
 ];
-

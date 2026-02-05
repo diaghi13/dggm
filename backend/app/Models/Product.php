@@ -23,10 +23,14 @@ class Product extends Model
     protected $fillable = [
         'id',
         'code',
+        'internal_code',
         'name',
         'description',
+        'brand_id',
         'category_id',
         'product_type',
+        'ean',
+        'etim_code',
         'is_package',
         'package_weight',
         'package_volume',
@@ -74,9 +78,43 @@ class Product extends Model
     }
 
     // Relationships
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(ProductBrand::class, 'brand_id');
+    }
+
     public function defaultSupplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'default_supplier_id');
+    }
+
+    public function suppliers()
+    {
+        return $this->belongsToMany(Supplier::class, 'supplier_product')
+            ->withPivot([
+                'supplier_product_code',
+                'supplier_ean',
+                'purchase_price',
+                'wholesale_price',
+                'retail_price',
+                'discount_family_id',
+                'manual_discount_1',
+                'manual_discount_2',
+                'manual_discount_3',
+                'package_quantity',
+                'minimum_order_quantity',
+                'maximum_order_quantity',
+                'multiple_order_quantity',
+                'lead_time_days',
+                'payment_term_id',
+                'price_multiplier',
+                'currency',
+                'last_price_update',
+                'is_preferred_supplier',
+                'is_active',
+                'notes',
+            ])
+            ->withTimestamps();
     }
 
     public function inventory(): HasMany
@@ -101,6 +139,9 @@ class Product extends Model
     }
 
     // Product Relations (NEW unified table)
+    /**
+     * @return HasMany<ProductRelation>
+     */
     public function relations(): HasMany
     {
         return $this->hasMany(ProductRelation::class, 'product_id')
@@ -142,6 +183,13 @@ class Product extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopeByBrandCode($query, string $brandCode)
+    {
+        return $query->whereHas('brand', function ($q) use ($brandCode) {
+            $q->where('code', $brandCode);
+        });
     }
 
     public function scopeByCategory($query, string $category)
@@ -347,6 +395,153 @@ class Product extends Model
             ->sum(fn ($rel) => $rel->calculateQuantity(1) * $rel->relatedProduct->sale_price);
     }
 
+    // ==================== HELPER METHODS FOR IMPORT ====================
+
+    /**
+     * Find product by brand code and product code
+     * Example: findByBrandAndCode('BTI', '010')
+     */
+    public static function findByBrandAndCode(string $brandCode, string $productCode): ?self
+    {
+        return self::whereHas('brand', function ($q) use ($brandCode) {
+            $q->where('code', $brandCode);
+        })
+            ->where('code', $productCode)
+            ->first();
+    }
+
+    /**
+     * Find product by full code (brand + product concatenated)
+     * Example: findByFullCode('BTI 010') or findByFullCode('BTI-010')
+     * Supports: "BTI 010", "BTI-010", "BTI_010"
+     */
+    public static function findByFullCode(string $fullCode): ?self
+    {
+        // Split by space, dash, or underscore
+        $parts = preg_split('/[\s\-_]+/', trim($fullCode), 2);
+
+        if (count($parts) !== 2) {
+            return null;
+        }
+
+        [$brandCode, $productCode] = $parts;
+
+        return self::findByBrandAndCode($brandCode, $productCode);
+    }
+
+    /**
+     * Find or create brand by code or name
+     */
+    public static function findOrCreateBrand(string $codeOrName): ProductBrand
+    {
+        // Try to find by code first (exact match)
+        $brand = ProductBrand::where('code', strtoupper($codeOrName))->first();
+
+        if ($brand) {
+            return $brand;
+        }
+
+        // Try to find by name (case insensitive)
+        $brand = ProductBrand::whereRaw('LOWER(name) = ?', [strtolower($codeOrName)])->first();
+
+        if ($brand) {
+            return $brand;
+        }
+
+        // Create new brand
+        return ProductBrand::create([
+            'name' => $codeOrName,
+            'is_active' => true,
+        ]);
+    }
+
+    /**
+     * Create or update product from supplier data (Excel import)
+     *
+     * @param  array  $data  Supplier data from Excel
+     */
+    public static function createOrUpdateFromSupplierData(array $data, int $supplierId): self
+    {
+        // 1. Find or create brand
+        $brand = null;
+        if (! empty($data['brand_code']) || ! empty($data['brand_name'])) {
+            $brandIdentifier = $data['brand_code'] ?? $data['brand_name'];
+            $brand = self::findOrCreateBrand($brandIdentifier);
+        }
+
+        // 2. Try to find existing product by EAN (most reliable)
+        $product = null;
+        if (! empty($data['ean'])) {
+            $product = self::where('ean', $data['ean'])->first();
+        }
+
+        // 3. If not found by EAN, try by code + brand
+        if (! $product && ! empty($data['code']) && $brand) {
+            $product = self::findByBrandAndCode($brand->code, $data['code']);
+        }
+
+        // 4. Prepare product data
+        $productData = [
+            'name' => $data['name'] ?? $data['description'] ?? 'Unknown Product',
+            'code' => $data['code'] ?? null,
+            'brand_id' => $brand?->id,
+            'ean' => $data['ean'] ?? null,
+            'etim_code' => $data['etim_code'] ?? null,
+            'unit' => $data['unit'] ?? 'pz',
+            'product_type' => $data['product_type'] ?? ProductType::ARTICLE,
+        ];
+
+        // 5. Create or update product
+        if ($product) {
+            $product->update(array_filter($productData));
+        } else {
+            $product = self::create(array_merge($productData, [
+                'standard_cost' => 0,
+                'purchase_price' => 0,
+                'sale_price' => 0,
+                'markup_percentage' => 0,
+                'rental_price_daily' => 0,
+                'rental_price_weekly' => 0,
+                'rental_price_monthly' => 0,
+            ]));
+        }
+
+        // 6. Attach/update supplier relationship
+        $supplierData = [
+            'supplier_product_code' => $data['supplier_code'] ?? $data['code'],
+            'supplier_ean' => $data['supplier_ean'] ?? $data['ean'],
+            'purchase_price' => $data['purchase_price'] ?? $data['wholesale_price'] ?? 0,
+            'wholesale_price' => $data['wholesale_price'] ?? null,
+            'retail_price' => $data['retail_price'] ?? null,
+            'package_quantity' => $data['package_quantity'] ?? 1,
+            'minimum_order_quantity' => $data['minimum_order_quantity'] ?? 1,
+            'maximum_order_quantity' => $data['maximum_order_quantity'] ?? null,
+            'multiple_order_quantity' => $data['multiple_order_quantity'] ?? null,
+            'lead_time_days' => $data['lead_time_days'] ?? null,
+            'price_multiplier' => $data['price_multiplier'] ?? 1.00,
+            'currency' => $data['currency'] ?? 'EUR',
+            'last_price_update' => $data['last_price_update'] ?? now(),
+            'is_active' => $data['is_active'] ?? true,
+        ];
+
+        // Find discount family if provided
+        if (! empty($data['discount_family_code'])) {
+            $discountFamily = DiscountFamily::where('supplier_id', $supplierId)
+                ->where('code', $data['discount_family_code'])
+                ->first();
+
+            if ($discountFamily) {
+                $supplierData['discount_family_id'] = $discountFamily->id;
+            }
+        }
+
+        $product->suppliers()->syncWithoutDetaching([
+            $supplierId => $supplierData,
+        ]);
+
+        return $product->fresh();
+    }
+
     /**
      * Validate recursive composite structure
      * A composite can contain articles, services, or other composites
@@ -391,9 +586,15 @@ class Product extends Model
         // Gate::resource('product', ProductPolicy::class);
 
         static::creating(function ($product) {
+            // Auto-generate code if empty (manufacturer code or auto-generated)
             if (empty($product->code)) {
                 $count = Product::count() + 1;
                 $product->code = 'PROD-'.str_pad($count, 5, '0', STR_PAD_LEFT);
+            }
+
+            // Auto-generate internal_code (fake code for customers)
+            if (empty($product->internal_code)) {
+                $product->internal_code = self::generateInternalCode($product);
             }
         });
 
@@ -411,5 +612,68 @@ class Product extends Model
                 }
             }
         });
+    }
+
+    /**
+     * Generate internal code from product name (fake code for customers)
+     * Format: [BRAND]-[ALPHANUMERIC_FROM_NAME]
+     * Examples:
+     * - "pulsante illuminabile" + BTI → "BTI-PUSILLU"
+     * - "interruttore bipolare" + BTI → "BTI-INTBIPO"
+     * - "kit trapano" + GEN → "GEN-KITTRA"
+     */
+    private static function generateInternalCode($product): string
+    {
+        // Get brand code
+        $brandCode = 'GEN'; // Default generic
+        if ($product->brand_id) {
+            $brand = ProductBrand::find($product->brand_id);
+            $brandCode = $brand?->code ?? 'GEN';
+        }
+
+        // Extract significant letters from product name
+        $name = strtoupper(trim($product->name ?? ''));
+
+        // Remove common words (articles, prepositions, conjunctions)
+        $stopWords = ['IL', 'LO', 'LA', 'I', 'GLI', 'LE', 'UN', 'UNO', 'UNA', 'CON', 'PER', 'DI', 'DA', 'IN', 'SU', 'A', 'E', 'O'];
+        $words = preg_split('/\s+/', $name);
+        $filteredWords = array_filter($words, fn ($w) => ! in_array($w, $stopWords));
+
+        // Build alphanumeric code from first letters of each significant word
+        $nameCode = '';
+        foreach ($filteredWords as $word) {
+            // Take first 2-3 letters from each word (only alphabetic)
+            $letters = preg_replace('/[^A-Z]/', '', $word);
+            $nameCode .= substr($letters, 0, min(3, strlen($letters)));
+
+            // Stop at max 8 characters
+            if (strlen($nameCode) >= 8) {
+                break;
+            }
+        }
+
+        // Fallback if name is empty or too short
+        if (strlen($nameCode) < 3) {
+            $nameCode = substr(preg_replace('/[^A-Z0-9]/', '', $name), 0, 8);
+        }
+
+        // Limit to 8 characters
+        $nameCode = substr($nameCode, 0, 8);
+
+        // Combine brand + name code
+        $code = $brandCode.'-'.$nameCode;
+
+        // Ensure uniqueness
+        $counter = 1;
+        $originalCode = $code;
+        while (self::where('internal_code', $code)->exists()) {
+            $code = $originalCode.$counter;
+            $counter++;
+            if ($counter > 999) {
+                throw new \Exception('Unable to generate unique internal code after 999 attempts');
+            }
+        }
+
+        return $code;
     }
 }

@@ -2,6 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Auth\ChangePasswordAction;
+use App\Actions\Auth\ResetPasswordAction;
+use App\Actions\Auth\SendPasswordResetLinkAction;
+use App\Data\ChangePasswordData;
+use App\Data\ForgotPasswordData;
+use App\Data\ResetPasswordData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
@@ -9,6 +15,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -39,11 +46,46 @@ class AuthController extends Controller
         // Create new token for this device
         $token = $user->createToken($tokenName)->plainTextToken;
 
+        // Get public global settings
+        $globalSettings = \App\Models\Setting::global()
+            ->where('is_public', true)
+            ->ordered()
+            ->get()
+            ->mapWithKeys(function ($setting) {
+                return [$setting->key => $setting->getTypedValue()];
+            });
+
+        // Get user-specific settings
+        $userSettings = \App\Models\Setting::forUser($user->id)
+            ->ordered()
+            ->get()
+            ->mapWithKeys(function ($setting) {
+                return [$setting->key => $setting->getTypedValue()];
+            });
+
+        // Get enabled feature flags (global + user-specific)
+        $featureFlags = \App\Models\Setting::where('is_feature_flag', true)
+            ->where(function ($query) use ($user) {
+                $query->whereNull('user_id')
+                    ->orWhere('user_id', $user->id);
+            })
+            ->get()
+            ->filter(function ($setting) {
+                return filter_var($setting->getTypedValue(), FILTER_VALIDATE_BOOLEAN);
+            })
+            ->pluck('key')
+            ->toArray();
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
             'data' => [
                 'user' => new UserResource($user),
+                'settings' => [
+                    'global' => $globalSettings,
+                    'user' => $userSettings,
+                ],
+                'features' => $featureFlags,
                 // Don't send token in response body for httpOnly cookie approach
                 // 'token' => $token,
             ],
@@ -84,15 +126,64 @@ class AuthController extends Controller
     }
 
     /**
-     * Get current authenticated user
+     * Get current authenticated user with settings
      */
     public function me(Request $request): JsonResponse
     {
         $user = $request->user()->load('worker');
 
+        $allSettings = \App\Models\Setting::query()
+            ->where(function ($query) use ($user) {
+                $query->whereNull('user_id')
+                    ->orWhere('user_id', $user->id);
+            })
+            ->ordered()
+            ->get()
+            ->mapWithKeys(function ($setting) {
+                return [$setting->key => $setting->getTypedValue()];
+            });
+
+        // Get public global settings
+        $globalSettings = \App\Models\Setting::global()
+            // ->where('is_public', true)
+            ->ordered()
+            ->get()
+            ->mapWithKeys(function ($setting) {
+                return [$setting->key => $setting->getTypedValue()];
+            });
+
+        // Get user-specific settings
+        $userSettings = \App\Models\Setting::forUser($user->id)
+            ->ordered()
+            ->get()
+            ->mapWithKeys(function ($setting) {
+                return [$setting->key => $setting->getTypedValue()];
+            });
+
+        // Get enabled feature flags (global + user-specific)
+        $featureFlags = \App\Models\Setting::where('is_feature_flag', true)
+            ->where(function ($query) use ($user) {
+                $query->whereNull('user_id')
+                    ->orWhere('user_id', $user->id);
+            })
+            ->get()
+            ->filter(function ($setting) {
+                return filter_var($setting->getTypedValue(), FILTER_VALIDATE_BOOLEAN);
+            })
+            ->pluck('key')
+            ->toArray();
+
         return response()->json([
             'success' => true,
-            'data' => new UserResource($user),
+            'data' => [
+                'user' => new UserResource($user),
+                'settings' => [
+                    // 'all' => $allSettings,
+                    'global' => $globalSettings,
+                    'user' => $userSettings,
+                ],
+                'features' => $featureFlags,
+            ],
         ]);
     }
 
@@ -166,6 +257,66 @@ class AuthController extends Controller
             'success' => true,
             'message' => sprintf('Revoked %d other session(s)', $revokedCount),
             'revoked_count' => $revokedCount,
+        ]);
+    }
+
+    /**
+     * Send password reset link to user's email
+     */
+    public function forgotPassword(ForgotPasswordData $data): JsonResponse
+    {
+        $status = app(SendPasswordResetLinkAction::class)->execute($data);
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Password reset link sent to your email',
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Unable to send password reset link',
+        ], 500);
+    }
+
+    /**
+     * Reset password using token from email
+     */
+    public function resetPassword(ResetPasswordData $data): JsonResponse
+    {
+        $status = app(ResetPasswordAction::class)->execute($data);
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Password reset successfully',
+            ]);
+        }
+
+        // Handle different error cases
+        $message = match ($status) {
+            Password::INVALID_TOKEN => 'Invalid or expired reset token',
+            Password::INVALID_USER => 'User not found',
+            default => 'Unable to reset password',
+        };
+
+        return response()->json([
+            'success' => false,
+            'message' => $message,
+        ], 400);
+    }
+
+    /**
+     * Change password for authenticated user
+     */
+    public function changePassword(Request $request, ChangePasswordData $data): JsonResponse
+    {
+        app(ChangePasswordAction::class)->execute($request->user(), $data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password changed successfully',
         ]);
     }
 }

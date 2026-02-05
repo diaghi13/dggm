@@ -6,8 +6,6 @@ use App\Enums\DdtStatus;
 use App\Enums\DdtType;
 use App\Enums\ReturnReason;
 use App\Models\Ddt;
-use App\Models\DdtItem;
-use Illuminate\Support\Collection;
 use Spatie\LaravelData\Attributes\Computed;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\Enum;
@@ -86,7 +84,7 @@ class DdtData extends Data
 
         // Status
         #[Enum(DdtStatus::class)]
-        public ?DdtStatus $status = DdtStatus::Draft,
+        public ?DdtStatus $status,
 
         // Notes
         public ?string $notes,

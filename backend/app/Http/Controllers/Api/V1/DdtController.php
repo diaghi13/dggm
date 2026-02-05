@@ -67,35 +67,35 @@ class DdtController extends Controller
     {
         $this->authorize('create', Ddt::class);
 
-//        $validated = $request->validate([
-//            'type' => 'required|string',
-//            'ddt_number' => 'nullable|string|max:100',
-//            'ddt_date' => 'required|date',
-//            'from_warehouse_id' => 'nullable|exists:warehouses,id',
-//            'to_warehouse_id' => 'nullable|exists:warehouses,id',
-//            'supplier_id' => 'nullable|exists:suppliers,id',
-//            'customer_id' => 'nullable|exists:customers,id',
-//            'site_id' => 'nullable|exists:sites,id',
-//            'transport_type' => 'nullable|string',
-//            'carrier' => 'nullable|string|max:255',
-//            'tracking_number' => 'nullable|string|max:255',
-//            'num_packages' => 'nullable|integer|min:1',
-//            'weight_kg' => 'nullable|numeric|min:0',
-//            'notes' => 'nullable|string',
-//            'items' => 'required|array|min:1',
-//            'items.*.product_id' => 'required|exists:products,id',
-//            'items.*.quantity' => 'required|numeric|min:0.01',
-//            'items.*.unit_cost' => 'nullable|numeric|min:0',
-//            'items.*.description' => 'nullable|string',
-//        ]);
+        //        $validated = $request->validate([
+        //            'type' => 'required|string',
+        //            'ddt_number' => 'nullable|string|max:100',
+        //            'ddt_date' => 'required|date',
+        //            'from_warehouse_id' => 'nullable|exists:warehouses,id',
+        //            'to_warehouse_id' => 'nullable|exists:warehouses,id',
+        //            'supplier_id' => 'nullable|exists:suppliers,id',
+        //            'customer_id' => 'nullable|exists:customers,id',
+        //            'site_id' => 'nullable|exists:sites,id',
+        //            'transport_type' => 'nullable|string',
+        //            'carrier' => 'nullable|string|max:255',
+        //            'tracking_number' => 'nullable|string|max:255',
+        //            'num_packages' => 'nullable|integer|min:1',
+        //            'weight_kg' => 'nullable|numeric|min:0',
+        //            'notes' => 'nullable|string',
+        //            'items' => 'required|array|min:1',
+        //            'items.*.product_id' => 'required|exists:products,id',
+        //            'items.*.quantity' => 'required|numeric|min:0.01',
+        //            'items.*.unit_cost' => 'nullable|numeric|min:0',
+        //            'items.*.description' => 'nullable|string',
+        //        ]);
 
-//        echo "<pre>";
-//        print_r($data);
-//        echo "</pre>";
-//        exit();
+        //        echo "<pre>";
+        //        print_r($data);
+        //        echo "</pre>";
+        //        exit();
 
         try {
-            //$ddtData = DdtData::from($validated);
+            // $ddtData = DdtData::from($validated);
             $ddt = $action->execute($data);
 
             return response()->json([

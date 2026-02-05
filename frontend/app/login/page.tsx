@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,6 +69,16 @@ export default function LoginPage() {
                 className="h-10"
               />
             </div>
+
+            <div className="flex items-center justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+              >
+                Password dimenticata?
+              </Link>
+            </div>
+
             <Button type="submit" className="w-full h-10" disabled={isLoading}>
               {isLoading ? 'Accesso in corso...' : 'Accedi'}
             </Button>

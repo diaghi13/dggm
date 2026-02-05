@@ -74,6 +74,40 @@ class Supplier extends Model
         return $this->hasMany(SiteLaborCost::class, 'contractor_id');
     }
 
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'supplier_product')
+            ->withPivot([
+                'supplier_product_code',
+                'supplier_ean',
+                'purchase_price',
+                'wholesale_price',
+                'retail_price',
+                'discount_family_id',
+                'manual_discount_1',
+                'manual_discount_2',
+                'manual_discount_3',
+                'package_quantity',
+                'minimum_order_quantity',
+                'maximum_order_quantity',
+                'multiple_order_quantity',
+                'lead_time_days',
+                'payment_term_id',
+                'price_multiplier',
+                'currency',
+                'last_price_update',
+                'is_preferred_supplier',
+                'is_active',
+                'notes',
+            ])
+            ->withTimestamps();
+    }
+
+    public function discountFamilies(): HasMany
+    {
+        return $this->hasMany(DiscountFamily::class);
+    }
+
     // ==================== SCOPES ====================
 
     public function scopeActive($query)

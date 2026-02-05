@@ -1,0 +1,4695 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**DGGM ERP** - Sistema gestionale completo per aziende edili e gestione cantieri.
+
+L'applicazione copre l'intero ciclo di vita di un progetto edile: dalla richiesta di preventivo, alla gestione del cantiere, timbrature con geolocalizzazione, consuntivi, fino alla fatturazione finale.
+
+### Architettura
+- **Backend**: API-first con Laravel (API REST per frontend separato)
+- **Frontend**: Next.js 14+ standalone application (repository separato)
+- **Deployment**: Single-tenant (un'installazione per azienda)
+
+### Moduli Principali
+1. **Foundation**: Autenticazione, utenti, ruoli e permessi
+2. **Anagrafica**: Clienti, fornitori, dipendenti
+3. **Magazzino**: Articoli, movimenti, inventario, ordini fornitori
+4. **Cantieri** (CORE): Gestione completa cantieri dalla creazione alla chiusura
+5. **Preventivi**: Sistema di preventivazione con voci gerarchiche
+6. **Timbrature**: Sistema GPS-based per timbrature multi-cantiere giornaliere
+7. **Logistica**: Mezzi aziendali, DDT, tracking materiali
+8. **SAL**: Stato avanzamento lavori con approvazione cliente
+9. **Consuntivi**: Analisi preventivo vs consuntivo con calcolo margini
+10. **Fatturazione**: Fatture attive/passive, fattura elettronica (SDI)
+11. **Contabilità**: Scadenziario, cash flow, reportistica
+
+## Technology Stack
+
+### Backend (questo repository)
+- **Framework**: Laravel 12 (PHP 8.2+)
+- **Authentication**: Laravel Sanctum (API tokens)
+- **Authorization**: Spatie Laravel Permission (ruoli e permessi)
+- **Database**: MySQL 8.0+ / PostgreSQL 14+
+- **Cache**: Redis (sessioni, cache applicativa)
+- **Queue**: Laravel Horizon (background jobs)
+- **Testing**: Pest (PHPUnit wrapper)
+- **Code Quality**: Laravel Pint (PHP CS Fixer)
+- **Logging**: Laravel Pail
+
+### Frontend (repository separato - da creare)
+- **Framework**: Next.js 14+ (App Router, TypeScript)
+- **UI**: Tailwind CSS 4 + shadcn/ui
+- **State**: Zustand + React Query (TanStack Query)
+- **Forms**: React Hook Form + Zod validation
+- **Tables**: TanStack Table
+- **Charts**: Recharts
+- **Maps**: Leaflet con react-leaflet (per GPS tracking)
+
+## Development Commands
+
+### Initial Setup
+```bash
+composer setup
+```
+This runs the full setup: installs dependencies, copies `.env`, generates app key, runs migrations, installs npm packages, and builds assets.
+
+### Development Server
+```bash
+composer dev
+```
+Starts all development services concurrently:
+- PHP development server (port 8000)
+- Queue worker (with 1 retry)
+- Laravel Pail for real-time logs
+- Vite dev server for hot module replacement
+
+Alternatively, start services individually:
+```bash
+php artisan serve              # Development server only
+npm run dev                    # Vite dev server only
+php artisan queue:listen       # Queue worker only
+php artisan pail               # Real-time logs only
+```
+
+### Testing
+```bash
+composer test                  # Run all tests
+php artisan test               # Direct artisan command
+php artisan test --filter=TestName  # Run specific test
+```
+
+Tests use Pest framework. Test suites are in `tests/Feature` and `tests/Unit`. Testing uses in-memory SQLite database (configured in `phpunit.xml`).
+
+### Code Quality
+```bash
+./vendor/bin/pint              # Auto-fix code style issues
+./vendor/bin/pint --test       # Check style without fixing
+```
+
+### Database
+```bash
+php artisan migrate            # Run migrations
+php artisan migrate:fresh      # Drop all tables and re-run migrations
+php artisan migrate:rollback   # Rollback last migration batch
+php artisan db:seed            # Run database seeders
+```
+
+### Asset Building
+```bash
+npm run build                  # Production build
+npm run dev                    # Development with HMR
+```
+
+## Architecture Overview
+
+### Best Practices & Design Patterns
+
+**IMPORTANT ARCHITECTURAL DECISIONS:**
+
+1. **Service Layer Pattern** (MANDATORY)
+   - Controllers MUST be thin - only handle HTTP concerns
+   - ALL business logic goes in Service classes (`app/Services/`)
+   - Controllers inject Services via constructor dependency injection
+   - Example:
+   ```php
+   // ✅ CORRECT
+   class CustomerController extends Controller
+   {
+       public function __construct(
+           private readonly CustomerService $customerService
+       ) {}
+
+       public function index(Request $request) {
+           $this->authorize('viewAny', Customer::class);
+           $customers = $this->customerService->getAll($filters);
+           return CustomerResource::collection($customers);
+       }
+   }
+
+   // ❌ WRONG - business logic in controller
+   public function index() {
+       $customers = Customer::where('is_active', true)->get();
+       return response()->json($customers);
+   }
+   ```
+
+2. **Authorization Pattern**
+   - Use `$this->authorize()` method in controllers (NOT `authorizeResource()`)
+   - Policy classes in `app/Policies/` for all authorization logic
+   - FormRequests handle permission checks for create/update operations
+   - Example:
+   ```php
+   // In Controller
+   $this->authorize('view', $customer);
+   $this->authorize('viewAny', Customer::class);
+
+   // In FormRequest
+   public function authorize(): bool {
+       return $this->user()->can('customers.create');
+   }
+   ```
+
+3. **Modular Architecture** (Optional - Future)
+   - `nwidart/laravel-modules` package installed for future modularization
+   - Current structure: Service layer + standard Laravel folders
+   - Future: Modules for each business domain (Customers, Sites, Quotes, etc.)
+
+4. **API Response Format** (Standardized)
+   ```json
+   {
+     "success": true,
+     "message": "Operation successful",
+     "data": { ... },
+     "meta": { "current_page": 1, "total": 100 }
+   }
+   ```
+
+5. **Frontend Route Structure** (NO /dashboard prefix)
+   - Protected routes: `/`, `/customers`, `/sites`, `/quotes`, etc.
+   - Public routes: `/login`
+   - Use Next.js route groups: `app/(protected)/` for authenticated pages
+   - DashboardLayout wraps all protected routes via layout.tsx
+
+6. **UI Components** (Reusable)
+   - Create reusable components in `frontend/components/ui/`
+   - Use shadcn/ui as base, extend with custom components
+   - Avoid duplicating Tailwind classes - extract to components
+   - Example: `<DataTable>`, `<PageHeader>`, `<StatusBadge>`, etc.
+
+### Laravel 12 Specifics
+This project uses Laravel 12, which includes:
+- Modern routing with slim route files in `routes/`
+- Service providers in `app/Providers/`
+- Eloquent models in `app/Models/`
+- HTTP controllers in `app/Http/Controllers/`
+
+### Frontend Integration
+- **Vite Configuration**: `vite.config.js` handles asset compilation
+- **Entry Points**: `resources/css/app.css` and `resources/js/app.js`
+- **Tailwind CSS 4**: Configured via `@tailwindcss/vite` plugin
+- **Blade Templates**: Located in `resources/views/`
+- **Hot Reload**: Vite ignores `storage/framework/views/**` to prevent unnecessary rebuilds
+
+### Autoloading
+PSR-4 autoloading is configured for:
+- `App\*` → `app/`
+- `Database\Factories\*` → `database/factories/`
+- `Database\Seeders\*` → `database/seeders/`
+- `Tests\*` → `tests/`
+
+### Composer Scripts
+The project includes custom composer scripts:
+- `composer setup` - Full project setup
+- `composer dev` - Start all development services
+- `composer test` - Run test suite
+
+These scripts handle common development workflows and should be used instead of running individual commands.
+
+## Key Files
+
+- `routes/web.php` - Web routes
+- `routes/console.php` - Artisan console commands
+- `config/` - All configuration files
+- `database/migrations/` - Database schema migrations
+- `.env` - Environment configuration (not in version control)
+- `.env.example` - Environment template
+
+## Development Workflow
+
+1. The concurrent dev script runs 4 processes simultaneously - if one fails, all others are killed (`--kill-others` flag)
+2. Queue jobs are configured to retry once (`--tries=1`)
+3. Configuration is cleared before running tests to ensure clean state
+4. Laravel Boost is used for performance optimization (updates on composer update)
+
+## Backend Architecture Patterns
+
+### API Structure
+```
+api/v1/
+├── auth/              # Authentication (login, logout, refresh)
+├── users/             # User management
+├── customers/         # Customer registry
+├── suppliers/         # Supplier registry
+├── sites/             # Construction sites management
+├── quotes/            # Quote/estimate system
+├── time-trackings/    # Time tracking with GPS
+├── warehouse/         # Warehouse management
+├── invoices/          # Invoicing
+└── ...
+```
+
+### Code Organization
+- **Models**: `app/Models/` - Eloquent models with relationships
+- **Controllers**: `app/Http/Controllers/Api/V1/` - API controllers (thin, delegate to Services)
+- **Services**: `app/Services/` - Business logic (e.g., `SiteService`, `QuoteService`)
+- **Repositories**: `app/Repositories/` - Data access layer (optional, for complex queries)
+- **Requests**: `app/Http/Requests/` - Form validation for API
+- **Resources**: `app/Http/Resources/` - API response transformers (standardized JSON)
+- **Policies**: `app/Policies/` - Authorization logic (who can do what)
+- **Jobs**: `app/Jobs/` - Background tasks (email, PDF generation, export)
+- **Events/Listeners**: `app/Events/` - Domain events for async operations
+
+### API Response Format (Standard JSON:API)
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operazione completata",
+  "meta": {
+    "current_page": 1,
+    "total": 100
+  }
+}
+```
+
+### Ruoli Predefiniti
+- **SuperAdmin**: Accesso completo al sistema
+- **Admin**: Gestione completa azienda (no configurazione sistema)
+- **ProjectManager**: Gestione cantieri, preventivi, SAL
+- **Caposquadra**: Visualizzazione cantieri assegnati, gestione squadra
+- **Operaio**: Timbrature, visualizzazione cantieri assegnati (solo lettura)
+- **Contabile**: Fatturazione, contabilità, reportistica finanziaria
+- **Magazziniere**: Gestione magazzino, DDT, ordini fornitori
+- **Cliente**: Visualizzazione preventivi e SAL (portale clienti - futuro)
+
+### Database Conventions
+- **Naming**: snake_case for tables and columns (English names: `sites`, `customers`, `created_at`)
+- **Primary Key**: `id` (BIGINT UNSIGNED AUTO_INCREMENT)
+- **Foreign Keys**: `{table_singular}_id` (e.g., `customer_id`, `site_id`, `user_id`)
+- **Timestamps**: `created_at`, `updated_at` (automatic with `$table->timestamps()`)
+- **Soft Deletes**: `deleted_at` where needed (customers, sites, quotes)
+- **Status/Enum**: use ENUM or VARCHAR columns with validation (e.g., `status: ['draft', 'sent', 'approved']`)
+
+### Security Best Practices
+- Tutti gli endpoint API richiedono autenticazione tramite Sanctum (tranne login/register)
+- Usare Policy per ogni risorsa (es. `CantierePolicy::view()`, `::create()`, `::update()`)
+- Validare SEMPRE input con FormRequest
+- Sanitizzare output con API Resources
+- Rate limiting su API (60 req/min per utente autenticato)
+- Logging di azioni critiche (creazione/modifica/eliminazione dati sensibili)
+
+### Testing Strategy
+- **Unit Tests**: Logica business nei Services (calcoli margini, validazioni complesse)
+- **Feature Tests**: API endpoints (autenticazione, CRUD operations, permessi)
+- **Pest Syntax**: Preferire syntax Pest moderna
+- Test coverage minimo: 70% su Services e Controllers critici
+
+### Performance Optimization
+- **Eager Loading**: Sempre usare `with()` per evitare N+1 queries
+- **Caching**:
+  - Liste statiche (ruoli, permessi, categorie) → cache 1h
+  - Anagrafica clienti/fornitori → cache 15min
+  - Dashboard stats → cache 5min
+- **Queue Jobs**: Email, PDF generation, export Excel → sempre in background
+- **Database Indexes**: Su colonne usate in WHERE, JOIN, ORDER BY frequenti
+- **Pagination**: Default 20 items, max 100 per request
+
+### Key Business Rules
+
+#### Timbrature Multi-Cantiere
+- Un operaio può timbrare su più cantieri nella stessa giornata
+- Ogni coppia entrata/uscita è associata a un cantiere specifico
+- GPS obbligatorio: coordinate devono essere entro 50-100m dal cantiere
+- Se fuori range → flag "richiede_verifica" e notifica al manager
+- Calcolo ore automatico per cantiere: `ore_lavorate = uscita - entrata`
+- Straordinario se totale giornaliero > 8h o settimanale > 40h
+- Report presenze aggregabili per: dipendente, cantiere, periodo
+
+#### Site Workflow
+1. Customer requests quote → PM creates Quote
+2. Quote approved → automatically converts to Site
+3. Site inherits: materials, estimated hours, amounts from quote
+4. During work: tracking actual hours, materials used, extras
+5. At completion: automatic cost analysis (estimated vs actual)
+6. Generate progress billing → progressive invoicing
+7. Site closure → margin analysis and archiving
+
+#### Quote → Site (Conversion)
+- Imports all data: customer, address, amount, materials, hours
+- Creates "materials to order" list from quote
+- PM can modify/integrate after conversion
+- Any "extras" (customer variants) tracked separately
+- Final cost analysis compares quote baseline with actual expenses
+
+## Development Roadmap
+
+### Fase 1: Foundation (In corso)
+- [x] Setup progetto Laravel
+- [ ] Laravel Sanctum (API authentication)
+- [ ] Spatie Permission (ruoli e permessi)
+- [ ] Seeders ruoli base
+- [ ] API base authentication (login, logout, me)
+- [ ] Middleware e policy base
+
+### Fase 2: Anagrafica
+- [ ] CRUD Clienti
+- [ ] CRUD Fornitori
+- [ ] CRUD Dipendenti (con ruoli)
+- [ ] Categorie (clienti, fornitori, materiali)
+
+### Fase 3: Magazzino
+- [ ] Articoli e servizi
+- [ ] Movimenti (carico/scarico)
+- [ ] Ordini fornitori
+- [ ] Inventario
+
+### Fase 4: Cantieri Core
+- [ ] Preventivi (con builder voci gerarchiche)
+- [ ] Cantieri (anagrafica e gestione)
+- [ ] Conversione Preventivo → Cantiere
+- [ ] Assegnazione team e mezzi
+
+### Fase 5: Timbrature
+- [ ] Sistema timbratura con validazione GPS
+- [ ] Report presenze
+- [ ] Gestione permessi/ferie
+
+### Fase 6+: Moduli avanzati
+- SAL, Consuntivi, Fatturazione, Logistica, Contabilità
+
+## Notes
+- Next.js frontend will be a separate repository consuming these APIs
+- Focus on well-documented APIs (OpenAPI/Swagger)
+- Always think "mobile-first" for time tracking and workers
+- **All code in English**: models (Site, Quote, Customer), controllers, services, database tables, columns, API endpoints, everything
+
+===
+
+<laravel-boost-guidelines>
+=== .ai/ARCHITECTURE rules ===
+
+# DGGM ERP - Architecture Rules
+
+**CRITICAL**: Read this file BEFORE writing ANY backend code.
+**Version**: 2.0 (Unified Architecture Guide)
+**Last Updated**: February 2026
+
+---
+
+## 🎯 Three-Layer Pattern (MANDATORY)
+
+```
+HTTP Request → Controller (THIN) → Query/Action → Service (optional) → Response
+                    ↓                    ↓              ↓
+                 Policy           Database/Events   Calculations
+```
+
+**Core Principles:**
+1. **Controllers are THIN** - Only HTTP concerns (auth, response)
+2. **Query/Action Pattern** - ALL database operations in dedicated classes
+3. **Services** - ONLY calculations, formatting (NO database)
+4. **Spatie Data** - DTOs for validation + output
+5. **Event-Driven** - Side-effects via Events + Listeners
+
+---
+
+## 📁 Directory Structure
+
+```
+app/
+├── Actions/{Domain}/          # Write operations (Create, Update, Delete)
+
+│   ├── CreateProductAction.php
+│   ├── UpdateProductAction.php
+│   └── DeleteProductAction.php
+│
+├── Queries/{Domain}/          # Complex read operations
+
+│   └── GetLowStockProductsQuery.php
+│
+├── Services/                  # Calculations, formatting (NO DB)
+
+│   ├── PriceCalculatorService.php
+│   └── GeolocationService.php
+│
+├── Data/                      # Spatie Data DTOs (input + output)
+
+│   └── ProductData.php
+│
+├── Http/Controllers/Api/V1/   # THIN controllers
+
+├── Policies/                  # Authorization
+
+├── Events/                    # Domain events
+
+├── Listeners/                 # Event handlers
+
+└── Models/                    # Eloquent models
+
+```
+
+---
+
+## 1. Controller Pattern (THIN)
+
+**MUST:**
+- ✅ Authorize via Policy (`$this->authorize()`)
+- ✅ Validate via Spatie Data (`ProductData::from($request)`)
+- ✅ Simple reads: Eloquent directly in controller (1-3 WHERE clauses)
+- ✅ Complex reads: delegate to Query Class
+- ✅ Writes: delegate to Action
+- ✅ Return Spatie Data response (`ProductData::from($product)`)
+
+**MUST NOT:**
+- ❌ Business logic in controller
+- ❌ Complex queries inline
+- ❌ Direct database writes
+
+### Example: Simple Read (in Controller)
+
+```php
+public function index(Request $request): JsonResponse
+{
+    $this->authorize('viewAny', Product::class);
+
+    $products = Product::query()
+        ->when($request->search, fn($q, $search) =>
+            $q->where('name', 'like', "%{$search}%")
+        )
+        ->when($request->is_active !== null, fn($q) =>
+            $q->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN))
+        )
+        ->orderBy('name')
+        ->paginate(20);
+
+    return response()->json([
+        'success' => true,
+        'data' => ProductData::collection($products->items()),
+        'meta' => [
+            'current_page' => $products->currentPage(),
+            'total' => $products->total(),
+        ],
+    ]);
+}
+```
+
+### Example: Complex Read (Query Class)
+
+```php
+// Controller
+public function lowStock(): JsonResponse
+{
+    $this->authorize('viewAny', Product::class);
+
+    $products = app(GetLowStockProductsQuery::class)->execute();
+
+    return response()->json([
+        'success' => true,
+        'data' => ProductData::collection($products),
+    ]);
+}
+
+// Query Class: app/Queries/Product/GetLowStockProductsQuery.php
+class GetLowStockProductsQuery
+{
+    public function execute(): Collection
+    {
+        return Product::whereHas('inventory', function ($query) {
+            $query->whereRaw('quantity_available <= minimum_stock');
+        })
+            ->with(['inventory' => function ($query) {
+                $query->whereRaw('quantity_available <= minimum_stock')
+                    ->with('product');
+            }])
+            ->get();
+    }
+}
+```
+
+### Example: Write (Action)
+
+```php
+// Controller
+public function store(Request $request): JsonResponse
+{
+    $this->authorize('create', Product::class);
+
+    $product = app(CreateProductAction::class)->execute(
+        ProductData::from($request)
+    );
+
+    return response()->json([
+        'success' => true,
+        'data' => ProductData::from($product),
+    ], 201);
+}
+
+// Action: app/Actions/Product/CreateProductAction.php
+class CreateProductAction
+{
+    public function execute(ProductData $data): Product
+    {
+        return DB::transaction(function () use ($data) {
+            $product = Product::create($data->toArray());
+
+            ProductCreated::dispatch($product, [
+                'user_id' => auth()->id(),
+                'ip_address' => request()->ip(),
+            ]);
+
+            return $product;
+        });
+    }
+}
+```
+
+---
+
+## 2. Actions (Write Operations)
+
+**Location**: `app/Actions/{Domain}/`
+
+**MUST:**
+- ✅ Accept Spatie Data DTO as parameter
+- ✅ Use `DB::transaction()` for atomicity
+- ✅ Use Eloquent directly (NO Repository pattern)
+- ✅ Dispatch Events AFTER persistence
+- ✅ Return Eloquent Model
+- ✅ Inject Services if calculations needed
+
+**MUST NOT:**
+- ❌ Use Repository pattern (Eloquent IS the repository)
+- ❌ Complex read queries (use Query Class)
+- ❌ HTTP concerns (authorization, validation)
+
+### Template
+
+```php
+<?php
+
+namespace App\Actions\Product;
+
+use App\Data\ProductData;
+use App\Events\ProductCreated;
+use App\Models\Product;
+use App\Services\PriceCalculatorService;
+use Illuminate\Support\Facades\DB;
+
+class CreateProductAction
+{
+    public function __construct(
+        private readonly PriceCalculatorService $priceCalculator
+    ) {}
+
+    public function execute(ProductData $data): Product
+    {
+        return DB::transaction(function () use ($data) {
+            // Service for calculations (NO database)
+            $finalPrice = $this->priceCalculator->calculateMarkup(
+                $data->cost,
+                $data->markup_percent
+            );
+
+            $product = Product::create([
+                ...$data->except('id')->toArray(),
+                'price' => $finalPrice,
+            ]);
+
+            ProductCreated::dispatch($product, [
+                'user_id' => auth()->id(),
+                'ip_address' => request()->ip(),
+            ]);
+
+            return $product;
+        });
+    }
+}
+```
+
+---
+
+## 3. Query Classes (Complex Reads)
+
+**Location**: `app/Queries/{Domain}/`
+
+**WHEN to use:**
+- ✅ Complex JOINs
+- ✅ Subqueries
+- ✅ Nested `whereHas`
+- ✅ Reusable queries
+- ✅ Complex filtering logic
+
+**WHEN NOT to use:**
+- ❌ Simple queries (1-3 WHERE) → put in Controller
+- ❌ One-time queries → put in Controller
+
+### Template
+
+```php
+<?php
+
+namespace App\Queries\Product;
+
+use App\Models\Product;
+use Illuminate\Database\Eloquent\Collection;
+
+class GetLowStockProductsQuery
+{
+    public function execute(): Collection
+    {
+        return Product::whereHas('inventory', function ($query) {
+            $query->whereRaw('quantity_available <= minimum_stock');
+        })
+            ->with(['inventory' => function ($query) {
+                $query->whereRaw('quantity_available <= minimum_stock')
+                    ->with('product');
+            }])
+            ->get();
+    }
+}
+```
+
+### With Parameters
+
+```php
+class GetProductInventoryQuery
+{
+    public function __construct(
+        private readonly Product $product
+    ) {}
+
+    public function execute(array $filters = []): Collection
+    {
+        $query = $this->product->inventory()->with(['warehouse']);
+
+        if (isset($filters['low_stock']) && filter_var($filters['low_stock'], FILTER_VALIDATE_BOOLEAN)) {
+            $query->whereRaw('quantity_available <= minimum_stock');
+        }
+
+        if (isset($filters['warehouse_id'])) {
+            $query->where('warehouse_id', $filters['warehouse_id']);
+        }
+
+        return $query->get();
+    }
+}
+```
+
+---
+
+## 4. Services (Domain Logic)
+
+**Location**: `app/Services/`
+
+**MUST contain ONLY:**
+- ✅ Calculations (prices, margins, percentages)
+- ✅ Data transformations
+- ✅ External API integrations (GPS, payment gateways)
+- ✅ Reusable validation logic
+- ✅ Format operations
+
+**MUST NOT contain:**
+- ❌ Database operations (use Actions/Queries)
+- ❌ CRUD operations
+- ❌ HTTP concerns
+
+### Example: PriceCalculatorService
+
+```php
+class PriceCalculatorService
+{
+    public const VAT_RATE_STANDARD = 22.0;
+
+    public function calculateMarkup(Money $cost, float $markupPercent): Money
+    {
+        $factor = 1 + ($markupPercent / 100);
+        return $cost->multiply($factor);
+    }
+
+    public function applyDiscount(Money $price, float $discountPercent): Money
+    {
+        $factor = 1 - ($discountPercent / 100);
+        return $price->multiply($factor);
+    }
+
+    public function calculateVAT(Money $price, float $vatRate = self::VAT_RATE_STANDARD): Money
+    {
+        $vatAmount = $price->amount * ($vatRate / 100);
+        return new Money($vatAmount, $price->currency);
+    }
+
+    public function calculateFinalPrice(Money $baseCost, array $options = []): Money
+    {
+        $price = $baseCost;
+
+        if (isset($options['markup'])) {
+            $price = $this->calculateMarkup($price, $options['markup']);
+        }
+
+        if (isset($options['discount_percent'])) {
+            $price = $this->applyDiscount($price, $options['discount_percent']);
+        }
+
+        if ($options['add_vat'] ?? false) {
+            $vat = $this->calculateVAT($price, $options['vat_rate'] ?? self::VAT_RATE_STANDARD);
+            $price = $price->add($vat);
+        }
+
+        return $price;
+    }
+}
+```
+
+### Example: GeolocationService
+
+```php
+class GeolocationService
+{
+    public function calculateDistance(Coordinates $point1, Coordinates $point2): float
+    {
+        $earthRadiusKm = 6371;
+
+        $latFrom = deg2rad($point1->latitude);
+        $lonFrom = deg2rad($point1->longitude);
+        $latTo = deg2rad($point2->latitude);
+        $lonTo = deg2rad($point2->longitude);
+
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+
+        $a = sin($latDelta / 2) ** 2 +
+             cos($latFrom) * cos($latTo) *
+             sin($lonDelta / 2) ** 2;
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadiusKm * $c;
+    }
+
+    public function isWithinRadius(Coordinates $point, Coordinates $center, float $radiusKm): bool
+    {
+        $distance = $this->calculateDistance($point, $center);
+        return $distance <= $radiusKm;
+    }
+}
+```
+
+---
+
+## 5. Spatie Data (DTOs)
+
+**Location**: `app/Data/`
+
+**ALWAYS use for:**
+- ✅ Input validation (replaces FormRequest)
+- ✅ Output transformation (replaces Resource)
+- ✅ Type safety
+- ✅ Auto-completion
+
+**Use FormRequest ONLY when:**
+- Complex authorization logic
+- File uploads with specific validation
+- Contextual validation Data can't handle
+
+### Template
+
+```php
+<?php
+
+namespace App\Data;
+
+use Spatie\LaravelData\Attributes\Validation\Max;
+use Spatie\LaravelData\Attributes\Validation\Required;
+use Spatie\LaravelData\Data;
+
+class ProductData extends Data
+{
+    public function __construct(
+        public ?int $id,
+
+        #[Required, Max(255)]
+        public string $name,
+
+        #[Required]
+        public string $code,
+
+        public ?string $description,
+        public ?float $cost,
+        public ?float $price,
+        public bool $is_active = true,
+
+        // Computed (not saved to DB)
+        public readonly ?float $markup_percent = null,
+    ) {}
+
+    public static function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:50', 'unique:products,code'],
+            'description' => ['nullable', 'string'],
+            'cost' => ['nullable', 'numeric', 'min:0'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+        ];
+    }
+}
+```
+
+### Usage
+
+```php
+// Controller - Input validation
+public function store(Request $request): JsonResponse
+{
+    $product = app(CreateProductAction::class)->execute(
+        ProductData::from($request)  // ✅ Validates input
+    );
+
+    return response()->json([
+        'success' => true,
+        'data' => ProductData::from($product),  // ✅ Transforms output
+    ]);
+}
+
+// Action - Type-safe parameter
+public function execute(ProductData $data): Product
+{
+    return DB::transaction(function () use ($data) {
+        $product = Product::create(
+            $data->except('id', 'markup_percent')->toArray()
+        );
+
+        return $product;
+    });
+}
+```
+
+---
+
+## 6. Value Objects (Lightweight)
+
+**Location**: `app/ValueObjects/`
+
+**WHEN to use:**
+- ✅ Domain concept to STORE in database
+- ✅ Needs type safety
+- ✅ Has validation in constructor
+- ✅ Only SIMPLE methods (format, predicates, conversions)
+
+**WHEN NOT to use:**
+- ❌ Complex business logic → use Service
+- ❌ Calculations → use Service
+
+### Example: Money
+
+```php
+class Money implements Castable
+{
+    public function __construct(
+        public readonly float $amount,
+        public readonly string $currency = 'EUR'
+    ) {}
+
+    // ✅ Basic operations OK
+    public function add(Money $other): self
+    {
+        return new self($this->amount + $other->amount, $this->currency);
+    }
+
+    public function multiply(float $factor): self
+    {
+        return new self($this->amount * $factor, $this->currency);
+    }
+
+    // ✅ Predicates OK
+    public function isZero(): bool
+    {
+        return $this->amount === 0.0;
+    }
+
+    // ✅ Format OK
+    public function format(): string
+    {
+        return number_format($this->amount, 2, ',', '.') . ' €';
+    }
+
+    // ❌ NO complex calculations (markup, VAT) → PriceCalculatorService!
+}
+```
+
+### Example: Coordinates
+
+```php
+class Coordinates implements Castable
+{
+    public function __construct(
+        public readonly float $latitude,
+        public readonly float $longitude
+    ) {
+        $this->validate();
+    }
+
+    private function validate(): void
+    {
+        if ($this->latitude < -90 || $this->latitude > 90) {
+            throw new InvalidArgumentException('Invalid latitude');
+        }
+        if ($this->longitude < -180 || $this->longitude > 180) {
+            throw new InvalidArgumentException('Invalid longitude');
+        }
+    }
+
+    public function toString(): string
+    {
+        return "{$this->latitude},{$this->longitude}";
+    }
+
+    // ❌ NO distanceTo() → GeolocationService!
+}
+```
+
+**Rule**: Value Object (data) + Service (logic)
+
+```php
+// ✅ CORRECT
+$distance = $geoService->calculateDistance(
+    $site->coordinates,    // VO
+    $worker->coordinates   // VO
+);
+
+// ❌ WRONG
+$distance = $site->coordinates->distanceTo($worker->coordinates);
+```
+
+---
+
+## 7. Events & Listeners
+
+**MUST:**
+- ✅ Dispatch events AFTER persistence in `DB::transaction()`
+- ✅ Include metadata (user_id, ip_address)
+- ✅ Use for side-effects (audit, cache, notifications)
+- ✅ `implements ShouldQueue` for async listeners
+
+### Event Template
+
+```php
+<?php
+
+namespace App\Events;
+
+use App\Models\Product;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+class ProductCreated
+{
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public function __construct(
+        public readonly Product $product,
+        public readonly array $metadata = []
+    ) {}
+}
+```
+
+### Listener Template
+
+```php
+<?php
+
+namespace App\Listeners;
+
+use App\Events\ProductCreated;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+class GenerateProductEmbeddings implements ShouldQueue
+{
+    public int $tries = 3;
+    public int $timeout = 30;
+
+    public function handle(ProductCreated $event): void
+    {
+        \Log::info('Product created', [
+            'product_id' => $event->product->id,
+            'user_id' => $event->metadata['user_id'] ?? null,
+        ]);
+
+        // Generate AI embeddings
+        // ...
+    }
+}
+```
+
+---
+
+## 🔍 Decision Trees
+
+### Should I create a Service?
+
+```
+Is it a calculation, formatting, or external API (NO database)?
+├─→ YES → Create Service in app/Services/
+│         Examples: PriceCalculatorService, GeolocationService
+└─→ NO → Is it a WRITE operation?
+         ├─→ YES → Use Action in app/Actions/{Domain}/
+         └─→ NO → Is it a complex READ?
+                  ├─→ YES → Query Class in app/Queries/{Domain}/
+                  └─→ NO → Eloquent in Controller
+```
+
+### Should I use a Query Class?
+
+```
+Is this a complex query (JOINs, subqueries, nested whereHas)?
+├─→ YES → Create Query Class in app/Queries/{Domain}/
+└─→ NO → Use Eloquent directly in Controller
+```
+
+---
+
+## ❌ Anti-Patterns
+
+### ❌ Service for CRUD
+
+```php
+// WRONG
+class ProductService
+{
+    public function create(array $data) { ... }
+    public function update(int $id, array $data) { ... }
+}
+
+// CORRECT
+class CreateProductAction { ... }
+class UpdateProductAction { ... }
+```
+
+### ❌ Repository Pattern
+
+```php
+// WRONG - Eloquent IS the repository
+interface ProductRepository { ... }
+class ProductEloquentRepository implements ProductRepository { ... }
+
+// CORRECT - Use Eloquent directly in Actions/Queries
+Product::create($data);
+```
+
+### ❌ Business Logic in Controller
+
+```php
+// WRONG
+public function store(Request $request)
+{
+    $product = Product::create($request->all());
+
+    if ($product->type === 'composite') {
+        // complex logic here...
+    }
+}
+
+// CORRECT
+public function store(Request $request)
+{
+    $this->authorize('create', Product::class);
+
+    $product = app(CreateProductAction::class)->execute(
+        ProductData::from($request)
+    );
+
+    return ProductData::from($product);
+}
+```
+
+---
+
+## 📋 Pre-Coding Checklist
+
+Before writing code, verify:
+
+- [ ] Controller is thin (no business logic)?
+- [ ] Using Actions for writes (Create, Update, Delete)?
+- [ ] Using Query Classes for complex reads?
+- [ ] Using Eloquent directly for simple reads (in Controller)?
+- [ ] Services ONLY for calculations/formatting (NO database)?
+- [ ] Spatie Data for input validation AND output?
+- [ ] Actions use `DB::transaction()`?
+- [ ] Actions dispatch Events after persistence?
+- [ ] Value Objects for data + Services for logic?
+- [ ] NO Repository pattern?
+
+---
+
+## 🎯 Quick Reference
+
+| Task | Use | Location | Example |
+|------|-----|----------|---------|
+| **Simple Read** | Eloquent in Controller | Controller | `Product::where('is_active', true)->get()` |
+| **Complex Read** | Query Class | `app/Queries/{Domain}/` | `GetLowStockProductsQuery` |
+| **Write** | Action | `app/Actions/{Domain}/` | `CreateProductAction` |
+| **Calculation** | Service | `app/Services/` | `PriceCalculatorService` |
+| **Validation + Output** | Spatie Data | `app/Data/` | `ProductData` |
+| **Domain Concept** | Value Object | `app/ValueObjects/` | `Money`, `Coordinates` |
+| **Side Effects** | Event + Listener | `app/Events/` | `ProductCreated` |
+
+---
+
+**Version**: 2.0 (Unified)
+**Last Updated**: February 2026
+**Status**: MANDATORY - Do NOT deviate without explicit approval
+
+=== .ai/DGGM_GUIDELINES rules ===
+
+# DGGM ERP - Laravel Backend Guidelines
+
+**CRITICAL**: This file contains MANDATORY architectural patterns for DGGM project.
+Laravel Boost may overwrite `CLAUDE.md`, so custom guidelines live here.
+
+---
+
+## Architecture Overview: Three-Layer Pattern (MANDATORY)
+
+```
+HTTP Request → Controller (THIN) → Action/Query → Service (if needed) → Response
+                    ↓                    ↓              ↓
+                 Policy           Database/Events   Formatting
+```
+
+### Core Principles
+
+1. **Controllers are THIN** - Only HTTP concerns (auth, validation delegation, response)
+2. **Query/Action Pattern** - All database operations go through dedicated classes
+3. **Services** - Data formatting, calculations, testable business logic
+4. **Laravel Data (Spatie)** - DTOs, validation, and resource transformation
+5. **Event-Driven** - Side-effects triggered by events on main features
+
+---
+
+## 1. Mandatory Patterns
+
+### 1.1 Query/Action Pattern (OBBLIGATORIO)
+
+**ALL database operations MUST use dedicated Query or Action classes.**
+
+```php
+// ✅ CORRECT - Query for reads
+class GetActiveCustomersQuery
+{
+    public function __construct(
+        private array $filters = []
+    ) {}
+
+    public function execute(): Collection
+    {
+        return Customer::query()
+            ->when($this->filters['search'] ?? null, fn($q, $search) =>
+                $q->where('name', 'like', "%{$search}%")
+            )
+            ->where('is_active', true)
+            ->with(['addresses', 'contacts'])
+            ->orderBy('name')
+            ->get();
+    }
+}
+
+// ✅ CORRECT - Action for writes
+class CreateCustomerAction
+{
+    public function execute(CustomerData $data): Customer
+    {
+        $customer = Customer::create($data->toArray());
+
+        event(new CustomerCreated($customer));
+
+        return $customer;
+    }
+}
+
+// ❌ WRONG - Direct Eloquent in Controller
+public function index()
+{
+    $customers = Customer::where('is_active', true)->get();
+    return CustomerResource::collection($customers);
+}
+
+// ❌ WRONG - Direct Eloquent in Service
+class CustomerService
+{
+    public function getActive()
+    {
+        return Customer::where('is_active', true)->get(); // NO!
+    }
+}
+```
+
+**Location**:
+- Queries: `app/Actions/{Domain}/Queries/` (e.g., `app/Actions/Customer/Queries/GetActiveCustomersQuery.php`)
+- Actions: `app/Actions/{Domain}/` (e.g., `app/Actions/Customer/CreateCustomerAction.php`)
+
+### 1.2 Service Layer (Data Formatting & Business Logic)
+
+**Services handle ONLY:**
+- Data formatting and transformation
+- Complex calculations
+- Orchestration of multiple Actions/Queries
+- Logic that needs independent testing
+
+**Services do NOT:**
+- Directly query database (use Queries)
+- Directly write to database (use Actions)
+
+```php
+// ✅ CORRECT - Service for formatting/calculations
+class QuoteCalculationService
+{
+    public function calculateTotals(QuoteData $quote): QuoteTotalsData
+    {
+        $subtotal = collect($quote->items)->sum('total');
+        $tax = $subtotal * ($quote->tax_rate / 100);
+        $discount = $subtotal * ($quote->discount_rate / 100);
+        $total = $subtotal + $tax - $discount;
+
+        return QuoteTotalsData::from([
+            'subtotal' => $subtotal,
+            'tax' => $tax,
+            'discount' => $discount,
+            'total' => $total,
+        ]);
+    }
+}
+
+// ❌ WRONG - Service doing database operations
+class QuoteService
+{
+    public function getAll()
+    {
+        return Quote::with('items')->get(); // NO! Use Query
+    }
+}
+```
+
+**Location**: `app/Services/` (e.g., `app/Services/QuoteCalculationService.php`)
+
+### 1.3 Spatie Laravel Data (MANDATORY for DTOs)
+
+**ALWAYS use Spatie Laravel Data for:**
+- Input validation (instead of FormRequest when possible)
+- Data Transfer Objects (DTOs)
+- API response resources (instead of Eloquent Resources when possible)
+
+**Use FormRequest ONLY when:**
+- Complex authorization logic needed
+- File uploads with specific validation
+- Contextual validation that Data can't handle efficiently
+
+```php
+// ✅ CORRECT - Laravel Data for DTO and validation
+class CustomerData extends Data
+{
+    public function __construct(
+        #[Required, Max(255)]
+        public string $name,
+
+        #[Required, Email]
+        public string $email,
+
+        #[Nullable, Max(20)]
+        public ?string $phone,
+
+        public bool $is_active = true,
+    ) {}
+}
+
+// In Controller
+public function store(CustomerData $data)
+{
+    $this->authorize('create', Customer::class);
+
+    $customer = app(CreateCustomerAction::class)->execute($data);
+
+    return CustomerData::from($customer);
+}
+
+// ❌ WRONG - Using FormRequest when Data is sufficient
+class CustomerRequest extends FormRequest
+{
+    public function rules()
+    {
+        return [
+            'name' => 'required|max:255',
+            'email' => 'required|email',
+        ];
+    }
+}
+```
+
+**When to use FormRequest over Data:**
+```php
+// ✅ Use FormRequest for complex authorization
+class UpdateCustomerRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        $customer = $this->route('customer');
+
+        // Complex: check ownership + permissions
+        return $this->user()->can('update', $customer)
+            && $customer->company_id === $this->user()->company_id;
+    }
+}
+
+// ✅ Use FormRequest for file uploads
+class ImportProductsRequest extends FormRequest
+{
+    public function rules()
+    {
+        return [
+            'file' => 'required|file|mimes:xlsx,csv|max:10240',
+            'overwrite' => 'boolean',
+        ];
+    }
+}
+```
+
+### 1.4 Event-Driven Pattern (Side-Effects)
+
+**Main features MUST trigger Events for side-effects.**
+
+```php
+// ✅ CORRECT - Action dispatches event
+class CreateProductAction
+{
+    public function execute(ProductData $data): Product
+    {
+        $product = Product::create($data->toArray());
+
+        // Event triggers side-effects
+        event(new ProductCreated($product));
+
+        return $product;
+    }
+}
+
+// Event
+class ProductCreated
+{
+    public function __construct(public Product $product) {}
+}
+
+// Listeners (in EventServiceProvider)
+protected $listen = [
+    ProductCreated::class => [
+        GenerateProductEmbeddings::class,  // AI embeddings
+        UpdateInventoryCache::class,       // Cache refresh
+        NotifyWarehouseManager::class,     // Notification
+    ],
+];
+
+// ❌ WRONG - Side-effects in Action
+class CreateProductAction
+{
+    public function execute(ProductData $data): Product
+    {
+        $product = Product::create($data->toArray());
+
+        // NO! Side-effects should be in listeners
+        $this->embeddingService->generate($product);
+        Cache::forget('products');
+        Notification::send($managers, new ProductCreatedNotification($product));
+
+        return $product;
+    }
+}
+```
+
+**When to use Events:**
+- Main feature actions (Create, Update, Delete on core entities)
+- Need for multiple side-effects
+- Asynchronous operations (queued listeners)
+- Decoupling concerns (inventory, notifications, analytics)
+
+**Location**:
+- Events: `app/Events/`
+- Listeners: `app/Listeners/`
+- Registration: `app/Providers/EventServiceProvider.php`
+
+---
+
+## 2. Code Organization (Revised)
+
+```
+app/
+├── Actions/                    # Query/Action Pattern (MANDATORY)
+
+│   ├── {Domain}/
+│   │   ├── Queries/           # Read operations (GetAll, GetById, etc.)
+
+│   │   ├── Create{Entity}Action.php
+│   │   ├── Update{Entity}Action.php
+│   │   └── Delete{Entity}Action.php
+│   ├── Customer/
+│   │   ├── Queries/
+│   │   │   ├── GetActiveCustomersQuery.php
+│   │   │   └── GetCustomerByIdQuery.php
+│   │   ├── CreateCustomerAction.php
+│   │   └── UpdateCustomerAction.php
+│   └── Product/...
+│
+├── Data/                       # Spatie Laravel Data (DTOs)
+
+│   ├── CustomerData.php
+│   ├── ProductData.php
+│   └── QuoteTotalsData.php
+│
+├── Services/                   # Business logic & formatting (NO DB)
+
+│   ├── QuoteCalculationService.php
+│   ├── EmbeddingService.php
+│   └── UserService.php
+│
+├── Models/                     # Eloquent models (relationships only)
+
+│   ├── Customer.php
+│   ├── Product.php
+│   └── Quote.php
+│
+├── Http/
+│   ├── Controllers/Api/V1/    # THIN controllers (HTTP only)
+
+│   │   ├── CustomerController.php
+│   │   └── ProductController.php
+│   ├── Requests/              # Use ONLY when Data is insufficient
+
+│   │   └── ImportProductsRequest.php
+│   └── Resources/             # Use ONLY when Data is insufficient
+
+│       └── ComplexNestedResource.php
+│
+├── Policies/                   # Authorization (Gates)
+
+│   ├── CustomerPolicy.php
+│   └── ProductPolicy.php
+│
+├── Events/                     # Domain events
+
+│   ├── CustomerCreated.php
+│   └── ProductCreated.php
+│
+├── Listeners/                  # Event handlers (side-effects)
+
+│   ├── GenerateProductEmbeddings.php
+│   └── NotifyWarehouseManager.php
+│
+└── Jobs/                      # Background tasks (Queue)
+
+    ├── SendInvoiceEmail.php
+    └── GeneratePdfReport.php
+```
+
+---
+
+## 3. Thin Controller Pattern (MANDATORY)
+
+**Controllers handle ONLY:**
+1. Authorization (`$this->authorize()`)
+2. Delegate to Action/Query
+3. Return Data response
+
+```php
+// ✅ PERFECT THIN CONTROLLER
+class CustomerController extends Controller
+{
+    public function index(CustomerData $filters)
+    {
+        $this->authorize('viewAny', Customer::class);
+
+        $customers = app(GetActiveCustomersQuery::class, ['filters' => $filters->toArray()])
+            ->execute();
+
+        return CustomerData::collection($customers);
+    }
+
+    public function store(CustomerData $data)
+    {
+        $this->authorize('create', Customer::class);
+
+        $customer = app(CreateCustomerAction::class)->execute($data);
+
+        return CustomerData::from($customer);
+    }
+
+    public function show(Customer $customer)
+    {
+        $this->authorize('view', $customer);
+
+        return CustomerData::from($customer);
+    }
+
+    public function update(CustomerData $data, Customer $customer)
+    {
+        $this->authorize('update', $customer);
+
+        $customer = app(UpdateCustomerAction::class)->execute($customer, $data);
+
+        return CustomerData::from($customer);
+    }
+
+    public function destroy(Customer $customer)
+    {
+        $this->authorize('delete', $customer);
+
+        app(DeleteCustomerAction::class)->execute($customer);
+
+        return response()->noContent();
+    }
+}
+
+// ❌ WRONG - Fat controller
+public function store(Request $request)
+{
+    // NO! Validation should be in Data
+    $validated = $request->validate([...]);
+
+    // NO! DB operation should be in Action
+    $customer = Customer::create($validated);
+
+    // NO! Side-effect should be in Event Listener
+    Cache::forget('customers');
+
+    // NO! Formatting should be in Service or Data
+    return response()->json([
+        'data' => [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'email' => $customer->email,
+        ]
+    ]);
+}
+```
+
+---
+
+## 4. Authorization Pattern
+
+**Use `$this->authorize()` in controllers, NOT `authorizeResource()`**:
+
+```php
+// In Controller
+$this->authorize('view', $customer);
+$this->authorize('viewAny', Customer::class);
+$this->authorize('create', Customer::class);
+$this->authorize('update', $customer);
+$this->authorize('delete', $customer);
+
+// Policy (all authorization logic here)
+class CustomerPolicy
+{
+    public function viewAny(User $user): bool
+    {
+        return $user->can('customers.view');
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->can('customers.create');
+    }
+
+    public function update(User $user, Customer $customer): bool
+    {
+        return $user->can('customers.update')
+            && $customer->company_id === $user->company_id;
+    }
+}
+```
+
+---
+
+## 5. Database Naming Conventions
+
+**English, snake_case**:
+- Tables: `customers`, `construction_sites`, `time_entries`
+- Columns: `created_at`, `user_id`, `is_active`
+- Foreign keys: `{table_singular}_id` (e.g., `customer_id`, `site_id`)
+
+---
+
+## 6. Predefined Roles
+
+- **SuperAdmin**: Full system access
+- **Admin**: Complete company management
+- **ProjectManager**: Sites, quotes, SAL management
+- **Foreman**: Assigned sites, team management
+- **Worker**: Time tracking, view assigned sites (read-only)
+- **Accountant**: Invoicing, accounting, reporting
+- **WarehouseManager**: Warehouse, DDT, supplier orders
+- **Customer**: View quotes and SAL (customer portal)
+
+---
+
+## 7. Performance Best Practices
+
+### Eager Loading (MANDATORY in Queries)
+
+```php
+// ✅ CORRECT
+class GetActiveCustomersQuery
+{
+    public function execute(): Collection
+    {
+        return Customer::query()
+            ->with(['addresses', 'contacts']) // Prevent N+1
+            ->where('is_active', true)
+            ->get();
+    }
+}
+```
+
+### Caching Strategy
+
+- **Static lists** (roles, permissions): 1h
+- **Registry** (customers, suppliers): 15min
+- **Dashboard stats**: 5min
+
+### Queue Jobs
+
+- Email sending
+- PDF generation
+- Excel exports
+- AI embeddings
+
+### Database Indexes
+
+- Columns used in WHERE, JOIN, ORDER BY
+
+---
+
+## 8. Security Best Practices
+
+- All API endpoints require Sanctum authentication (except login/register)
+- Policy for every resource
+- Validation via Laravel Data or FormRequest
+- Rate limiting: 60 req/min per authenticated user
+- Log critical actions (create/update/delete sensitive data)
+
+---
+
+## 9. Business Rules: Multi-Site Time Tracking
+
+- Worker can clock in/out on multiple sites per day
+- Each entry/exit pair associated with specific site
+- GPS mandatory: coordinates within 50-100m from site
+- If out of range: flag `requires_verification` + notify manager
+- Hours calculation: `hours_worked = exit - entry`
+- Overtime: daily total > 8h or weekly > 40h
+
+---
+
+## 10. API Standards (From .clauderc)
+
+### Response Format (Standardized)
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operation successful",
+  "meta": {
+    "timestamp": "2026-02-04T10:00:00Z"
+  }
+}
+```
+
+**Pagination Response:**
+```json
+{
+  "success": true,
+  "data": [...],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 150,
+    "last_page": 10
+  },
+  "links": {
+    "first": "...",
+    "last": "...",
+    "prev": null,
+    "next": "..."
+  }
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Validation failed",
+    "code": "VALIDATION_ERROR",
+    "details": {
+      "field": ["error message"]
+    }
+  }
+}
+```
+
+### HTTP Status Codes
+
+| Code | Meaning | Usage |
+|------|---------|-------|
+| `200` | Success | GET request successful |
+| `201` | Created | POST successful (resource created) |
+| `204` | No Content | DELETE successful |
+| `400` | Bad Request | Invalid input |
+| `401` | Unauthorized | Not authenticated |
+| `403` | Forbidden | Not authorized (authenticated but no permission) |
+| `404` | Not Found | Resource not found |
+| `422` | Unprocessable Entity | Validation errors |
+| `500` | Internal Server Error | Server-side error |
+
+### API Query Parameters (Standard)
+
+| Parameter | Example | Purpose |
+|-----------|---------|---------|
+| **Pagination** | `?page=1&per_page=15` | Paginate results |
+| **Sorting** | `?sort=name&order=asc` | Sort results |
+| **Filtering** | `?status=active&customer_id=5` | Filter results |
+| **Search** | `?q=search-term` | Full-text search |
+| **Include Relations** | `?include=customer,items` | Eager load relationships |
+| **Specific Fields** | `?fields=id,name,price` | Return only specific fields |
+
+---
+
+## 11. Recommended Packages
+
+### Backend (Laravel)
+
+**Essential:**
+- `spatie/laravel-permission` - Roles & permissions (INSTALLED ✅)
+- `spatie/laravel-data` - DTOs with validation (INSTALLED ✅)
+- `laravel/sanctum` - API authentication (INSTALLED ✅)
+- `laravel/horizon` - Queue monitoring
+- `barryvdh/laravel-debugbar` - Debug toolbar (dev)
+
+**Optional:**
+- `maatwebsite/excel` - Excel import/export
+- `barryvdh/laravel-dompdf` - PDF generation
+- `spatie/laravel-activitylog` - Audit trail
+- `spatie/laravel-query-builder` - API query building
+
+### Frontend (Next.js)
+
+**Essential:**
+- `@tanstack/react-query` - Server state (INSTALLED ✅)
+- `react-hook-form` - Form management (INSTALLED ✅)
+- `zod` - Schema validation (INSTALLED ✅)
+- `@tanstack/react-table` - Tables (INSTALLED ✅)
+- `axios` - HTTP client (INSTALLED ✅)
+
+**UI:**
+- `tailwindcss` + `shadcn/ui` - UI components (INSTALLED ✅)
+- `sonner` - Toast notifications
+- `recharts` - Charts
+- `react-leaflet` - Maps (for GPS features)
+
+**Utilities:**
+- `date-fns` - Date manipulation
+- `zustand` - Client state (INSTALLED ✅)
+- `nuqs` - URL state management
+
+---
+
+## Quick Reference: When to Use What
+
+| Pattern | Use When | Example |
+|---------|----------|---------|
+| **Action** | Write operations (Create, Update, Delete) | `CreateCustomerAction` |
+| **Query** | Read operations (complex filters, joins) | `GetActiveCustomersQuery` |
+| **Service** | Formatting, calculations, orchestration | `QuoteCalculationService` |
+| **Data** | DTOs, validation, API responses | `CustomerData` |
+| **FormRequest** | Complex auth, file uploads | `ImportProductsRequest` |
+| **Resource** | Complex nested responses | `QuoteWithItemsResource` |
+| **Event** | Main feature actions trigger side-effects | `ProductCreated` |
+| **Listener** | Side-effects (notifications, cache, async) | `GenerateProductEmbeddings` |
+| **Job** | Background tasks (queue) | `SendInvoiceEmail` |
+
+---
+
+**Last Updated**: February 2026
+**Laravel Version**: 12
+**PHP Version**: 8.3+
+**Spatie Laravel Data**: v4
+**Guidelines Source**: ARCHITECTURE.md + DGGM_GUIDELINES.md + .clauderc
+
+=== .ai/GUIDELINES_INDEX rules ===
+
+# DGGM ERP - Guidelines Index
+
+**Purpose**: Navigation map for all project documentation
+**Last Updated**: February 2026
+
+---
+
+## 🚀 QUICK START
+
+### First Time Setup
+
+```
+1. Read /CLAUDE.md (project overview)
+2. Read backend/PROMPT.md (AI rules)
+3. Read backend/TODO.md (current state)
+4. Backend: Read backend/ARCHITECTURE.md (patterns)
+5. Frontend: Read frontend/NEXTJS_GUIDELINES.md + frontend/CLAUDE.md
+```
+
+### Before Every Task
+
+```
+Backend:  ARCHITECTURE.md → TODO.md → Start coding
+Frontend: NEXTJS_GUIDELINES.md → frontend/CLAUDE.md → TODO.md → Start
+```
+
+---
+
+## 📋 CRITICAL FILES (Read First)
+
+| File | Priority | Read When | Purpose |
+|------|----------|-----------|---------|
+| **PROMPT.md** | 🔴 CRITICAL | Session start | AI operational rules, decision trees |
+| **ARCHITECTURE.md** | 🔴 CRITICAL | Before backend coding | Query/Action pattern, Services, DTOs |
+| **TODO.md** | 🔴 CRITICAL | Always | Current project state |
+| **DGGM_GUIDELINES.md** | 🟠 HIGH | Before backend coding | Project-specific conventions |
+| **frontend/NEXTJS_GUIDELINES.md** | 🔴 CRITICAL | Before frontend coding | Next.js 16 breaking changes |
+| **frontend/CLAUDE.md** | 🔴 CRITICAL | Before frontend coding | Frontend conventions |
+
+---
+
+## 📁 Complete File Inventory
+
+### Root (`/`)
+
+- **CLAUDE.md** 🟠 HIGH - Project overview, tech stack, modules
+
+### Backend (`/backend/.ai/guidelines/`)
+
+#### Architecture
+
+- **ARCHITECTURE.md** 🔴 CRITICAL - Unified architecture guide (Query/Action/Service)
+- **DGGM_GUIDELINES.md** 🟠 HIGH - Project-specific Laravel conventions
+- **FINAL_ARCHITECTURE.md** 🟢 DEPRECATED - Content merged into ARCHITECTURE.md
+- **AI_ARCHITECTURE_RULES.md** 🟢 DEPRECATED - Content merged into ARCHITECTURE.md
+
+#### Operational
+
+- **PROMPT.md** 🔴 CRITICAL - AI system prompt, decision trees, checklists
+- **TODO.md** 🔴 CRITICAL - Implementation status, what's done/missing
+- **GUIDELINES_INDEX.md** 🟡 MEDIUM - This file (navigation)
+
+### Frontend (`/frontend/docs/`)
+
+- **NEXTJS_GUIDELINES.md** 🔴 CRITICAL - Next.js 16 breaking changes, patterns
+- **CLAUDE.md** 🔴 CRITICAL - Frontend conventions, dark mode, state management
+
+---
+
+## 🎯 Read Flow by Task Type
+
+### Backend Module Creation
+
+```
+1. ARCHITECTURE.md      (patterns)
+2. DGGM_GUIDELINES.md   (conventions)
+3. Similar existing module (Warehouse/Product)
+4. Start coding
+5. Update TODO.md when done
+```
+
+### Frontend Page Creation
+
+```
+1. NEXTJS_GUIDELINES.md  (Next.js 16)
+2. frontend/CLAUDE.md    (conventions)
+3. Similar existing page (Customers/Products)
+4. Start coding
+5. Update TODO.md when done
+```
+
+### Troubleshooting
+
+```
+1. Check TODO.md (is it actually implemented?)
+2. Read ARCHITECTURE.md (following patterns?)
+3. Check NEXTJS_GUIDELINES.md (async params?)
+4. Run formatters (pint/lint:fix)
+```
+
+---
+
+## 🤖 AI Agent Instructions
+
+### Session Start
+
+```bash
+1. Read PROMPT.md
+2. Read TODO.md
+3. Identify task
+```
+
+### Before Backend Coding
+
+```bash
+1. Read ARCHITECTURE.md (MANDATORY)
+2. Check existing implementation (Warehouse/Product)
+3. Follow patterns:
+   - Actions in app/Actions/{Domain}/
+   - Queries in app/Queries/{Domain}/
+   - Services in app/Services/ (NO database)
+   - Spatie Data for input + output
+```
+
+### Before Frontend Coding
+
+```bash
+1. Read NEXTJS_GUIDELINES.md (MANDATORY - async params!)
+2. Read frontend/CLAUDE.md (MANDATORY - dark mode!)
+3. Server Components by default
+4. 'use client' only at leaf
+```
+
+### After Coding
+
+```bash
+
+# Backend
+
+./vendor/bin/pint
+php artisan typescript:transform
+
+# Frontend
+
+npm run lint:fix
+
+# Both
+
+Update TODO.md
+```
+
+---
+
+## ❓ Quick Help
+
+| Question | Answer |
+|----------|--------|
+| **Architecture rules?** | `ARCHITECTURE.md` |
+| **Next.js 16 changes?** | `frontend/NEXTJS_GUIDELINES.md` |
+| **Current tasks?** | `TODO.md` |
+| **What to do now?** | `PROMPT.md` |
+| **Project overview?** | `/CLAUDE.md` |
+| **Dark mode rules?** | `frontend/CLAUDE.md` |
+
+---
+
+## 📝 Deprecated Files (Content Merged)
+
+- ~~AI_ARCHITECTURE_RULES.md~~ → Merged into **ARCHITECTURE.md**
+- ~~FINAL_ARCHITECTURE.md~~ → Merged into **ARCHITECTURE.md**
+
+**Note**: Old files still exist but use **ARCHITECTURE.md** for unified reference.
+
+---
+
+**Version**: 2.0 (Simplified)
+**Last Updated**: February 2026
+
+=== .ai/PROMPT rules ===
+
+# DGGM ERP - AI System Prompt
+
+**Purpose**: Core operational rules for AI agents
+**Priority**: 🔴 CRITICAL - Read at session start
+**Last Updated**: February 2026
+
+---
+
+## 🎯 PROJECT MISSION
+
+Build **production-ready ERP** for service companies managing complete lifecycle: quotes → projects → invoicing → cost analysis.
+
+**Target**: Construction, electrical, plumbing, automation, events, rental, cooperatives
+**Tech**: Laravel 12 + Next.js 16 + API-first
+**Deploy**: Single-tenant (one installation per company)
+
+---
+
+## 🚨 CRITICAL OPERATIONAL RULES
+
+### 1. Read Documentation FIRST
+
+```
+BEFORE ANY code:
+├─→ Backend: Read ARCHITECTURE.md (MANDATORY)
+├─→ Frontend: Read frontend/NEXTJS_GUIDELINES.md + frontend/CLAUDE.md (MANDATORY)
+├─→ Check: TODO.md for current state
+└─→ Verify: Code actually exists (don't trust TODO blindly)
+```
+
+### 2. Follow Established Patterns
+
+- **Do NOT** invent new patterns
+- **Do NOT** refactor architecture without approval
+- **Look** at existing implementations (Warehouse, Product modules)
+- **Reuse** existing components/services
+
+### 3. Code Quality (ALWAYS)
+
+```bash
+
+# Backend
+
+./vendor/bin/pint                  # Format code
+
+php artisan typescript:transform   # Generate TS types from Spatie Data
+
+# Frontend
+
+npm run lint:fix                   # Format + fix
+
+```
+
+### 4. Dark Mode (Frontend Non-Negotiable)
+
+```tsx
+// ❌ WRONG
+<div className="bg-white text-black">
+
+// ✅ CORRECT
+<div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+```
+
+Every UI element must support dark mode. Zero exceptions.
+
+---
+
+## 📖 DECISION TREES
+
+### Backend: Should I create X?
+
+```
+CALCULATION or FORMATTING (NO database)?
+├─→ YES → Service (app/Services/)
+└─→ NO → WRITE operation (create/update/delete)?
+         ├─→ YES → Action (app/Actions/{Domain}/)
+         └─→ NO → COMPLEX read (JOINs, subqueries)?
+                  ├─→ YES → Query Class (app/Queries/{Domain}/)
+                  └─→ NO → Eloquent in Controller
+```
+
+### Frontend: Should I use 'use client'?
+
+```
+Need state or event handlers?
+├─→ NO → Server Component (default)
+└─→ YES → Is this layout/page.tsx?
+           ├─→ YES → Keep Server Component, isolate client logic
+           └─→ NO → 'use client' in this component only
+```
+
+---
+
+## ✅ COMPLETION CRITERIA
+
+### Task is "Done" when:
+
+**Backend:**
+1. ✅ Controller thin (no business logic)
+2. ✅ Action with `DB::transaction()` + Events
+3. ✅ Spatie Data for validation + output
+4. ✅ Policy authorizes
+5. ✅ Code formatted (`pint`)
+6. ✅ TS types generated (`typescript:transform`)
+
+**Frontend:**
+1. ✅ Server Components by default
+2. ✅ 'use client' only where needed
+3. ✅ Dark mode on ALL elements
+4. ✅ TypeScript strict (no `any`)
+5. ✅ TanStack Query for API
+6. ✅ React Hook Form + Zod
+7. ✅ Code formatted (`lint:fix`)
+
+**Both:**
+1. ✅ TODO.md updated
+2. ✅ No console errors
+3. ✅ Feature tested manually
+
+---
+
+## 🔧 COMMON TASKS
+
+### Create Backend Module
+
+```bash
+
+# 1. Migration
+
+php artisan make:migration create_{table}_table
+
+# 2. Model
+
+php artisan make:model {Model}
+
+# 3. Spatie Data (app/Data/)
+
+# Validation + Output (replaces FormRequest + Resource)
+
+# 4. Action (app/Actions/{Domain}/)
+
+# CreateAction, UpdateAction, DeleteAction
+
+# Pattern: DB::transaction() + Event dispatch
+
+# 5. Query Class (if complex reads)
+
+# app/Queries/{Domain}/Get{X}Query.php
+
+# 6. Service (ONLY if calculations needed, NO database)
+
+# app/Services/
+
+# 7. Controller (thin)
+
+php artisan make:controller Api/V1/{Model}Controller --api
+
+# Inject Actions, authorize(), delegate
+
+# 8. Policy
+
+php artisan make:policy {Model}Policy
+
+# 9. Events (if needed for logs/notifications)
+
+php artisan make:event {Model}Created
+php artisan make:listener Log{Model}Activity
+
+# 10. Format + Generate TS
+
+./vendor/bin/pint
+php artisan typescript:transform
+
+# 11. Update TODO.md
+
+```
+
+### Create Frontend Page
+
+```tsx
+// 1. Create page (Server Component by default)
+// app/(dashboard)/{module}/page.tsx
+
+export default async function Page() {
+  // Fetch on server if needed
+  return <div>...</div>
+}
+
+// 2. API client (lib/api/{module}.ts)
+export const {module}Api = {
+  getAll: async () => apiClient.get('/api/v1/{module}'),
+}
+
+// 3. Types (lib/types/index.ts)
+export interface {Module} {
+  id: number
+  // ...
+}
+
+// 4. Form component (Client Component)
+// components/{module}-form.tsx
+'use client'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+
+// 5. Dark mode everywhere
+className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+
+// 6. Format
+npm run lint:fix
+
+// 7. Update TODO.md
+```
+
+---
+
+## 🚫 ANTI-PATTERNS (Absolutely Forbidden)
+
+### Backend
+
+```php
+// ❌ Business logic in Controller
+public function store(Request $request) {
+    $data = $request->all();
+    if ($data['type'] === 'special') {
+        // NO! Move to Action
+    }
+}
+
+// ❌ Database in Service
+class ProductService {
+    public function create(array $data) {
+        return Product::create($data);  // NO! Use Action
+    }
+}
+
+// ❌ Separate FormRequest + Resource (when Spatie Data sufficient)
+public function store(StoreProductRequest $request) {
+    $product = $this->action->execute($request->validated());
+    return new ProductResource($product);  // Duplicate!
+}
+
+// ✅ CORRECT: Spatie Data for BOTH
+public function store(Request $request) {
+    $product = app(CreateProductAction::class)->execute(
+        ProductData::from($request)  // Input validation
+    );
+    return ProductData::from($product);  // Output (same DTO!)
+}
+```
+
+### Frontend
+
+```tsx
+// ❌ 'use client' too high
+'use client'
+export default function Layout({ children }) {
+  return <div>{children}</div>  // Everything client-side!
+}
+
+// ✅ Push to leaf
+import SearchBox from './search-box'  // Client component
+
+export default function Layout({ children }) {
+  return (
+    <>
+      <Header />       {/* Server */}
+      <SearchBox />    {/* Client */}
+      {children}
+    </>
+  )
+}
+
+// ❌ No dark mode
+<div className="bg-white text-black">
+
+// ✅ Full dark mode
+<div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+```
+
+---
+
+## 🎓 LEARNING FROM CODE
+
+**Reference Implementations:**
+
+| Module | Status | Learn From |
+|--------|--------|------------|
+| **Warehouse** | Complete | DDD, Actions, Events, Queries |
+| **Product** | Complete | Components, relations, semantic search |
+| **Worker** | Complete | Rates, invitations, complex forms |
+| **Customers** | Complete | Full CRUD, search, filter |
+| **Materials** | Complete | Tabs, inventory, movements |
+
+**Pattern**: Find similar → Copy structure → Adapt → Follow same patterns
+
+---
+
+## 🔍 DEBUGGING CHECKLIST
+
+### Backend Issues
+
+```
+□ Controller thin (only HTTP)?
+□ Action in app/Actions/{Domain}/?
+□ Action uses DB::transaction()?
+□ Action dispatches Events?
+□ Spatie Data for input + output?
+□ NO separate FormRequest/Resource?
+□ Policy authorizes?
+□ Service ONLY calculations (NO database)?
+□ Query Class for complex reads?
+□ Routes registered?
+□ TS types generated?
+□ Code formatted (pint)?
+□ Code actually exists (not just TODO)?
+```
+
+### Frontend Issues
+
+```
+□ Server Component by default?
+□ 'use client' only where needed?
+□ Dark mode on ALL elements?
+□ No TypeScript errors (strict)?
+□ TanStack Query for API?
+□ React Hook Form + Zod?
+□ Code formatted (lint:fix)?
+```
+
+---
+
+## 📊 PROJECT STATE AWARENESS
+
+### Before Starting Work
+
+```
+1. Read TODO.md (current state)
+2. Identify ✅ Done, 🚧 In Progress, ❌ Missing
+3. Choose task
+4. Read relevant guidelines (ARCHITECTURE.md or frontend guidelines)
+5. Start coding following patterns
+```
+
+### After Completing Work
+
+```
+1. Run formatters
+2. Verify dark mode (frontend)
+3. Test manually
+4. Update TODO.md
+5. Commit (conventional message)
+```
+
+---
+
+## 💡 TIPS FOR AI AGENTS
+
+### General
+
+1. **Be Conservative** - Follow existing patterns
+2. **Be Thorough** - Read docs before coding
+3. **Be Consistent** - Match existing style
+4. **Be Explicit** - Update TODO.md
+5. **Be Complete** - Don't leave half-finished features
+
+### When Uncertain
+
+1. Check similar existing implementation
+2. Read ARCHITECTURE.md or NEXTJS_GUIDELINES.md
+3. Ask for clarification
+4. Default to simpler solution
+
+### Performance
+
+- Parallel tool calls when possible
+- Read multiple files in single message
+- Background agents for analysis
+- Batch similar operations
+
+---
+
+## 📝 COMMIT FORMAT
+
+```
+<type>: <description>
+
+[optional body]
+```
+
+**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
+**Examples**:
+- `feat: add create site form with GPS validation`
+- `fix: resolve dark mode contrast in customer list`
+- `docs: update TODO.md with completed warehouse`
+
+---
+
+## ✅ SESSION CHECKLIST
+
+### Start
+
+- [ ] Read PROMPT.md (this file)
+- [ ] Read TODO.md
+- [ ] Identify task
+
+### Before Backend
+
+- [ ] Read ARCHITECTURE.md
+- [ ] Check similar module
+- [ ] Verify patterns
+
+### Before Frontend
+
+- [ ] Read NEXTJS_GUIDELINES.md
+- [ ] Read frontend/CLAUDE.md
+- [ ] Check similar page
+
+### After Coding
+
+- [ ] Run formatters
+- [ ] Test dark mode (frontend)
+- [ ] No errors
+- [ ] Update TODO.md
+- [ ] Commit
+
+---
+
+**Version**: 2.0 (Compressed)
+**Last Updated**: February 2026
+**For**: Claude Code, ralph-loop
+
+=== .ai/STANDARDS rules ===
+
+# DGGM ERP - Standards & Best Practices
+
+**Source**: Extracted from `.clauderc` + Project conventions
+**Last Updated**: February 2026
+
+---
+
+## 📐 Naming Conventions
+
+### PHP (PSR-12)
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| Classes | PascalCase | `CustomerService`, `ProductController` |
+| Methods | camelCase | `createCustomer()`, `calculateTotal()` |
+| Variables | camelCase | `$totalAmount`, `$userName` |
+| Constants | SCREAMING_SNAKE_CASE | `VAT_RATE_STANDARD`, `MAX_UPLOAD_SIZE` |
+
+### Database
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| Tables | snake_case (plural) | `customers`, `construction_sites`, `time_entries` |
+| Columns | snake_case | `created_at`, `user_id`, `is_active` |
+| Foreign Keys | `{table_singular}_id` | `customer_id`, `site_id`, `product_id` |
+| Pivot Tables | Alphabetical order | `customer_site` (NOT `site_customer`) |
+
+### TypeScript
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| Interfaces | PascalCase | `User`, `Customer`, `Product` |
+| Types | PascalCase | `UserRole`, `ProductType` |
+| Components | PascalCase | `CustomerForm`, `DataTable` |
+| Hooks | camelCase + `use` prefix | `useAuth`, `useCustomers` |
+| Functions | camelCase | `handleSubmit`, `fetchCustomers` |
+| Constants | SCREAMING_SNAKE_CASE | `API_BASE_URL`, `MAX_FILE_SIZE` |
+
+---
+
+## 🎨 UI/UX Standards (From .clauderc)
+
+### Design System
+
+**Colors:**
+```css
+Primary:    #1890ff  /* Blue corporate */
+Success:    #52c41a  /* Green */
+Warning:    #faad14  /* Orange */
+Error:      #f5222d  /* Red */
+Dark:       #262626  /* Neutral dark */
+Light:      #f0f0f0  /* Neutral light */
+```
+
+**Typography:**
+```
+Font Family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif
+
+Sizes:
+  h1: 32px
+  h2: 24px
+  h3: 20px
+  body: 14px
+  small: 12px
+```
+
+**Spacing:**
+```
+Unit: 8px
+Scale: 4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px
+```
+
+### Component Guidelines
+
+**Buttons:**
+- **Primary** - Main actions (Save, Confirm)
+- **Secondary** - Secondary actions
+- **Danger** - Destructive actions (Delete)
+- Always show loading state with spinner
+- Disabled state visually clear
+
+**Forms:**
+- Labels always visible (NO placeholder as label)
+- Inline validation after first submit attempt
+- Clear, actionable error messages
+- Required fields marked with asterisk (*)
+- Help text under input when needed
+
+**Tables:**
+- Sticky header on scroll
+- Pagination with info ("Showing 1-15 of 150")
+- Column sorting (click header)
+- Filters above table
+- Actions column for row operations
+- Empty state when no data
+
+**Notifications:**
+- Toast for action feedback (success, error, info)
+- Position: top-right
+- Auto-dismiss after 3-5 seconds
+- Manual close option
+
+### Responsive Breakpoints
+
+```
+Mobile:  < 768px
+Tablet:  768px - 1024px
+Desktop: > 1024px
+```
+
+**Behavior:**
+- Mobile-first approach
+- Collapsible sidebar on mobile
+- Horizontal scroll tables on mobile
+- Single column forms on mobile
+
+---
+
+## 🔒 Security Standards
+
+### Authentication
+
+- Laravel Sanctum for token-based auth
+- Token in header: `Authorization: Bearer {token}`
+- Token expiration configurable
+- Refresh token mechanism
+
+### Authorization
+
+- Spatie Laravel Permission for roles/permissions
+- Gates and Policies for granular checks
+- Middleware to protect routes
+
+### Best Practices
+
+- ✅ HTTPS mandatory in production
+- ✅ Input validation (client AND server)
+- ✅ Rate limiting on API (throttle middleware)
+- ✅ CORS configured correctly
+- ✅ Input sanitization (prevent XSS)
+- ✅ Prepared statements (Eloquent does this)
+- ✅ Password hashing with bcrypt (Laravel default)
+- ✅ Encrypt sensitive data in DB
+- ✅ Log access and critical actions
+- ✅ Automated database backups
+
+---
+
+## ⚡ Performance Standards
+
+### Backend
+
+**Database:**
+- Eager loading for N+1 problem: `->with(['relation'])`
+- Query scoping for common filters
+- Database indexing on searched columns
+- Pagination for long lists
+- Chunk for large datasets
+
+**Caching:**
+- Redis for config, static lists
+- Cache invalidation on updates
+- TTL based on data volatility
+
+**Queue:**
+- Queue for heavy tasks (email, PDF, import/export)
+- Laravel Horizon for monitoring
+
+**Optimization:**
+- `composer dump-autoload -o` for production
+
+### Frontend
+
+**React Optimization:**
+- Code splitting with `React.lazy()`
+- Memoization: `useMemo`, `useCallback`, `React.memo`
+- Virtual scrolling for very long lists
+- Debounce on search/autocomplete inputs
+
+**Data Fetching:**
+- React Query for automatic server state caching
+- Stale-while-revalidate strategy
+
+**Assets:**
+- Image optimization (format, size)
+- Bundle analysis to reduce size
+- Lazy load heavy components
+
+---
+
+## 🧪 Testing Standards
+
+### Backend (Pest/PHPUnit)
+
+**Coverage Target**: 70%+
+
+**Test Types:**
+- **Unit tests** - Service classes, utilities
+- **Feature tests** - API endpoints
+- **Database tests** - Use `RefreshDatabase` trait
+- **Factories** - Test data (User, Customer, etc.)
+
+**Command**: `php artisan test`
+
+### Frontend (Vitest)
+
+**Test Types:**
+- **Component tests** - UI components
+- **Integration tests** - Complete features
+- **Hook tests** - Custom hooks
+- **API mocks** - Mock Service Worker (MSW)
+
+**Command**: `npm run test`
+
+---
+
+## 📦 Git Standards (From .clauderc)
+
+### Branch Strategy (GitFlow)
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Production (always deployable) |
+| `develop` | Development integration |
+| `feature/*` | New features (`feature/sites-module`) |
+| `bugfix/*` | Bug fixes (`bugfix/gps-validation`) |
+| `hotfix/*` | Urgent production fixes |
+
+### Commit Convention
+
+**Format**: `type(scope): subject`
+
+**Types:**
+- `feat` - New feature
+- `fix` - Bug fix
+- `refactor` - Code refactoring
+- `style` - Formatting (no logic change)
+- `test` - Add/modify tests
+- `docs` - Documentation
+- `chore` - Maintenance (build, config)
+
+**Examples:**
+```
+feat(sites): add cost analysis dashboard
+fix(time-tracking): resolve GPS validation issue
+refactor(api): improve response format consistency
+```
+
+### Pull Requests
+
+- Clear description of problem and solution
+- Screenshots for UI changes
+- Automated tests must pass
+- Code review required before merge
+- Merge to `develop`, not directly to `main`
+
+---
+
+## 📚 Documentation Standards
+
+### Code Comments
+
+**Principles:**
+- Comment the **WHY**, not the **WHAT**
+- DocBlocks for public functions (params, return, throws)
+- Avoid obvious comments (`// increment i; i++;`)
+- Use `TODO:` for pending tasks with ticket reference
+
+**Example:**
+```php
+/**
+ * Calculate final price with markup, discount, and VAT.
+ *
+ * @param Money $baseCost Base product cost
+ * @param array $options Calculation options (markup, discount, vat)
+ * @return Money Final calculated price
+ */
+public function calculateFinalPrice(Money $baseCost, array $options): Money
+{
+    // ...
+}
+```
+
+### API Documentation
+
+**Tool**: OpenAPI/Swagger (L5-Swagger for Laravel)
+
+**Requirements:**
+- All endpoints documented
+- Request/Response examples
+- Authentication requirements
+- Possible error responses
+
+---
+
+## 🚀 Deployment Standards
+
+### Environments
+
+| Environment | Purpose |
+|-------------|---------|
+| `development` | Local machine |
+| `staging` | Pre-production testing |
+| `production` | Live environment |
+
+### Pre-Deploy Checklist
+
+- [ ] Tests pass
+- [ ] Code review completed
+- [ ] Database migrations tested
+- [ ] Environment variables configured
+- [ ] Production database backup
+
+### Post-Deploy Checklist
+
+- [ ] Smoke test critical features
+- [ ] Monitor logs for errors
+- [ ] Performance monitoring
+
+### Recommended Tools
+
+- Laravel Forge / Envoyer
+- GitHub Actions for CI/CD
+- Docker for containerization
+
+---
+
+## 🎯 Quality Standards
+
+### Code Review Checklist
+
+- [ ] Clean and readable code?
+- [ ] Descriptive variable/function names?
+- [ ] Logic easily understandable?
+- [ ] Tests present and passing?
+- [ ] Performance considered?
+- [ ] Security vulnerabilities checked?
+- [ ] Documentation adequate?
+- [ ] Consistent with codebase?
+
+### Definition of Done
+
+- [ ] Code written and tested
+- [ ] Automated tests pass
+- [ ] Code review approved
+- [ ] Documentation updated
+- [ ] Deployed to staging and verified
+- [ ] Product owner/client validated (if needed)
+
+---
+
+## 💡 Project Principles
+
+### Always
+
+- ✅ **Security first**
+- ✅ **User experience matters**
+- ✅ **Readable code > Clever code**
+- ✅ **Test critical logic**
+- ✅ **Performance matters**
+
+### Avoid
+
+- ❌ **Over-engineering** (KISS principle)
+- ❌ **Premature optimization**
+- ❌ **Code duplication** (DRY principle)
+- ❌ **Too custom solutions** (use reliable packages)
+- ❌ **Direct commits to main/develop**
+
+---
+
+**Remember**: Clean code, clear communication, continuous improvement.
+
+**Sources**: `.clauderc` + ARCHITECTURE.md + DGGM_GUIDELINES.md
+
+=== .ai/TODO rules ===
+
+# DGGM ERP - Implementation TODO
+
+**Purpose**: Persistent state of tasks and implementation tracking
+**Priority**: 🔴 CRITICAL - Update continuously during development
+**Last Updated**: January 2026
+
+---
+
+## 📊 PROJECT OVERVIEW
+
+**Project Scope**: ERP system for service-based companies (construction, electrical, plumbing, automation, event services, equipment rental, personnel cooperatives). Covers warehouse management, internal/external employee management, commercial, administrative, and accounting operations.
+
+**Overall Progress**: ~68% Complete ⬆️ (+3% from Products Advanced Relations)
+
+- **Backend**: 75% (+5% from ProductRelations fixes) 
+- **Frontend**: 65% (+5% from ProductRelations + Components)
+- **Architecture**: ✅ Finalized and documented (Actions + Query pattern, Spatie Data for input/output)
+
+**Important**: When checking tasks, ALWAYS verify code actually exists (check file system), don't trust TODO.md blindly - there may be inconsistencies.
+
+---
+
+## 🎉 RECENT ACCOMPLISHMENTS (23 Jan 2026)
+
+### **Session 1: ProductRelations System - Advanced Composite Products** ✅
+
+**Duration**: ~8 hours  
+**Impact**: High - Core feature for composite product management
+
+**What was completed**:
+1. ✅ **Complete Renaming**: `/materials` → `/products` (26+ files)
+2. ✅ **ProductRelations Component**: Unified CRUD system (545 LOC)
+   - Replace old component/dependency tabs
+   - Modal with fixed header/footer
+   - 3 quantity types (Fixed, Multiplied, Formula)
+   - 3 lists management (Preventivo, Cantiere, Stock)
+   - Min/Max quantity triggers (collapsible)
+   - Complete validation + error handling
+3. ✅ **New Components**: ProductCategoryCombobox, ProductTypeBadge, QuantityTypeBadge
+4. ✅ **Backend Fixes**: 
+   - `ProductRelationData::fromRequest()` with Lazy relationships
+   - Controller update fix for `related_product_id` immutability
+   - Proper nested resource routing
+5. ✅ **UX Polish**: Modal auto-close, toast notifications, loading states
+
+**Problems Solved**: 12+ (CORS/500 errors, validation issues, Lazy relationships, modal close, etc.)
+
+### **Session 2: ProductRelationsTree - Hierarchical Visualization** ✅
+
+**Duration**: ~2 hours  
+**Impact**: High - Critical for understanding composite product structure
+
+**What was completed**:
+1. ✅ **ProductRelationsTree Component**: Advanced tree visualization (475 LOC)
+   - Recursive tree building with circular dependency protection
+   - Expand/collapse all functionality
+   - Multi-level support (up to 5 levels)
+   - Visual hierarchy indicators (level badges, connection lines)
+   - Live quantity calculations propagated through levels
+   - Statistics bar (total nodes, max depth, total relations)
+   - Base quantity control with real-time recalculation
+   - Toggle show/hide calculation formulas
+   - Safe formula evaluation (Function constructor vs eval)
+2. ✅ **QuantityTypeBadge Enhancement**: Added size prop (sm/md)
+3. ✅ **Integration**: Added to `/products/[id]` Relations tab
+
+**Technical Highlights**:
+- Async recursive fetching with visited set (prevents cycles)
+- Parallel fetching for same-level relations (performance)
+- React Query caching by product ID + base quantity
+- TypeScript strict mode (0 errors)
+- Complete dark mode support
+- Accessibility features (aria-labels, keyboard nav)
+
+**Next Steps**: ProductRelationsTree testing, Task 4.2 price calculation
+
+---
+
+## 🎯 CURRENT PRIORITIES
+
+### 🔴 HIGH PRIORITY (Blockers)
+
+1. **Create Site Form** (`frontend/app/(dashboard)/sites/new/page.tsx`) - Site creation blocked
+2. **Create Supplier Form** - Cannot create new suppliers in UI
+3. **Create User Form** - Cannot create user accounts in UI
+4. **Edit DDT Functionality** - Cannot modify existing DDTs
+5. **Time Tracking Module** - Critical business requirement missing
+
+### 🟠 MEDIUM PRIORITY (Important)
+
+1. **Invoicing Module** - Active/Passive invoices, SDI integration
+2. **SAL Module** - Progress billing and customer approval
+3. **Consuntivi Module** - Quote vs Actual cost analysis
+4. **Cost Analysis Dashboard** - Site cost breakdown and margins
+5. **Quote PDF Integration** - Connect backend PDF endpoints to frontend UI
+
+### 🟡 LOW PRIORITY (Enhancement)
+
+1. **Worker Scheduling Calendar** - Visual calendar for worker assignments
+2. **Batch Operations** - Import/export, bulk actions
+3. **Advanced Analytics** - Trend visualization, comparative reports
+4. **Multi-language (i18n)** - Currently Italian only
+5. **Component Testing** - Vitest/Playwright setup
+
+---
+
+## 📋 MODULE STATUS
+
+### Legend
+
+- ✅ **Complete** - Fully functional, production-ready
+- 🚧 **Partial** - Core features done, some features missing
+- ❌ **Missing** - Not implemented or minimal placeholder
+
+---
+
+## BACKEND MODULES
+
+### 1. Authentication & Users ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ Laravel Sanctum API tokens
+- ✅ Spatie Laravel Permission (roles & permissions)
+- ✅ Session management with token revocation
+- ✅ Login/logout endpoints
+- ✅ Password reset (basic)
+- ✅ User model with roles/permissions
+
+**Missing**:
+- ❌ Two-factor authentication (2FA)
+- ❌ OAuth providers (Google, Microsoft)
+- ❌ Password complexity enforcement
+
+---
+
+### 2. Customers Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ Customer model with soft deletes
+- ✅ Full CRUD API
+- ✅ CustomerController (thin)
+- ✅ CustomerService
+- ✅ CustomerPolicy
+- ✅ StoreCustomerRequest / UpdateCustomerRequest
+- ✅ CustomerResource
+- ✅ Relationships: sites, quotes
+
+**Missing**:
+- 🚧 Customer portal (for clients to view quotes/SAL)
+- 🚧 Customer documents/contracts storage
+
+---
+
+### 3. Suppliers Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ Supplier model with type classification
+- ✅ Full CRUD API
+- ✅ SupplierController + SupplierService
+- ✅ Supplier types (materials, personnel, both)
+- ✅ Personnel types (cooperative, staffing agency, etc.)
+- ✅ Supplier workers tracking
+- ✅ Supplier rates management
+- ✅ Statistics endpoint
+
+**Missing**:
+- 🚧 Supplier performance tracking
+- 🚧 Supplier contract management
+
+---
+
+### 4. Products (Materials) Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready (recently renamed from Materials)
+**Components**:
+- ✅ Product model with relationships
+- ✅ Product types (physical, service, composite/kit)
+- ✅ ProductController (comprehensive) + ProductService (585 LOC)
+- ✅ Component management (for kits)
+- ✅ Product dependencies with smart calculations
+- ✅ Pricing: standard cost, purchase price, sale price, rental prices
+- ✅ Markup percentage calculations
+- ✅ Barcode/QR code support
+- ✅ Semantic search (EmbeddingService integration)
+- ✅ Product categories
+- ✅ ProductData DTO (Spatie Data)
+- ✅ ProductPolicy
+
+**Migrations**:
+- ✅ 2026_01_20_130401 - ProductType enum and cleanup
+- ✅ 2026_01_20_174209 - Rename material_components to product_components
+- ✅ 2026_01_20_174454 - Rename materials to products
+- ✅ 2026_01_20_184538 - Rename material to product in product_components
+- ✅ 2026_01_21_122057 - Rename material_id to product_id in inventory/related tables
+
+**Missing**:
+- 🚧 Product photos/media (Media model exists, integration partial)
+- 🚧 Product specifications/technical sheets
+
+---
+
+### 5. Warehouses Module ✅ COMPLETE (DDD Implementation)
+
+**Status**: ✅ Production-ready, DDD reference implementation
+**Components**:
+- ✅ Warehouse model
+- ✅ WarehouseController (thin)
+- ✅ WarehouseService (read operations only)
+- ✅ Actions: CreateWarehouseAction, UpdateWarehouseAction, DeleteWarehouseAction
+- ✅ Queries: GetWarehouseInventoryQuery, GetLowStockWarehousesQuery
+- ✅ WarehouseData DTO (Spatie Data)
+- ✅ WarehousePolicy
+- ✅ Events: WarehouseCreated, WarehouseUpdated, WarehouseDeleted, InventoryLowStock
+- ✅ Listeners: LogWarehouseActivity, UpdateWarehouseCache, SendLowStockAlert
+- ✅ Warehouse types (central, site storage, mobile truck)
+- ✅ Manager assignment
+- ✅ Statistics endpoint
+
+**Architecture**:
+- ✅ DDD pattern fully implemented
+- ✅ Repository pattern (WarehouseRepository interface + WarehouseEloquentRepository)
+- ✅ Event-Driven Architecture
+- ✅ Service Provider (WarehouseServiceProvider)
+
+**Documentation**:
+- ✅ README_DDD.md
+- ✅ ARCHITECTURE_FLOW.md
+- ✅ IMPLEMENTATION_SUMMARY.md
+
+**Missing**:
+- 🚧 Warehouse capacity tracking
+- 🚧 Warehouse zones/locations
+
+---
+
+### 6. Inventory Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ Inventory model
+- ✅ InventoryController + InventoryService (517 LOC)
+- ✅ Multi-warehouse inventory system
+- ✅ Quantity tracking (available, reserved, in-transit, quarantine)
+- ✅ Stock valuation calculations
+- ✅ Minimum/maximum stock levels
+- ✅ Low stock alerts
+- ✅ Inventory adjustments
+- ✅ Reserve/release operations
+- ✅ Quarantine management
+- ✅ InventoryPolicy
+
+**Missing**:
+- 🚧 ABC analysis (inventory classification)
+- 🚧 Inventory forecasting
+- 🚧 Cycle counting
+
+---
+
+### 7. Stock Movements Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ StockMovement model
+- ✅ StockMovementController
+- ✅ Movement types (8+): intake, output, transfer, adjustment, rental_out, rental_return, site_delivery, site_return
+- ✅ Cost tracking
+- ✅ User attribution
+- ✅ DDT association
+- ✅ Comprehensive filtering (type, warehouse, material, date range)
+- ✅ StockMovementPolicy
+
+**Missing**:
+- 🚧 Batch movement import
+- 🚧 Movement reversal/undo
+- 🚧 Movement approval workflow
+
+---
+
+### 8. Sites (Construction Sites) Module 🚧 MOSTLY COMPLETE
+
+**Status**: 🚧 Core features done, advanced features missing
+**Components**:
+- ✅ Site model with GPS validation
+- ✅ SiteController + SiteService
+- ✅ Site information (code, name, description)
+- ✅ Customer assignment
+- ✅ Location data (address, city, province, postal code)
+- ✅ GPS coordinates and radius validation
+- ✅ Status management (draft, planned, in_progress, on_hold, completed, cancelled)
+- ✅ Priority levels (low, medium, high, urgent)
+- ✅ Financial data (estimated amount, actual cost, invoiced amount, margin calculation)
+- ✅ Dates (start, estimated end, actual end)
+- ✅ Project manager assignment
+- ✅ Quote association
+- ✅ Media collections (documents, photos, technical drawings, reports)
+- ✅ SitePolicy
+
+**Site Materials**:
+- ✅ SiteMaterial model
+- ✅ SiteMaterialController
+- ✅ Material assignment with usage tracking
+- ✅ Reserve/deliver/return/transfer workflows
+- ✅ Extra tracking
+- ✅ Site-specific DDTs
+
+**Site Workers**:
+- ✅ SiteWorker model
+- ✅ SiteWorkerController + SiteWorkerService (398 LOC)
+- ✅ Team assignments with roles
+- ✅ Status management (pending, accepted, rejected, active, completed, cancelled)
+- ✅ Assignment dates and duration
+- ✅ Rate overrides (hourly, fixed)
+- ✅ Estimated hours tracking
+- ✅ Conflict detection
+- ✅ Response management (accept/reject)
+
+**Site Labor Costs**:
+- ✅ SiteLaborCost model
+- ✅ SiteLaborCostController
+- ✅ Cost types (internal labor, subcontractor, contractor)
+- ✅ Work date tracking
+- ✅ Hours/quantity tracking
+- ✅ Unit rate and total cost
+- ✅ Overtime and holiday flags
+- ✅ Invoice association
+
+**Missing**:
+- ❌ **Time Tracking Module** (GPS-based timbrature) - CRITICAL
+- ❌ **SAL Module** (Stato Avanzamento Lavori) - High Priority
+- ❌ **Consuntivi** (Quote vs Actual) - High Priority
+- 🚧 Quote → Site conversion workflow (backend ready, UI missing)
+- 🚧 Site closure workflow
+- 🚧 Site cost analysis dashboard
+
+---
+
+### 9. Quotes Module 🚧 MOSTLY COMPLETE
+
+**Status**: 🚧 Core CRUD done, PDF UI integration missing
+**Components**:
+- ✅ Quote model
+- ✅ QuoteController + QuoteService (126 LOC)
+- ✅ Quote items (hierarchical sections, items, labor, materials)
+- ✅ QuoteItem model
+- ✅ QuoteTemplate model
+- ✅ Pricing (subtotal, discount %, discount amount, tax %, tax amount, total)
+- ✅ Discount management
+- ✅ Status management (draft, sent, approved, rejected, expired, converted)
+- ✅ Issue and expiry dates
+- ✅ Terms and conditions
+- ✅ Payment terms and methods
+- ✅ Tax calculations
+- ✅ PDF generation backend (preview & download endpoints)
+- ✅ QuotePolicy
+
+**Missing**:
+- 🚧 PDF generation UI integration (endpoints exist, frontend not connected)
+- 🚧 Quote → Site conversion UI
+- 🚧 Quote cloning
+- 🚧 Quote attachments management
+- 🚧 Email quote to customer
+
+---
+
+### 10. Warehouse/Inventory/DDT Module 🚧 NEEDS REFACTOR
+
+**Status**: 🚧 Backend structure exists but REQUIRES complete refactor after Material → Product migration
+**Analysis**: ✅ COMPLETE (see WAREHOUSE_IMPLEMENTATION_ROADMAP.md)
+**Estimated Refactor Time**: 32-44 hours (5 days full-time)
+
+**Current State**:
+- ✅ Warehouse CRUD complete (Actions pattern implemented)
+- ✅ Database migrations complete (material_id → product_id)
+- ⚠️ Models NOT updated (StockMovement, DdtItem still use Material)
+- ⚠️ Services have DB operations (should be in Actions)
+- ❌ NO Spatie Data DTOs (violates architecture)
+- ❌ NO Actions for Inventory/StockMovement/DDT (violates architecture)
+- ❌ NO Query Classes (violates architecture)
+- ❌ NO Event-Driven architecture (should use Events + Listeners)
+- ❌ Frontend completely missing (Inventory, StockMovements, DDT pages)
+
+**Components Exist But Need Refactor**:
+- 🔄 Ddt model - needs verification
+- 🔄 DdtController + DdtService (520 LOC) - needs complete refactor
+- 🔄 DdtItem model - needs material_id → product_id
+- 🔄 StockMovement model - needs material_id → product_id
+- 🔄 Inventory model - needs verification
+- 🔄 InventoryService - needs refactor (remove DB operations)
+- ✅ DDT types, status, enums - OK
+- ✅ InventoryLowStock event - exists
+- ✅ SendLowStockAlertListener - exists
+
+**Implementation Plan** (10 Phases):
+1. 🔴 Fix Backend Models (2-3h) - Change Material → Product
+2. 🔴 Create Spatie Data DTOs (3-4h) - 4 DTOs with TS types
+3. 🔴 Create Events & Listeners (5-6h) - 10 events + 10 listeners (event-driven)
+4. 🔴 Create Query Classes (3-4h) - 12 Query Classes for complex reads
+5. 🔴 Create Actions (6-8h) - 10 Actions for write operations
+6. 🔴 Refactor Services (2-3h) - Remove DB operations, keep only calculations
+7. 🔴 Update Controllers (3-4h) - Use DTOs + Actions + Query Classes
+8. 🟡 Backend Testing (4-6h) - 25+ tests
+9. 🟡 Frontend Implementation (8-12h) - 8 pages, 15 components, 3 API clients
+10. 🟢 Frontend Testing (2-3h) - Component + E2E tests
+
+**Architecture Decisions** (CONFIRMED):
+- ✅ Strategy B: Backend → Testing → Frontend
+- ✅ Event-Driven: Modules communicate via Events + Listeners (NOT direct calls)
+- ✅ Query Classes: ALL complex reads in app/Queries/
+- ✅ DDT Edit: ONLY Draft editable, Issued/Delivered immutable (stock movements already generated)
+- ✅ 10 Events: InventoryAdjusted, InventoryReserved, StockMovementCreated, DdtConfirmed, DdtCancelled, DdtDelivered, etc.
+
+**Critical Listeners** (Event-Driven Architecture):
+- 🔴 GenerateStockMovementsListener (400 LOC) - Listens to DdtConfirmed, creates stock movements
+- 🔴 ReverseStockMovementsListener (200 LOC) - Listens to DdtCancelled, reverses movements
+- 🔴 UpdateSiteMaterialsListener (100 LOC) - Listens to DdtDelivered, updates site_materials
+
+**Documentation**:
+- 📋 WAREHOUSE_MODULE_REFACTOR_CHECKLIST.md (2713 lines) - Detailed guide with code examples
+- 🗺️ WAREHOUSE_IMPLEMENTATION_ROADMAP.md (540 lines) - Executive plan and 5-day schedule
+- 📚 See GUIDELINES_INDEX.md for full documentation
+
+**Missing** (Will be created during refactor):
+- ❌ 4 Spatie Data DTOs (Inventory, StockMovement, DdtItem, Ddt)
+- ❌ 10 Events (event-driven architecture)
+- ❌ 10 Listeners (side effects handling)
+- ❌ 12 Query Classes (complex database reads)
+- ❌ 10 Actions (write operations)
+- ❌ Frontend pages (Inventory: 2, StockMovements: 1, DDT: 4)
+- ❌ Frontend components (15 components)
+- ❌ API clients (3 clients)
+- ❌ Edit DDT functionality (will be Draft-only)
+- ❌ DDT PDF generation
+- ❌ Email DDT to recipient
+
+**Next Step**: Read WAREHOUSE_IMPLEMENTATION_ROADMAP.md and start Phase 1 (2-3h)
+
+---
+
+### 11. Workers & HR Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ Worker model
+- ✅ WorkerController + WorkerService (303 LOC)
+- ✅ Worker types (employee, freelancer, external)
+- ✅ Contract types (permanent, fixed_term, seasonal, project_based, internship)
+- ✅ Personal information tracking
+- ✅ Contact details
+- ✅ Job information (title, level, specializations, certifications)
+- ✅ Safety training tracking
+- ✅ Company vehicle authorization
+- ✅ Hire/termination dates
+- ✅ Payroll data (WorkerPayrollData model)
+- ✅ Bank information (IBAN)
+- ✅ Supplier/contractor association
+- ✅ WorkerPolicy
+
+**Worker Rates**:
+- ✅ WorkerRate model
+- ✅ WorkerRateController + RateCalculationService (235 LOC)
+- ✅ Historical rate tracking
+- ✅ Rate types (hourly, daily, weekly, monthly, fixed_project)
+- ✅ Rate context (internal_cost, customer_billing, payroll)
+- ✅ Overtime configuration
+- ✅ Cost calculation endpoints
+
+**Worker Invitations**:
+- ✅ WorkerInvitation model
+- ✅ InvitationController + InvitationService (193 LOC)
+- ✅ Invitation creation
+- ✅ Supplier/contractor context
+- ✅ Invitation acceptance with password setup
+- ✅ Expiry date management
+- ✅ Email sending
+
+**Site Assignments**:
+- ✅ Integrated with SiteWorker module
+- ✅ Statistics endpoint
+- ✅ Availability queries
+- ✅ Deactivation/reactivation
+
+**Missing**:
+- ❌ **Time Tracking Integration** (timesheet, GPS tracking) - CRITICAL
+- 🚧 Payroll integration
+- 🚧 Performance reviews
+- 🚧 Training records management
+
+---
+
+### 12. Contractors Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ Contractor model
+- ✅ ContractorController + ContractorService (213 LOC)
+- ✅ ContractorRate model + ContractorRateController
+- ✅ Contractor types (cooperative, subcontractor, temporary_agency)
+- ✅ Company information
+- ✅ VAT number tracking
+- ✅ Contact details
+- ✅ Service types and specializations
+- ✅ Rate management
+- ✅ Rate history
+- ✅ Pending invoices tracking
+- ✅ Statistics endpoint
+
+**Missing**:
+- 🚧 Contractor contract management
+- 🚧 Contractor performance tracking
+
+---
+
+### 13. Material Requests Module 🚧 COMPLETE
+
+**Status**: ✅ Functional, embedded in Sites module
+**Components**:
+- ✅ MaterialRequest model
+- ✅ MaterialRequestController + MaterialRequestService (313 LOC)
+- ✅ Request status (pending, approved, rejected, delivered)
+- ✅ Priority levels (low, medium, high, urgent)
+- ✅ Request creation by workers
+- ✅ Approval workflow
+- ✅ Rejection handling
+- ✅ Delivery confirmation
+- ✅ Site-specific requests
+- ✅ Statistics endpoint
+
+**Missing**:
+- 🚧 Standalone material requests page (currently embedded in site detail)
+- 🚧 Batch approval
+
+---
+
+### 14. Notifications Module 🚧 PARTIAL
+
+**Status**: 🚧 Backend ready, frontend limited
+**Components**:
+- ✅ NotificationController
+- ✅ Mark read/unread
+- ✅ Bulk operations
+- ✅ Deletion
+- ✅ User notification retrieval
+
+**Missing**:
+- 🚧 Real-time notification display
+- 🚧 Email notifications
+- 🚧 SMS notifications
+- 🚧 Notification preferences
+
+---
+
+### 15. Media Library Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready (Spatie Media Library)
+**Components**:
+- ✅ Media model (Spatie)
+- ✅ MediaController
+- ✅ Document upload (PDF, Word, Excel)
+- ✅ Photo uploads (JPEG, PNG, WebP, GIF)
+- ✅ Technical drawings (PDF, images, CAD)
+- ✅ Report storage
+- ✅ Download functionality
+- ✅ Model-agnostic system (attach to any model)
+- ✅ Media collections
+
+**Missing**:
+- 🚧 Image optimization/thumbnails
+- 🚧 Media galleries
+- 🚧 Video support
+
+---
+
+### 16. Roles & Permissions Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready (Spatie Laravel Permission)
+**Components**:
+- ✅ Role model (Spatie)
+- ✅ Permission model (Spatie)
+- ✅ 8 predefined roles:
+  - SuperAdmin
+  - Admin
+  - ProjectManager
+  - Foreman
+  - Worker
+  - Accountant
+  - WarehouseManager
+  - Customer
+- ✅ 60+ permissions
+- ✅ RoleAndPermissionSeeder
+- ✅ SiteRole model (site-specific roles)
+- ✅ SiteRoleController
+
+**Missing**:
+- 🚧 Dynamic role creation UI
+- 🚧 Permission assignment UI
+
+---
+
+### 17. Settings Module 🚧 PARTIAL
+
+**Status**: 🚧 Basic implementation
+**Components**:
+- ✅ Company settings API
+- ✅ Site roles management
+
+**Missing**:
+- 🚧 Company profile editing UI
+- 🚧 Payment settings
+- 🚧 Notification preferences
+- 🚧 System settings
+- 🚧 Email templates
+- 🚧 Tax configuration
+
+---
+
+### 18. Cost Allocation Module ✅ COMPLETE
+
+**Status**: ✅ Backend service ready
+**Components**:
+- ✅ CostAllocationService (284 LOC)
+- ✅ Cost calculations
+- ✅ Margin analysis
+
+**Missing**:
+- 🚧 Cost allocation UI/dashboard
+- 🚧 Cost reports
+
+---
+
+### 19. Geolocation Module ✅ COMPLETE
+
+**Status**: ✅ Service implemented
+**Components**:
+- ✅ GeolocationService (173 LOC)
+- ✅ GPS validation
+- ✅ Distance calculations (Haversine formula)
+- ✅ Radius verification
+- ✅ Closest point finding
+- ✅ Google Maps integration
+
+**Missing**:
+- 🚧 Geolocation visualization (maps)
+- 🚧 Route optimization
+
+---
+
+### 20. Pricing Module ✅ COMPLETE
+
+**Status**: ✅ Service implemented
+**Components**:
+- ✅ PriceCalculatorService (257 LOC)
+- ✅ Markup calculations
+- ✅ Discount application
+- ✅ VAT calculations
+- ✅ Margin calculations
+- ✅ Final price calculations
+
+**Missing**:
+- Nothing critical
+
+---
+
+### 21. Value Objects ✅ COMPLETE
+
+**Status**: ✅ Pattern implemented
+**Components**:
+- ✅ Coordinates (GPS)
+- ✅ Money (currency + amount)
+- ✅ Address (full address)
+- ✅ DateRange (period)
+- ✅ Percentage
+- ✅ All implement Castable (Eloquent integration)
+- ✅ Immutable with validation
+
+**Documentation**:
+- ✅ VALUE_OBJECTS_AND_SERVICES.md
+
+**Missing**:
+- Nothing critical
+
+---
+
+### 22. Embedding/Semantic Search Module ✅ COMPLETE
+
+**Status**: ✅ Implemented
+**Components**:
+- ✅ EmbeddingService
+- ✅ Semantic search for products
+- ✅ AI-powered search
+
+**Missing**:
+- 🚧 Extend to other modules (sites, customers, etc.)
+
+---
+
+## MODULES NOT YET IMPLEMENTED (Backend)
+
+### ❌ Time Tracking Module (CRITICAL)
+
+**Priority**: 🔴 HIGH - Critical business requirement
+**Components Needed**:
+- ❌ TimeEntry model
+- ❌ TimeEntryController
+- ❌ GPS-based clock in/out
+- ❌ Multi-site daily tracking
+- ❌ Hour validation (within site radius)
+- ❌ Overtime calculations
+- ❌ Timesheet reports
+- ❌ Worker time statistics
+- ❌ Site hour tracking
+- ❌ Hour approval workflow
+
+**Estimated Complexity**: HIGH
+**Dependencies**: GeolocationService ✅, Worker ✅, Site ✅
+
+---
+
+### ❌ SAL (Stato Avanzamento Lavori) Module
+
+**Priority**: 🟠 MEDIUM - Important for project tracking
+**Components Needed**:
+- ❌ SAL model
+- ❌ SALController
+- ❌ Progress percentage tracking
+- ❌ Milestone management
+- ❌ Customer approval workflow
+- ❌ Photo/documentation upload
+- ❌ Progress billing link
+- ❌ SAL PDF generation
+
+**Estimated Complexity**: MEDIUM
+**Dependencies**: Site ✅, Quote ✅, Media ✅
+
+---
+
+### ❌ Consuntivi (Cost Analysis) Module
+
+**Priority**: 🟠 MEDIUM - Important for margin analysis
+**Components Needed**:
+- ❌ Consuntivo model
+- ❌ ConsuntivoController
+- ❌ Quote vs Actual comparison
+- ❌ Cost breakdown (materials, labor, equipment)
+- ❌ Margin calculation
+- ❌ Profitability reports
+- ❌ Variance analysis
+
+**Estimated Complexity**: MEDIUM
+**Dependencies**: Site ✅, Quote ✅, SiteLaborCost ✅, Inventory ✅
+
+---
+
+### ❌ Invoicing Module
+
+**Priority**: 🟠 MEDIUM - Important for accounting
+**Components Needed**:
+- ❌ Invoice model
+- ❌ InvoiceController
+- ❌ InvoiceItem model
+- ❌ Invoice types (active, passive)
+- ❌ Invoice numbering (progressive)
+- ❌ Payment tracking
+- ❌ Payment methods
+- ❌ Payment due dates
+- ❌ Invoice status (draft, sent, paid, overdue)
+- ❌ SDI (Sistema di Interscambio) integration
+- ❌ XML generation for electronic invoices
+- ❌ Invoice PDF generation
+
+**Estimated Complexity**: HIGH
+**Dependencies**: Site ✅, Customer ✅, Supplier ✅, SAL (for progress billing)
+
+---
+
+### ❌ Accounting Module
+
+**Priority**: 🟡 LOW - Nice to have
+**Components Needed**:
+- ❌ Chart of accounts
+- ❌ General ledger
+- ❌ Trial balance
+- ❌ Financial statements
+- ❌ Cash flow tracking
+- ❌ Bank reconciliation
+
+**Estimated Complexity**: VERY HIGH
+**Dependencies**: Invoice, Payment tracking
+
+---
+
+### ❌ Logistics Module
+
+**Priority**: 🟡 LOW - Nice to have
+**Components Needed**:
+- ❌ Vehicle model
+- ❌ Vehicle tracking
+- ❌ Fuel/maintenance costs
+- ❌ Route optimization
+- ❌ Driver assignment
+
+**Estimated Complexity**: MEDIUM
+**Dependencies**: Worker ✅, Site ✅
+
+---
+
+### ❌ Reporting & Analytics Module
+
+**Priority**: 🟡 LOW - Nice to have
+**Components Needed**:
+- ❌ Dashboard metrics
+- ❌ Financial reports
+- ❌ Labor reports
+- ❌ Material usage reports
+- ❌ Performance analytics
+- ❌ Trend analysis
+
+**Estimated Complexity**: MEDIUM to HIGH
+**Dependencies**: All modules
+
+---
+
+## FRONTEND MODULES
+
+### 1. Authentication ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ Login page (`/(auth)/login`)
+- ✅ Invitation acceptance (`/(auth)/accept-invitation/[token]`)
+- ✅ Protected routes
+- ✅ Role-based access control
+- ✅ Permission-based component rendering
+- ✅ Authentication guard middleware
+
+**Missing**:
+- ❌ Password reset page
+- ❌ Two-factor authentication UI
+
+---
+
+### 2. Customers Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ List view (`/customers`) - search, filter, pagination
+- ✅ Detail view (`/customers/[id]`) - tabs (info, quotes, sites)
+- ✅ Create form (`/customers/new`)
+- ✅ Edit functionality (inline in detail view)
+- ✅ Customer type selection (individual/company)
+- ✅ Contact information
+- ✅ Associated quotes/sites display
+- ✅ Status management
+- ✅ Dark mode support
+
+**API Integration**:
+- ✅ customersApi (full CRUD)
+- ✅ Pagination, search, filtering
+
+**Components**:
+- ✅ customer-form.tsx
+- ✅ customers-columns.tsx
+
+**Missing**:
+- Nothing critical
+
+---
+
+### 3. Suppliers Module 🚧 PARTIAL
+
+**Status**: 🚧 View pages exist, create/edit forms missing
+**Components**:
+- ✅ List view (`/suppliers`) - search, type filtering
+- ✅ Detail view (`/suppliers/[id]`)
+- ❌ **Create form** (`/suppliers/new`) - NOT IMPLEMENTED
+- ❌ **Edit form** - NOT IMPLEMENTED
+
+**Features Implemented**:
+- ✅ Supplier type display
+- ✅ Personnel type display
+- ✅ Specializations display
+- ✅ Active workers count
+- ✅ Rates display
+- ✅ Payment/delivery terms
+
+**Features Missing**:
+- ❌ Create new supplier form
+- ❌ Edit supplier functionality
+- 🚧 Manage supplier rates (add/edit/delete)
+- 🚧 Manage supplier workers
+
+**API Integration**:
+- ✅ suppliersApi.getAll() with filtering
+- ✅ suppliersApi.getById()
+- ⚠️ Create/Update not wired in UI
+
+**Components**:
+- ✅ supplier-form.tsx (exists but not integrated)
+- ✅ suppliers-columns.tsx
+
+**TODO**:
+- ❌ Create `/suppliers/new/page.tsx`
+- ❌ Add edit mode to `/suppliers/[id]/page.tsx`
+- ❌ Integrate supplier-form.tsx
+- ❌ Add rate management UI
+
+---
+
+### 4. Products Module ✅ COMPLETE + 🎉 ADVANCED RELATIONS
+
+**Status**: ✅ Production-ready + Advanced Relations System Implemented (23 Jan 2026)
+**Progress**: 100% Core + 56% Advanced Features
+
+**Recent Updates (23 Jan 2026)**:
+- ✅ **Renaming**: Complete migration from `/materials` to `/products`
+- ✅ **ProductRelations**: Unified system replacing old components/dependencies
+- ✅ **Advanced UI**: Modal CRUD with collapsible sections, 3 types calculation
+- ✅ **Backend**: Fixed `ProductRelationData::fromRequest()` with Lazy relationships
+- ✅ **UX**: Modal auto-close, validation, error handling, loading states
+
+**Components**:
+- ✅ List view (`/products`) - search, filter, pagination
+- ✅ Detail view (`/products/[id]`) - tabs (details, **relations**, inventory, movements)
+- ✅ Create form (`/products/new`)
+- ✅ Edit functionality
+- ✅ Product categorization (with autocomplete + inline create)
+- ✅ Product type (physical, service, composite)
+- ✅ **ProductRelations unified system** 🎉 NEW
+  - ✅ CRUD complete (Create, Read, Update, Delete)
+  - ✅ Modal with fixed header/footer + scrollable content
+  - ✅ 3 quantity types: Fixed, Multiplied, Formula
+  - ✅ Inline explanations for calculations
+  - ✅ 3 lists management: Preventivo, Cantiere, Stock
+  - ✅ Optional checkbox (user confirmation)
+  - ✅ Min/Max quantity triggers (collapsible section)
+  - ✅ Validation + error handling + toast notifications
+  - ✅ Loading states during async operations
+  - ✅ Auto-close modal after success
+- ✅ Pricing (costs, sale price, markup)
+- ✅ Rental functionality
+- ✅ Barcode/QR code
+- ✅ Stock statistics
+- ✅ Dark mode support
+
+**API Integration**:
+- ✅ productsApi (full CRUD)
+- ✅ **Unified `/products/{id}/relations` endpoint** (replaces components/dependencies)
+- ✅ getRelations(), addRelation(), updateRelation(), deleteRelation()
+- ✅ calculateRelations(productId, quantity)
+- ✅ getCategories(), getRelationTypes()
+- ✅ Inventory queries
+- ✅ Stock movements
+
+**Components Created (23 Jan 2026)**:
+- ✅ **product-relations.tsx** (545 LOC) - Main component
+- ✅ **ProductCategoryCombobox** - Autocomplete with create inline
+- ✅ **ProductTypeBadge** - Visual badges for product types
+- ✅ **QuantityTypeBadge** - Visual badges for quantity calculation types
+- ✅ product-form.tsx (migrated from material-form)
+- ✅ products-columns.tsx (migrated from materials-columns)
+
+**Backend Fixed (23 Jan 2026)**:
+- ✅ ProductRelationController: `fromRequest()` for update/create
+- ✅ ProductRelationData: Lazy relationships initialization
+- ✅ UpdateProductRelationAction: Excluded immutable foreign keys
+- ✅ Nested resource routing: `/products/{product}/relations/{relation}`
+
+**Advanced Features** 🚧 PARTIAL (56%):
+- ✅ Basic composite products (relations system)
+- ⬜ ProductRelationsTree (hierarchical visualization)
+- ⬜ Automatic price calculation for composites
+- ⬜ Preview 3 lists with simulation
+- ⬜ Drag & drop reorder relations
+
+**Missing**:
+- Nothing critical for core functionality
+- Advanced visualization pending (tree view, price calc)
+- ✅ material-autocomplete.tsx
+- ✅ materials-columns.tsx
+
+**Missing**:
+- 🚧 Product photos/media UI
+
+---
+
+### 5. Warehouses Module ✅ COMPLETE
+
+**Status**: ✅ Production-ready
+**Components**:
+- ✅ List view (`/warehouses`)
+- ✅ Detail view (`/warehouses/[id]`) - tabs (details, inventory, movements)
+- ✅ Create form (`/warehouses/new`)
+- ✅ Edit functionality
+- ✅ Warehouse type management
+- ✅ Manager assignment
+- ✅ Address/location
+- ✅ Statistics
+- ✅ Dark mode support
+
+**API Integration**:
+- ✅ warehousesApi (full CRUD)
+- ✅ getInventory()
+- ✅ Stock movements filtering
+
+**Components**:
+- ✅ warehouse-form.tsx
+- ✅ warehouse-inventory-columns.tsx
+
+**Missing**:
+- Nothing critical
+
+---
+
+### 6. Sites Module 🚧 MOSTLY COMPLETE
+
+**Status**: 🚧 View/edit pages exist, create form missing
+**Components**:
+- ✅ List view (`/sites`)
+- ✅ Detail view (`/sites/[id]`) - tabs (overview, materials, services, documents, squad, material requests, timesheet, costs)
+- ❌ **Create form** (`/sites/new`) - NOT IMPLEMENTED (BLOCKER)
+- ✅ Edit functionality
+
+**Features Implemented**:
+- ✅ Site information display
+- ✅ Customer assignment
+- ✅ Location data
+- ✅ GPS coordinates
+- ✅ Status management
+- ✅ Priority levels
+- ✅ Financial data
+- ✅ Dates tracking
+- ✅ Project manager assignment
+- ✅ Quote association
+- ✅ Materials section
+- ✅ Services section
+- ✅ Documents section (media upload)
+- ✅ Squad (worker assignments)
+- ✅ Material requests handling
+- ✅ DDT pending alerts
+- ✅ Dark mode support
+
+**Tabs**:
+- ✅ Overview
+- ✅ Materials (SiteMaterialsSection)
+- ✅ Services (SiteServicesSection)
+- ✅ Documents (SiteDocumentsSection)
+- ✅ Squad (SiteWorkersTab)
+- ✅ Material Requests (MaterialRequestsTab)
+- 🚧 Timesheet (placeholder - IN DEVELOPMENT)
+- 🚧 Cost Analysis (placeholder - IN DEVELOPMENT)
+
+**Features Missing**:
+- ❌ **Create new site form** (CRITICAL BLOCKER)
+- 🚧 Full timesheet implementation
+- 🚧 Cost analysis dashboard
+- 🚧 SAL integration
+- 🚧 Quote-to-site conversion UI
+
+**API Integration**:
+- ✅ sitesApi (full CRUD)
+- ✅ getDdts()
+- ✅ confirmMultipleDdts()
+- ✅ Media management
+
+**Components**:
+- ✅ site-form.tsx
+- ✅ SiteWorkersTab
+- ✅ SiteDocumentsSection
+- ✅ SiteMaterialsSection
+- ✅ SiteServicesSection
+- ✅ MaterialRequestsTab
+- ✅ DdtPendingAlert
+
+**TODO**:
+- ❌ Create `/sites/new/page.tsx` with full site creation form
+- 🚧 Implement timesheet tab
+- 🚧 Implement cost analysis tab
+
+---
+
+### 7. Quotes Module 🚧 MOSTLY COMPLETE
+
+**Status**: 🚧 Core CRUD done, PDF UI missing
+**Components**:
+- ✅ List view (`/quotes`)
+- ✅ Detail view (`/quotes/[id]`)
+- ✅ Create form (`/quotes/new`)
+- ✅ Edit functionality
+- ✅ Quote items hierarchy builder (with drag-drop)
+- ✅ Pricing calculations
+- ✅ Discount management
+- ✅ Status management
+- ✅ Terms and conditions
+- ✅ Payment terms
+- ✅ Attachments upload
+- ✅ Dark mode support
+
+**Features Missing**:
+- 🚧 PDF download UI (endpoint exists, not integrated)
+- 🚧 PDF preview UI (endpoint exists, not integrated)
+- 🚧 Quote-to-site conversion UI
+- 🚧 Quote cloning
+
+**API Integration**:
+- ✅ quotesApi (full CRUD)
+- ✅ changeStatus()
+- ✅ downloadPdf() (endpoint exists)
+- ✅ previewPdf() (endpoint exists)
+
+**Components**:
+- ✅ quote-form.tsx
+- ✅ quote-items-builder/ (hierarchical builder with drag-drop)
+- ✅ QuoteItemsBuilder
+- ✅ SortableItem
+- ✅ ItemFormDialog
+- ✅ quote-attachments-upload.tsx
+- ✅ quote-status-dropdown.tsx
+- ✅ quotes-columns.tsx
+
+**TODO**:
+- 🚧 Add PDF download button in detail view
+- 🚧 Add PDF preview modal
+- 🚧 Add "Convert to Site" button
+
+---
+
+### 8. DDT Module 🚧 MOSTLY COMPLETE
+
+**Status**: 🚧 View/create pages exist, edit missing
+**Components**:
+- ✅ List view (`/ddts`)
+- ✅ Detail view (`/ddts/[id]`)
+- ✅ Create form (`/ddts/new`)
+- ❌ **Edit form** - NOT IMPLEMENTED
+
+**Features Implemented**:
+- ✅ DDT type selection
+- ✅ DDT status display
+- ✅ DDT numbering
+- ✅ Warehouse assignment
+- ✅ Site/supplier/customer context
+- ✅ Items management
+- ✅ Transport tracking
+- ✅ Rental functionality
+- ✅ Returns management
+- ✅ Confirmation workflow
+- ✅ Cancellation
+- ✅ Dark mode support
+
+**Features Missing**:
+- ❌ Edit DDT functionality (cannot modify after creation)
+- 🚧 DDT PDF generation UI
+
+**API Integration**:
+- ✅ ddtsApi (CRUD, except update)
+- ✅ confirm()
+- ✅ markAsDelivered()
+- ✅ cancel()
+
+**Components**:
+- ✅ ddts-columns.tsx
+- ✅ Status/type badges
+
+**TODO**:
+- ❌ Add edit functionality to `/ddts/[id]/page.tsx`
+- 🚧 Add PDF download
+
+---
+
+### 9. Workers Module 🚧 MOSTLY COMPLETE
+
+**Status**: 🚧 View/edit pages exist, create form missing
+**Components**:
+- ✅ List view (`/workers`)
+- ✅ Detail view (`/workers/[id]`)
+- ❌ **Create form** (`/workers/new`) - NOT IMPLEMENTED
+- ✅ Edit functionality
+
+**Features Implemented**:
+- ✅ Worker type display
+- ✅ Contract type display
+- ✅ Personal information
+- ✅ Contact details
+- ✅ Job information
+- ✅ Certifications
+- ✅ Safety training
+- ✅ Payroll data display
+- ✅ Bank information
+- ✅ Rate management (with history)
+- ✅ Site assignments tracking
+- ✅ Statistics
+- ✅ Deactivation/reactivation
+- ✅ Dark mode support
+
+**Features Missing**:
+- ❌ Create new worker form
+- 🚧 Invitation workflow UI (partially implemented)
+- 🚧 Time tracking integration
+
+**API Integration**:
+- ✅ workersApi (full CRUD)
+- ✅ Rate management
+- ✅ Cost calculation
+- ✅ Site assignment
+- ✅ Availability queries
+- ✅ Deactivation/reactivation
+
+**Components**:
+- ✅ worker-form.tsx
+- ✅ worker-rate-form.tsx
+- ✅ workers-columns.tsx
+
+**TODO**:
+- ❌ Create `/workers/new/page.tsx`
+- 🚧 Complete invitation workflow
+
+---
+
+### 10. Users Module 🚧 PARTIAL
+
+**Status**: 🚧 List view exists, create/detail missing
+**Components**:
+- ✅ List view (`/users`)
+- ❌ **Create form** - NOT IMPLEMENTED
+- ❌ **Detail view** - NOT IMPLEMENTED
+
+**Features Implemented**:
+- ✅ User listing with search
+- ✅ Role filtering
+- ✅ User activation/deactivation
+
+**Features Missing**:
+- ❌ Create new user form
+- ❌ User detail page
+- ❌ Password management UI
+- 🚧 User invitation workflow completion
+
+**API Integration**:
+- ✅ usersApi (CRUD exists)
+- ✅ rolesApi
+- ✅ permissionsApi
+
+**Components**:
+- ✅ create-invitation-dialog.tsx
+
+**TODO**:
+- ❌ Create `/users/new/page.tsx`
+- ❌ Create `/users/[id]/page.tsx`
+- 🚧 Add password management
+
+---
+
+### 11. Inventory Module 🚧 PARTIAL
+
+**Status**: 🚧 List view exists, advanced features missing
+**Components**:
+- ✅ List view (`/inventory`)
+- ❌ Detail view - NOT IMPLEMENTED
+
+**Features Implemented**:
+- ✅ Inventory listing
+- ✅ Low stock indicators
+- ✅ Material/warehouse filtering
+
+**Features Missing**:
+- ❌ Stock adjustment UI
+- ❌ Transfer workflows
+- ❌ Detailed inventory analysis
+- ❌ Inventory forecasting
+- ❌ ABC analysis
+
+**API Integration**:
+- ✅ inventoryApi.getAll()
+- ✅ inventoryApi.getLowStock()
+- ✅ inventoryApi.getValuation()
+- ⚠️ adjustStock() exists but no UI
+
+**Components**:
+- ✅ inventory-columns.tsx
+
+**TODO**:
+- 🚧 Add stock adjustment form
+- 🚧 Add transfer dialog
+
+---
+
+### 12. Stock Movements Module 🚧 PARTIAL
+
+**Status**: 🚧 List view exists, create form missing
+**Components**:
+- ✅ List view (`/stock-movements`)
+- ❌ Create form - NOT IMPLEMENTED
+
+**Features Implemented**:
+- ✅ Movement history viewing
+- ✅ Movement filtering
+- ✅ Cost tracking
+- ✅ User attribution
+- ✅ DDT association
+
+**Features Missing**:
+- ❌ Direct movement creation UI
+- ❌ Batch movement import
+- ❌ Movement editing/deletion
+
+**API Integration**:
+- ✅ stockMovementsApi.getAll()
+
+**Components**:
+- ✅ stock-movements-columns.tsx
+- ✅ create-stock-movement-dialog.tsx (exists but usage unclear)
+
+**TODO**:
+- ❌ Add movement creation page
+- 🚧 Integrate create-stock-movement-dialog
+
+---
+
+### 13. Invitations Module ✅ COMPLETE
+
+**Status**: ✅ Functional
+**Components**:
+- ✅ List view (`/invitations`)
+- ✅ Create dialog (create-invitation-dialog.tsx)
+- ✅ Acceptance page (`/(auth)/accept-invitation/[token]`)
+
+**Features**:
+- ✅ Invitation creation
+- ✅ Supplier/contractor context
+- ✅ Invitation acceptance with password setup
+- ✅ Expiry management
+- ✅ Dark mode support
+
+**Missing**:
+- Nothing critical
+
+---
+
+### 14. Settings Module 🚧 PARTIAL
+
+**Status**: 🚧 Basic implementation
+**Components**:
+- ✅ Settings home (`/settings`)
+- ✅ Site roles (`/settings/site-roles`)
+
+**Features Missing**:
+- 🚧 Company profile editing
+- 🚧 Payment settings
+- 🚧 Notification preferences
+- 🚧 System settings
+
+**TODO**:
+- 🚧 Add company profile page
+- 🚧 Add settings forms
+
+---
+
+### 15. Dashboard Module 🚧 PARTIAL
+
+**Status**: 🚧 Basic implementation
+**Components**:
+- ✅ Main dashboard (`/dashboard`)
+- ✅ Worker dashboard (`/dashboard/worker`)
+- ✅ Contractors list (`/dashboard/contractors`)
+- ✅ Contractor detail (`/dashboard/contractors/[id]`)
+
+**Features Implemented**:
+- ✅ Admin dashboard with stats
+- ✅ Worker view with assigned sites
+
+**Features Missing**:
+- 🚧 Performance metrics
+- 🚧 Real-time notifications
+- 🚧 Advanced analytics
+- 🚧 Role-specific layouts
+
+**TODO**:
+- 🚧 Add performance metrics
+- 🚧 Add notification center
+
+---
+
+### 16. Material Requests Module ✅ COMPLETE (Embedded)
+
+**Status**: ✅ Functional, embedded in Sites
+**Components**:
+- ✅ Tab in site detail (`MaterialRequestsTab`)
+- ❌ Standalone page - NOT IMPLEMENTED
+
+**Features**:
+- ✅ Request status display
+- ✅ Priority levels
+- ✅ Approval workflow
+- ✅ Rejection handling
+- ✅ Delivery confirmation
+- ✅ Statistics
+- ✅ Dark mode support
+
+**Missing**:
+- 🚧 Standalone material requests page
+
+---
+
+### 17. Site Workers Module ✅ COMPLETE (Embedded)
+
+**Status**: ✅ Functional, embedded in Sites
+**Components**:
+- ✅ Tab in site detail (`SiteWorkersTab`)
+- ✅ Assignment dialog (assign-worker-dialog.tsx)
+- ✅ Role management dialog (manage-worker-roles-dialog.tsx)
+- ❌ Standalone page - NOT IMPLEMENTED
+
+**Features**:
+- ✅ Worker assignment
+- ✅ Status management
+- ✅ Assignment dates
+- ✅ Rate overrides
+- ✅ Role assignment
+- ✅ Conflict detection
+- ✅ Response management
+- ✅ Dark mode support
+
+**Missing**:
+- 🚧 Standalone site workers page
+
+---
+
+### 18. Contractors Module (Frontend) 🚧 PARTIAL
+
+**Status**: 🚧 Basic implementation in dashboard
+**Components**:
+- ✅ Contractors list (`/dashboard/contractors`)
+- ✅ Contractor detail (`/dashboard/contractors/[id]`)
+
+**Features Missing**:
+- 🚧 Full CRUD UI for contractors
+- 🚧 Rate management UI
+
+---
+
+## SHARED COMPONENTS & INFRASTRUCTURE
+
+### Data Table System ✅ COMPLETE
+
+- ✅ DataTable (TanStack Table)
+- ✅ DataTableWrapper
+- ✅ DataTableRow
+- ✅ Column definitions for all modules
+- ✅ Storage persistence
+- ✅ Dark mode support
+
+### Forms & Validation ✅ COMPLETE
+
+- ✅ React Hook Form integration
+- ✅ Zod validation schemas
+- ✅ Form components for all major modules
+- ✅ Dialog forms
+- ✅ Dark mode support
+
+### UI Components ✅ COMPLETE
+
+- ✅ shadcn/ui base components
+- ✅ Custom dialogs
+- ✅ Status badges
+- ✅ Type badges
+- ✅ Empty states
+- ✅ Loading states
+- ✅ Alert dialogs
+- ✅ Dark mode support
+
+### Dark Mode ✅ COMPLETE
+
+- ✅ Theme toggle
+- ✅ Color contrast in dark mode
+- ✅ Tailwind dark: classes
+- ✅ Storage persistence
+
+### Navigation & Layout ✅ COMPLETE
+
+- ✅ Dashboard layout with sidebar
+- ✅ Page headers
+- ✅ Breadcrumbs
+- ✅ Protected routes
+- ✅ Role-based access control
+
+### API Client ✅ COMPLETE
+
+- ✅ Axios-based client
+- ✅ Bearer token handling
+- ✅ Error handling
+- ✅ 20 API modules
+
+### State Management ✅ COMPLETE
+
+- ✅ TanStack Query (server state)
+- ✅ Zustand (auth state)
+- ✅ localStorage wrapper
+
+---
+
+## 📝 IMPLEMENTATION ROADMAP
+
+### Phase 1: Critical Blockers (HIGH PRIORITY)
+
+**Estimate**: 2-3 weeks
+1. ✅ Create Site form (`/sites/new/page.tsx`)
+2. ❌ Create Supplier form + edit
+3. ❌ Create User form
+4. ❌ Edit DDT functionality
+5. ❌ Time Tracking Module (GPS-based)
+
+### Phase 2: Important Features (MEDIUM PRIORITY)
+
+**Estimate**: 3-4 weeks
+1. ❌ SAL Module
+2. ❌ Consuntivi Module
+3. ❌ Quote PDF integration (frontend UI)
+4. ❌ Timesheet tab implementation
+5. ❌ Cost analysis dashboard
+
+### Phase 3: Advanced Features (LOW PRIORITY)
+
+**Estimate**: 4-6 weeks
+1. ❌ Invoicing Module (full implementation)
+2. ❌ Worker scheduling calendar
+3. ❌ Geolocation visualization
+4. ❌ Batch import functionality
+5. ❌ Advanced analytics
+
+### Phase 4: Polish & Enhancement
+
+**Estimate**: 2-3 weeks
+1. ❌ Internationalization (i18n)
+2. ❌ Component testing
+3. ❌ Performance optimization
+4. ❌ Enhanced error boundaries
+5. ❌ Notification system completion
+
+---
+
+## 🚧 CURRENT SPRINT FOCUS
+
+### This Week
+
+- [ ] Create Site form page
+- [ ] Create Supplier form + edit
+- [ ] Edit DDT functionality
+
+### Next Week
+
+- [ ] Time Tracking Module (start)
+- [ ] Timesheet tab in Site detail
+- [ ] Cost analysis dashboard (start)
+
+---
+
+## 📊 COMPLETION METRICS
+
+### Backend: 70% Complete
+
+- ✅ 32 models (all core modules)
+- ✅ 27 controllers (thin HTTP layer)
+- ✅ 19+ services (domain logic)
+- ✅ 55 migrations (comprehensive schema)
+- ✅ 22 enums (type-safe)
+- ✅ 29+ form requests (validation)
+- ✅ 22 API resources (responses)
+- ✅ 16 policies (authorization)
+- ❌ Missing: Time Tracking, SAL, Consuntivi, Invoicing, Accounting, Logistics, Reporting
+
+### Frontend: 60% Complete
+
+- ✅ 15+ page modules (list/detail views)
+- ✅ 50+ components (forms, tables, dialogs)
+- ✅ 20 API clients (comprehensive)
+- ✅ Dark mode (100% coverage)
+- ✅ Type safety (strict TypeScript)
+- ❌ Missing: Create forms (Sites, Suppliers, Users, Workers), Edit forms (DDT, Supplier), Advanced modules (SAL, Consuntivi, Invoicing, Time Tracking)
+
+### Architecture: 100% Complete
+
+- ✅ Backend pattern finalized (Controller → Actions → Services)
+- ✅ Frontend pattern finalized (Server Components → Client Components)
+- ✅ Value Objects + Services pattern
+- ✅ DTOs (Spatie Data)
+- ✅ Events & Listeners
+- ✅ Documentation complete
+
+---
+
+## 🎯 NEXT ACTIONS
+
+### Immediate (This Week)
+
+1. Create `/sites/new/page.tsx` (site creation form)
+2. Create `/suppliers/new/page.tsx` + edit mode in `/suppliers/[id]`
+3. Add edit mode to `/ddts/[id]/page.tsx`
+
+### Short Term (1-2 Weeks)
+
+1. Create `/users/new/page.tsx`
+2. Create `/workers/new/page.tsx`
+3. Start Time Tracking Module backend
+4. Implement Timesheet tab in Site detail
+
+### Medium Term (3-4 Weeks)
+
+1. Complete Time Tracking Module
+2. Start SAL Module
+3. Start Consuntivi Module
+4. Implement Cost Analysis dashboard
+
+### Long Term (1-2 Months)
+
+1. Complete SAL Module
+2. Complete Consuntivi Module
+3. Start Invoicing Module
+4. Advanced reporting and analytics
+
+---
+
+**Version**: 1.0.0
+**Last Updated**: January 2026
+**Total Tasks**: 200+
+**Completed**: ~130 (65%)
+**In Progress**: ~30 (15%)
+**Missing**: ~40 (20%)
+
+=== foundation rules ===
+
+# Laravel Boost Guidelines
+
+The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.
+
+## Foundational Context
+
+This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
+
+- php - 8.3.27
+- laravel/framework (LARAVEL) - v12
+- laravel/prompts (PROMPTS) - v0
+- laravel/sanctum (SANCTUM) - v4
+- laravel/mcp (MCP) - v0
+- laravel/pint (PINT) - v1
+- laravel/sail (SAIL) - v1
+- pestphp/pest (PEST) - v4
+- phpunit/phpunit (PHPUNIT) - v12
+
+## Skills Activation
+
+This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
+
+- `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, browser testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
+
+## Conventions
+
+- You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
+- Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
+- Check for existing components to reuse before writing a new one.
+
+## Verification Scripts
+
+- Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
+
+## Application Structure & Architecture
+
+- Stick to existing directory structure; don't create new base folders without approval.
+- Do not change the application's dependencies without approval.
+
+## Frontend Bundling
+
+- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+
+## Documentation Files
+
+- You must only create documentation files if explicitly requested by the user.
+
+## Replies
+
+- Be concise in your explanations - focus on what's important rather than explaining obvious details.
+
+=== boost rules ===
+
+# Laravel Boost
+
+- Laravel Boost is an MCP server that comes with powerful tools designed specifically for this application. Use them.
+
+## Artisan
+
+- Use the `list-artisan-commands` tool when you need to call an Artisan command to double-check the available parameters.
+
+## URLs
+
+- Whenever you share a project URL with the user, you should use the `get-absolute-url` tool to ensure you're using the correct scheme, domain/IP, and port.
+
+## Tinker / Debugging
+
+- You should use the `tinker` tool when you need to execute PHP to debug code or query Eloquent models directly.
+- Use the `database-query` tool when you only need to read from the database.
+
+## Reading Browser Logs With the `browser-logs` Tool
+
+- You can read browser logs, errors, and exceptions using the `browser-logs` tool from Boost.
+- Only recent browser logs will be useful - ignore old logs.
+
+## Searching Documentation (Critically Important)
+
+- Boost comes with a powerful `search-docs` tool you should use before trying other approaches when working with Laravel or Laravel ecosystem packages. This tool automatically passes a list of installed packages and their versions to the remote Boost API, so it returns only version-specific documentation for the user's circumstance. You should pass an array of packages to filter on if you know you need docs for particular packages.
+- Search the documentation before making code changes to ensure we are taking the correct approach.
+- Use multiple, broad, simple, topic-based queries at once. For example: `['rate limiting', 'routing rate limiting', 'routing']`. The most relevant results will be returned first.
+- Do not add package names to queries; package information is already shared. For example, use `test resource table`, not `filament 4 test resource table`.
+
+### Available Search Syntax
+
+1. Simple Word Searches with auto-stemming - query=authentication - finds 'authenticate' and 'auth'.
+2. Multiple Words (AND Logic) - query=rate limit - finds knowledge containing both "rate" AND "limit".
+3. Quoted Phrases (Exact Position) - query="infinite scroll" - words must be adjacent and in that order.
+4. Mixed Queries - query=middleware "rate limit" - "middleware" AND exact phrase "rate limit".
+5. Multiple Queries - queries=["authentication", "middleware"] - ANY of these terms.
+
+=== php rules ===
+
+# PHP
+
+- Always use curly braces for control structures, even for single-line bodies.
+
+## Constructors
+
+- Use PHP 8 constructor property promotion in `__construct()`.
+    - <code-snippet>public function __construct(public GitHub $github) { }</code-snippet>
+- Do not allow empty `__construct()` methods with zero parameters unless the constructor is private.
+
+## Type Declarations
+
+- Always use explicit return type declarations for methods and functions.
+- Use appropriate PHP type hints for method parameters.
+
+<code-snippet name="Explicit Return Types and Method Params" lang="php">
+protected function isAccessible(User $user, ?string $path = null): bool
+{
+    ...
+}
+</code-snippet>
+
+## Enums
+
+- Typically, keys in an Enum should be TitleCase. For example: `FavoritePerson`, `BestLake`, `Monthly`.
+
+## Comments
+
+- Prefer PHPDoc blocks over inline comments. Never use comments within the code itself unless the logic is exceptionally complex.
+
+## PHPDoc Blocks
+
+- Add useful array shape type definitions when appropriate.
+
+=== tests rules ===
+
+# Test Enforcement
+
+- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
+- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
+
+=== laravel/core rules ===
+
+# Do Things the Laravel Way
+
+- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using the `list-artisan-commands` tool.
+- If you're creating a generic PHP class, use `php artisan make:class`.
+- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
+
+## Database
+
+- Always use proper Eloquent relationship methods with return type hints. Prefer relationship methods over raw queries or manual joins.
+- Use Eloquent models and relationships before suggesting raw database queries.
+- Avoid `DB::`; prefer `Model::query()`. Generate code that leverages Laravel's ORM capabilities rather than bypassing them.
+- Generate code that prevents N+1 query problems by using eager loading.
+- Use Laravel's query builder for very complex database operations.
+
+### Model Creation
+
+- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `list-artisan-commands` to check the available options to `php artisan make:model`.
+
+### APIs & Eloquent Resources
+
+- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
+
+## Controllers & Validation
+
+- Always create Form Request classes for validation rather than inline validation in controllers. Include both validation rules and custom error messages.
+- Check sibling Form Requests to see if the application uses array or string based validation rules.
+
+## Authentication & Authorization
+
+- Use Laravel's built-in authentication and authorization features (gates, policies, Sanctum, etc.).
+
+## URL Generation
+
+- When generating links to other pages, prefer named routes and the `route()` function.
+
+## Queues
+
+- Use queued jobs for time-consuming operations with the `ShouldQueue` interface.
+
+## Configuration
+
+- Use environment variables only in configuration files - never use the `env()` function directly outside of config files. Always use `config('app.name')`, not `env('APP_NAME')`.
+
+## Testing
+
+- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
+- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
+- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
+
+## Vite Error
+
+- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+
+=== laravel/v12 rules ===
+
+# Laravel 12
+
+- CRITICAL: ALWAYS use `search-docs` tool for version-specific Laravel documentation and updated code examples.
+- Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
+
+## Laravel 12 Structure
+
+- In Laravel 12, middleware are no longer registered in `app/Http/Kernel.php`.
+- Middleware are configured declaratively in `bootstrap/app.php` using `Application::configure()->withMiddleware()`.
+- `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
+- `bootstrap/providers.php` contains application specific service providers.
+- The `app\Console\Kernel.php` file no longer exists; use `bootstrap/app.php` or `routes/console.php` for console configuration.
+- Console commands in `app/Console/Commands/` are automatically available and do not require manual registration.
+
+## Database
+
+- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
+- Laravel 12 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
+
+### Models
+
+- Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
+
+=== pint/core rules ===
+
+# Laravel Pint Code Formatter
+
+- You must run `vendor/bin/pint --dirty` before finalizing changes to ensure your code matches the project's expected style.
+- Do not run `vendor/bin/pint --test`, simply run `vendor/bin/pint` to fix any formatting issues.
+
+=== pest/core rules ===
+
+## Pest
+
+- This project uses Pest for testing. Create tests: `php artisan make:test --pest {name}`.
+- Run tests: `php artisan test --compact` or filter: `php artisan test --compact --filter=testName`.
+- Do NOT delete tests without approval.
+- CRITICAL: ALWAYS use `search-docs` tool for version-specific Pest documentation and updated code examples.
+- IMPORTANT: Activate `pest-testing` every time you're working with a Pest or testing-related task.
+</laravel-boost-guidelines>

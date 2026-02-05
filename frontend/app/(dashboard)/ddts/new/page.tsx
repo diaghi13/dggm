@@ -1,28 +1,34 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { ddtsApi } from '@/lib/api/ddts';
-import { warehousesApi } from '@/lib/api/warehouses';
-import { suppliersApi } from '@/lib/api/suppliers';
-import { customersApi } from '@/lib/api/customers';
-import { sitesApi } from '@/lib/api/sites';
-import { productsApi } from '@/lib/api/products';
-import type { DdtType, DdtFormData, ReturnReason } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { ddtsApi } from "@/lib/api/ddts";
+import { warehousesApi } from "@/lib/api/warehouses";
+import { suppliersApi } from "@/lib/api/suppliers";
+import { customersApi } from "@/lib/api/customers";
+import { sitesApi } from "@/lib/api/sites";
+import { productsApi } from "@/lib/api/products";
+import type { DdtType, DdtFormData, ReturnReason } from "@/lib/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -30,84 +36,92 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { ArrowLeft, Plus, Trash2, Save, AlertTriangle } from 'lucide-react';
-import Link from 'next/link';
-import { toast } from 'sonner';
-import { ComboboxSelect } from '@/components/combobox-select';
+} from "@/components/ui/table";
+import { ArrowLeft, Plus, Trash2, Save, AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { ComboboxSelect } from "@/components/combobox-select";
 
 const ddtTypeLabels: Record<DdtType, string> = {
-  incoming: 'Carico da Fornitore',
-  outgoing: 'Scarico a Cliente/Cantiere',
-  internal: 'Trasferimento Interno',
-  rental_out: 'Noleggio Uscita',
-  rental_return: 'Noleggio Rientro',
-  return_from_customer: 'Reso da Cliente',
-  return_to_supplier: 'Reso a Fornitore',
+  incoming: "Carico da Fornitore",
+  outgoing: "Scarico a Cliente/Cantiere",
+  internal: "Trasferimento Interno",
+  rental_out: "Noleggio Uscita",
+  rental_return: "Noleggio Rientro",
+  return_from_customer: "Reso da Cliente",
+  return_to_supplier: "Reso a Fornitore",
 };
 
 const returnReasonLabels: Record<ReturnReason, string> = {
-  defective: 'Difettoso',
-  wrong_item: 'Articolo Errato',
-  excess: 'Eccesso',
-  warranty: 'Garanzia',
-  customer_dissatisfaction: 'Insoddisfazione Cliente',
-  other: 'Altro',
+  defective: "Difettoso",
+  wrong_item: "Articolo Errato",
+  excess: "Eccesso",
+  warranty: "Garanzia",
+  customer_dissatisfaction: "Insoddisfazione Cliente",
+  other: "Altro",
 };
 
 export default function NewDdtPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState<DdtFormData>({
-    type: 'incoming',
+    type: "incoming",
     from_warehouse_id: 0,
-    ddt_number: '',
-    ddt_date: new Date().toISOString().split('T')[0],
+    ddt_number: "",
+    ddt_date: new Date().toISOString().split("T")[0],
     items: [],
   });
 
-  const [searchMaterial, setSearchMaterial] = useState('');
+  const [searchMaterial, setSearchMaterial] = useState("");
 
   // Fetch next DDT number
   const { data: nextNumberData } = useQuery({
-    queryKey: ['ddt-next-number'],
+    queryKey: ["ddt-next-number"],
     queryFn: () => ddtsApi.getNextNumber(),
   });
 
   // Auto-populate DDT number when available
   useEffect(() => {
     if (nextNumberData?.suggested_number && !formData.ddt_number) {
-      setFormData((prev) => ({ ...prev, ddt_number: nextNumberData.suggested_number }));
+      setFormData((prev) => ({
+        ...prev,
+        ddt_number: nextNumberData.suggested_number,
+      }));
     }
   }, [nextNumberData]);
 
   // Fetch options
   const { data: warehousesData } = useQuery({
-    queryKey: ['warehouses', { is_active: true }],
+    queryKey: ["warehouses", { is_active: true }],
     queryFn: () => warehousesApi.getAll({ is_active: true, per_page: 100 }),
   });
 
   const { data: suppliersData } = useQuery({
-    queryKey: ['suppliers', { is_active: true }],
+    queryKey: ["suppliers", { is_active: true }],
     queryFn: () => suppliersApi.getAll({ is_active: true, per_page: 100 }),
-    enabled: ['incoming', 'return_to_supplier'].includes(formData.type),
+    enabled: ["incoming", "return_to_supplier"].includes(formData.type),
   });
 
   const { data: customersData } = useQuery({
-    queryKey: ['customers', { is_active: true }],
+    queryKey: ["customers", { is_active: true }],
     queryFn: () => customersApi.getAll({ is_active: true, per_page: 100 }),
-    enabled: ['outgoing', 'return_from_customer'].includes(formData.type),
+    enabled: ["outgoing", "return_from_customer"].includes(formData.type),
   });
 
   const { data: sitesData } = useQuery({
-    queryKey: ['sites', { status: 'in_progress' }],
-    queryFn: () => sitesApi.getAll({ status: 'in_progress', per_page: 100 }),
-    enabled: formData.type === 'outgoing',
+    queryKey: ["sites", { status: "in_progress" }],
+    queryFn: () => sitesApi.getAll({ status: "in_progress", per_page: 100 }),
+    enabled: formData.type === "outgoing",
   });
 
   const { data: materialsData, isLoading: isLoadingMaterials } = useQuery({
-    queryKey: ['products', { search: searchMaterial, is_active: true }],
-    queryFn: () => productsApi.getAll({ search: searchMaterial, is_active: true, per_page: 50 }),
+    queryKey: ["products", { search: searchMaterial, is_active: true }],
+    queryFn: () =>
+      productsApi.getAll({
+        search: searchMaterial,
+        is_active: true,
+        per_page: 50,
+      }),
   });
 
   const warehouses = warehousesData?.data ?? [];
@@ -135,7 +149,7 @@ export default function NewDdtPage() {
         return_reason: data.return_reason || undefined,
         return_notes: data.return_notes || undefined,
         notes: data.notes || undefined,
-        items: data.items.map(item => ({
+        items: data.items.map((item) => ({
           product_id: item.product_id,
           quantity: item.quantity,
           unit: item.unit,
@@ -146,14 +160,15 @@ export default function NewDdtPage() {
       return ddtsApi.create(apiData);
     },
     onSuccess: (ddt) => {
-      toast.success('DDT Creato', {
+      toast.success("DDT Creato", {
         description: `DDT ${ddt.code} creato con successo in modalità bozza.`,
       });
       router.push(`/ddts/${ddt.id}`);
     },
     onError: (error: any) => {
-      toast.error('Errore', {
-        description: error.response?.data?.message || 'Impossibile creare il DDT',
+      toast.error("Errore", {
+        description:
+          error.response?.data?.message || "Impossibile creare il DDT",
       });
     },
   });
@@ -166,13 +181,13 @@ export default function NewDdtPage() {
         {
           product_id: material.id,
           quantity: 1,
-          unit: material.unit,
+          unit: material.unit || "",
           unit_cost: material.standard_cost || 0,
           notes: null,
         },
       ],
     });
-    setSearchMaterial('');
+    setSearchMaterial("");
   };
 
   const handleRemoveItem = (index: number) => {
@@ -193,15 +208,15 @@ export default function NewDdtPage() {
 
     // Validation
     if (!formData.from_warehouse_id) {
-      toast.error('Errore Validazione', {
-        description: 'Seleziona il magazzino di origine',
+      toast.error("Errore Validazione", {
+        description: "Seleziona il magazzino di origine",
       });
       return;
     }
 
     if (formData.items.length === 0) {
-      toast.error('Errore Validazione', {
-        description: 'Aggiungi almeno un articolo',
+      toast.error("Errore Validazione", {
+        description: "Aggiungi almeno un articolo",
       });
       return;
     }
@@ -210,14 +225,23 @@ export default function NewDdtPage() {
   };
 
   // Dynamic field requirements based on DDT type
-  const requiresSupplier = ['incoming', 'return_to_supplier'].includes(formData.type);
-  const requiresCustomer = ['outgoing', 'return_from_customer'].includes(formData.type);
-  const requiresSite = formData.type === 'outgoing';
-  const requiresToWarehouse = ['internal', 'rental_out'].includes(formData.type);
-  const requiresRentalDates = ['rental_out', 'rental_return'].includes(formData.type);
-  const requiresReturnReason = ['return_from_customer', 'return_to_supplier'].includes(
-    formData.type
+  const requiresSupplier = ["incoming", "return_to_supplier"].includes(
+    formData.type,
   );
+  const requiresCustomer = ["outgoing", "return_from_customer"].includes(
+    formData.type,
+  );
+  const requiresSite = formData.type === "outgoing";
+  const requiresToWarehouse = ["internal", "rental_out"].includes(
+    formData.type,
+  );
+  const requiresRentalDates = ["rental_out", "rental_return"].includes(
+    formData.type,
+  );
+  const requiresReturnReason = [
+    "return_from_customer",
+    "return_to_supplier",
+  ].includes(formData.type);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 pb-10">
@@ -225,19 +249,21 @@ export default function NewDdtPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button type="button" variant="ghost" asChild>
-            <Link href="/frontend/app/(dashboard)/ddts">
+            <Link href="/ddts">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Annulla
             </Link>
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Nuovo DDT</h1>
-            <p className="text-slate-600 mt-1">Crea un nuovo Documento Di Trasporto</p>
+            <p className="text-slate-600 mt-1">
+              Crea un nuovo Documento Di Trasporto
+            </p>
           </div>
         </div>
         <Button type="submit" disabled={createMutation.isPending}>
           <Save className="h-4 w-4 mr-2" />
-          {createMutation.isPending ? 'Salvataggio...' : 'Salva Bozza'}
+          {createMutation.isPending ? "Salvataggio..." : "Salva Bozza"}
         </Button>
       </div>
 
@@ -245,13 +271,22 @@ export default function NewDdtPage() {
       <Card className="border-2 border-blue-200 bg-blue-50">
         <CardHeader>
           <CardTitle>Tipo DDT</CardTitle>
-          <CardDescription>Seleziona il tipo di documento da creare</CardDescription>
+          <CardDescription>
+            Seleziona il tipo di documento da creare
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Select
             value={formData.type}
             onValueChange={(value: DdtType) =>
-              setFormData({ ...formData, type: value, supplier_id: null, customer_id: null, site_id: null, to_warehouse_id: null })
+              setFormData({
+                ...formData,
+                type: value,
+                supplier_id: null,
+                customer_id: null,
+                site_id: null,
+                to_warehouse_id: null,
+              })
             }
           >
             <SelectTrigger className="w-full">
@@ -283,8 +318,12 @@ export default function NewDdtPage() {
                 id="ddt_number"
                 required
                 value={formData.ddt_number}
-                onChange={(e) => setFormData({ ...formData, ddt_number: e.target.value })}
-                placeholder={nextNumberData?.suggested_number || "Es: DDT-2026-0001"}
+                onChange={(e) =>
+                  setFormData({ ...formData, ddt_number: e.target.value })
+                }
+                placeholder={
+                  nextNumberData?.suggested_number || "Es: DDT-2026-0001"
+                }
               />
               {nextNumberData?.suggested_number && (
                 <p className="text-xs text-slate-500">
@@ -302,7 +341,9 @@ export default function NewDdtPage() {
                 type="date"
                 required
                 value={formData.ddt_date}
-                onChange={(e) => setFormData({ ...formData, ddt_date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, ddt_date: e.target.value })
+                }
               />
             </div>
 
@@ -311,9 +352,12 @@ export default function NewDdtPage() {
               <Input
                 id="transport_date"
                 type="date"
-                value={formData.transport_date || ''}
+                value={formData.transport_date || ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, transport_date: e.target.value || null })
+                  setFormData({
+                    ...formData,
+                    transport_date: e.target.value || null,
+                  })
                 }
               />
             </div>
@@ -322,21 +366,29 @@ export default function NewDdtPage() {
               <Label htmlFor="carrier_name">Vettore</Label>
               <Input
                 id="carrier_name"
-                value={formData.carrier_name || ''}
+                value={formData.carrier_name || ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, carrier_name: e.target.value || null })
+                  setFormData({
+                    ...formData,
+                    carrier_name: e.target.value || null,
+                  })
                 }
                 placeholder="Nome trasportatore"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tracking_number">Numero Tracking (opzionale)</Label>
+              <Label htmlFor="tracking_number">
+                Numero Tracking (opzionale)
+              </Label>
               <Input
                 id="tracking_number"
-                value={formData.tracking_number || ''}
+                value={formData.tracking_number || ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, tracking_number: e.target.value || null })
+                  setFormData({
+                    ...formData,
+                    tracking_number: e.target.value || null,
+                  })
                 }
                 placeholder="Es: 1Z999AA10123456784 (lascia vuoto se non disponibile)"
               />
@@ -360,7 +412,10 @@ export default function NewDdtPage() {
               <Select
                 value={formData.from_warehouse_id?.toString() || undefined}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, from_warehouse_id: parseInt(value) })
+                  setFormData({
+                    ...formData,
+                    from_warehouse_id: parseInt(value),
+                  })
                 }
               >
                 <SelectTrigger className="min-w-[200px]">
@@ -368,10 +423,15 @@ export default function NewDdtPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {warehouses.length === 0 ? (
-                    <div className="p-2 text-sm text-slate-500">Nessun magazzino disponibile</div>
+                    <div className="p-2 text-sm text-slate-500">
+                      Nessun magazzino disponibile
+                    </div>
                   ) : (
                     warehouses.map((warehouse: any) => (
-                      <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
+                      <SelectItem
+                        key={warehouse.id}
+                        value={warehouse.id.toString()}
+                      >
                         {warehouse.name}
                       </SelectItem>
                     ))
@@ -389,20 +449,30 @@ export default function NewDdtPage() {
                 <Select
                   value={formData.to_warehouse_id?.toString() || undefined}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, to_warehouse_id: parseInt(value) })
+                    setFormData({
+                      ...formData,
+                      to_warehouse_id: parseInt(value),
+                    })
                   }
                 >
                   <SelectTrigger className="min-w-[200px]">
                     <SelectValue placeholder="Seleziona magazzino" />
                   </SelectTrigger>
                   <SelectContent>
-                    {warehouses.filter((w: any) => w.id !== formData.from_warehouse_id).length === 0 ? (
-                      <div className="p-2 text-sm text-slate-500">Nessun altro magazzino disponibile</div>
+                    {warehouses.filter(
+                      (w: any) => w.id !== formData.from_warehouse_id,
+                    ).length === 0 ? (
+                      <div className="p-2 text-sm text-slate-500">
+                        Nessun altro magazzino disponibile
+                      </div>
                     ) : (
                       warehouses
                         .filter((w: any) => w.id !== formData.from_warehouse_id)
                         .map((warehouse: any) => (
-                          <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
+                          <SelectItem
+                            key={warehouse.id}
+                            value={warehouse.id.toString()}
+                          >
                             {warehouse.name}
                           </SelectItem>
                         ))
@@ -429,10 +499,15 @@ export default function NewDdtPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.length === 0 ? (
-                      <div className="p-2 text-sm text-slate-500">Nessun fornitore disponibile</div>
+                      <div className="p-2 text-sm text-slate-500">
+                        Nessun fornitore disponibile
+                      </div>
                     ) : (
                       suppliers.map((supplier: any) => (
-                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                        <SelectItem
+                          key={supplier.id}
+                          value={supplier.id.toString()}
+                        >
                           {supplier.company_name}
                         </SelectItem>
                       ))
@@ -459,10 +534,15 @@ export default function NewDdtPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {customers.length === 0 ? (
-                      <div className="p-2 text-sm text-slate-500">Nessun cliente disponibile</div>
+                      <div className="p-2 text-sm text-slate-500">
+                        Nessun cliente disponibile
+                      </div>
                     ) : (
                       customers.map((customer: any) => (
-                        <SelectItem key={customer.id} value={customer.id.toString()}>
+                        <SelectItem
+                          key={customer.id}
+                          value={customer.id.toString()}
+                        >
                           {customer.display_name}
                         </SelectItem>
                       ))
@@ -479,7 +559,10 @@ export default function NewDdtPage() {
                 <Select
                   value={formData.site_id?.toString() || undefined}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, site_id: value ? parseInt(value) : null })
+                    setFormData({
+                      ...formData,
+                      site_id: value ? parseInt(value) : null,
+                    })
                   }
                 >
                   <SelectTrigger className="min-w-[200px]">
@@ -487,7 +570,9 @@ export default function NewDdtPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {sites.length === 0 ? (
-                      <div className="p-2 text-sm text-slate-500">Nessun cantiere disponibile</div>
+                      <div className="p-2 text-sm text-slate-500">
+                        Nessun cantiere disponibile
+                      </div>
                     ) : (
                       sites.map((site: any) => (
                         <SelectItem key={site.id} value={site.id.toString()}>
@@ -516,9 +601,12 @@ export default function NewDdtPage() {
                 <Input
                   id="rental_start_date"
                   type="date"
-                  value={formData.rental_start_date || ''}
+                  value={formData.rental_start_date || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, rental_start_date: e.target.value || null })
+                    setFormData({
+                      ...formData,
+                      rental_start_date: e.target.value || null,
+                    })
                   }
                 />
               </div>
@@ -528,9 +616,12 @@ export default function NewDdtPage() {
                 <Input
                   id="rental_end_date"
                   type="date"
-                  value={formData.rental_end_date || ''}
+                  value={formData.rental_end_date || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, rental_end_date: e.target.value || null })
+                    setFormData({
+                      ...formData,
+                      rental_end_date: e.target.value || null,
+                    })
                   }
                 />
               </div>
@@ -574,19 +665,26 @@ export default function NewDdtPage() {
               <Label htmlFor="return_notes">Note Reso</Label>
               <Textarea
                 id="return_notes"
-                value={formData.return_notes || ''}
-                onChange={(e) => setFormData({ ...formData, return_notes: e.target.value || null })}
+                value={formData.return_notes || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    return_notes: e.target.value || null,
+                  })
+                }
                 placeholder="Descrizione dettagliata del reso..."
                 rows={3}
               />
             </div>
 
             {formData.return_reason &&
-              (['defective', 'warranty'] as ReturnReason[]).includes(formData.return_reason) && (
+              (["defective", "warranty"] as ReturnReason[]).includes(
+                formData.return_reason,
+              ) && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
                   <p className="text-sm text-yellow-800 font-medium">
-                    ⚠️ Materiale difettoso: verrà automaticamente messo in QUARANTENA alla
-                    conferma del DDT
+                    ⚠️ Materiale difettoso: verrà automaticamente messo in
+                    QUARANTENA alla conferma del DDT
                   </p>
                 </div>
               )}
@@ -598,7 +696,9 @@ export default function NewDdtPage() {
       <Card>
         <CardHeader>
           <CardTitle>Articoli ({formData.items.length})</CardTitle>
-          <CardDescription>Aggiungi gli articoli da movimentare</CardDescription>
+          <CardDescription>
+            Aggiungi gli articoli da movimentare
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Add Item */}
@@ -607,17 +707,23 @@ export default function NewDdtPage() {
             <ComboboxSelect
               value={searchMaterial}
               onValueChange={(value) => {
-                const material = materials.find((m: any) => m.id.toString() === value);
+                const material = materials.find(
+                  (m: any) => m.id.toString() === value,
+                );
                 if (material) {
                   handleAddItem(material);
-                  setSearchMaterial('');
+                  setSearchMaterial("");
                 } else {
                   setSearchMaterial(value);
                 }
               }}
               placeholder="Cerca per codice o nome..."
               searchPlaceholder="Digita per cercare..."
-              emptyText={isLoadingMaterials ? "Caricamento..." : "Nessun articolo trovato"}
+              emptyText={
+                isLoadingMaterials
+                  ? "Caricamento..."
+                  : "Nessun articolo trovato"
+              }
               loading={isLoadingMaterials}
               options={materials.map((m: any) => ({
                 value: m.id.toString(),
@@ -642,14 +748,18 @@ export default function NewDdtPage() {
               </TableHeader>
               <TableBody>
                 {formData.items.map((item, index) => {
-                  const material = materials.find((m: any) => m.id === item.product_id);
+                  const material = materials.find(
+                    (m: any) => m.id === item.product_id,
+                  );
                   return (
                     <TableRow key={index}>
                       <TableCell>
                         {material ? (
                           <div>
                             <p className="font-medium">{material.name}</p>
-                            <p className="text-sm text-slate-500">{material.code}</p>
+                            <p className="text-sm text-slate-500">
+                              {material.code}
+                            </p>
                           </div>
                         ) : (
                           `ID: ${item.product_id}`
@@ -660,10 +770,14 @@ export default function NewDdtPage() {
                           type="number"
                           step="0.01"
                           min="0.01"
-                          value={item.quantity || ''}
+                          value={item.quantity || ""}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value);
-                            handleItemChange(index, 'quantity', isNaN(val) ? 0 : val);
+                            handleItemChange(
+                              index,
+                              "quantity",
+                              isNaN(val) ? 0 : val,
+                            );
                           }}
                           className="w-24"
                         />
@@ -671,7 +785,9 @@ export default function NewDdtPage() {
                       <TableCell>
                         <Input
                           value={item.unit}
-                          onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                          onChange={(e) =>
+                            handleItemChange(index, "unit", e.target.value)
+                          }
                           className="w-20"
                         />
                       </TableCell>
@@ -680,19 +796,27 @@ export default function NewDdtPage() {
                           type="number"
                           step="0.01"
                           min="0"
-                          value={item.unit_cost || ''}
+                          value={item.unit_cost || ""}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value);
-                            handleItemChange(index, 'unit_cost', isNaN(val) ? 0 : val);
+                            handleItemChange(
+                              index,
+                              "unit_cost",
+                              isNaN(val) ? 0 : val,
+                            );
                           }}
                           className="w-24"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
-                          value={item.notes || ''}
+                          value={item.notes || ""}
                           onChange={(e) =>
-                            handleItemChange(index, 'notes', e.target.value || null)
+                            handleItemChange(
+                              index,
+                              "notes",
+                              e.target.value || null,
+                            )
                           }
                           placeholder="Note..."
                         />
@@ -718,7 +842,9 @@ export default function NewDdtPage() {
             <div className="text-center py-8 text-slate-500">
               <AlertTriangle className="h-12 w-12 mx-auto mb-2 text-slate-300" />
               <p>Nessun articolo aggiunto</p>
-              <p className="text-sm">Cerca e aggiungi articoli usando il campo sopra</p>
+              <p className="text-sm">
+                Cerca e aggiungi articoli usando il campo sopra
+              </p>
             </div>
           )}
         </CardContent>
@@ -731,8 +857,10 @@ export default function NewDdtPage() {
         </CardHeader>
         <CardContent>
           <Textarea
-            value={formData.notes || ''}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value || null })}
+            value={formData.notes || ""}
+            onChange={(e) =>
+              setFormData({ ...formData, notes: e.target.value || null })
+            }
             placeholder="Note aggiuntive sul DDT..."
             rows={4}
           />
@@ -742,11 +870,11 @@ export default function NewDdtPage() {
       {/* Submit */}
       <div className="flex items-center justify-end gap-4">
         <Button type="button" variant="outline" asChild>
-          <Link href="/frontend/app/(dashboard)/ddts">Annulla</Link>
+          <Link href="/ddts">Annulla</Link>
         </Button>
         <Button type="submit" disabled={createMutation.isPending}>
           <Save className="h-4 w-4 mr-2" />
-          {createMutation.isPending ? 'Salvataggio...' : 'Salva Bozza'}
+          {createMutation.isPending ? "Salvataggio..." : "Salva Bozza"}
         </Button>
       </div>
     </form>

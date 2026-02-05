@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class EmbeddingService
 {
     private string $serviceUrl;
+
     private int $timeout;
 
     public function __construct()
@@ -22,16 +23,16 @@ class EmbeddingService
     public function getEmbedding(string $text): array
     {
         // Cache per evitare chiamate ripetute
-        $cacheKey = 'embedding:' . md5($text);
+        $cacheKey = 'embedding:'.md5($text);
 
         return Cache::remember($cacheKey, 3600, function () use ($text) {
             $response = Http::timeout($this->timeout)
                 ->post("{$this->serviceUrl}/embed", [
-                    'text' => $text
+                    'text' => $text,
                 ]);
 
-            if (!$response->successful()) {
-                throw new \Exception('Embedding service failed: ' . $response->body());
+            if (! $response->successful()) {
+                throw new \Exception('Embedding service failed: '.$response->body());
             }
 
             return $response->json()['embedding'];
@@ -41,8 +42,8 @@ class EmbeddingService
     /**
      * Calcola similarità tra una query e multipli testi
      *
-     * @param string $query La ricerca dell'utente
-     * @param array $texts Array di testi da confrontare
+     * @param  string  $query  La ricerca dell'utente
+     * @param  array  $texts  Array di testi da confrontare
      * @return array Array di score di similarità (0-1)
      */
     public function search(string $query, array $texts): array
@@ -50,11 +51,11 @@ class EmbeddingService
         $response = Http::timeout($this->timeout)
             ->post("{$this->serviceUrl}/similarity", [
                 'query' => $query,
-                'texts' => $texts
+                'texts' => $texts,
             ]);
 
-        if (!$response->successful()) {
-            throw new \Exception('Similarity search failed: ' . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('Similarity search failed: '.$response->body());
         }
 
         return $response->json()['similarities'];
@@ -67,6 +68,7 @@ class EmbeddingService
     {
         try {
             $response = Http::timeout(2)->get("{$this->serviceUrl}/health");
+
             return $response->successful();
         } catch (\Exception $e) {
             return false;

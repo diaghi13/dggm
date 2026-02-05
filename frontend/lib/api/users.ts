@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 
 export interface User {
   id: number;
@@ -31,8 +31,13 @@ export interface UpdateUserData {
 }
 
 export const usersApi = {
-  getAll: async (params?: { search?: string; role?: string; is_active?: boolean; per_page?: number }) => {
-    const response = await apiClient.get('/users', { params });
+  getAll: async (params?: {
+    search?: string;
+    role?: string;
+    is_active?: boolean;
+    per_page?: number;
+  }) => {
+    const response = await apiClient.get("/users", { params });
     return response.data;
   },
 
@@ -42,7 +47,7 @@ export const usersApi = {
   },
 
   create: async (data: CreateUserData) => {
-    const response = await apiClient.post('/users', data);
+    const response = await apiClient.post("/users", data);
     return response.data.data;
   },
 
@@ -57,12 +62,12 @@ export const usersApi = {
   },
 
   getRoles: async () => {
-    const response = await apiClient.get('/users/roles');
+    const response = await apiClient.get("/users/roles");
     return response.data.data;
   },
 
   getPermissions: async () => {
-    const response = await apiClient.get('/users/permissions');
+    const response = await apiClient.get("/users/permissions");
     return response.data.data;
   },
 
@@ -83,6 +88,7 @@ export interface Role {
   display_name: string;
   description?: string;
   permissions: string[];
+  permissions_count?: number;
   users_count?: number;
   created_at: string;
   updated_at: string;
@@ -91,14 +97,18 @@ export interface Role {
 export interface Permission {
   id: number;
   name: string;
-  display_name: string;
+  display_name?: string;
   description?: string;
-  group?: string;
+  guard_name?: string;
+  module?: string;
+  action?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const rolesApi = {
   getAll: async () => {
-    const response = await apiClient.get('/roles');
+    const response = await apiClient.get("/roles");
     return response.data.data;
   },
 
@@ -107,12 +117,24 @@ export const rolesApi = {
     return response.data.data;
   },
 
-  create: async (data: { name: string; display_name: string; description?: string; permissions?: string[] }) => {
-    const response = await apiClient.post('/roles', data);
+  create: async (data: {
+    name: string;
+    display_name: string;
+    description?: string;
+    permissions?: string[];
+  }) => {
+    const response = await apiClient.post("/roles", data);
     return response.data.data;
   },
 
-  update: async (id: number, data: { display_name?: string; description?: string; permissions?: string[] }) => {
+  update: async (
+    id: number,
+    data: {
+      display_name?: string;
+      description?: string;
+      permissions?: string[];
+    },
+  ) => {
     const response = await apiClient.patch(`/roles/${id}`, data);
     return response.data.data;
   },
@@ -123,7 +145,9 @@ export const rolesApi = {
   },
 
   syncPermissions: async (roleId: number, permissions: string[]) => {
-    const response = await apiClient.post(`/roles/${roleId}/permissions/sync`, { permissions });
+    const response = await apiClient.post(`/roles/${roleId}/sync-permissions`, {
+      permissions,
+    });
     return response.data;
   },
 
@@ -135,38 +159,50 @@ export const rolesApi = {
 
 export const permissionsApi = {
   getAll: async () => {
-    const response = await apiClient.get('/permissions');
+    const response = await apiClient.get("/permissions");
     return response.data.data;
+  },
+
+  getById: async (id: number) => {
+    const response = await apiClient.get(`/permissions/${id}`);
+    return response.data.data;
+  },
+
+  create: async (data: {
+    name: string;
+    display_name?: string;
+    description?: string;
+    guard_name?: string;
+  }) => {
+    const response = await apiClient.post("/permissions", data);
+    return response.data.data;
+  },
+
+  update: async (
+    id: number,
+    data: {
+      name?: string;
+      display_name?: string;
+      description?: string;
+      guard_name?: string;
+    },
+  ) => {
+    const response = await apiClient.patch(`/permissions/${id}`, data);
+    return response.data.data;
+  },
+
+  delete: async (id: number) => {
+    const response = await apiClient.delete(`/permissions/${id}`);
+    return response.data;
   },
 
   getGrouped: async () => {
-    const response = await apiClient.get('/permissions/grouped');
+    const response = await apiClient.get("/permissions/grouped");
     return response.data.data;
   },
 };
 
-export const companySettingsApi = {
-  get: async () => {
-    const response = await apiClient.get('/settings/company');
-    return response.data.data;
-  },
-
-  update: async (data: {
-    company_name?: string;
-    vat_number?: string;
-    tax_code?: string;
-    address?: string;
-    city?: string;
-    province?: string;
-    postal_code?: string;
-    country?: string;
-    phone?: string;
-    email?: string;
-    website?: string;
-    logo?: string;
-  }) => {
-    const response = await apiClient.patch('/settings/company', data);
-    return response.data.data;
-  },
-};
-
+// NOTE: companySettingsApi has been moved to lib/api/settings.ts
+// Import it from there: import { companySettingsApi } from '@/lib/api/settings';
+// Keeping a re-export here for backward compatibility
+export { companySettingsApi } from "./settings";

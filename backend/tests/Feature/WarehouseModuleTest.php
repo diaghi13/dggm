@@ -18,8 +18,8 @@ use App\Events\DdtConfirmed;
 use App\Events\DdtCreated;
 use App\Events\DdtDelivered;
 use App\Events\InventoryAdjusted;
-use App\Events\InventoryReserved;
 use App\Events\InventoryReservationReleased;
+use App\Events\InventoryReserved;
 use App\Events\StockMovementCreated;
 use App\Models\Ddt;
 use App\Models\DdtItem;
@@ -617,11 +617,11 @@ it('can list inventory via api', function () {
 it('can adjust inventory via api', function () {
     $response = $this->actingAs($this->user)
         ->postJson('/api/v1/inventory/adjust', [
-        'product_id' => $this->product1->id,
-        'warehouse_id' => $this->warehouse1->id,
-        'quantity' => 50,
-        'notes' => 'Initial stock',
-    ]);
+            'product_id' => $this->product1->id,
+            'warehouse_id' => $this->warehouse1->id,
+            'quantity' => 50,
+            'notes' => 'Initial stock',
+        ]);
 
     $response->assertOk()
         ->assertJson([
@@ -669,20 +669,20 @@ it('can list stock movements via api', function () {
 it('can create ddt via api', function () {
     $response = $this->actingAs($this->user)
         ->postJson('/api/v1/ddts', [
-        'type' => DdtType::Incoming->value,
-        'supplier_id' => $this->supplier->id,
-        'from_warehouse_id' => $this->warehouse1->id,
-        'ddt_number' => 'DDT-API-001',
-        'ddt_date' => now()->toDateString(),
-        'items' => [
-            [
-                'product_id' => $this->product1->id,
-                'quantity' => 50,
-                'unit' => 'pz',
-                'unit_cost' => 10.50,
+            'type' => DdtType::Incoming->value,
+            'supplier_id' => $this->supplier->id,
+            'from_warehouse_id' => $this->warehouse1->id,
+            'ddt_number' => 'DDT-API-001',
+            'ddt_date' => now()->toDateString(),
+            'items' => [
+                [
+                    'product_id' => $this->product1->id,
+                    'quantity' => 50,
+                    'unit' => 'pz',
+                    'unit_cost' => 10.50,
+                ],
             ],
-        ],
-    ]);
+        ]);
 
     $response->assertCreated()
         ->assertJson([
@@ -745,8 +745,8 @@ it('can cancel ddt via api', function () {
 
     $response = $this->actingAs($this->user)
         ->postJson("/api/v1/ddts/{$ddt->id}/cancel", [
-        'reason' => 'Order cancelled by supplier',
-    ]);
+            'reason' => 'Order cancelled by supplier',
+        ]);
 
     $response->assertOk()
         ->assertJson([

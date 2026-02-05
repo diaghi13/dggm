@@ -4,7 +4,6 @@ namespace App\Data;
 
 use App\Enums\ProductType;
 use App\Models\Product;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Attributes\Computed;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
@@ -12,8 +11,8 @@ use Spatie\LaravelData\Attributes\MergeValidationRules;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Min;
-use Spatie\LaravelData\Attributes\Validation\Unique;
 use Spatie\LaravelData\Data;
+use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\Lazy;
 use Spatie\LaravelData\Optional;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
@@ -34,41 +33,76 @@ class ProductData extends Data
         #[Max(255)]
         public string $code,
 
+        #[Max(50)]
+        public ?string $internal_code,
+
+        #[Max(13)]
+        public ?string $ean,
+
+        #[Max(20)]
+        public ?string $etim_code,
+
         #[Max(255)]
         public string $name,
 
         #[Max(1000)]
         public ?string $description,
 
+        #[Exists('product_categories', 'id')]
         public ?int $category_id,
+
+        #[Exists('product_brands', 'id')]
+        public ?int $brand_id,
 
         public ProductType $product_type,
 
+        // Is kit (predefined set of items sold together)
+        // Not necessarily, need to drop column from db later
+        public ?bool $is_kit,
+
+        // Package
+        public ?bool $is_package,
+
+        #[Min(0)]
+        public ?float $package_weight,
+
+        #[Min(0)]
+        public ?float $package_volume,
+
+        #[Max(100)]
+        public ?string $package_dimensions,
+
+        // Rental
+        public ?bool $is_rentable,
+
+        #[Min(0)]
+        public ?int $quantity_out_on_rental,
+
         #[Max(20)]
-        public string $unit,
+        public ?string $unit,
 
         // Pricing
         #[Min(0)]
-        public float $standard_cost,
+        public ?float $standard_cost,
 
         #[Min(0)]
-        public float $purchase_price,
+        public ?float $purchase_price,
 
         #[Min(0), Max(100)]
-        public float $markup_percentage,
+        public ?float $markup_percentage,
 
         #[Min(0)]
-        public float $sale_price,
+        public ?float $sale_price,
 
         // Rental pricing
         #[Min(0)]
-        public float $rental_price_daily,
+        public ?float $rental_price_daily,
 
         #[Min(0)]
-        public float $rental_price_weekly,
+        public ?float $rental_price_weekly,
 
         #[Min(0)]
-        public float $rental_price_monthly,
+        public ?float $rental_price_monthly,
 
         // Identifiers
         #[Max(255)]
@@ -83,77 +117,68 @@ class ProductData extends Data
 
         // Inventory
         #[Min(0)]
-        public float $reorder_level,
+        public ?float $reorder_level,
 
         #[Min(0)]
-        public float $reorder_quantity,
+        public ?float $reorder_quantity,
 
         #[Min(0)]
-        public int $lead_time_days,
+        public ?int $lead_time_days,
 
         #[Max(255)]
         public ?string $location,
 
         public ?string $notes,
 
-        // Rental
-        public bool $is_rentable,
-
-        #[Min(0)]
-        public int $quantity_out_on_rental,
-
         // Status
-        public bool $is_active,
-
-        // Package
-        public bool $is_package,
-
-        #[Min(0)]
-        public ?float $package_weight,
-
-        #[Min(0)]
-        public ?float $package_volume,
-
-        #[Max(100)]
-        public ?string $package_dimensions,
+        public ?bool $is_active,
 
         // Timestamps
         public string|Optional $created_at,
         public string|Optional $updated_at,
         public ?string $deleted_at,
 
-        // Lazy relationships
+        // Lazy relationships (loaded only when Eloquent relation is loaded)
+        public ProductCategoryData|Lazy|null $category = null,
+        public ProductBrandData|Lazy|null $brand = null,
+        public SupplierData|Lazy|null $defaultSupplier = null,
         #[DataCollectionOf(ProductRelationData::class)]
-        public Lazy|Collection|array $relations = [],
-        public Lazy|SupplierData|null $defaultSupplier = null,
-        public Lazy|ProductCategoryData|null $category = null,
+        public DataCollection|Lazy|null $relations = null,
 
-        // Computed properties (read from model accessors)
+        // Computed properties (read-only from model accessors)
         #[Computed]
-        public float $calculated_sale_price = 0,
-
+        public float|Optional $calculated_sale_price = 0,
         #[Computed]
-        public float $composite_total_cost = 0,
-
+        public float|Optional $composite_total_cost = 0,
         #[Computed]
-        public float $total_stock = 0,
-
+        public float|Optional $total_stock = 0,
         #[Computed]
-        public float $available_stock = 0,
-
-        #[Computed]
-        public float $calculate_sale_price = 0,
+        public float|Optional $available_stock = 0,
     ) {}
 
-    public function fromModel(Product $product)
+    /**
+     * Create ProductData from Product model with proper Lazy handling
+     */
+    public static function fromModel(Product $product): self
     {
         return new self(
             id: $product->id,
             code: $product->code,
+            internal_code: $product->internal_code,
+            ean: $product->ean,
+            etim_code: $product->etim_code,
             name: $product->name,
             description: $product->description,
             category_id: $product->category_id,
+            brand_id: $product->brand_id,
             product_type: $product->product_type,
+            is_kit: $product->is_kit,
+            is_package: $product->is_package,
+            package_weight: $product->package_weight,
+            package_volume: $product->package_volume,
+            package_dimensions: $product->package_dimensions,
+            is_rentable: $product->is_rentable,
+            quantity_out_on_rental: $product->quantity_out_on_rental,
             unit: $product->unit,
             standard_cost: $product->standard_cost,
             purchase_price: $product->purchase_price,
@@ -170,19 +195,16 @@ class ProductData extends Data
             lead_time_days: $product->lead_time_days,
             location: $product->location,
             notes: $product->notes,
-            is_rentable: $product->is_rentable,
-            quantity_out_on_rental: $product->quantity_out_on_rental,
             is_active: $product->is_active,
-            is_package: $product->is_package,
-            package_weight: $product->package_weight,
-            package_volume: $product->package_volume,
-            package_dimensions: $product->package_dimensions,
-            created_at: $product->created_at,
-            updated_at: $product->updated_at,
-            deleted_at: $product->deleted_at,
-            relations: Lazy::whenLoaded('relations', $product, fn () => ProductRelationData::collect($product->relations)),
-            defaultSupplier: Lazy::whenLoaded('defaultSupplier', $product, fn () => SupplierData::from($product->defaultSupplier)),
+            created_at: $product->created_at?->toIsoString() ?? '',
+            updated_at: $product->updated_at?->toIsoString() ?? '',
+            deleted_at: $product->deleted_at?->toIsoString(),
+            // Lazy relationships with proper whenLoaded
             category: Lazy::whenLoaded('category', $product, fn () => ProductCategoryData::from($product->category)),
+            brand: Lazy::whenLoaded('brand', $product, fn () => ProductBrandData::from($product->brand)),
+            defaultSupplier: Lazy::whenLoaded('defaultSupplier', $product, fn () => SupplierData::from($product->defaultSupplier)),
+            relations: Lazy::whenLoaded('relations', $product, fn () => ProductRelationData::collect($product->relations)),
+            // Computed properties from model accessors
             calculated_sale_price: $product->calculated_sale_price,
             composite_total_cost: $product->composite_total_cost,
             total_stock: $product->total_stock,
@@ -191,54 +213,61 @@ class ProductData extends Data
     }
 
     /**
-     * Calculate sale price from markup
-     */
-    public function calculatedSalePrice(): float
-    {
-        if ($this->markup_percentage > 0) {
-            return round($this->purchase_price * (1 + ($this->markup_percentage / 100)), 2);
-        }
-
-        return $this->sale_price;
-    }
-
-    /**
-     * Check if product can have components
-     */
-    public function canHaveComponents(): bool
-    {
-        return $this->product_type === ProductType::COMPOSITE;
-    }
-
-    /**
-     * Check if product is inventoriable
-     */
-    public function isInventoriable(): bool
-    {
-        return $this->product_type === ProductType::ARTICLE;
-    }
-
-    /**
-     * Get human-readable type label
-     */
-    public function typeLabel(): string
-    {
-        return $this->product_type->label();
-    }
-
-    /**
      * Validation messages
      */
     public static function messages(): array
     {
         return [
+            // Code fields
             'code.required' => 'Il codice prodotto è obbligatorio.',
+            'code.max' => 'Il codice non può superare 255 caratteri.',
             'code.unique' => 'Questo codice prodotto è già in uso.',
+            'internal_code.max' => 'Il codice interno non può superare 50 caratteri.',
+            'ean.max' => 'Il codice EAN non può superare 13 caratteri.',
+            'etim_code.max' => 'Il codice ETIM non può superare 20 caratteri.',
+
+            // Basic info
             'name.required' => 'Il nome del prodotto è obbligatorio.',
-            'purchase_price.required' => 'Il prezzo di acquisto è obbligatorio.',
-            'purchase_price.min' => 'Il prezzo deve essere maggiore o uguale a zero.',
-            'markup_percentage.max' => 'Il margine non può superare il 100%.',
+            'name.max' => 'Il nome non può superare 255 caratteri.',
+            'description.max' => 'La descrizione non può superare 1000 caratteri.',
+
+            // Foreign keys
+            'category_id.exists' => 'La categoria selezionata non esiste.',
+            'brand_id.exists' => 'Il brand selezionato non esiste.',
             'default_supplier_id.exists' => 'Il fornitore selezionato non esiste.',
+
+            // Package
+            'package_weight.min' => 'Il peso deve essere maggiore o uguale a zero.',
+            'package_volume.min' => 'Il volume deve essere maggiore o uguale a zero.',
+            'package_dimensions.max' => 'Le dimensioni non possono superare 100 caratteri.',
+
+            // Rental
+            'quantity_out_on_rental.min' => 'La quantità in affitto deve essere maggiore o uguale a zero.',
+            'unit.max' => 'L\'unità di misura non può superare 20 caratteri.',
+
+            // Pricing
+            'standard_cost.min' => 'Il costo standard deve essere maggiore o uguale a zero.',
+            'purchase_price.required' => 'Il prezzo di acquisto è obbligatorio.',
+            'purchase_price.min' => 'Il prezzo di acquisto deve essere maggiore o uguale a zero.',
+            'markup_percentage.min' => 'Il margine deve essere maggiore o uguale a zero.',
+            'markup_percentage.max' => 'Il margine non può superare il 100%.',
+            'sale_price.min' => 'Il prezzo di vendita deve essere maggiore o uguale a zero.',
+
+            // Rental pricing
+            'rental_price_daily.min' => 'Il prezzo giornaliero deve essere maggiore o uguale a zero.',
+            'rental_price_weekly.min' => 'Il prezzo settimanale deve essere maggiore o uguale a zero.',
+            'rental_price_monthly.min' => 'Il prezzo mensile deve essere maggiore o uguale a zero.',
+
+            // Identifiers
+            'barcode.max' => 'Il codice a barre non può superare 255 caratteri.',
+            'barcode.unique' => 'Questo codice a barre è già in uso.',
+            'qr_code.max' => 'Il codice QR non può superare 255 caratteri.',
+
+            // Inventory
+            'reorder_level.min' => 'Il livello di riordino deve essere maggiore o uguale a zero.',
+            'reorder_quantity.min' => 'La quantità di riordino deve essere maggiore o uguale a zero.',
+            'lead_time_days.min' => 'I giorni di consegna devono essere maggiori o uguali a zero.',
+            'location.max' => 'La posizione non può superare 255 caratteri.',
         ];
     }
 

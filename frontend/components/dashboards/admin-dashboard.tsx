@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { customersApi } from '@/lib/api/customers';
-import { sitesApi } from '@/lib/api/sites';
-import { quotesApi } from '@/lib/api/quotes';
+import { useQuery } from "@tanstack/react-query";
+import { customersApi } from "@/lib/api/customers";
+import { sitesApi } from "@/lib/api/sites";
+import { quotesApi } from "@/lib/api/quotes";
 import {
   Users,
   Building2,
@@ -13,113 +13,113 @@ import {
   Euro,
   Calendar,
   ArrowUpRight,
-  ArrowDownRight
-} from 'lucide-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Can } from '@/components/features/auth/can';
+  ArrowDownRight,
+} from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Can } from "@/components/features/auth/can";
 
 export default function AdminDashboard() {
   const { data: customersData } = useQuery({
-    queryKey: ['customers', { per_page: 5 }],
+    queryKey: ["customers", { per_page: 5 }],
     queryFn: () => customersApi.getAll({ per_page: 5, is_active: true }),
   });
 
   const { data: sitesData } = useQuery({
-    queryKey: ['sites', { per_page: 5 }],
+    queryKey: ["sites", { per_page: 5 }],
     queryFn: () => sitesApi.getAll({ per_page: 5 }),
   });
 
   const { data: quotesData } = useQuery({
-    queryKey: ['quotes', { per_page: 5 }],
+    queryKey: ["quotes", { per_page: 5 }],
     queryFn: () => quotesApi.getAll({ per_page: 5 }),
   });
 
   const stats = [
     {
-      title: 'Clienti Attivi',
+      title: "Clienti Attivi",
       value: customersData?.meta.total || 0,
-      change: '+12%',
-      trend: 'up' as const,
+      change: "+12%",
+      trend: "up" as const,
       icon: Users,
-      color: 'blue' as const,
-      href: '/customers',
-      permission: 'customers.view',
+      color: "blue" as const,
+      href: "/customers",
+      permission: "customers.view",
     },
     {
-      title: 'Cantieri Aperti',
+      title: "Cantieri Aperti",
       value: sitesData?.data.length || 0,
-      change: '+8%',
-      trend: 'up' as const,
+      change: "+8%",
+      trend: "up" as const,
       icon: Building2,
-      color: 'green' as const,
-      href: '/sites',
-      permission: 'sites.view',
+      color: "green" as const,
+      href: "/sites",
+      permission: "sites.view",
     },
     {
-      title: 'Preventivi',
+      title: "Preventivi",
       value: quotesData?.meta.total || 0,
-      change: '-3%',
-      trend: 'down' as const,
+      change: "-3%",
+      trend: "down" as const,
       icon: FileText,
-      color: 'purple' as const,
-      href: '/quotes',
-      permission: 'quotes.view',
+      color: "purple" as const,
+      href: "/quotes",
+      permission: "quotes.view",
     },
     {
-      title: 'Fatturato Mese',
-      value: '€45,231',
-      change: '+23%',
-      trend: 'up' as const,
+      title: "Fatturato Mese",
+      value: "€45,231",
+      change: "+23%",
+      trend: "up" as const,
       icon: Euro,
-      color: 'orange' as const,
-      href: '/invoices',
-      permission: 'invoices.view',
+      color: "orange" as const,
+      href: "/invoices",
+      permission: "invoices.view",
     },
   ];
 
   const recentActivities = [
     {
-      type: 'quote',
-      title: 'Nuovo preventivo creato',
-      description: 'Ristrutturazione Appartamento - Edilizia Moderna SRL',
-      time: '2 ore fa',
+      type: "quote",
+      title: "Nuovo preventivo creato",
+      description: "Ristrutturazione Appartamento - Edilizia Moderna SRL",
+      time: "2 ore fa",
       icon: FileText,
-      color: 'blue' as const,
+      color: "blue" as const,
     },
     {
-      type: 'site',
-      title: 'Cantiere avviato',
-      description: 'Costruzione Capannone Industriale - Roma',
-      time: '5 ore fa',
+      type: "site",
+      title: "Cantiere avviato",
+      description: "Costruzione Capannone Industriale - Roma",
+      time: "5 ore fa",
       icon: Building2,
-      color: 'green' as const,
+      color: "green" as const,
     },
     {
-      type: 'customer',
-      title: 'Nuovo cliente aggiunto',
-      description: 'Costruzioni Bianchi SPA',
-      time: '1 giorno fa',
+      type: "customer",
+      title: "Nuovo cliente aggiunto",
+      description: "Costruzioni Bianchi SPA",
+      time: "1 giorno fa",
       icon: Users,
-      color: 'purple' as const,
+      color: "purple" as const,
     },
   ];
 
   const upcomingTasks = [
     {
-      title: 'Scadenza preventivo PRV-2024-001',
-      date: '15 Gen 2026',
-      priority: 'high' as const,
+      title: "Scadenza preventivo PRV-2024-001",
+      date: "15 Gen 2026",
+      priority: "high" as const,
     },
     {
-      title: 'Inizio cantiere Via Roma',
-      date: '18 Gen 2026',
-      priority: 'medium' as const,
+      title: "Inizio cantiere Via Roma",
+      date: "18 Gen 2026",
+      priority: "medium" as const,
     },
     {
-      title: 'Fattura da emettere',
-      date: '20 Gen 2026',
-      priority: 'low' as const,
+      title: "Fattura da emettere",
+      date: "20 Gen 2026",
+      priority: "low" as const,
     },
   ];
 
@@ -138,11 +138,11 @@ export default function AdminDashboard() {
           </div>
           <div className="text-right">
             <div className="text-sm text-slate-600 dark:text-slate-400">
-              {new Date().toLocaleDateString('it-IT', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
+              {new Date().toLocaleDateString("it-IT", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
               })}
             </div>
           </div>
@@ -164,18 +164,26 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">{stat.title}</p>
-                    <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">{stat.value}</p>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      {stat.title}
+                    </p>
+                    <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                      {stat.value}
+                    </p>
                     <div className="flex items-center gap-1">
-                      {stat.trend === 'up' ? (
+                      {stat.trend === "up" ? (
                         <ArrowUpRight className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
                       ) : (
                         <ArrowDownRight className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                       )}
-                      <span className={`text-xs font-medium ${stat.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <span
+                        className={`text-xs font-medium ${stat.trend === "up" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      >
                         {stat.change}
                       </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">vs mese scorso</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        vs mese scorso
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -194,7 +202,11 @@ export default function AdminDashboard() {
                 <Clock className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 Attività Recenti
               </h3>
-              <Button variant="ghost" size="sm" className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+              >
                 Vedi tutto
               </Button>
             </div>
@@ -205,15 +217,24 @@ export default function AdminDashboard() {
                 const Icon = activity.icon;
 
                 return (
-                  <div key={index} className="flex items-start gap-3 p-3 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-slate-100 dark:border-slate-800">
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 p-3 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-slate-100 dark:border-slate-800"
+                  >
                     <div className="w-9 h-9 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
                       <Icon className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{activity.title}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{activity.description}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {activity.title}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                        {activity.description}
+                      </p>
                     </div>
-                    <span className="text-xs text-slate-400 whitespace-nowrap">{activity.time}</span>
+                    <span className="text-xs text-slate-400 whitespace-nowrap">
+                      {activity.time}
+                    </span>
                   </div>
                 );
               })}
@@ -233,17 +254,25 @@ export default function AdminDashboard() {
             <div className="space-y-3">
               {upcomingTasks.map((task, index) => {
                 const priorityColors = {
-                  high: 'border-l-red-500 dark:border-l-red-400 bg-red-50/50 dark:bg-red-950/20',
-                  medium: 'border-l-amber-500 dark:border-l-amber-400 bg-amber-50/50 dark:bg-amber-950/20',
-                  low: 'border-l-blue-500 dark:border-l-blue-400 bg-blue-50/50 dark:bg-blue-950/20',
+                  high: "border-l-red-500 dark:border-l-red-400 bg-red-50/50 dark:bg-red-950/20",
+                  medium:
+                    "border-l-amber-500 dark:border-l-amber-400 bg-amber-50/50 dark:bg-amber-950/20",
+                  low: "border-l-blue-500 dark:border-l-blue-400 bg-blue-50/50 dark:bg-blue-950/20",
                 }[task.priority];
 
                 return (
-                  <div key={index} className={`p-3 rounded border-l-2 ${priorityColors} border border-slate-100`}>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">{task.title}</p>
+                  <div
+                    key={index}
+                    className={`p-3 rounded border-l-2 ${priorityColors} border border-slate-100`}
+                  >
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">
+                      {task.title}
+                    </p>
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3 h-3 text-slate-400" />
-                      <span className="text-xs text-slate-600">{task.date}</span>
+                      <span className="text-xs text-slate-600">
+                        {task.date}
+                      </span>
                     </div>
                   </div>
                 );
@@ -264,34 +293,54 @@ export default function AdminDashboard() {
         <div className="p-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Can permission="customers.create">
-              <Link href="/(dashboard)/customers">
-                <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 transition-colors">
+              <Link href="/customers">
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex flex-col gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 transition-colors"
+                >
                   <Users className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Nuovo Cliente</span>
+                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    Nuovo Cliente
+                  </span>
                 </Button>
               </Link>
             </Can>
             <Can permission="quotes.create">
-              <Link href="/frontend/app/(dashboard)/quotes">
-                <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 transition-colors">
+              <Link href="/quotes">
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex flex-col gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 transition-colors"
+                >
                   <FileText className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Nuovo Preventivo</span>
+                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    Nuovo Preventivo
+                  </span>
                 </Button>
               </Link>
             </Can>
             <Can permission="sites.create">
-              <Link href="/frontend/app/(dashboard)/sites">
-                <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 transition-colors">
+              <Link href="/sites">
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex flex-col gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 transition-colors"
+                >
                   <Building2 className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Nuovo Cantiere</span>
+                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    Nuovo Cantiere
+                  </span>
                 </Button>
               </Link>
             </Can>
             <Can permission="invoices.create">
-              <Link href="/(dashboard)/invoices">
-                <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 transition-colors">
+              <Link href="/invoices">
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex flex-col gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 transition-colors"
+                >
                   <Euro className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Nuova Fattura</span>
+                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    Nuova Fattura
+                  </span>
                 </Button>
               </Link>
             </Can>
@@ -301,4 +350,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-

@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { toast } from 'sonner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -55,6 +56,11 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Prevent infinite loops - if already retried, clear auth and redirect
       if (originalRequest._retry) {
+        toast.error('Sessione scaduta', {
+          description: 'Effettua nuovamente il login',
+          duration: 5000,
+        });
+
         localStorage.removeItem('auth-storage');
         if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
           window.location.href = '/login';
@@ -117,6 +123,11 @@ apiClient.interceptors.response.use(
 
       // Current behavior: clear auth storage and redirect
       // httpOnly cookie will be cleared by backend on next request
+      toast.error('Sessione scaduta', {
+        description: 'Effettua nuovamente il login',
+        duration: 5000,
+      });
+
       localStorage.removeItem('auth-storage');
       if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         window.location.href = '/login';
@@ -125,8 +136,14 @@ apiClient.interceptors.response.use(
 
     // Handle 403 Forbidden - user doesn't have permission
     if (error.response?.status === 403) {
+      const message = (error.response.data as any)?.message || 'Non hai i permessi per eseguire questa azione';
+
+      toast.error('Accesso negato', {
+        description: message,
+        duration: 5000,
+      });
+
       console.error('Access forbidden:', error.response.data);
-      // You could show a toast notification here
     }
 
     // Handle 422 Validation errors

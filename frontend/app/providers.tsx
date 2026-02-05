@@ -1,9 +1,11 @@
-'use client';
+"use client";
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/sonner';
-import { useState } from 'react';
-import { ThemeProvider } from 'next-themes';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/sonner";
+import { useState } from "react";
+import { ThemeProvider } from "next-themes";
+import { UISettingsProvider } from "@/components/providers/ui-settings-provider";
+import { AuthInitProvider } from "@/components/providers/auth-init-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -15,7 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             retry: 1,
           },
         },
-      })
+      }),
   );
 
   return (
@@ -27,8 +29,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       storageKey="dggm-theme"
     >
       <QueryClientProvider client={queryClient}>
-        {children}
-        <Toaster />
+        <AuthInitProvider>
+          <UISettingsProvider>
+            {children}
+            <Toaster />
+          </UISettingsProvider>
+        </AuthInitProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

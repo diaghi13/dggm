@@ -28,9 +28,17 @@
       "Bash(php:*)",
       "Bash(file:*)",
       "WebFetch(domain:spatie.be)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(npm run lint:*)",
+      "Bash(printf:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "context": [
+    {
+      "type": "file",
+      "path": "docs/ai/laravel-data.v4.agent.md"
+    }
+  ]
 }

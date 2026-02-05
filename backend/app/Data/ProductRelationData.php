@@ -4,8 +4,6 @@ namespace App\Data;
 
 use App\Enums\ProductRelationQuantityType;
 use App\Models\ProductRelation;
-use Spatie\LaravelData\Attributes\FromRouteParameter;
-use Spatie\LaravelData\Attributes\FromRouteParameterProperty;
 use Spatie\LaravelData\Attributes\Validation\BooleanType;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
@@ -38,52 +36,52 @@ class ProductRelationData extends Data
         public string $quantity_value,
 
         #[BooleanType]
-        public bool $is_visible_in_quote = false,
+        public bool $is_visible_in_quote,
 
         #[BooleanType]
-        public bool $is_visible_in_material_list = true,
+        public bool $is_visible_in_material_list,
 
         #[BooleanType]
-        public bool $is_required_for_stock = true,
+        public bool $is_required_for_stock,
 
         #[BooleanType]
-        public bool $is_optional = false,
+        public bool $is_optional,
 
         #[Nullable]
-        public ?float $min_quantity_trigger = 0,
+        public ?float $min_quantity_trigger,
 
         #[Nullable]
-        public ?float $max_quantity_trigger = 0,
+        public ?float $max_quantity_trigger,
 
-        public ?int $sort_order = 1,
+        public ?int $sort_order,
 
         #[Nullable]
         public ?string $notes,
 
         // Relationships (Lazy loaded)
-        //public readonly Lazy|ProductData|null $product,
+        // public readonly Lazy|ProductData|null $product,
         public readonly Lazy|ProductData|null $relatedProduct,
         public readonly Lazy|ProductRelationTypeData|null $relationType,
     ) {
         $this->sort_order = $this->sort_order ?? 1;
     }
 
-//    public static function fromRequest(array $data): self
-//    {
-//        return self::from([
-//            ...$data,
-//            'quantity_type' => $data['quantity_type'] ?? ProductRelationQuantityType::FIXED,
-//            'quantity_value' => $data['quantity_value'] ?? '1',
-//            'is_visible_in_quote' => $data['is_visible_in_quote'] ?? false,
-//            'is_visible_in_material_list' => $data['is_visible_in_material_list'] ?? true,
-//            'is_required_for_stock' => $data['is_required_for_stock'] ?? true,
-//            'is_optional' => $data['is_optional'] ?? false,
-//            'sort_order' => $data['sort_order'] ?? 0,
-//            // Initialize Lazy relationships as null to avoid constructor errors
-//            'relatedProduct' => Lazy::create(fn () => null),
-//            'relationType' => Lazy::create(fn () => null),
-//        ]);
-//    }
+    //    public static function fromRequest(array $data): self
+    //    {
+    //        return self::from([
+    //            ...$data,
+    //            'quantity_type' => $data['quantity_type'] ?? ProductRelationQuantityType::FIXED,
+    //            'quantity_value' => $data['quantity_value'] ?? '1',
+    //            'is_visible_in_quote' => $data['is_visible_in_quote'] ?? false,
+    //            'is_visible_in_material_list' => $data['is_visible_in_material_list'] ?? true,
+    //            'is_required_for_stock' => $data['is_required_for_stock'] ?? true,
+    //            'is_optional' => $data['is_optional'] ?? false,
+    //            'sort_order' => $data['sort_order'] ?? 0,
+    //            // Initialize Lazy relationships as null to avoid constructor errors
+    //            'relatedProduct' => Lazy::create(fn () => null),
+    //            'relationType' => Lazy::create(fn () => null),
+    //        ]);
+    //    }
 
     public static function fromModel(ProductRelation $relation): self
     {
@@ -102,7 +100,7 @@ class ProductRelationData extends Data
             max_quantity_trigger: $relation->max_quantity_trigger,
             sort_order: $relation->sort_order,
             notes: $relation->notes,
-            //product: Lazy::whenLoaded('product', $relation, fn () => ProductData::from($relation->product)),
+            // product: Lazy::whenLoaded('product', $relation, fn () => ProductData::from($relation->product)),
             relatedProduct: Lazy::whenLoaded('relatedProduct', $relation, fn () => ProductData::from($relation->relatedProduct)),
             relationType: Lazy::whenLoaded('relationType', $relation, fn () => ProductRelationTypeData::from($relation->relationType)),
         );

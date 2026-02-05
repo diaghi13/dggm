@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 class GenerateMaterialEmbeddings extends Command
 {
     protected $signature = 'materials:generate-embeddings {--force}';
+
     protected $description = 'Genera embeddings per tutti i materiali';
 
     public function handle(EmbeddingService $embeddingService)
@@ -16,7 +17,7 @@ class GenerateMaterialEmbeddings extends Command
         $query = Material::query();
 
         // Solo materiali senza embedding (a meno che non usi --force)
-        if (!$this->option('force')) {
+        if (! $this->option('force')) {
             $query->whereNull('description_embedding');
         }
 
@@ -25,6 +26,7 @@ class GenerateMaterialEmbeddings extends Command
 
         if ($total === 0) {
             $this->info('Nessun materiale da processare.');
+
             return 0;
         }
 
@@ -37,20 +39,20 @@ class GenerateMaterialEmbeddings extends Command
                     $material->name,
                     $material->description,
                     $material->category,
-                    $material->code
+                    $material->code,
                 ]));
 
                 $embedding = $embeddingService->getEmbedding($text);
 
                 $material->update([
-                    'description_embedding' => json_encode($embedding)
+                    'description_embedding' => json_encode($embedding),
                 ]);
 
                 $material->save();
 
                 $bar->advance();
             } catch (\Exception $e) {
-                $this->error("\nErrore per materiale {$material->id}: " . $e->getMessage());
+                $this->error("\nErrore per materiale {$material->id}: ".$e->getMessage());
             }
         }
 

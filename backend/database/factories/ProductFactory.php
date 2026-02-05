@@ -21,7 +21,7 @@ class ProductFactory extends Factory
             'code' => 'PROD-'.fake()->unique()->numberBetween(10000, 99999),
             'name' => fake()->words(3, true),
             'description' => fake()->sentence(),
-            //'category' => fake()->randomElement(['Edilizia', 'Elettrico', 'Idraulico', 'Carpenteria', 'Ferramenta']),
+            // 'category' => fake()->randomElement(['Edilizia', 'Elettrico', 'Idraulico', 'Carpenteria', 'Ferramenta']),
             'product_type' => fake()->randomElement(ProductType::cases()),
             'unit' => fake()->randomElement(['pz', 'mt', 'kg', 'mq', 'mc', 'ora']),
             'standard_cost' => fake()->randomFloat(2, 10, 500),

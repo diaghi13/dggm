@@ -73,13 +73,13 @@ return new class extends Migration
             }
         } else {
             // MySQL/PostgreSQL - use proper ALTER TABLE statements
-//            DB::unprepared('
-//                ALTER TABLE product_components
-//                DROP FOREIGN KEY IF EXISTS product_components_kit_material_id_foreign,
-//                DROP FOREIGN KEY IF EXISTS product_components_component_material_id_foreign,
-//                DROP INDEX IF EXISTS product_components_kit_material_id_component_material_id_unique,
-//                DROP INDEX IF EXISTS product_components_kit_material_id_index;
-//            ');
+            //            DB::unprepared('
+            //                ALTER TABLE product_components
+            //                DROP FOREIGN KEY IF EXISTS product_components_kit_material_id_foreign,
+            //                DROP FOREIGN KEY IF EXISTS product_components_component_material_id_foreign,
+            //                DROP INDEX IF EXISTS product_components_kit_material_id_component_material_id_unique,
+            //                DROP INDEX IF EXISTS product_components_kit_material_id_index;
+            //            ');
 
             $this->dropForeignKeyIfExists('product_components', 'product_components_kit_material_id_foreign');
             $this->dropForeignKeyIfExists('product_components', 'product_components_component_material_id_foreign');
@@ -179,7 +179,7 @@ return new class extends Migration
             [$table, $foreignKey]
         );
 
-        if (!empty($exists)) {
+        if (! empty($exists)) {
             DB::statement("ALTER TABLE {$table} DROP FOREIGN KEY {$foreignKey}");
         }
     }
@@ -187,15 +187,15 @@ return new class extends Migration
     private function dropIndexIfExists($table, $indexName)
     {
         $exists = DB::select(
-            "SELECT INDEX_NAME
+            'SELECT INDEX_NAME
              FROM information_schema.STATISTICS
              WHERE TABLE_SCHEMA = DATABASE()
                AND TABLE_NAME = ?
-               AND INDEX_NAME = ?",
+               AND INDEX_NAME = ?',
             [$table, $indexName]
         );
 
-        if (!empty($exists)) {
+        if (! empty($exists)) {
             DB::statement("ALTER TABLE {$table} DROP INDEX {$indexName}");
         }
     }

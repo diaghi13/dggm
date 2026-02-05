@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ContractorController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DdtController;
+use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\MaterialCategoryController;
@@ -11,11 +12,14 @@ use App\Http\Controllers\Api\V1\MaterialDependencyTypeController;
 use App\Http\Controllers\Api\V1\MaterialRequestController;
 use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\ProductCategoryController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductRelationController;
 use App\Http\Controllers\Api\V1\ProductRelationTypeController;
 use App\Http\Controllers\Api\V1\QuoteController;
+use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\SettingController;
 use App\Http\Controllers\Api\V1\SiteController;
 use App\Http\Controllers\Api\V1\SiteDdtController;
 use App\Http\Controllers\Api\V1\SiteMaterialController;
@@ -38,11 +42,22 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Password reset web route (for email links)
+// This redirects to frontend with token
+Route::get('/password-reset/{token}', function ($token) {
+    $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+    $email = request()->query('email');
+
+    return redirect()->away("{$frontendUrl}/reset-password?token={$token}&email={$email}");
+})->name('password.reset');
+
 // API v1 routes
 Route::prefix('v1')->group(function () {
     // Public routes (no authentication)
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     });
 
     // Public invitation routes (no authentication)
@@ -55,6 +70,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/me', [AuthController::class, 'me']);
+            Route::post('/change-password', [AuthController::class, 'changePassword']);
 
             // Session management
             Route::get('/sessions', [AuthController::class, 'sessions']);
@@ -63,6 +79,42 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::apiResource('users', \App\Http\Controllers\Api\V1\UserController::class);
+        Route::post('users/{user}/roles', [\App\Http\Controllers\Api\V1\UserController::class, 'assignRoles']);
+        Route::delete('users/{user}/roles/{role}', [\App\Http\Controllers\Api\V1\UserController::class, 'revokeRole']);
+        Route::post('users/{user}/sync-roles', [\App\Http\Controllers\Api\V1\UserController::class, 'syncRoles']);
+
+        // Roles & Permissions
+        Route::apiResource('roles', RoleController::class);
+        Route::post('roles/{role}/permissions/{permission}', [RoleController::class, 'assignPermission']);
+        Route::delete('roles/{role}/permissions/{permission}', [RoleController::class, 'revokePermission']);
+        Route::post('roles/{role}/sync-permissions', [RoleController::class, 'syncPermissions']);
+
+        Route::get('permissions/grouped', [PermissionController::class, 'getGrouped']);
+        Route::apiResource('permissions', PermissionController::class);
+
+        // Settings (key-value system)
+        Route::prefix('settings')->group(function () {
+            // Get all available setting types
+            Route::get('types', [SettingController::class, 'types']);
+
+            // Get settings grouped by category
+            Route::get('grouped', [SettingController::class, 'grouped']);
+
+            // Feature Flags
+            Route::get('feature-flags', [SettingController::class, 'featureFlags']);
+            Route::get('feature-flags/enabled', [SettingController::class, 'enabledFeatures']);
+            Route::post('feature-flags/{feature}/toggle', [SettingController::class, 'toggleFeature']);
+
+            // Get/Set by key (simplified endpoints)
+            Route::get('key/{key}', [SettingController::class, 'getByKey'])->where('key', '.*');
+            Route::post('key/{key}', [SettingController::class, 'setByKey'])->where('key', '.*');
+
+            // Reset to default
+            Route::post('{setting}/reset', [SettingController::class, 'reset']);
+        });
+
+        // Standard CRUD for settings
+        Route::apiResource('settings', SettingController::class);
 
         // Customers
         Route::apiResource('customers', CustomerController::class);
@@ -89,6 +141,7 @@ Route::prefix('v1')->group(function () {
 
         // Products
         Route::apiResource('products', ProductController::class);
+        Route::post('products/import', [ProductController::class, 'import']);
         Route::get('products-needing-reorder', [ProductController::class, 'needingReorder']);
         Route::get('products/{product}/composite-breakdown', [ProductController::class, 'compositeBreakdown']);
         Route::get('products/categories/list', [ProductController::class, 'categories']);
@@ -110,8 +163,22 @@ Route::prefix('v1')->group(function () {
         // Product Categories (NEW - replaces material-categories)
         Route::apiResource('product-categories', ProductCategoryController::class);
 
+        // Product Brands
+        Route::apiResource('product-brands', \App\Http\Controllers\Api\V1\ProductBrandController::class);
+
+        // Payment Terms
+        Route::apiResource('payment-terms', \App\Http\Controllers\Api\V1\PaymentTermController::class);
+
+        // Discount Families
+        Route::apiResource('discount-families', \App\Http\Controllers\Api\V1\DiscountFamilyController::class);
+
         // Material Categories (DEPRECATED - use product-categories instead)
         Route::apiResource('material-categories', MaterialCategoryController::class);
+
+        // Import Configuration
+        Route::get('import/models', [ImportController::class, 'getAvailableModels']);
+        Route::get('import/{model}/fields', [ImportController::class, 'getImportableFields']);
+        Route::post('import/supplier-catalog', [ImportController::class, 'importSupplierCatalog']);
 
         // Material Dependency Types
         Route::apiResource('material-dependency-types', MaterialDependencyTypeController::class);

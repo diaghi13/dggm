@@ -13,7 +13,6 @@ use App\Queries\Product\CalculateProductRelationsQuery;
 use App\Queries\Product\GetProductRelationsQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use function Pest\Laravel\json;
 
 class ProductRelationController extends Controller
 {
@@ -21,9 +20,7 @@ class ProductRelationController extends Controller
         private readonly CreateProductRelationAction $createAction,
         private readonly UpdateProductRelationAction $updateAction,
         private readonly DeleteProductRelationAction $deleteAction
-    )
-    {
-    }
+    ) {}
 
     /**
      * Get all relations for a product

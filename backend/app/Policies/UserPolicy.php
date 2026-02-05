@@ -4,58 +4,101 @@ namespace App\Policies;
 
 use App\Models\User;
 
+/**
+ * User Policy
+ *
+ * Authorization logic for user management.
+ *
+ * Business Rules:
+ * - Users cannot delete themselves
+ * - Cannot modify super-admin users (unless you are super-admin)
+ * - Requires appropriate permissions (users.view, users.create, etc.)
+ */
 class UserPolicy
 {
+    /**
+     * View any users list
+     */
     public function viewAny(User $user): bool
     {
-        return $user->can('user.view');
+        return $user->can('users.view');
     }
 
     /**
-     * Determine whether the user can view the model.
+     * View a specific user
      */
-    public function view(User $user): bool
+    public function view(User $user, User $targetUser): bool
     {
-        return $user->can('user.view');
+        return $user->can('users.view');
     }
 
     /**
-     * Determine whether the user can create models.
+     * Create a new user
      */
     public function create(User $user): bool
     {
-        return $user->can('user.create');
+        return $user->can('users.create');
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Update a user
+     *
+     * Cannot modify super-admin unless you are super-admin
      */
-    public function update(User $user): bool
+    public function update(User $user, User $targetUser): bool
     {
-        return $user->can('user.edit');
+        // Must have permission
+        if (! $user->can('users.edit')) {
+            return false;
+        }
+
+        // Cannot modify super-admin unless you are super-admin
+        if ($targetUser->hasRole('super-admin') && ! $user->hasRole('super-admin')) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Delete a user
+     *
+     * Cannot delete yourself
+     * Cannot delete super-admin unless you are super-admin
      */
-    public function delete(User $user): bool
+    public function delete(User $user, User $targetUser): bool
     {
-        return $user->can('user.delete');
+        // Must have permission
+        if (! $user->can('users.delete')) {
+            return false;
+        }
+
+        // Cannot delete yourself
+        if ($user->id === $targetUser->id) {
+            return false;
+        }
+
+        // Cannot delete super-admin unless you are super-admin
+        if ($targetUser->hasRole('super-admin') && ! $user->hasRole('super-admin')) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Restore a deleted user
      */
-    public function restore(User $user): bool
+    public function restore(User $user, User $targetUser): bool
     {
-        return $user->can('user.delete');
+        return $user->can('users.delete');
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Permanently delete a user
      */
-    public function forceDelete(User $user): bool
+    public function forceDelete(User $user, User $targetUser): bool
     {
-        return $user->can('user.delete');
+        return $user->can('users.delete');
     }
 }
