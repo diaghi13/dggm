@@ -1270,3 +1270,38 @@ export interface ProductRelationFormData {
   sort_order: number;
   notes: string | null;
 }
+
+// ============================================
+// PRICE LIST TYPES - Re-export from generated.d.ts
+// ============================================
+
+export type PriceList = App.Data.PriceListData;
+export type PriceListItem = App.Data.PriceListItemData;
+
+// Enum aliases
+export type PriceListCalculationMode = App.Enums.PriceListCalculationMode;
+export type PriceListAdjustmentType = App.Enums.PriceListAdjustmentType;
+export type PriceListAppliesTo = App.Enums.PriceListAppliesTo;
+
+// Form data types (for create/update operations)
+export interface PriceListFormData {
+  name: string;
+  code: string;
+  description?: string | null;
+  calculation_mode: PriceListCalculationMode;
+  adjustment_type: PriceListAdjustmentType;
+  adjustment_value?: number | null;
+  applies_to: PriceListAppliesTo;
+  category_id?: number | null;
+  department_filter?: string | null;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  is_active?: boolean;
+  is_default?: boolean;
+  priority?: number;
+  generate_items?: boolean;
+}
+
+export interface PriceListWithItems extends PriceList {
+  items: PriceListItem[];
+}

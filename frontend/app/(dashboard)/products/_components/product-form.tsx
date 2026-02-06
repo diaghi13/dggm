@@ -233,6 +233,16 @@ export function ProductForm({
 
   const suppliers = suppliersData?.data ?? [];
 
+  // Determina quali sezioni mostrare in base al tipo di prodotto
+  const isService = formData.product_type === 'service';
+  const isComposite = formData.product_type === 'composite';
+  const isArticle = formData.product_type === 'article';
+  
+  // I servizi non hanno scorte, package, o noleggio
+  const showInventoryManagement = isArticle || isComposite;
+  const showPackageOptions = isArticle;
+  const showRentalOptions = isArticle;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -469,6 +479,16 @@ export function ProductForm({
                   </SelectItem>
                 </SelectContent>
               </Select>
+              {isService && (
+                <p className="text-xs text-blue-600 dark:text-blue-400 italic mt-1">
+                  ℹ️ I servizi non hanno gestione magazzino, package o noleggio
+                </p>
+              )}
+              {isComposite && (
+                <p className="text-xs text-purple-600 dark:text-purple-400 italic mt-1">
+                  🧩 I compositi sono composti da altri prodotti
+                </p>
+              )}
             </div>
           </div>
 
@@ -526,59 +546,59 @@ export function ProductForm({
               </Label>
             </div>
 
-            {formData.product_type === "article" && (
-              <>
-                <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <input
-                    type="checkbox"
-                    id="is_package"
-                    checked={formData.is_package || false}
-                    onChange={(e) =>
-                      setFormData({ ...formData, is_package: e.target.checked })
-                    }
-                    className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <Label
-                      htmlFor="is_package"
-                      className="text-sm font-medium cursor-pointer text-blue-900 dark:text-blue-100"
-                    >
-                      Questo è un contenitore/package (Box, Baule, Flight Case)
-                    </Label>
-                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                      I package vengono tracciati per DDT e logistica ma NON
-                      appaiono nella lista materiali del preventivo
-                    </p>
-                  </div>
+            {showPackageOptions && (
+              <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                <input
+                  type="checkbox"
+                  id="is_package"
+                  checked={formData.is_package || false}
+                  onChange={(e) =>
+                    setFormData({ ...formData, is_package: e.target.checked })
+                  }
+                  className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div className="flex-1">
+                  <Label
+                    htmlFor="is_package"
+                    className="text-sm font-medium cursor-pointer text-blue-900 dark:text-blue-100"
+                  >
+                    Questo è un contenitore/package (Box, Baule, Flight Case)
+                  </Label>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    I package vengono tracciati per DDT e logistica ma NON
+                    appaiono nella lista materiali del preventivo
+                  </p>
                 </div>
+              </div>
+            )}
 
-                <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <input
-                    type="checkbox"
-                    id="is_rentable"
-                    checked={formData.is_rentable || false}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        is_rentable: e.target.checked,
-                      })
-                    }
-                    className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <div className="flex-1">
-                    <Label
-                      htmlFor="is_rentable"
-                      className="text-sm font-medium cursor-pointer text-purple-900 dark:text-purple-100"
-                    >
-                      Noleggiabile
-                    </Label>
-                    <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
-                      Questo prodotto può essere noleggiato (vedi sezione prezzi
-                      noleggio)
-                    </p>
-                  </div>
+            {showRentalOptions && (
+              <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+                <input
+                  type="checkbox"
+                  id="is_rentable"
+                  checked={formData.is_rentable || false}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      is_rentable: e.target.checked,
+                    })
+                  }
+                  className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                />
+                <div className="flex-1">
+                  <Label
+                    htmlFor="is_rentable"
+                    className="text-sm font-medium cursor-pointer text-purple-900 dark:text-purple-100"
+                  >
+                    Noleggiabile
+                  </Label>
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+                    Questo prodotto può essere noleggiato (vedi sezione prezzi
+                    noleggio)
+                  </p>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </CardContent>
@@ -858,14 +878,15 @@ export function ProductForm({
         </CardContent>
       </Card>
 
-      {/* Gestione Scorte */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Gestione Scorte</CardTitle>
-          <CardDescription>
-            Fornitore, livelli di riordino e tempi di consegna
-          </CardDescription>
-        </CardHeader>
+      {/* Gestione Scorte - solo per articoli e compositi */}
+      {showInventoryManagement && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Gestione Scorte</CardTitle>
+            <CardDescription>
+              Fornitore, livelli di riordino e tempi di consegna
+            </CardDescription>
+          </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="default_supplier_id">Fornitore Predefinito</Label>
@@ -954,6 +975,7 @@ export function ProductForm({
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Note */}
       <Card>

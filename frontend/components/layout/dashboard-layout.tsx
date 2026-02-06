@@ -27,7 +27,6 @@ import {
   Truck,
   FileCheck,
   LogOut,
-  Menu,
   Factory,
   LayoutDashboard,
   X,
@@ -39,11 +38,10 @@ import {
   ChevronLeft,
   Settings,
   MapPin,
-  Receipt,
   UserCheck,
-  Briefcase,
   Mail,
   User,
+  DollarSign,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -121,6 +119,12 @@ const navigationConfig: NavigationItem[] = [
         href: "/sals",
         icon: FileCheck,
         permissions: ["sals.view"],
+      },
+      {
+        name: "Listini",
+        href: "/price-lists",
+        icon: DollarSign,
+        permissions: ["price-lists.view"],
       },
     ],
   },

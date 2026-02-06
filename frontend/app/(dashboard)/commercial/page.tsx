@@ -29,6 +29,15 @@ const commercialItems = [
     color: "text-green-600 dark:text-green-400",
     bgColor: "bg-green-100 dark:bg-green-900/20",
   },
+  {
+    title: "Listini",
+    description: "Gestisci i listini prezzi",
+    icon: FileText,
+    href: "/price-lists",
+    permission: "price-lists.view",
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-100 dark:bg-amber-900/20",
+  },
 ];
 
 export default function CommercialPage() {

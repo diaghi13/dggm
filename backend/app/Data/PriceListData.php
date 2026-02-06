@@ -5,12 +5,14 @@ namespace App\Data;
 use App\Enums\PriceListAdjustmentType;
 use App\Enums\PriceListAppliesTo;
 use App\Enums\PriceListCalculationMode;
+use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\Lazy;
+use Spatie\LaravelData\Support\Validation\ValidationContext;
 
 class PriceListData extends Data
 {
@@ -55,11 +57,13 @@ class PriceListData extends Data
         public DataCollection|Lazy|null $items = null,
     ) {}
 
-    public static function rules(): array
+    public static function rules(ValidationContext $context): array
     {
+        $priceListId = $context->payload['id'] ?? null;
+
         return [
             'name' => ['required', 'string', 'max:100'],
-            'code' => ['required', 'string', 'max:50', 'unique:price_lists,code'],
+            'code' => ['required', 'string', 'max:50', Rule::unique('price_lists', 'code')->ignore($priceListId)],
             'description' => ['nullable', 'string'],
             'calculation_mode' => ['required'],
             'adjustment_type' => ['required'],

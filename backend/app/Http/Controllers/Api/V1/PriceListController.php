@@ -6,7 +6,10 @@ use App\Actions\PriceList\GeneratePriceListAction;
 use App\Data\PriceListData;
 use App\Http\Controllers\Controller;
 use App\Models\PriceList;
+use App\Models\PriceListItem;
+use App\Models\Product;
 use App\Queries\PriceList\GetActivePriceListsQuery;
+use App\Services\ProductPricingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,7 +26,7 @@ class PriceListController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => PriceListData::collect($priceLists),
+            'data' => PriceListData::collect($priceLists)->toArray(),
         ]);
     }
 
@@ -68,6 +71,8 @@ class PriceListController extends Controller
     {
         $this->authorize('update', $priceList);
 
+        $request['id'] = $priceList->id; // Ensure ID is set for validation
+
         $data = PriceListData::from($request);
         $priceList->update($data->except('id', 'items')->toArray());
 
@@ -100,16 +105,38 @@ class PriceListController extends Controller
     {
         $this->authorize('update', $priceList);
 
-        // Delete and regenerate all items
+        // Delete existing items
         $priceList->items()->delete();
 
-        $data = PriceListData::from($priceList);
-        $priceList = app(GeneratePriceListAction::class)->execute($data, true);
+        $itemsCreated = 0;
+
+        // Get products filtered by category if specified
+        $products = Product::query()
+            ->where('is_active', true)
+            ->when($priceList->category_id, fn ($q) => $q->where('category_id', $priceList->category_id))
+            ->get();
+
+        $pricingService = app(ProductPricingService::class);
+
+        // Generate items based on calculation mode
+        foreach ($products as $product) {
+            $itemData = $priceList->calculation_mode->value === 'automatic'
+                ? $pricingService->generateAutomaticPriceListItem($product, $priceList)
+                : $pricingService->generateManualPriceListItem($product);
+
+            PriceListItem::create([
+                'price_list_id' => $priceList->id,
+                'product_id' => $product->id,
+                ...$itemData,
+            ]);
+
+            $itemsCreated++;
+        }
 
         return response()->json([
             'success' => true,
-            'data' => PriceListData::from($priceList),
-            'message' => 'Price list regenerated successfully',
+            'data' => PriceListData::from($priceList->fresh(['items', 'category'])),
+            'message' => "Price list regenerated successfully with $itemsCreated items",
         ]);
     }
 }

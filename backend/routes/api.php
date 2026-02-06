@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\PriceListController;
+use App\Http\Controllers\Api\V1\PriceListItemController;
 use App\Http\Controllers\Api\V1\ProductCategoryController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductPricingController;
@@ -196,6 +197,12 @@ Route::prefix('v1')->group(function () {
             Route::put('/{priceList}', [PriceListController::class, 'update']);
             Route::delete('/{priceList}', [PriceListController::class, 'destroy']);
             Route::post('/{priceList}/regenerate', [PriceListController::class, 'regenerate']);
+
+            // Price List Items (nested resource)
+            Route::post('/{priceList}/items', [PriceListItemController::class, 'store']);
+            Route::put('/{priceList}/items/{item}', [PriceListItemController::class, 'update']);
+            Route::delete('/{priceList}/items/{item}', [PriceListItemController::class, 'destroy']);
+            Route::post('/{priceList}/items/{item}/recalculate', [PriceListItemController::class, 'recalculate']);
         });
 
         // Product Unit Types

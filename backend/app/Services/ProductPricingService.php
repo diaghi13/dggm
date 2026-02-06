@@ -37,7 +37,7 @@ class ProductPricingService
         // Apply price list adjustment
         return $this->priceCalculator->applyPriceListAdjustment(
             $baseSalePrice,
-            $priceList->adjustment_type,
+            $priceList->adjustment_type->value,
             $priceList->adjustment_value
         );
     }
