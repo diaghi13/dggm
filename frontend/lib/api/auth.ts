@@ -44,7 +44,9 @@ export const authApi = {
       "/auth/reset-password",
       payload,
     );
-    return data.data || { message: data.message || "Password reset successfully" };
+    return (
+      data.data || { message: data.message || "Password reset successfully" }
+    );
   },
 
   changePassword: async (payload: {
@@ -56,6 +58,8 @@ export const authApi = {
       "/auth/change-password",
       payload,
     );
-    return data.data || { message: data.message || "Password changed successfully" };
+    return (
+      data.data || { message: data.message || "Password changed successfully" }
+    );
   },
 };

@@ -1216,6 +1216,7 @@ export type Product = App.Data.ProductData;
 export type ProductRelation = App.Data.ProductRelationData;
 export type ProductRelationType = App.Data.ProductRelationTypeData;
 export type ProductCategory = App.Data.ProductCategoryData;
+export type ProductBrand = App.Data.ProductBrandData;
 export type ProductComponent = App.Data.ProductComponentData;
 export type Supplier = App.Data.SupplierData;
 
@@ -1226,32 +1227,33 @@ export type ProductRelationQuantityType = App.Enums.ProductRelationQuantityType;
 // Form data types (for create/update operations)
 export interface ProductFormData {
   code: string;
+  internal_code?: string | null;
+  ean?: string | null;
+  etim_code?: string | null;
   name: string;
-  description: string | null;
-  category_id: number | null;
+  description?: string | null;
+  category_id?: number | null;
+  brand_id?: number | null;
   product_type: App.Enums.ProductType;
-  unit: string;
-  standard_cost: number;
-  purchase_price: number;
-  markup_percentage: number;
-  sale_price: number;
-  rental_price_daily: number;
-  rental_price_weekly: number;
-  rental_price_monthly: number;
-  barcode: string | null;
-  qr_code: string | null;
-  default_supplier_id: number | null;
-  reorder_level: number;
-  reorder_quantity: number;
-  lead_time_days: number;
-  location: string | null;
-  notes: string | null;
-  is_rentable: boolean;
-  is_active: boolean;
-  is_package: boolean;
-  package_weight: number | null;
-  package_volume: number | null;
-  package_dimensions: string | null;
+  is_kit?: boolean;
+  is_package?: boolean;
+  package_weight?: number | null;
+  package_volume?: number | null;
+  package_dimensions?: string | null;
+  is_rentable?: boolean;
+  unit?: string | null;
+  manufacturer_cost_price?: number | null;
+  manufacturer_retail_price?: number | null;
+  sale_markup_percent?: number | null;
+  barcode?: string | null;
+  qr_code?: string | null;
+  default_supplier_id?: number | null;
+  reorder_level?: number | null;
+  reorder_quantity?: number | null;
+  lead_time_days?: number | null;
+  location?: string | null;
+  notes?: string | null;
+  is_active?: boolean;
 }
 
 export interface ProductRelationFormData {

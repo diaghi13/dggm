@@ -1,44 +1,130 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { suppliersApi } from '@/lib/api/suppliers';
-// TODO: Create generateProductCode utility function
-// import { generateProductCode } from '@/lib/utils/code-generator';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { suppliersApi } from "@/lib/api/suppliers";
+import { productsApi } from "@/lib/api/products";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { ComboboxSelect } from '@/components/combobox-select';
-import { ProductCategoryCombobox } from './product-category-combobox';
-import { BarcodeScanner } from '@/components/barcode-scanner';
-import { Scan } from 'lucide-react';
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ComboboxSelect } from "@/components/combobox-select";
+import { ProductCategoryCombobox } from "./product-category-combobox";
+import { ProductBrandCombobox } from "./product-brand-combobox";
+import { BarcodeScanner } from "@/components/barcode-scanner";
+import { Scan } from "lucide-react";
+import type { ProductBrand } from "@/lib/types";
 import type { ProductType, ProductFormData } from "@/lib/types";
 
-// TODO: Move to lib/utils/code-generator.ts
-function generateProductCode(name: string): string {
-  const prefix = 'PROD';
-  const namePart = name
-    .split(' ')
-    .slice(0, 2)
-    .map(word => word.substring(0, 3).toUpperCase())
-    .join('');
-  const timestamp = Date.now().toString().slice(-6);
-  return `${prefix}-${namePart}-${timestamp}`;
+/**
+ * Generate internal code from product name and brand
+ * Format: [BRAND] [ALPHANUMERIC_FROM_NAME] or just [ALPHANUMERIC_FROM_NAME] if no brand
+ * Brand is uppercase and max 3 letters
+ * Examples:
+ * - "pulsante illuminabile" + BTI → "BTI PUSILLU"
+ * - "interruttore bipolare" + BTI → "BTI INTBIPO"
+ * - "kit trapano" without brand → "KITTRA"
+ */
+function generateInternalCode(name: string, brandCode?: string): string {
+  if (!name?.trim()) return "";
+
+  // Normalize and uppercase name
+  const normalizedName = name.trim().toUpperCase();
+
+  // Italian stop words to remove
+  const stopWords = [
+    "IL",
+    "LO",
+    "LA",
+    "I",
+    "GLI",
+    "LE",
+    "UN",
+    "UNO",
+    "UNA",
+    "CON",
+    "PER",
+    "DI",
+    "DA",
+    "IN",
+    "SU",
+    "A",
+    "E",
+    "O",
+  ];
+
+  // Split into words by spaces AND separators, but keep track of separators
+  const parts = normalizedName.split(/([\s\/\-|_]+)/);
+
+  // Build code keeping separators
+  let nameCode = "";
+  for (const part of parts) {
+    // Check if it's a separator
+    if (/^[\s\/\-|_]+$/.test(part)) {
+      // Keep only the first separator character (not spaces)
+      const sep = part.replace(/\s/g, "").charAt(0);
+      if (sep && nameCode.length > 0) {
+        nameCode += sep;
+      }
+    } else if (part && !stopWords.includes(part)) {
+      // It's a word - take alphanumeric characters
+      const chars = part.replace(/[^A-Z0-9]/g, "");
+      // Take first 2-3 characters from each word
+      nameCode += chars.substring(0, Math.min(3, chars.length));
+    }
+
+    // Stop at max 12 characters
+    if (nameCode.length >= 12) break;
+  }
+
+  // Fallback if name is empty or too short
+  if (nameCode.length < 3) {
+    nameCode = normalizedName.replace(/[^A-Z0-9\/\-|_]/g, "").substring(0, 12);
+  }
+
+  // Limit to 12 characters
+  nameCode = nameCode.substring(0, 12);
+
+  // Brand: uppercase and max 3 letters (optional)
+  if (brandCode?.trim()) {
+    const brand = brandCode.toUpperCase().substring(0, 3);
+    return `${brand} ${nameCode}`;
+  }
+
+  // No brand: return just the name code
+  return nameCode;
+}
+
+/**
+ * Product code generator (same as internal_code)
+ * Format: [BRAND] [ALPHANUMERIC_FROM_NAME] or just [ALPHANUMERIC_FROM_NAME]
+ * Brand is uppercase and max 3 letters, optional
+ */
+function generateProductCode(name: string, brandCode?: string): string {
+  // Use same logic as internal_code
+  return generateInternalCode(name, brandCode);
 }
 
 // Form data locale per il form (estende ProductFormData con campi opzionali)
-type ProductFormDataLocal = ProductFormData & {
-  quantity_out_on_rental?: number;
+type ProductFormDataLocal = Partial<ProductFormData> & {
+  name: string;
+  code: string;
+  product_type: ProductType;
 };
 
 interface ProductFormProps {
@@ -46,18 +132,18 @@ interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
 }
 
 const unitOptions = [
-  { value: 'pz', label: 'Pezzi (pz)' },
-  { value: 'kg', label: 'Kilogrammi (kg)' },
-  { value: 'm', label: 'Metri (m)' },
-  { value: 'm²', label: 'Metri quadri (m²)' },
-  { value: 'm³', label: 'Metri cubi (m³)' },
-  { value: 'l', label: 'Litri (l)' },
-  { value: 'conf', label: 'Confezione (conf)' },
-  { value: 'cad', label: 'Cadauno (cad)' },
+  { value: "pz", label: "Pezzi (pz)" },
+  { value: "kg", label: "Kilogrammi (kg)" },
+  { value: "m", label: "Metri (m)" },
+  { value: "m²", label: "Metri quadri (m²)" },
+  { value: "m³", label: "Metri cubi (m³)" },
+  { value: "l", label: "Litri (l)" },
+  { value: "conf", label: "Confezione (conf)" },
+  { value: "cad", label: "Cadauno (cad)" },
 ];
 
 export function ProductForm({
@@ -67,44 +153,75 @@ export function ProductForm({
   isSubmitting = false,
   mode,
 }: ProductFormProps) {
-  const [isCodeAutoGenerated, setIsCodeAutoGenerated] = useState(mode === 'create' && !initialData?.code);
+  const [isCodeAutoGenerated, setIsCodeAutoGenerated] = useState(
+    mode === "create" && !initialData?.code,
+  );
+  const [isInternalCodeAutoGenerated, setIsInternalCodeAutoGenerated] =
+    useState(mode === "create" && !initialData?.internal_code);
   const [scannerOpen, setScannerOpen] = useState(false);
+
+  // Query brands per ottenere il brand code
+  const { data: brandsData } = useQuery({
+    queryKey: ["product-brands"],
+    queryFn: () => productsApi.getBrands(),
+  });
+  const brands = brandsData ?? [];
+
+  // Funzione per cercare il brand dal barcode
+  const searchBrandFromBarcode = async (barcode: string) => {
+    try {
+      // Cerca prodotti esistenti con lo stesso barcode
+      const result = await productsApi.getAll({ barcode });
+      if (result?.data && result.data.length > 0) {
+        const existingProduct = result.data[0];
+        if (existingProduct.brand_id) {
+          setFormData((prev) => ({
+            ...prev,
+            brand_id: existingProduct.brand_id,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Errore nella ricerca del brand:", error);
+    }
+  };
+
   const [formData, setFormData] = useState<ProductFormDataLocal>({
-    code: initialData?.code || '',
-    name: initialData?.name || '',
+    code: initialData?.code || "",
+    internal_code: initialData?.internal_code ?? null,
+    ean: initialData?.ean ?? null,
+    etim_code: initialData?.etim_code ?? null,
+    name: initialData?.name || "",
     description: initialData?.description ?? null,
     category_id: initialData?.category_id ?? null,
-    product_type: initialData?.product_type || 'article',
-    unit: initialData?.unit || 'pz',
-    is_package: initialData?.is_package || false,
+    brand_id: initialData?.brand_id ?? null,
+    product_type: initialData?.product_type || "article",
+    is_kit: initialData?.is_kit ?? false,
+    is_package: initialData?.is_package ?? false,
     package_weight: initialData?.package_weight ?? null,
     package_volume: initialData?.package_volume ?? null,
     package_dimensions: initialData?.package_dimensions ?? null,
-    is_rentable: initialData?.is_rentable || false,
-    quantity_out_on_rental: initialData?.quantity_out_on_rental || 0,
-    standard_cost: initialData?.standard_cost || 0,
-    purchase_price: initialData?.purchase_price || 0,
-    markup_percentage: initialData?.markup_percentage || 0,
-    sale_price: initialData?.sale_price || 0,
-    rental_price_daily: initialData?.rental_price_daily || 0,
-    rental_price_weekly: initialData?.rental_price_weekly || 0,
-    rental_price_monthly: initialData?.rental_price_monthly || 0,
+    is_rentable: initialData?.is_rentable ?? false,
+    unit: initialData?.unit ?? "pz",
+    manufacturer_cost_price: initialData?.manufacturer_cost_price ?? null,
+    manufacturer_retail_price: initialData?.manufacturer_retail_price ?? null,
+    sale_markup_percent: initialData?.sale_markup_percent ?? null,
     barcode: initialData?.barcode ?? null,
     qr_code: initialData?.qr_code ?? null,
     default_supplier_id: initialData?.default_supplier_id ?? null,
-    reorder_level: initialData?.reorder_level || 0,
-    reorder_quantity: initialData?.reorder_quantity || 0,
-    lead_time_days: initialData?.lead_time_days || 7,
+    reorder_level: initialData?.reorder_level ?? null,
+    reorder_quantity: initialData?.reorder_quantity ?? null,
+    lead_time_days: initialData?.lead_time_days ?? 7,
     location: initialData?.location ?? null,
     notes: initialData?.notes ?? null,
     is_active: initialData?.is_active ?? true,
   });
 
-  const [supplierSearch, setSupplierSearch] = useState('');
+  const [supplierSearch, setSupplierSearch] = useState("");
 
   // Load suppliers - always show initial list, then filter by search
   const { data: suppliersData, isLoading: isLoadingSuppliers } = useQuery({
-    queryKey: ['suppliers', { is_active: true, search: supplierSearch }],
+    queryKey: ["suppliers", { is_active: true, search: supplierSearch }],
     queryFn: () =>
       suppliersApi.getAll({
         is_active: true,
@@ -121,12 +238,34 @@ export function ProductForm({
 
     // Converti al formato ProductFormData per il backend
     const submitData: ProductFormData = {
-      ...formData,
+      code: formData.code,
+      internal_code: formData.internal_code ?? null,
+      ean: formData.ean ?? null,
+      etim_code: formData.etim_code ?? null,
+      name: formData.name,
+      description: formData.description ?? null,
       category_id: formData.category_id ?? null,
-      product_type: formData.product_type || 'article',
-      rental_price_daily: formData.rental_price_daily || 0,
-      rental_price_weekly: formData.rental_price_weekly || 0,
-      rental_price_monthly: formData.rental_price_monthly || 0,
+      brand_id: formData.brand_id ?? null,
+      product_type: formData.product_type,
+      is_kit: formData.is_kit ?? false,
+      is_package: formData.is_package ?? false,
+      package_weight: formData.package_weight ?? null,
+      package_volume: formData.package_volume ?? null,
+      package_dimensions: formData.package_dimensions ?? null,
+      is_rentable: formData.is_rentable ?? false,
+      unit: formData.unit ?? "pz",
+      manufacturer_cost_price: formData.manufacturer_cost_price ?? null,
+      manufacturer_retail_price: formData.manufacturer_retail_price ?? null,
+      sale_markup_percent: formData.sale_markup_percent ?? null,
+      barcode: formData.barcode ?? null,
+      qr_code: formData.qr_code ?? null,
+      default_supplier_id: formData.default_supplier_id ?? null,
+      reorder_level: formData.reorder_level ?? null,
+      reorder_quantity: formData.reorder_quantity ?? null,
+      lead_time_days: formData.lead_time_days ?? null,
+      location: formData.location ?? null,
+      notes: formData.notes ?? null,
+      is_active: formData.is_active ?? true,
     };
 
     onSubmit(submitData);
@@ -134,60 +273,91 @@ export function ProductForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Informazioni Generali */}
+      {/* Informazioni di Base */}
       <Card>
         <CardHeader>
-          <CardTitle>Informazioni Generali</CardTitle>
-          <CardDescription>Dati identificativi del producte</CardDescription>
+          <CardTitle>Informazioni di Base</CardTitle>
+          <CardDescription>Nome, categoria e tipo di prodotto</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="code">
-                Codice {mode === 'create' && '(opzionale - autogenerato)'}
-              </Label>
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => {
-                  const newCode = e.target.value;
-                  setFormData({ ...formData, code: newCode });
-                  // If user manually edits code, disable auto-generation
-                  if (mode === 'create') {
-                    setIsCodeAutoGenerated(false);
-                  }
-                }}
-                placeholder="MAT-001"
-                className="h-11"
-              />
-              <p className="text-xs text-slate-500">
-                {mode === 'create' && isCodeAutoGenerated
-                  ? 'Si genera automaticamente dal nome'
-                  : 'Se vuoto, verrà generato automaticamente'}
-              </p>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="name" className="required">
-                Nome Materiale *
+                Nome Prodotto *
               </Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => {
                   const newName = e.target.value;
-                  setFormData({ ...formData, name: newName });
 
-                  // Auto-generate code only in create mode and if not manually edited
-                  if (mode === 'create' && isCodeAutoGenerated && newName) {
-                    const generatedCode = generateProductCode(newName);
-                    setFormData((prev: ProductFormDataLocal) => ({ ...prev, name: newName, code: generatedCode }));
+                  // Auto-generate codes in create mode
+                  if (mode === "create" && newName) {
+                    // Get brand code if available (optional)
+                    const selectedBrand = formData.brand_id
+                      ? brands.find(
+                          (b: ProductBrand) => b.id === formData.brand_id,
+                        )
+                      : null;
+                    const brandCode = selectedBrand?.code;
+
+                    const updates: Partial<ProductFormDataLocal> = {
+                      name: newName,
+                    };
+
+                    // Generate both codes (with or without brand)
+                    if (isCodeAutoGenerated) {
+                      updates.code = generateProductCode(newName, brandCode);
+                    }
+
+                    if (isInternalCodeAutoGenerated) {
+                      updates.internal_code = generateInternalCode(
+                        newName,
+                        brandCode,
+                      );
+                    }
+
+                    setFormData((prev) => ({ ...prev, ...updates }));
+                  } else {
+                    setFormData({ ...formData, name: newName });
                   }
                 }}
-                placeholder="Es: Cemento Portland CEM II/A-L 42,5 R"
+                placeholder="Es: Interruttore bipolare BTI"
                 required
                 className="h-11"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="code">
+                Codice Prodotto {mode === "create" && "(autogenerato)"}
+              </Label>
+              <Input
+                id="code"
+                value={formData.code}
+                onChange={(e) => {
+                  const newCode = e.target.value;
+                  // Update both code and internal_code
+                  setFormData({
+                    ...formData,
+                    code: newCode,
+                    internal_code: newCode, // Sync internal_code with code
+                  });
+                  if (mode === "create") {
+                    setIsCodeAutoGenerated(false);
+                    setIsInternalCodeAutoGenerated(false);
+                  }
+                }}
+                placeholder="BTI INTBIPO"
+                required
+                className="h-11"
+              />
+              {mode === "create" && isCodeAutoGenerated && (
+                <p className="text-xs text-slate-500">
+                  Si genera automaticamente dal nome
+                  {formData.brand_id && " con prefisso brand"}
+                </p>
+              )}
             </div>
           </div>
 
@@ -196,8 +366,10 @@ export function ProductForm({
             <Textarea
               id="description"
               value={formData.description || ""}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Descrizione dettagliata del producte..."
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              placeholder="Descrizione dettagliata del prodotto..."
               rows={3}
             />
           </div>
@@ -207,19 +379,107 @@ export function ProductForm({
               <Label htmlFor="category">Categoria *</Label>
               <ProductCategoryCombobox
                 value={formData.category_id}
-                onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, category_id: value })
+                }
                 required
               />
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Seleziona o digita per creare una nuova categoria
+                Seleziona o crea una nuova categoria
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unit">Unità di Misura *</Label>
+              <Label htmlFor="brand">Brand</Label>
+              <ProductBrandCombobox
+                value={formData.brand_id}
+                onValueChange={(value) => {
+                  // If we're in create mode with name, regenerate both codes
+                  if (mode === "create" && formData.name) {
+                    const selectedBrand = value
+                      ? brands.find((b: ProductBrand) => b.id === value)
+                      : null;
+                    const brandCode = selectedBrand?.code;
+
+                    const updates: Partial<ProductFormDataLocal> = {
+                      brand_id: value,
+                    };
+
+                    // Regenerate codes with new brand (or without if deselected)
+                    if (isCodeAutoGenerated) {
+                      updates.code = generateProductCode(
+                        formData.name,
+                        brandCode,
+                      );
+                    }
+
+                    if (isInternalCodeAutoGenerated) {
+                      updates.internal_code = generateInternalCode(
+                        formData.name,
+                        brandCode,
+                      );
+                    }
+
+                    setFormData((prev) => ({ ...prev, ...updates }));
+                  } else {
+                    setFormData({ ...formData, brand_id: value });
+                  }
+                }}
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Seleziona o crea un nuovo brand
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="product_type">Tipo Prodotto *</Label>
               <Select
-                value={formData.unit}
-                onValueChange={(value) => setFormData({ ...formData, unit: value })}
+                value={formData.product_type}
+                onValueChange={(value: ProductType) =>
+                  setFormData({ ...formData, product_type: value })
+                }
+              >
+                <SelectTrigger id="product_type" className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="article">
+                    <div className="flex flex-col">
+                      <span className="font-medium">Articolo</span>
+                      <span className="text-xs text-muted-foreground">
+                        Prodotto fisico singolo
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="service">
+                    <div className="flex flex-col">
+                      <span className="font-medium">Servizio</span>
+                      <span className="text-xs text-muted-foreground">
+                        Prestazione lavorativa
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="composite">
+                    <div className="flex flex-col">
+                      <span className="font-medium">Composto</span>
+                      <span className="text-xs text-muted-foreground">
+                        Prodotto con relazioni/componenti
+                      </span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="unit">Unità di Misura</Label>
+              <Select
+                value={formData.unit || "pz"}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, unit: value })
+                }
               >
                 <SelectTrigger id="unit" className="h-11">
                   <SelectValue />
@@ -235,61 +495,20 @@ export function ProductForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="standard_cost">Costo Standard (€) *</Label>
+              <Label htmlFor="location">Ubicazione Magazzino</Label>
               <Input
-                id="standard_cost"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.standard_cost}
+                id="location"
+                value={formData.location || ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, standard_cost: parseFloat(e.target.value) || 0 })
+                  setFormData({ ...formData, location: e.target.value })
                 }
-                required
+                placeholder="Es: Scaffale A3, Zona 2"
                 className="h-11"
               />
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="product_type">Tipo Prodotto *</Label>
-              <Select
-                value={formData.product_type}
-                onValueChange={(value: ProductType) => setFormData({ ...formData, product_type: value })}
-              >
-                <SelectTrigger id="product_type" className="h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="article">
-                    <div className="flex flex-col">
-                      <span className="font-medium">Articolo</span>
-                      <span className="text-xs text-muted-foreground">Prodotto fisico singolo</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="service">
-                    <div className="flex flex-col">
-                      <span className="font-medium">Servizio</span>
-                      <span className="text-xs text-muted-foreground">Prestazione lavorativa</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="composite">
-                    <div className="flex flex-col">
-                      <span className="font-medium">Composto</span>
-                      <span className="text-xs text-muted-foreground">Prodotto con relazioni/componenti</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {formData.product_type === 'composite' &&
-                  'Gestisci le relazioni nel tab "Relazioni" dopo aver salvato'}
-              </p>
-            </div>
-          </div>
-
-          <Separator />
+          <Separator className="my-4" />
 
           <div className="space-y-3">
             <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -297,7 +516,9 @@ export function ProductForm({
                 type="checkbox"
                 id="is_active"
                 checked={formData.is_active}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                onChange={(e) =>
+                  setFormData({ ...formData, is_active: e.target.checked })
+                }
                 className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
               <Label htmlFor="is_active" className="text-sm cursor-pointer">
@@ -305,40 +526,172 @@ export function ProductForm({
               </Label>
             </div>
 
-            <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-              <input
-                type="checkbox"
-                id="is_package"
-                checked={formData.is_package || false}
-                onChange={(e) => setFormData({ ...formData, is_package: e.target.checked })}
-                className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-              />
-              <div className="flex-1">
-                <Label htmlFor="is_package" className="text-sm font-medium cursor-pointer text-blue-900 dark:text-blue-100">
-                  Questo è un contenitore/package (Box, Baule, Flight Case)
-                </Label>
-                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  I package vengono tracciati per DDT e logistica ma NON appaiono nella lista materiali del preventivo
-                </p>
+            {formData.product_type === "article" && (
+              <>
+                <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <input
+                    type="checkbox"
+                    id="is_package"
+                    checked={formData.is_package || false}
+                    onChange={(e) =>
+                      setFormData({ ...formData, is_package: e.target.checked })
+                    }
+                    className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <Label
+                      htmlFor="is_package"
+                      className="text-sm font-medium cursor-pointer text-blue-900 dark:text-blue-100"
+                    >
+                      Questo è un contenitore/package (Box, Baule, Flight Case)
+                    </Label>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                      I package vengono tracciati per DDT e logistica ma NON
+                      appaiono nella lista materiali del preventivo
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <input
+                    type="checkbox"
+                    id="is_rentable"
+                    checked={formData.is_rentable || false}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        is_rentable: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <div className="flex-1">
+                    <Label
+                      htmlFor="is_rentable"
+                      className="text-sm font-medium cursor-pointer text-purple-900 dark:text-purple-100"
+                    >
+                      Noleggiabile
+                    </Label>
+                    <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+                      Questo prodotto può essere noleggiato (vedi sezione prezzi
+                      noleggio)
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Codici di Identificazione */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Codici di Identificazione</CardTitle>
+          <CardDescription>
+            Barcode, EAN, codici interni e standard
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="barcode">Barcode / EAN Prodotto</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="barcode"
+                  value={formData.barcode || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, barcode: e.target.value })
+                  }
+                  placeholder="Scansiona o inserisci"
+                  className="h-11 flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 shrink-0"
+                  onClick={() => setScannerOpen(true)}
+                  title="Scansiona barcode"
+                >
+                  <Scan className="h-5 w-5" />
+                </Button>
               </div>
+              <p className="text-xs text-slate-500">
+                Scansiona per auto-compilare il brand se esistente
+              </p>
             </div>
 
-            <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
-              <input
-                type="checkbox"
-                id="is_rentable"
-                checked={formData.is_rentable || false}
-                onChange={(e) => setFormData({ ...formData, is_rentable: e.target.checked })}
-                className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+            <div className="space-y-2">
+              <Label htmlFor="qr_code">QR Code</Label>
+              <Input
+                id="qr_code"
+                value={formData.qr_code || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, qr_code: e.target.value })
+                }
+                placeholder="Codice QR personalizzato"
+                className="h-11"
               />
-              <div className="flex-1">
-                <Label htmlFor="is_rentable" className="text-sm font-medium cursor-pointer text-purple-900 dark:text-purple-100">
-                  Noleggiabile
-                </Label>
-                <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
-                  Questo prodotto può essere noleggiato (vedi sezione &#34;Prezzi Noleggio&#34;)
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="internal_code">
+                Codice Interno {mode === "create" && "(autogenerato)"}
+              </Label>
+              <Input
+                id="internal_code"
+                value={formData.internal_code || ""}
+                onChange={(e) => {
+                  const newCode = e.target.value;
+                  setFormData({
+                    ...formData,
+                    internal_code: newCode || null,
+                  });
+                  if (mode === "create") {
+                    setIsInternalCodeAutoGenerated(false);
+                  }
+                }}
+                placeholder="BTI INTBIPO"
+                className="h-11"
+              />
+              {mode === "create" && isInternalCodeAutoGenerated && (
+                <p className="text-xs text-slate-500">
+                  Si genera automaticamente dal nome
+                  {formData.brand_id && " con prefisso brand"}
                 </p>
-              </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ean">EAN / GTIN</Label>
+              <Input
+                id="ean"
+                value={formData.ean || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, ean: e.target.value || null })
+                }
+                placeholder="Codice a barre internazionale"
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="etim_code">Codice ETIM</Label>
+              <Input
+                id="etim_code"
+                value={formData.etim_code || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    etim_code: e.target.value || null,
+                  })
+                }
+                placeholder="Classificazione ETIM"
+                className="h-11"
+              />
             </div>
           </div>
         </CardContent>
@@ -346,10 +699,14 @@ export function ProductForm({
 
       {/* Package Details - mostra solo se is_package è true */}
       {formData.is_package && (
-        <Card className="border-blue-200 bg-blue-50/30">
+        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/20">
           <CardHeader>
-            <CardTitle className="text-blue-900">Dettagli Imballaggio</CardTitle>
-            <CardDescription>Informazioni per calcolo pesi e volumi per i carichi</CardDescription>
+            <CardTitle className="text-blue-900 dark:text-blue-100">
+              Dettagli Imballaggio
+            </CardTitle>
+            <CardDescription>
+              Informazioni per calcolo pesi e volumi
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
@@ -360,10 +717,14 @@ export function ProductForm({
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.package_weight || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, package_weight: parseFloat(e.target.value) || null })
-                  }
+                  value={formData.package_weight ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({
+                      ...formData,
+                      package_weight: val === "" ? null : parseFloat(val),
+                    });
+                  }}
                   placeholder="Es: 15.5"
                   className="h-11"
                 />
@@ -376,21 +737,32 @@ export function ProductForm({
                   type="number"
                   step="0.001"
                   min="0"
-                  value={formData.package_volume || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, package_volume: parseFloat(e.target.value) || null })
-                  }
+                  value={formData.package_volume ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({
+                      ...formData,
+                      package_volume: val === "" ? null : parseFloat(val),
+                    });
+                  }}
                   placeholder="Es: 0.5"
                   className="h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="package_dimensions">Dimensioni (LxWxH cm)</Label>
+                <Label htmlFor="package_dimensions">
+                  Dimensioni (LxWxH cm)
+                </Label>
                 <Input
                   id="package_dimensions"
-                  value={formData.package_dimensions || ''}
-                  onChange={(e) => setFormData({ ...formData, package_dimensions: e.target.value })}
+                  value={formData.package_dimensions || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      package_dimensions: e.target.value,
+                    })
+                  }
                   placeholder="Es: 120x80x60"
                   className="h-11"
                 />
@@ -400,58 +772,88 @@ export function ProductForm({
         </Card>
       )}
 
-      {/* Codici e Tracciamento */}
+      {/* Prezzi */}
       <Card>
         <CardHeader>
-          <CardTitle>Codici e Tracciamento</CardTitle>
-          <CardDescription>Barcode e QR code per tracciabilità</CardDescription>
+          <CardTitle>Prezzi e Margini</CardTitle>
+          <CardDescription>
+            Prezzi di acquisto, vendita e margini
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="barcode">Barcode / EAN</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="barcode"
-                  value={formData.barcode || ""}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                  placeholder="8001234567890"
-                  className="h-11 flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-11 w-11 flex-shrink-0"
-                  onClick={() => setScannerOpen(true)}
-                  title="Scansiona barcode"
-                >
-                  <Scan className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="qr_code">QR Code</Label>
+              <Label htmlFor="manufacturer_cost_price">
+                Prezzo Costo Produttore (€)
+              </Label>
               <Input
-                id="qr_code"
-                value={formData.qr_code || ""}
-                onChange={(e) => setFormData({ ...formData, qr_code: e.target.value })}
-                placeholder="Codice QR personalizzato"
+                id="manufacturer_cost_price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.manufacturer_cost_price ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({
+                    ...formData,
+                    manufacturer_cost_price:
+                      val === "" ? null : parseFloat(val),
+                  });
+                }}
                 className="h-11"
+                placeholder="0.00"
               />
+              <p className="text-xs text-slate-500">
+                Prezzo di costo consigliato dal costruttore
+              </p>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="location">Ubicazione Magazzino</Label>
-            <Input
-              id="location"
-              value={formData.location || ""}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="Es: Scaffale A3, Zona 2, Corsia B"
-              className="h-11"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="manufacturer_retail_price">
+                Prezzo Retail (€)
+              </Label>
+              <Input
+                id="manufacturer_retail_price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.manufacturer_retail_price ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({
+                    ...formData,
+                    manufacturer_retail_price:
+                      val === "" ? null : parseFloat(val),
+                  });
+                }}
+                className="h-11"
+                placeholder="0.00"
+              />
+              <p className="text-xs text-slate-500">
+                Prezzo al dettaglio suggerito
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sale_markup_percent">Margine (%)</Label>
+              <Input
+                id="sale_markup_percent"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.sale_markup_percent ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({
+                    ...formData,
+                    sale_markup_percent: val === "" ? null : parseFloat(val),
+                  });
+                }}
+                className="h-11"
+                placeholder="0.00"
+              />
+              <p className="text-xs text-slate-500">Ricarico sulla vendita</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -460,7 +862,9 @@ export function ProductForm({
       <Card>
         <CardHeader>
           <CardTitle>Gestione Scorte</CardTitle>
-          <CardDescription>Livelli di riordino e tempi di consegna</CardDescription>
+          <CardDescription>
+            Fornitore, livelli di riordino e tempi di consegna
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -468,10 +872,13 @@ export function ProductForm({
             <ComboboxSelect
               value={formData.default_supplier_id?.toString() || ""}
               onValueChange={(value) =>
-                setFormData({ ...formData, default_supplier_id: value ? parseInt(value) : null })
+                setFormData({
+                  ...formData,
+                  default_supplier_id: value ? parseInt(value) : null,
+                })
               }
               onSearchChange={setSupplierSearch}
-              options={suppliers.map(supplier => ({
+              options={suppliers.map((supplier) => ({
                 value: supplier.id!.toString(),
                 label: supplier.company_name,
               }))}
@@ -489,13 +896,20 @@ export function ProductForm({
                 type="number"
                 step="0.01"
                 min="0"
-                value={formData.reorder_level}
-                onChange={(e) =>
-                  setFormData({ ...formData, reorder_level: parseFloat(e.target.value) || 0 })
-                }
+                value={formData.reorder_level ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({
+                    ...formData,
+                    reorder_level: val === "" ? null : parseFloat(val),
+                  });
+                }}
                 className="h-11"
+                placeholder="0"
               />
-              <p className="text-xs text-slate-500">Livello di riordino automatico</p>
+              <p className="text-xs text-slate-500">
+                Livello di riordino automatico
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -505,11 +919,16 @@ export function ProductForm({
                 type="number"
                 step="0.01"
                 min="0"
-                value={formData.reorder_quantity}
-                onChange={(e) =>
-                  setFormData({ ...formData, reorder_quantity: parseFloat(e.target.value) || 0 })
-                }
+                value={formData.reorder_quantity ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({
+                    ...formData,
+                    reorder_quantity: val === "" ? null : parseFloat(val),
+                  });
+                }}
                 className="h-11"
+                placeholder="0"
               />
               <p className="text-xs text-slate-500">Quantità da ordinare</p>
             </div>
@@ -520,11 +939,15 @@ export function ProductForm({
                 id="lead_time_days"
                 type="number"
                 min="0"
-                value={formData.lead_time_days}
+                value={formData.lead_time_days || ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, lead_time_days: parseInt(e.target.value) || 0 })
+                  setFormData({
+                    ...formData,
+                    lead_time_days: parseInt(e.target.value) || null,
+                  })
                 }
                 className="h-11"
+                placeholder="7"
               />
               <p className="text-xs text-slate-500">Lead time del fornitore</p>
             </div>
@@ -532,142 +955,17 @@ export function ProductForm({
         </CardContent>
       </Card>
 
-      {/* Prezzi Vendita */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Prezzi Vendita</CardTitle>
-          <CardDescription>Prezzi di acquisto, margini e prezzi di vendita</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="purchase_price">Prezzo Acquisto (€)</Label>
-              <Input
-                id="purchase_price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.purchase_price || 0}
-                onChange={(e) =>
-                  setFormData({ ...formData, purchase_price: parseFloat(e.target.value) || 0 })
-                }
-                className="h-11"
-              />
-              <p className="text-xs text-slate-500">Prezzo di acquisto dal fornitore</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="markup_percentage">Margine (%)</Label>
-              <Input
-                id="markup_percentage"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.markup_percentage || 0}
-                onChange={(e) => {
-                  const markup = parseFloat(e.target.value) || 0;
-                  const purchasePrice = formData.purchase_price || 0;
-                  const salePrice = purchasePrice * (1 + markup / 100);
-                  setFormData({
-                    ...formData,
-                    markup_percentage: markup,
-                    sale_price: salePrice
-                  });
-                }}
-                className="h-11"
-              />
-              <p className="text-xs text-slate-500">Margine applicato al prezzo acquisto</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sale_price">Prezzo Vendita (€)</Label>
-              <Input
-                id="sale_price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.sale_price || 0}
-                onChange={(e) =>
-                  setFormData({ ...formData, sale_price: parseFloat(e.target.value) || 0 })
-                }
-                className="h-11"
-              />
-              <p className="text-xs text-slate-500">Prezzo di vendita finale al cliente</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Prezzi Noleggio - mostra solo se is_rentable è true */}
-      {formData.is_rentable && (
-        <Card className="border-purple-200 bg-purple-50/30">
-          <CardHeader>
-            <CardTitle className="text-purple-900">Prezzi Noleggio</CardTitle>
-            <CardDescription>Tariffe per il noleggio di questo producte</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="rental_price_daily">Tariffa Giornaliera (€/giorno)</Label>
-                <Input
-                  id="rental_price_daily"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.rental_price_daily || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, rental_price_daily: parseFloat(e.target.value) || 0 })
-                  }
-                  placeholder="Es: 50.00"
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="rental_price_weekly">Tariffa Settimanale (€/settimana)</Label>
-                <Input
-                  id="rental_price_weekly"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.rental_price_weekly || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, rental_price_weekly: parseFloat(e.target.value) || 0 })
-                  }
-                  placeholder="Es: 300.00"
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="rental_price_monthly">Tariffa Mensile (€/mese)</Label>
-                <Input
-                  id="rental_price_monthly"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.rental_price_monthly || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, rental_price_monthly: parseFloat(e.target.value) || 0 })
-                  }
-                  placeholder="Es: 1000.00"
-                  className="h-11"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Note */}
       <Card>
         <CardHeader>
-          <CardTitle>Note Aggiuntive</CardTitle>
+          <CardTitle>Note</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             value={formData.notes || ""}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, notes: e.target.value })
+            }
             placeholder="Note interne, istruzioni di utilizzo, avvertenze..."
             rows={4}
           />
@@ -676,7 +974,12 @@ export function ProductForm({
 
       {/* Form Actions */}
       <div className="flex items-center justify-end gap-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
           Annulla
         </Button>
         <Button
@@ -690,10 +993,10 @@ export function ProductForm({
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               Salvataggio...
             </>
-          ) : mode === 'create' ? (
-            'Crea Prodotto'
+          ) : mode === "create" ? (
+            "Crea Prodotto"
           ) : (
-            'Salva Modifiche'
+            "Salva Modifiche"
           )}
         </Button>
       </div>
@@ -702,8 +1005,10 @@ export function ProductForm({
       <BarcodeScanner
         open={scannerOpen}
         onOpenChange={setScannerOpen}
-        onScan={(barcode) => {
+        onScan={async (barcode) => {
           setFormData({ ...formData, barcode });
+          // Auto-select brand se il barcode esiste già nel database
+          await searchBrandFromBarcode(barcode);
         }}
         title="Scansiona Barcode Prodotto"
         description="Scansiona il barcode del prodotto con la fotocamera"

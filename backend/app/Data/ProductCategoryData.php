@@ -8,6 +8,7 @@ use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Optional;
 
 /**
  * ProductCategoryData DTO
@@ -34,10 +35,10 @@ class ProductCategoryData extends Data
         #[Nullable, Max(7)]
         public ?string $color,
 
-        public int $sort_order,
+        public int|Optional $sort_order,
 
         #[BooleanType]
-        public bool $is_active,
+        public bool|Optional $is_active,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -58,8 +59,8 @@ class ProductCategoryData extends Data
             description: $category->description,
             icon: $category->icon,
             color: $category->color,
-            sort_order: $category->sort_order,
-            is_active: $category->is_active,
+            sort_order: $category->sort_order ?? 0,
+            is_active: $category->is_active ?? true,
         );
     }
 }

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { stockMovementsApi } from '@/lib/api/stock-movements';
-import { warehousesApi } from '@/lib/api/warehouses';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { stockMovementsApi } from "@/lib/api/stock-movements";
+import { warehousesApi } from "@/lib/api/warehouses";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,19 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, Trash2, PackagePlus } from 'lucide-react';
-import { toast } from 'sonner';
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Plus, Trash2, PackagePlus } from "lucide-react";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -33,9 +33,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { ProductAutocomplete } from '@/app/(dashboard)/products/_components/product-autocomplete';
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { ProductAutocomplete } from "@/app/(dashboard)/products/_components/product-autocomplete";
 import ProductData = App.Data.ProductData;
 
 interface BulkIntakeDialogProps {
@@ -55,25 +55,28 @@ interface ProductItem {
 export function BulkIntakeDialog({
   trigger,
   warehouseId,
-  onSuccess
+  onSuccess,
 }: BulkIntakeDialogProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Form state
-  const [selectedWarehouseId, setSelectedWarehouseId] = useState<number | undefined>(warehouseId);
-  const [reference, setReference] = useState('');
-  const [notes, setNotes] = useState('');
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<
+    number | undefined
+  >(warehouseId);
+  const [reference, setReference] = useState("");
+  const [notes, setNotes] = useState("");
   const [items, setItems] = useState<ProductItem[]>([]);
 
   // Current item being added
-  const [selectedProduct, setSelectedProduct] = useState<App.Data.ProductData | null>(null);
-  const [quantity, setQuantity] = useState('1');
-  const [unitCost, setUnitCost] = useState('');
+  const [selectedProduct, setSelectedProduct] =
+    useState<App.Data.ProductData | null>(null);
+  const [quantity, setQuantity] = useState("1");
+  const [unitCost, setUnitCost] = useState("");
 
   // Fetch warehouses
   const { data: warehousesData } = useQuery({
-    queryKey: ['warehouses', { is_active: true, per_page: 100 }],
+    queryKey: ["warehouses", { is_active: true, per_page: 100 }],
     queryFn: () => warehousesApi.getAll({ is_active: true, per_page: 100 }),
   });
 
@@ -82,13 +85,15 @@ export function BulkIntakeDialog({
   // Add item to list
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) {
-      toast.error('Seleziona un prodotto e inserisci la quantità');
+      toast.error("Seleziona un prodotto e inserisci la quantità");
       return;
     }
 
-    const existingItem = items.find(item => item.product_id === selectedProduct.id);
+    const existingItem = items.find(
+      (item) => item.product_id === selectedProduct.id,
+    );
     if (existingItem) {
-      toast.error('Prodotto già aggiunto alla lista');
+      toast.error("Prodotto già aggiunto alla lista");
       return;
     }
 
@@ -100,24 +105,24 @@ export function BulkIntakeDialog({
       unit_cost: unitCost ? parseFloat(unitCost) : undefined,
     };
 
-    setItems(prev => [...prev, newItem]);
+    setItems((prev) => [...prev, newItem]);
 
     // Reset form
     setSelectedProduct(null);
-    setQuantity('1');
-    setUnitCost('');
+    setQuantity("1");
+    setUnitCost("");
 
-    toast.success('Prodotto aggiunto alla lista');
+    toast.success("Prodotto aggiunto alla lista");
   };
 
   // Remove item from list
   const handleRemoveItem = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+    setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Calculate total
   const totalValue = items.reduce((sum, item) => {
-    return sum + (item.quantity * (item.unit_cost || 0));
+    return sum + item.quantity * (item.unit_cost || 0);
   }, 0);
 
   const totalItems = items.length;
@@ -126,14 +131,14 @@ export function BulkIntakeDialog({
   const bulkIntakeMutation = useMutation({
     mutationFn: async () => {
       if (!selectedWarehouseId) {
-        throw new Error('Seleziona un magazzino');
+        throw new Error("Seleziona un magazzino");
       }
       if (items.length === 0) {
-        throw new Error('Aggiungi almeno un prodotto');
+        throw new Error("Aggiungi almeno un prodotto");
       }
 
       // Create multiple intake movements
-      const promises = items.map(item =>
+      const promises = items.map((item) =>
         stockMovementsApi.createIntake({
           warehouse_id: selectedWarehouseId,
           product_id: item.product_id,
@@ -141,27 +146,27 @@ export function BulkIntakeDialog({
           unit_cost: item.unit_cost,
           reference: reference || undefined,
           notes: notes || undefined,
-        })
+        }),
       );
 
       return Promise.all(promises);
     },
     onSuccess: (results) => {
-      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      queryClient.invalidateQueries({ queryKey: ['warehouse-inventory'] });
-      queryClient.invalidateQueries({ queryKey: ['warehouse-movements'] });
+      queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["warehouse-inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["warehouse-movements"] });
 
-      toast.success('Carico completato', {
-        description: `${results.length} ${results.length === 1 ? 'prodotto caricato' : 'prodotti caricati'} con successo`,
+      toast.success("Carico completato", {
+        description: `${results.length} ${results.length === 1 ? "prodotto caricato" : "prodotti caricati"} con successo`,
       });
 
       handleClose();
       onSuccess?.();
     },
     onError: (error: Error) => {
-      toast.error('Errore', {
-        description: error.message || 'Impossibile completare il carico',
+      toast.error("Errore", {
+        description: error.message || "Impossibile completare il carico",
       });
     },
   });
@@ -170,11 +175,11 @@ export function BulkIntakeDialog({
     setOpen(false);
     setItems([]);
     setSelectedWarehouseId(warehouseId);
-    setReference('');
-    setNotes('');
+    setReference("");
+    setNotes("");
     setSelectedProduct(null);
-    setQuantity('1');
-    setUnitCost('');
+    setQuantity("1");
+    setUnitCost("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -183,10 +188,13 @@ export function BulkIntakeDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      if (!newOpen) handleClose();
-      else setOpen(true);
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        if (!newOpen) handleClose();
+        else setOpen(true);
+      }}
+    >
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -199,7 +207,8 @@ export function BulkIntakeDialog({
         <DialogHeader>
           <DialogTitle>Carico Iniziale / Bulk</DialogTitle>
           <DialogDescription>
-            Carica più prodotti contemporaneamente in magazzino (es. carico iniziale, inventario)
+            Carica più prodotti contemporaneamente in magazzino (es. carico
+            iniziale, inventario)
           </DialogDescription>
         </DialogHeader>
 
@@ -210,7 +219,9 @@ export function BulkIntakeDialog({
               <Label>Magazzino Destinazione *</Label>
               <Select
                 value={selectedWarehouseId?.toString()}
-                onValueChange={(value) => setSelectedWarehouseId(parseInt(value))}
+                onValueChange={(value) =>
+                  setSelectedWarehouseId(parseInt(value))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleziona magazzino" />
@@ -250,8 +261,8 @@ export function BulkIntakeDialog({
                   onSelect={(product) => {
                     setSelectedProduct(product);
                     // Auto-compila il costo unitario
-                    if (product?.purchase_price) {
-                      setUnitCost(product.purchase_price.toString());
+                    if (product?.standard_cost) {
+                      setUnitCost(product.standard_cost.toString());
                     }
                   }}
                   placeholder="Cerca o scansiona prodotto..."
@@ -317,7 +328,9 @@ export function BulkIntakeDialog({
               <div className="border-2 border-dashed rounded-lg p-8 text-center text-slate-500 dark:text-slate-400">
                 <PackagePlus className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p className="text-sm">Nessun prodotto aggiunto</p>
-                <p className="text-xs mt-1">Aggiungi prodotti alla lista per procedere</p>
+                <p className="text-xs mt-1">
+                  Aggiungi prodotti alla lista per procedere
+                </p>
               </div>
             ) : (
               <div className="border rounded-lg overflow-hidden">
@@ -336,21 +349,23 @@ export function BulkIntakeDialog({
                     {items.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-mono text-sm">
-                          {item.product?.code || '-'}
+                          {item.product?.code || "-"}
                         </TableCell>
                         <TableCell className="font-medium">
-                          {item.product?.name || 'N/A'}
+                          {item.product?.name || "N/A"}
                         </TableCell>
                         <TableCell className="text-right">
                           {item.quantity} {item.product?.unit}
                         </TableCell>
                         <TableCell className="text-right">
-                          {item.unit_cost ? `€ ${item.unit_cost.toFixed(2)}` : '-'}
+                          {item.unit_cost
+                            ? `€ ${item.unit_cost.toFixed(2)}`
+                            : "-"}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {item.unit_cost
                             ? `€ ${(item.quantity * item.unit_cost).toFixed(2)}`
-                            : '-'}
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <Button
@@ -383,16 +398,16 @@ export function BulkIntakeDialog({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-            >
+            <Button type="button" variant="outline" onClick={handleClose}>
               Annulla
             </Button>
             <Button
               type="submit"
-              disabled={bulkIntakeMutation.isPending || items.length === 0 || !selectedWarehouseId}
+              disabled={
+                bulkIntakeMutation.isPending ||
+                items.length === 0 ||
+                !selectedWarehouseId
+              }
             >
               {bulkIntakeMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

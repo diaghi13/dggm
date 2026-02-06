@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use App\Models\ProductBrand;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Unique;
 use Spatie\LaravelData\Data;
@@ -27,6 +28,19 @@ class ProductBrandData extends Data
         #[Max(500)]
         public ?string $website,
 
-        public bool $is_active,
+        public bool|Optional $is_active,
     ) {}
+
+    public static function fromModel(ProductBrand $brand): self
+    {
+        return new self(
+            id: $brand->id,
+            name: $brand->name,
+            code: $brand->code ?? Optional::create(),
+            description: $brand->description,
+            logo_url: $brand->logo_url,
+            website: $brand->website,
+            is_active: $brand->is_active ?? true,
+        );
+    }
 }

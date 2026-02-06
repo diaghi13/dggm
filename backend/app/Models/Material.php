@@ -9,6 +9,32 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * DEPRECATED: This model is OBSOLETE and should NOT be used.
+ *
+ * The `materials` table was renamed to `products` on 2026-01-20.
+ * This model still references the old table structure with obsolete pricing fields.
+ *
+ * NOTE: The `is_kit` field was deprecated and removed. Use `product_type = ProductType::COMPOSITE` instead.
+ *
+ * ACTION REQUIRED:
+ * - Replace all usages with App\Models\Product
+ * - Update MaterialComponent → use ProductRelation
+ * - Update MaterialDependency → use ProductRelation
+ * - Update MaterialCategory → already migrated to ProductCategory
+ * - Delete this model after migration complete
+ *
+ * Files referencing this model:
+ * - app/Console/Commands/GenerateMaterialEmbeddings.php
+ * - app/Policies/MaterialPolicy.php
+ * - app/Http/Controllers/Api/V1/SiteMaterialController.php
+ * - app/Listeners/UpdateSiteMaterialsListener.php
+ * - app/Models/MaterialRequest.php
+ * - database/seeders/MaterialSeeder.php (if exists)
+ * - tests/Feature/Api/V1/SiteMaterialTest.php
+ *
+ * @deprecated Use App\Models\Product instead
+ */
 class Material extends Model
 {
     use HasFactory, SoftDeletes;

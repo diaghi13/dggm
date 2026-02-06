@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { productsApi } from '@/lib/api/products';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { productsApi } from "@/lib/api/products";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -21,13 +27,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Edit2, Package } from 'lucide-react';
-import { toast } from 'sonner';
-import { ComboboxSelect } from '@/components/combobox-select';
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Trash2, Edit2, Package } from "lucide-react";
+import { toast } from "sonner";
+import { ComboboxSelect } from "@/components/combobox-select";
 
 interface ProductKitComponentsProps {
   product: App.Data.ProductData;
@@ -36,17 +42,23 @@ interface ProductKitComponentsProps {
 export function ProductKitComponents({ product }: ProductKitComponentsProps) {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingComponent, setEditingComponent] = useState<App.Data.ProductRelationData | null>(null);
+  const [editingComponent, setEditingComponent] =
+    useState<App.Data.ProductRelationData | null>(null);
 
   // Form state
-  const [searchMaterial, setSearchMaterial] = useState('');
-  const [selectedMaterialId, setSelectedMaterialId] = useState<number | null>(null);
-  const [quantity, setQuantity] = useState('1');
-  const [notes, setNotes] = useState('');
+  const [searchMaterial, setSearchMaterial] = useState("");
+  const [selectedMaterialId, setSelectedMaterialId] = useState<number | null>(
+    null,
+  );
+  const [quantity, setQuantity] = useState("1");
+  const [notes, setNotes] = useState("");
 
   // Fetch materials for combobox
   const { data: materialsData, isLoading: isLoadingMaterials } = useQuery({
-    queryKey: ['products', { search: searchMaterial, is_active: true, per_page: 50 }],
+    queryKey: [
+      "products",
+      { search: searchMaterial, is_active: true, per_page: 50 },
+    ],
     queryFn: () =>
       productsApi.getAll({
         search: searchMaterial,
@@ -58,72 +70,87 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
   const materials = materialsData?.data ?? [];
 
   const addComponentMutation = useMutation({
-    mutationFn: (data: { related_product_id: number; quantity_value: string; notes?: string }) =>
+    mutationFn: (data: {
+      related_product_id: number;
+      quantity_value: string;
+      notes?: string;
+    }) =>
       productsApi.addRelation(product.id ?? 0, {
         ...data,
         relation_type_id: 2, // TODO: ID per "component" - verificare con backend
-        quantity_type: 'fixed',
+        quantity_type: "fixed",
         is_visible_in_quote: true,
         is_required_for_stock: true,
         is_optional: false,
       } as any),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product-relations', product.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["product-relations", product.id],
+      });
       setIsAddDialogOpen(false);
       resetForm();
-      toast.success('Componente aggiunto', {
-        description: 'Il componente è stato aggiunto al kit',
+      toast.success("Componente aggiunto", {
+        description: "Il componente è stato aggiunto al kit",
       });
     },
     onError: (error: Error) => {
-      toast.error('Errore', {
-        description: error.message || 'Impossibile aggiungere il componente',
+      toast.error("Errore", {
+        description: error.message || "Impossibile aggiungere il componente",
       });
     },
   });
 
   const updateComponentMutation = useMutation({
-    mutationFn: (data: { componentId: number; quantity_value: string; notes?: string }) =>
+    mutationFn: (data: {
+      componentId: number;
+      quantity_value: string;
+      notes?: string;
+    }) =>
       productsApi.updateRelation(product.id ?? 0, data.componentId, {
         quantity_value: data.quantity_value,
         notes: data.notes,
       } as any),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product-relations', product.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["product-relations", product.id],
+      });
       setEditingComponent(null);
       resetForm();
-      toast.success('Componente aggiornato');
+      toast.success("Componente aggiornato");
     },
     onError: (error: Error) => {
-      toast.error('Errore', {
-        description: error.message || 'Impossibile aggiornare il componente',
+      toast.error("Errore", {
+        description: error.message || "Impossibile aggiornare il componente",
       });
     },
   });
 
   const deleteComponentMutation = useMutation({
-    mutationFn: (componentId: number) => productsApi.deleteRelation(product.id ?? 0, componentId),
+    mutationFn: (componentId: number) =>
+      productsApi.deleteRelation(product.id ?? 0, componentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product-relations', product.id] });
-      toast.success('Componente rimosso');
+      queryClient.invalidateQueries({
+        queryKey: ["product-relations", product.id],
+      });
+      toast.success("Componente rimosso");
     },
     onError: (error: Error) => {
-      toast.error('Errore', {
-        description: error.message || 'Impossibile rimuovere il componente',
+      toast.error("Errore", {
+        description: error.message || "Impossibile rimuovere il componente",
       });
     },
   });
 
   const resetForm = () => {
     setSelectedMaterialId(null);
-    setQuantity('1');
-    setNotes('');
-    setSearchMaterial('');
+    setQuantity("1");
+    setNotes("");
+    setSearchMaterial("");
   };
 
   const handleSubmit = () => {
     if (!selectedMaterialId || !quantity) {
-      toast.error('Campi obbligatori mancanti');
+      toast.error("Campi obbligatori mancanti");
       return;
     }
 
@@ -146,17 +173,17 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
     setEditingComponent(component);
     setSelectedMaterialId(component.related_product_id);
     setQuantity(component.quantity_value);
-    setNotes(component.notes || '');
+    setNotes(component.notes || "");
   };
 
   // Fetch product relations filtered by type "component"
   const { data: relations = [] } = useQuery({
-    queryKey: ['product-relations', product.id],
+    queryKey: ["product-relations", product.id],
     queryFn: () => productsApi.getRelations(product.id ?? 0),
   });
 
-  const components = relations.filter((r: App.Data.ProductRelationData) =>
-    r.relationType?.code === 'component'
+  const components = relations.filter(
+    (r: App.Data.ProductRelationData) => r.relationType?.code === "component",
   );
 
   return (
@@ -166,7 +193,8 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
           <div>
             <CardTitle>Componenti del Kit</CardTitle>
             <CardDescription>
-              Materiali che compongono questo kit ({components.length} componenti)
+              Materiali che compongono questo kit ({components.length}{" "}
+              componenti)
             </CardDescription>
           </div>
           <Dialog
@@ -188,12 +216,14 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
-                  {editingComponent ? 'Modifica Componente' : 'Aggiungi Componente'}
+                  {editingComponent
+                    ? "Modifica Componente"
+                    : "Aggiungi Componente"}
                 </DialogTitle>
                 <DialogDescription>
                   {editingComponent
-                    ? 'Modifica le informazioni del componente'
-                    : 'Aggiungi un materiale come componente di questo kit'}
+                    ? "Modifica le informazioni del componente"
+                    : "Aggiungi un materiale come componente di questo kit"}
                 </DialogDescription>
               </DialogHeader>
 
@@ -201,8 +231,10 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
                 <div className="space-y-2">
                   <Label htmlFor="material">Materiale *</Label>
                   <ComboboxSelect
-                    value={selectedMaterialId?.toString() || ''}
-                    onValueChange={(value) => setSelectedMaterialId(parseInt(value))}
+                    value={selectedMaterialId?.toString() || ""}
+                    onValueChange={(value) =>
+                      setSelectedMaterialId(parseInt(value))
+                    }
                     onSearchChange={setSearchMaterial}
                     placeholder="Cerca materiale..."
                     emptyText="Nessun materiale trovato"
@@ -210,7 +242,7 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
                     disabled={!!editingComponent}
                     options={materials.map((m: App.Data.ProductData) => ({
                       label: `${m.code} - ${m.name}`,
-                      value: m.id?.toString() || '',
+                      value: m.id?.toString() || "",
                     }))}
                   />
                 </div>
@@ -254,14 +286,16 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
                 <Button
                   onClick={handleSubmit}
                   disabled={
-                    addComponentMutation.isPending || updateComponentMutation.isPending
+                    addComponentMutation.isPending ||
+                    updateComponentMutation.isPending
                   }
                 >
-                  {addComponentMutation.isPending || updateComponentMutation.isPending
-                    ? 'Salvataggio...'
+                  {addComponentMutation.isPending ||
+                  updateComponentMutation.isPending
+                    ? "Salvataggio..."
                     : editingComponent
-                    ? 'Aggiorna'
-                    : 'Aggiungi'}
+                      ? "Aggiorna"
+                      : "Aggiungi"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -272,7 +306,9 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
         {components.length === 0 ? (
           <div className="text-center py-12">
             <Package className="mx-auto h-12 w-12 text-slate-300" />
-            <h3 className="mt-4 text-lg font-semibold text-slate-900">Nessun componente</h3>
+            <h3 className="mt-4 text-lg font-semibold text-slate-900">
+              Nessun componente
+            </h3>
             <p className="mt-2 text-sm text-slate-600">
               Aggiungi i materiali che compongono questo kit
             </p>
@@ -297,23 +333,32 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
                   {components.map((component: App.Data.ProductRelationData) => (
                     <TableRow key={component.id}>
                       <TableCell className="font-mono text-sm">
-                        {component.relatedProduct?.code || 'N/A'}
+                        {component.relatedProduct?.code || "N/A"}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {component.relatedProduct?.name || 'N/A'}
+                        {component.relatedProduct?.name || "N/A"}
                       </TableCell>
                       <TableCell className="text-right">
                         {component.quantity_value}
                       </TableCell>
-                      <TableCell>{component.relatedProduct?.unit || '-'}</TableCell>
+                      <TableCell>
+                        {component.relatedProduct?.unit || "-"}
+                      </TableCell>
                       <TableCell className="text-right">
-                        € {Number(component.relatedProduct?.purchase_price || 0).toFixed(2)}
+                        €{" "}
+                        {Number(
+                          component.relatedProduct?.standard_cost || 0,
+                        ).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        € {(Number(component.quantity_value) * Number(component.relatedProduct?.purchase_price || 0)).toFixed(2)}
+                        €{" "}
+                        {(
+                          Number(component.quantity_value) *
+                          Number(component.relatedProduct?.standard_cost || 0)
+                        ).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-sm text-slate-600">
-                        {component.notes || '-'}
+                        {component.notes || "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -331,10 +376,12 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
                               if (
                                 component.id !== null &&
                                 confirm(
-                                  'Sei sicuro di voler rimuovere questo componente dal kit?'
+                                  "Sei sicuro di voler rimuovere questo componente dal kit?",
                                 )
                               ) {
-                                deleteComponentMutation.mutate(component.id as number);
+                                deleteComponentMutation.mutate(
+                                  component.id as number,
+                                );
                               }
                             }}
                           >

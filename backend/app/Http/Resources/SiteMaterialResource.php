@@ -41,7 +41,7 @@ class SiteMaterialResource extends JsonResource
                 'name' => $this->material->name,
                 'unit' => $this->material->unit,
                 'product_type' => $this->material->product_type?->value,
-                'is_kit' => $this->material->is_kit,
+                'is_composite' => $this->material->product_type === \App\Enums\ProductType::COMPOSITE,
                 'is_rentable' => $this->material->is_rentable,
             ]),
 

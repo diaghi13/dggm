@@ -34,6 +34,11 @@ class UpdateProductAction
                 'deleted_at'
             )->toArray();
 
+            // Filter Optional fields and nulls to avoid overwriting with null
+            $productData = array_filter($productData, function ($value) {
+                return ! ($value instanceof \Spatie\LaravelData\Optional) && $value !== null;
+            });
+
             // Update product using Eloquent
             $product->update($productData);
 

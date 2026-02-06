@@ -133,7 +133,7 @@ export default function WarehouseDetailPage() {
   const totalValue = inventory.reduce(
     (sum: number, item: App.Data.InventoryData) => {
       const quantity = Number(item.quantity_available || 0);
-      const price = Number(item.product?.purchase_price || 0);
+      const price = Number(item.product?.manufacturer_cost_price || 0);
       return sum + quantity * price;
     },
     0,

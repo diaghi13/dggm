@@ -30,7 +30,9 @@
       "WebFetch(domain:spatie.be)",
       "Bash(xargs:*)",
       "Bash(npm run lint:*)",
-      "Bash(printf:*)"
+      "Bash(printf:*)",
+      "Bash(vendor/bin/pint:*)",
+      "Bash(composer dump-autoload:*)"
     ],
     "deny": [],
     "ask": []

@@ -173,6 +173,13 @@ class RoleAndPermissionSeeder extends Seeder
             'discount-families.edit',
             'discount-families.delete',
 
+            // Price Lists
+            'price-lists.view',
+            'price-lists.create',
+            'price-lists.edit',
+            'price-lists.delete',
+            'price-lists.regenerate',
+
             // Invoice management
             'invoices.view',
             'invoices.create',
@@ -269,6 +276,7 @@ class RoleAndPermissionSeeder extends Seeder
             'product-brands.view', 'product-brands.create', 'product-brands.edit',
             'payment-terms.view',
             'discount-families.view',
+            'price-lists.view',
             'invoices.view',
             'vehicles.view',
             'progress-billings.view', 'progress-billings.create', 'progress-billings.edit',
@@ -331,6 +339,7 @@ class RoleAndPermissionSeeder extends Seeder
             'product-brands.view', 'product-brands.create', 'product-brands.edit', 'product-brands.delete',
             'payment-terms.view', 'payment-terms.create', 'payment-terms.edit', 'payment-terms.delete',
             'discount-families.view', 'discount-families.create', 'discount-families.edit', 'discount-families.delete',
+            'price-lists.view', 'price-lists.create', 'price-lists.edit', 'price-lists.delete', 'price-lists.regenerate',
             'vehicles.view',
         ]);
 

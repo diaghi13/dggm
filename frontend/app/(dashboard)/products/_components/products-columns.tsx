@@ -84,7 +84,7 @@ export const createProductsColumns = (
     header: () => <div className="text-right">Stock Totale</div>,
     size: 130,
     cell: ({ row }) => {
-      const stock = row.original.calculated_sale_price;
+      const stock = row.original.total_stock;
       return stock !== undefined ? (
         <div className="text-right">
           <span className="font-medium text-slate-900 dark:text-slate-100">

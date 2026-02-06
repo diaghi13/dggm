@@ -26,12 +26,21 @@ class UpdateWarehouseCache
         Cache::forget('warehouses:all');
     }
 
-    public function subscribe($events): array
+    public function subscribe($events): void
     {
-        return [
-            WarehouseCreated::class => 'handleCreated',
-            WarehouseUpdated::class => 'handleUpdated',
-            WarehouseDeleted::class => 'handleDeleted',
-        ];
+        $events->listen(
+            WarehouseCreated::class,
+            [UpdateWarehouseCache::class, 'handleCreated']
+        );
+
+        $events->listen(
+            WarehouseUpdated::class,
+            [UpdateWarehouseCache::class, 'handleUpdated']
+        );
+
+        $events->listen(
+            WarehouseDeleted::class,
+            [UpdateWarehouseCache::class, 'handleDeleted']
+        );
     }
 }

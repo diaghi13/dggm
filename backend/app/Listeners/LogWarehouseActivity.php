@@ -58,12 +58,21 @@ class LogWarehouseActivity
     /**
      * Register the listeners for the subscriber.
      */
-    public function subscribe($events): array
+    public function subscribe($events): void
     {
-        return [
-            WarehouseCreated::class => 'handleCreated',
-            WarehouseUpdated::class => 'handleUpdated',
-            WarehouseDeleted::class => 'handleDeleted',
-        ];
+        $events->listen(
+            WarehouseCreated::class,
+            [LogWarehouseActivity::class, 'handleCreated']
+        );
+
+        $events->listen(
+            WarehouseUpdated::class,
+            [LogWarehouseActivity::class, 'handleUpdated']
+        );
+
+        $events->listen(
+            WarehouseDeleted::class,
+            [LogWarehouseActivity::class, 'handleDeleted']
+        );
     }
 }

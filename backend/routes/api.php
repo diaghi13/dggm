@@ -13,10 +13,13 @@ use App\Http\Controllers\Api\V1\MaterialRequestController;
 use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PermissionController;
+use App\Http\Controllers\Api\V1\PriceListController;
 use App\Http\Controllers\Api\V1\ProductCategoryController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProductPricingController;
 use App\Http\Controllers\Api\V1\ProductRelationController;
 use App\Http\Controllers\Api\V1\ProductRelationTypeController;
+use App\Http\Controllers\Api\V1\ProductUnitTypeController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SettingController;
@@ -147,6 +150,19 @@ Route::prefix('v1')->group(function () {
         Route::get('products/categories/list', [ProductController::class, 'categories']);
         Route::post('products/{product}/calculate-price', [ProductController::class, 'calculatePrice']);
 
+        // Product Media
+        Route::get('products/{product}/media', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'index']);
+        Route::post('products/{product}/media', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'store']);
+        Route::get('products/{product}/media/{media}', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'show']);
+        Route::put('products/{product}/media/{media}', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'update']);
+        Route::delete('products/{product}/media/{media}', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'destroy']);
+        Route::post('products/{product}/media/{media}/reorder', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'reorder']);
+
+        // Product Pricing
+        Route::get('products/{product}/pricing', [ProductPricingController::class, 'show']);
+        Route::post('products/bulk-update-prices', [ProductPricingController::class, 'bulkUpdate']);
+        Route::post('products/preview-price-adjustment', [ProductPricingController::class, 'previewAdjustment']);
+
         // Product Relations (unified relations system)
         Route::get('products/{product}/relations', [ProductRelationController::class, 'index']);
         Route::post('products/{product}/relations', [ProductRelationController::class, 'store']);
@@ -171,6 +187,20 @@ Route::prefix('v1')->group(function () {
 
         // Discount Families
         Route::apiResource('discount-families', \App\Http\Controllers\Api\V1\DiscountFamilyController::class);
+
+        // Price Lists
+        Route::prefix('price-lists')->group(function () {
+            Route::get('/', [PriceListController::class, 'index']);
+            Route::post('/', [PriceListController::class, 'store']);
+            Route::get('/{priceList}', [PriceListController::class, 'show']);
+            Route::put('/{priceList}', [PriceListController::class, 'update']);
+            Route::delete('/{priceList}', [PriceListController::class, 'destroy']);
+            Route::post('/{priceList}/regenerate', [PriceListController::class, 'regenerate']);
+        });
+
+        // Product Unit Types
+        Route::get('/unit-types', [ProductUnitTypeController::class, 'index']);
+        Route::get('/unit-types/category/{category}', [ProductUnitTypeController::class, 'byCategory']);
 
         // Material Categories (DEPRECATED - use product-categories instead)
         Route::apiResource('material-categories', MaterialCategoryController::class);

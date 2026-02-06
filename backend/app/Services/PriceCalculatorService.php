@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Product;
+use App\Models\Setting;
 use App\ValueObjects\Money;
 
 /**
@@ -253,5 +255,113 @@ class PriceCalculatorService
         }
 
         return new Money($totalValue / $totalWeight, $items[0]['price']->currency);
+    }
+
+    /**
+     * Calculate product purchase price from suppliers
+     * Uses highest price from active suppliers for safety
+     * Falls back to manufacturer cost if no suppliers
+     *
+     * @param  string  $strategy  'highest' (default), 'lowest', 'weighted_average'
+     * @return float Purchase price (net, VAT excluded)
+     */
+    public function calculateProductPurchasePrice(Product $product, string $strategy = 'highest'): float
+    {
+        $suppliers = $product->suppliers()
+            ->wherePivot('is_active', true)
+            ->get();
+
+        if ($suppliers->isEmpty()) {
+            return $product->manufacturer_cost_price ?? 0;
+        }
+
+        return match ($strategy) {
+            'highest' => (float) $suppliers->max('pivot.purchase_price'),
+            'lowest' => (float) $suppliers->min('pivot.purchase_price'),
+            'weighted_average' => $this->calculateWeightedAverageSupplierPrice($suppliers),
+            default => (float) $suppliers->max('pivot.purchase_price'),
+        };
+    }
+
+    /**
+     * Calculate sale price with markup
+     *
+     * @return float Sale price (net, VAT excluded)
+     */
+    public function calculateProductSalePrice(Product $product): float
+    {
+        $purchasePrice = $this->calculateProductPurchasePrice($product);
+        $markup = $product->effective_markup_percent;
+
+        return round($purchasePrice * (1 + ($markup / 100)), 2);
+    }
+
+    /**
+     * Calculate rental prices from sale price
+     * Uses system settings for divisor and multipliers
+     *
+     * @param  float  $salePrice  Base sale price (net, VAT excluded)
+     * @return array ['daily' => float, 'weekly' => float, 'monthly' => float]
+     */
+    public function calculateRentalPrices(float $salePrice): array
+    {
+        $dailyDivisor = (float) Setting::get('rental.daily_rate_percent', 15);
+        $weeklyMultiplier = (float) Setting::get('rental.weekly_multiplier', sqrt(7));
+        $monthlyMultiplier = (float) Setting::get('rental.monthly_multiplier', sqrt(30));
+
+        $daily = $salePrice / $dailyDivisor;
+
+        return [
+            'daily' => round($daily, 2),
+            'weekly' => round($daily * $weeklyMultiplier, 2),
+            'monthly' => round($daily * $monthlyMultiplier, 2),
+        ];
+    }
+
+    /**
+     * Apply price list adjustment to base price
+     *
+     * @param  float  $basePrice  Base price before adjustment (net, VAT excluded)
+     * @param  string  $adjustmentType  'percentage', 'fixed', 'none'
+     * @param  float|null  $adjustmentValue  Value to apply
+     * @return float Adjusted price (net, VAT excluded)
+     */
+    public function applyPriceListAdjustment(
+        float $basePrice,
+        string $adjustmentType,
+        ?float $adjustmentValue
+    ): float {
+        if ($adjustmentValue === null || $adjustmentType === 'none') {
+            return $basePrice;
+        }
+
+        return match ($adjustmentType) {
+            'percentage' => round($basePrice * (1 + ($adjustmentValue / 100)), 2),
+            'fixed' => round($basePrice + $adjustmentValue, 2),
+            default => $basePrice,
+        };
+    }
+
+    /**
+     * Calculate weighted average supplier price
+     * Preferred suppliers have double weight
+     *
+     * @param  \Illuminate\Support\Collection  $suppliers
+     * @return float Weighted average price
+     */
+    private function calculateWeightedAverageSupplierPrice($suppliers): float
+    {
+        $totalValue = 0;
+        $totalWeight = 0;
+
+        foreach ($suppliers as $supplier) {
+            $price = $supplier->pivot->purchase_price;
+            $weight = $supplier->pivot->is_preferred_supplier ? 2 : 1;
+
+            $totalValue += $price * $weight;
+            $totalWeight += $weight;
+        }
+
+        return $totalWeight > 0 ? round($totalValue / $totalWeight, 2) : 0;
     }
 }

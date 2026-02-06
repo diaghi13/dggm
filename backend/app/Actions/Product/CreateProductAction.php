@@ -34,6 +34,11 @@ class CreateProductAction
                 'deleted_at'
             )->toArray();
 
+            // Filter Optional fields and nulls to let DB defaults apply
+            $productData = array_filter($productData, function ($value) {
+                return ! ($value instanceof \Spatie\LaravelData\Optional) && $value !== null;
+            });
+
             // Create product using Eloquent
             $product = Product::create($productData);
 

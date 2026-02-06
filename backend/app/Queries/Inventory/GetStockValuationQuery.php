@@ -20,7 +20,7 @@ readonly class GetStockValuationQuery
         }
 
         $result = $query->selectRaw('
-            SUM(inventory.quantity_available * products.standard_cost) as total_value,
+            SUM(inventory.quantity_available * COALESCE(products.standard_cost, 0)) as total_value,
             SUM(inventory.quantity_available) as total_units,
             COUNT(DISTINCT inventory.product_id) as unique_products,
             SUM(inventory.quantity_reserved) as total_reserved,

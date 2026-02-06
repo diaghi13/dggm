@@ -56,12 +56,8 @@ class ProductData extends Data
 
         public ProductType $product_type,
 
-        // Is kit (predefined set of items sold together)
-        // Not necessarily, need to drop column from db later
-        public ?bool $is_kit,
-
         // Package
-        public ?bool $is_package,
+        public bool|Optional $is_package,
 
         #[Min(0)]
         public ?float $package_weight,
@@ -73,36 +69,27 @@ class ProductData extends Data
         public ?string $package_dimensions,
 
         // Rental
-        public ?bool $is_rentable,
+        public bool|Optional $is_rentable,
 
         #[Min(0)]
-        public ?int $quantity_out_on_rental,
+        public int|Optional $quantity_out_on_rental,
 
         #[Max(20)]
         public ?string $unit,
 
-        // Pricing
+        // Standard cost (inventory valuation only, NOT sale price)
         #[Min(0)]
         public ?float $standard_cost,
 
+        // Manufacturer reference prices (NOT for sale)
         #[Min(0)]
-        public ?float $purchase_price,
-
-        #[Min(0), Max(100)]
-        public ?float $markup_percentage,
+        public ?float $manufacturer_cost_price,
 
         #[Min(0)]
-        public ?float $sale_price,
+        public ?float $manufacturer_retail_price,
 
-        // Rental pricing
-        #[Min(0)]
-        public ?float $rental_price_daily,
-
-        #[Min(0)]
-        public ?float $rental_price_weekly,
-
-        #[Min(0)]
-        public ?float $rental_price_monthly,
+        #[Min(0), Max(1000)]
+        public ?float $sale_markup_percent,
 
         // Identifiers
         #[Max(255)]
@@ -144,10 +131,10 @@ class ProductData extends Data
         public SupplierData|Lazy|null $defaultSupplier = null,
         #[DataCollectionOf(ProductRelationData::class)]
         public DataCollection|Lazy|null $relations = null,
+        #[DataCollectionOf(ProductMediaData::class)]
+        public DataCollection|Lazy|null $media = null,
 
         // Computed properties (read-only from model accessors)
-        #[Computed]
-        public float|Optional $calculated_sale_price = 0,
         #[Computed]
         public float|Optional $composite_total_cost = 0,
         #[Computed]
@@ -172,7 +159,6 @@ class ProductData extends Data
             category_id: $product->category_id,
             brand_id: $product->brand_id,
             product_type: $product->product_type,
-            is_kit: $product->is_kit,
             is_package: $product->is_package,
             package_weight: $product->package_weight,
             package_volume: $product->package_volume,
@@ -181,12 +167,9 @@ class ProductData extends Data
             quantity_out_on_rental: $product->quantity_out_on_rental,
             unit: $product->unit,
             standard_cost: $product->standard_cost,
-            purchase_price: $product->purchase_price,
-            markup_percentage: $product->markup_percentage,
-            sale_price: $product->sale_price,
-            rental_price_daily: $product->rental_price_daily,
-            rental_price_weekly: $product->rental_price_weekly,
-            rental_price_monthly: $product->rental_price_monthly,
+            manufacturer_cost_price: $product->manufacturer_cost_price,
+            manufacturer_retail_price: $product->manufacturer_retail_price,
+            sale_markup_percent: $product->sale_markup_percent,
             barcode: $product->barcode,
             qr_code: $product->qr_code,
             default_supplier_id: $product->default_supplier_id,
@@ -204,8 +187,8 @@ class ProductData extends Data
             brand: Lazy::whenLoaded('brand', $product, fn () => ProductBrandData::from($product->brand)),
             defaultSupplier: Lazy::whenLoaded('defaultSupplier', $product, fn () => SupplierData::from($product->defaultSupplier)),
             relations: Lazy::whenLoaded('relations', $product, fn () => ProductRelationData::collect($product->relations)),
+            media: Lazy::whenLoaded('media', $product, fn () => ProductMediaData::collect($product->media)),
             // Computed properties from model accessors
-            calculated_sale_price: $product->calculated_sale_price,
             composite_total_cost: $product->composite_total_cost,
             total_stock: $product->total_stock,
             available_stock: $product->available_stock,
@@ -245,18 +228,12 @@ class ProductData extends Data
             'quantity_out_on_rental.min' => 'La quantità in affitto deve essere maggiore o uguale a zero.',
             'unit.max' => 'L\'unità di misura non può superare 20 caratteri.',
 
-            // Pricing
+            // Pricing (manufacturer reference only)
             'standard_cost.min' => 'Il costo standard deve essere maggiore o uguale a zero.',
-            'purchase_price.required' => 'Il prezzo di acquisto è obbligatorio.',
-            'purchase_price.min' => 'Il prezzo di acquisto deve essere maggiore o uguale a zero.',
-            'markup_percentage.min' => 'Il margine deve essere maggiore o uguale a zero.',
-            'markup_percentage.max' => 'Il margine non può superare il 100%.',
-            'sale_price.min' => 'Il prezzo di vendita deve essere maggiore o uguale a zero.',
-
-            // Rental pricing
-            'rental_price_daily.min' => 'Il prezzo giornaliero deve essere maggiore o uguale a zero.',
-            'rental_price_weekly.min' => 'Il prezzo settimanale deve essere maggiore o uguale a zero.',
-            'rental_price_monthly.min' => 'Il prezzo mensile deve essere maggiore o uguale a zero.',
+            'manufacturer_cost_price.min' => 'Il prezzo di costo del produttore deve essere maggiore o uguale a zero.',
+            'manufacturer_retail_price.min' => 'Il prezzo al dettaglio del produttore deve essere maggiore o uguale a zero.',
+            'sale_markup_percent.min' => 'Il margine di vendita deve essere maggiore o uguale a zero.',
+            'sale_markup_percent.max' => 'Il margine di vendita non può superare il 1000%.',
 
             // Identifiers
             'barcode.max' => 'Il codice a barre non può superare 255 caratteri.',

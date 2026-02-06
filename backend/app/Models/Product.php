@@ -10,11 +10,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Image\Enums\Fit;
 use Spatie\LaravelData\WithData;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Product extends Model
+class Product extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes, WithData;
+    use HasFactory, InteractsWithMedia, SoftDeletes, WithData;
 
     protected $table = 'products';
 
@@ -39,12 +43,9 @@ class Product extends Model
         'quantity_out_on_rental',
         'unit',
         'standard_cost',
-        'purchase_price',
-        'markup_percentage',
-        'sale_price',
-        'rental_price_daily',
-        'rental_price_weekly',
-        'rental_price_monthly',
+        'manufacturer_cost_price',
+        'manufacturer_retail_price',
+        'sale_markup_percent',
         'barcode',
         'qr_code',
         'default_supplier_id',
@@ -61,12 +62,9 @@ class Product extends Model
         return [
             'product_type' => ProductType::class,
             'standard_cost' => 'decimal:2',
-            'purchase_price' => 'decimal:2',
-            'markup_percentage' => 'decimal:2',
-            'sale_price' => 'decimal:2',
-            'rental_price_daily' => 'decimal:2',
-            'rental_price_weekly' => 'decimal:2',
-            'rental_price_monthly' => 'decimal:2',
+            'manufacturer_cost_price' => 'decimal:2',
+            'manufacturer_retail_price' => 'decimal:2',
+            'sale_markup_percent' => 'decimal:2',
             'reorder_level' => 'decimal:2',
             'reorder_quantity' => 'decimal:2',
             'package_weight' => 'decimal:2',
@@ -136,6 +134,24 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'category_id');
+    }
+
+    /**
+     * Price list items for this product
+     */
+    public function priceListItems(): HasMany
+    {
+        return $this->hasMany(PriceListItem::class, 'product_id');
+    }
+
+    /**
+     * Active price list items only
+     */
+    public function activePriceListItems(): HasMany
+    {
+        return $this->priceListItems()
+            ->where('is_active', true)
+            ->whereHas('priceList', fn ($q) => $q->where('is_active', true));
     }
 
     // Product Relations (NEW unified table)
@@ -230,16 +246,40 @@ class Product extends Model
     }
 
     // Accessors (Laravel 11 Attribute style)
-    protected function calculatedSalePrice(): Attribute
+
+    /**
+     * Get effective markup percent (product override or system default)
+     */
+    protected function effectiveMarkupPercent(): Attribute
     {
         return Attribute::make(
-            get: function () {
-                if ($this->markup_percentage > 0) {
-                    return round($this->purchase_price * (1 + ($this->markup_percentage / 100)), 2);
-                }
+            get: fn () => $this->sale_markup_percent
+                ?? (float) Setting::get('pricing.default_sale_markup_percent', 30)
+        );
+    }
 
-                return $this->sale_price;
-            }
+    /**
+     * Get highest supplier purchase price (for price list calculation)
+     */
+    protected function highestSupplierPrice(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->suppliers()
+                ->wherePivot('is_active', true)
+                ->max('supplier_product.purchase_price')
+        );
+    }
+
+    /**
+     * Get effective purchase price for calculations
+     * Priority: highest supplier price > manufacturer cost > 0
+     */
+    protected function effectivePurchasePrice(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->highest_supplier_price
+                ?? $this->manufacturer_cost_price
+                ?? 0
         );
     }
 
@@ -272,20 +312,14 @@ class Product extends Model
                     return 0;
                 }
 
-                return (float) $this->components()->with('product')
+                return (float) $this->components()->with('relatedProduct')
                     ->get()
-                    ->sum(fn ($component) => $component->quantity * $component->product->purchase_price);
+                    ->sum(fn ($component) => $component->calculateQuantity(1) * $component->relatedProduct->effective_purchase_price);
             }
         );
     }
 
     // Business methods
-    public function calculateSalePrice(): void
-    {
-        if ($this->markup_percentage > 0) {
-            $this->sale_price = $this->purchase_price * (1 + ($this->markup_percentage / 100));
-        }
-    }
 
     public function rentOut(float $quantity): bool
     {
@@ -338,8 +372,8 @@ class Product extends Model
                     'product_id' => $relation->related_product_id,
                     'product' => $relation->relatedProduct,
                     'quantity' => $calculatedQty,
-                    'unit_price' => $relation->relatedProduct->sale_price ?? 0,
-                    'total_price' => $calculatedQty * ($relation->relatedProduct->sale_price ?? 0),
+                    'unit_price' => 0, // Price comes from price_list_items
+                    'total_price' => 0, // Price comes from price_list_items
                     'is_optional' => $relation->is_optional,
                 ];
 
@@ -371,28 +405,124 @@ class Product extends Model
         return (float) $this->components()
             ->with('relatedProduct')
             ->get()
-            ->sum(fn ($rel) => $rel->calculateQuantity(1) * $rel->relatedProduct->purchase_price);
+            ->sum(fn ($rel) => $rel->calculateQuantity(1) * $rel->relatedProduct->effective_purchase_price);
     }
 
     /**
-     * Calculate composite sale price (updated to use new relations)
+     * Register media collections and conversions
      */
-    public function calculateCompositeSalePrice(): float
+    public function registerMediaCollections(): void
     {
-        if ($this->product_type !== ProductType::COMPOSITE) {
-            return $this->sale_price ?? 0;
-        }
+        // Images collection with conversions
+        $this->addMediaCollection('images')
+            ->useFallbackUrl('/images/product-placeholder.png')
+            ->useFallbackPath(public_path('/images/product-placeholder.png'))
+            ->registerMediaConversions(function (Media $media) {
+                $this->addMediaConversion('thumb')
+                    ->fit(Fit::Crop, 150, 150)
+                    ->nonQueued();
 
-        // If manual price is set, use it
-        if ($this->sale_price > 0) {
-            return $this->sale_price;
-        }
+                $this->addMediaConversion('medium')
+                    ->fit(Fit::Max, 800, 600)
+                    ->nonQueued();
 
-        // Otherwise calculate from components
-        return (float) $this->components()
-            ->with('relatedProduct')
-            ->get()
-            ->sum(fn ($rel) => $rel->calculateQuantity(1) * $rel->relatedProduct->sale_price);
+                $this->addMediaConversion('responsive')
+                    ->withResponsiveImages()
+                    ->nonQueued();
+            });
+
+        // Technical sheets collection
+        $this->addMediaCollection('technical_sheets');
+
+        // Certifications collection
+        $this->addMediaCollection('certifications');
+
+        // Manuals collection
+        $this->addMediaCollection('manuals');
+
+        // Drawings collection
+        $this->addMediaCollection('drawings');
+
+        // Documents collection (generic)
+        $this->addMediaCollection('documents');
+    }
+
+    /**
+     * Get primary image for the product
+     */
+    public function getPrimaryImage(): ?Media
+    {
+        return $this->getMedia('images')
+            ->first(fn (Media $media) => $media->getCustomProperty('is_primary', false) === true)
+            ?? $this->getFirstMedia('images');
+    }
+
+    /**
+     * Get images marked for use in quotes
+     */
+    public function getImagesForQuotes()
+    {
+        return $this->getMedia('images')
+            ->filter(fn (Media $media) => $media->getCustomProperty('use_in_quotes', false) === true);
+    }
+
+    /**
+     * Get images marked for use in projects
+     */
+    public function getImagesForProjects()
+    {
+        return $this->getMedia('images')
+            ->filter(fn (Media $media) => $media->getCustomProperty('use_in_projects', false) === true);
+    }
+
+    /**
+     * Get technical sheets
+     */
+    public function getTechnicalSheets()
+    {
+        return $this->getMedia('technical_sheets');
+    }
+
+    /**
+     * Get certifications
+     */
+    public function getCertifications()
+    {
+        return $this->getMedia('certifications');
+    }
+
+    /**
+     * Calculate rental prices from sale price
+     *
+     * @param  float  $salePrice  Base sale price (net, VAT excluded)
+     * @return array ['daily' => float, 'weekly' => float, 'monthly' => float]
+     */
+    public function calculateRentalPrices(float $salePrice): array
+    {
+        $dailyDivisor = (float) Setting::get('rental.daily_rate_percent', 15);
+        $weeklyMultiplier = (float) Setting::get('rental.weekly_multiplier', sqrt(7));
+        $monthlyMultiplier = (float) Setting::get('rental.monthly_multiplier', sqrt(30));
+
+        $daily = $salePrice / $dailyDivisor;
+
+        return [
+            'daily' => round($daily, 2),
+            'weekly' => round($daily * $weeklyMultiplier, 2),
+            'monthly' => round($daily * $monthlyMultiplier, 2),
+        ];
+    }
+
+    /**
+     * Calculate base sale price with markup (for price list generation)
+     *
+     * @return float Calculated price (net, VAT excluded)
+     */
+    public function calculateBaseSalePrice(): float
+    {
+        $purchasePrice = $this->effective_purchase_price;
+        $markup = $this->effective_markup_percent;
+
+        return round($purchasePrice * (1 + ($markup / 100)), 2);
     }
 
     // ==================== HELPER METHODS FOR IMPORT ====================
@@ -456,6 +586,19 @@ class Product extends Model
     }
 
     /**
+     * Map supplier unit to standard unit code using ProductUnitType
+     *
+     * @param  string  $supplierUnit  Unit string from supplier (e.g., "kg", "KG", "meter", "pz")
+     * @return string Standard unit code
+     */
+    private static function mapUnit(string $supplierUnit): string
+    {
+        $unit = ProductUnitType::findByAlias($supplierUnit);
+
+        return $unit ? $unit->code : 'pz'; // Default to 'pz' if not found
+    }
+
+    /**
      * Create or update product from supplier data (Excel import)
      *
      * @param  array  $data  Supplier data from Excel
@@ -487,22 +630,21 @@ class Product extends Model
             'brand_id' => $brand?->id,
             'ean' => $data['ean'] ?? null,
             'etim_code' => $data['etim_code'] ?? null,
-            'unit' => $data['unit'] ?? 'pz',
+            'unit' => self::mapUnit($data['unit'] ?? 'pz'),
             'product_type' => $data['product_type'] ?? ProductType::ARTICLE,
+
+            // NEW: Manufacturer reference prices (optional)
+            'manufacturer_cost_price' => $data['manufacturer_cost_price'] ?? $data['manufacturer_cost'] ?? $data['cost_price'] ?? null,
+            'manufacturer_retail_price' => $data['manufacturer_retail_price'] ?? $data['manufacturer_retail'] ?? $data['msrp'] ?? $data['rrp'] ?? null,
+            'sale_markup_percent' => $data['sale_markup_percent'] ?? null,
         ];
 
         // 5. Create or update product
         if ($product) {
-            $product->update(array_filter($productData));
+            $product->update(array_filter($productData, fn ($value) => $value !== null));
         } else {
             $product = self::create(array_merge($productData, [
                 'standard_cost' => 0,
-                'purchase_price' => 0,
-                'sale_price' => 0,
-                'markup_percentage' => 0,
-                'rental_price_daily' => 0,
-                'rental_price_weekly' => 0,
-                'rental_price_monthly' => 0,
             ]));
         }
 

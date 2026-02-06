@@ -83,8 +83,10 @@ class ProductController extends Controller
         // Load relationships for complete data
         $product->load([
             'category',
+            'brand',
             'defaultSupplier',
             'relations',
+            'media',
         ]);
 
         return response()->json([
@@ -103,8 +105,7 @@ class ProductController extends Controller
 
         $request['id'] = $product->id; // Ensure ID is set for validation
 
-        $data = ProductData::from($request);
-
+        $data = ProductData::from($request->all());
         $updated = $this->updateAction->execute($product, $data);
 
         return response()->json([
@@ -184,17 +185,45 @@ class ProductController extends Controller
             'products.*.code' => 'required|string|max:255',
             'products.*.name' => 'required|string|max:255',
             'products.*.type' => 'nullable|string|in:article,service,composite',
-            'products.*.unit' => 'required|string|max:50',
+            'products.*.unit' => 'nullable|string|max:50',
             'products.*.description' => 'nullable|string',
+
+            // Codes & Identifiers
+            'products.*.internal_code' => 'nullable|string|max:50',
+            'products.*.ean' => 'nullable|string|max:13',
+            'products.*.etim_code' => 'nullable|string|max:20',
+            'products.*.barcode' => 'nullable|string|max:255',
+            'products.*.qr_code' => 'nullable|string|max:255',
+
+            // Relations (virtual fields - will be transformed to IDs)
             'products.*.category' => 'nullable', // Can be ID (int) or string (code/name)
-            'products.*.price' => 'nullable|numeric|min:0',
-            'products.*.cost' => 'nullable|numeric|min:0',
-            'products.*.supplier_code' => 'nullable|string|max:255',
             'products.*.brand' => 'nullable', // Can be ID (int) or string (code/name)
+            'products.*.supplier_code' => 'nullable|string|max:255',
+
+            // Pricing (manufacturer reference prices)
+            'products.*.standard_cost' => 'nullable|numeric|min:0',
+            'products.*.manufacturer_cost_price' => 'nullable|numeric|min:0',
+            'products.*.manufacturer_retail_price' => 'nullable|numeric|min:0',
+            'products.*.sale_markup_percent' => 'nullable|numeric|min:0|max:1000',
+
+            // Package
+            'products.*.is_package' => 'nullable|boolean',
+            'products.*.package_weight' => 'nullable|numeric|min:0',
+            'products.*.package_volume' => 'nullable|numeric|min:0',
+            'products.*.package_dimensions' => 'nullable|string|max:100',
+
+            // Rental
+            'products.*.is_rentable' => 'nullable|boolean',
+
+            // Inventory
+            'products.*.reorder_level' => 'nullable|numeric|min:0',
+            'products.*.reorder_quantity' => 'nullable|numeric|min:0',
+            'products.*.lead_time_days' => 'nullable|integer|min:0',
+            'products.*.location' => 'nullable|string|max:255',
+
+            // Other
             'products.*.notes' => 'nullable|string',
             'products.*.is_active' => 'nullable|boolean',
-            'products.*.min_stock' => 'nullable|integer|min:0',
-            'products.*.max_stock' => 'nullable|integer|min:0',
         ]);
 
         $imported = 0;
@@ -220,38 +249,57 @@ class ProductController extends Controller
                 // Transform virtual fields (brand, category) to IDs
                 $transformed = ImportFieldTransformer::transform('products', $productData);
 
-                // Create Product with transformed data
-                Product::create([
+                // Create Product using ProductData and CreateProductAction
+                $data = ProductData::from([
+                    // Required fields
                     'code' => $transformed['code'],
                     'name' => $transformed['name'],
                     'product_type' => $transformed['type'] ?? 'article',
-                    'unit' => $transformed['unit'],
+                    'unit' => $transformed['unit'] ?? 'pz',
+
+                    // Basic info
                     'description' => $transformed['description'] ?? null,
+                    'internal_code' => $transformed['internal_code'] ?? null,
+                    'notes' => $transformed['notes'] ?? null,
+
+                    // Codes & Identifiers
+                    'ean' => $transformed['ean'] ?? null,
+                    'etim_code' => $transformed['etim_code'] ?? null,
+                    'barcode' => $transformed['barcode'] ?? null,
+                    'qr_code' => $transformed['qr_code'] ?? null,
+
+                    // Relations (already transformed to IDs by ImportFieldTransformer)
                     'category_id' => $transformed['category_id'] ?? null,
                     'brand_id' => $transformed['brand_id'] ?? null,
-                    'standard_cost' => $transformed['cost'] ?? 0,
-                    'purchase_price' => $transformed['cost'] ?? 0,
-                    'markup_percentage' => 0,
-                    'sale_price' => $transformed['price'] ?? 0,
-                    'rental_price_daily' => 0,
-                    'rental_price_weekly' => 0,
-                    'rental_price_monthly' => 0,
-                    'barcode' => $transformed['barcode'] ?? null,
-                    'qr_code' => null,
                     'default_supplier_id' => $transformed['default_supplier_id'] ?? null,
-                    'reorder_level' => $transformed['min_stock'] ?? 0,
-                    'reorder_quantity' => 0,
-                    'lead_time_days' => 0,
-                    'location' => null,
-                    'notes' => $transformed['notes'] ?? null,
-                    'is_rentable' => false,
+
+                    // Pricing (manufacturer reference prices)
+                    'standard_cost' => $transformed['standard_cost'] ?? null,
+                    'manufacturer_cost_price' => $transformed['manufacturer_cost_price'] ?? null,
+                    'manufacturer_retail_price' => $transformed['manufacturer_retail_price'] ?? null,
+                    'sale_markup_percent' => $transformed['sale_markup_percent'] ?? null,
+
+                    // Package
+                    'is_package' => $transformed['is_package'] ?? false,
+                    'package_weight' => $transformed['package_weight'] ?? null,
+                    'package_volume' => $transformed['package_volume'] ?? null,
+                    'package_dimensions' => $transformed['package_dimensions'] ?? null,
+
+                    // Rental
+                    'is_rentable' => $transformed['is_rentable'] ?? false,
                     'quantity_out_on_rental' => 0,
+
+                    // Inventory
+                    'reorder_level' => $transformed['reorder_level'] ?? null,
+                    'reorder_quantity' => $transformed['reorder_quantity'] ?? null,
+                    'lead_time_days' => $transformed['lead_time_days'] ?? null,
+                    'location' => $transformed['location'] ?? null,
+
+                    // Status
                     'is_active' => $transformed['is_active'] ?? true,
-                    'is_package' => false,
-                    'package_weight' => $transformed['weight'] ?? null,
-                    'package_volume' => null,
-                    'package_dimensions' => null,
                 ]);
+
+                $this->createAction->execute($data);
 
                 $imported++;
             } catch (\Exception $e) {

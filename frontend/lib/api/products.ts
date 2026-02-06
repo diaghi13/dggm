@@ -1,5 +1,5 @@
-import { apiClient } from './client';
-import type { ProductFormData } from '@/lib/types';
+import { apiClient } from "./client";
+import type { ProductFormData } from "@/lib/types";
 
 export const productsApi = {
   getAll: async (params?: {
@@ -17,7 +17,7 @@ export const productsApi = {
     page?: number;
     per_page?: number;
   }) => {
-    const response = await apiClient.get('/products', { params });
+    const response = await apiClient.get("/products", { params });
     return response.data;
   },
 
@@ -27,7 +27,7 @@ export const productsApi = {
   },
 
   create: async (data: ProductFormData) => {
-    const response = await apiClient.post('/products', data);
+    const response = await apiClient.post("/products", data);
     return response.data.data;
   },
 
@@ -42,7 +42,7 @@ export const productsApi = {
   },
 
   getNeedingReorder: async () => {
-    const response = await apiClient.get('/products-needing-reorder');
+    const response = await apiClient.get("/products-needing-reorder");
     return response.data.data;
   },
 
@@ -77,9 +77,12 @@ export const productsApi = {
       max_quantity_trigger?: number;
       sort_order?: number;
       notes?: string;
-    }
+    },
   ) => {
-    const response = await apiClient.post(`/products/${productId}/relations`, data);
+    const response = await apiClient.post(
+      `/products/${productId}/relations`,
+      data,
+    );
     return response.data.data;
   },
 
@@ -98,39 +101,62 @@ export const productsApi = {
       max_quantity_trigger?: number;
       sort_order?: number;
       notes?: string;
-    }
+    },
   ) => {
     const response = await apiClient.patch(
       `/products/${productId}/relations/${relationId}`,
-      data
+      data,
     );
     return response.data.data;
   },
 
   deleteRelation: async (productId: number, relationId: number) => {
-    const response = await apiClient.delete(`/products/${productId}/relations/${relationId}`);
+    const response = await apiClient.delete(
+      `/products/${productId}/relations/${relationId}`,
+    );
     return response.data;
   },
 
   calculateRelations: async (productId: number, quantity: number) => {
-    const response = await apiClient.post(`/products/${productId}/relations/calculate`, {
-      quantity,
-    });
+    const response = await apiClient.post(
+      `/products/${productId}/relations/calculate`,
+      {
+        quantity,
+      },
+    );
     return response.data.data;
   },
 
   // Categories
   getCategories: async () => {
-    const response = await apiClient.get('/product-categories');
+    const response = await apiClient.get("/product-categories");
     return response.data.data;
   },
 
-  createCategory: async (data: { name: string; code: string; description?: string; icon?: string; color?: string; sort_order?: number }) => {
-    const response = await apiClient.post('/product-categories', data);
+  createCategory: async (data: {
+    name: string;
+    code: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+    sort_order?: number;
+  }) => {
+    const response = await apiClient.post("/product-categories", data);
     return response.data.data;
   },
 
-  updateCategory: async (id: number, data: { name?: string; code?: string; description?: string; icon?: string; color?: string; sort_order?: number; is_active?: boolean }) => {
+  updateCategory: async (
+    id: number,
+    data: {
+      name?: string;
+      code?: string;
+      description?: string;
+      icon?: string;
+      color?: string;
+      sort_order?: number;
+      is_active?: boolean;
+    },
+  ) => {
     const response = await apiClient.patch(`/product-categories/${id}`, data);
     return response.data.data;
   },
@@ -140,19 +166,77 @@ export const productsApi = {
     return response.data;
   },
 
+  // Brands
+  getBrands: async () => {
+    const response = await apiClient.get("/product-brands");
+    return response.data.data;
+  },
+
+  createBrand: async (data: {
+    name: string;
+    code?: string;
+    description?: string;
+    logo_url?: string;
+    website?: string;
+  }) => {
+    const response = await apiClient.post("/product-brands", data);
+    return response.data.data;
+  },
+
+  updateBrand: async (
+    id: number,
+    data: {
+      name?: string;
+      code?: string;
+      description?: string;
+      logo_url?: string;
+      website?: string;
+      is_active?: boolean;
+    },
+  ) => {
+    const response = await apiClient.patch(`/product-brands/${id}`, data);
+    return response.data.data;
+  },
+
+  deleteBrand: async (id: number) => {
+    const response = await apiClient.delete(`/product-brands/${id}`);
+    return response.data;
+  },
+
   // Relation Types
   getRelationTypes: async () => {
-    const response = await apiClient.get('/product-relation-types');
+    const response = await apiClient.get("/product-relation-types");
     return response.data.data;
   },
 
-  createRelationType: async (data: { name: string; code: string; description?: string; icon?: string; color?: string; sort_order?: number }) => {
-    const response = await apiClient.post('/product-relation-types', data);
+  createRelationType: async (data: {
+    name: string;
+    code: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+    sort_order?: number;
+  }) => {
+    const response = await apiClient.post("/product-relation-types", data);
     return response.data.data;
   },
 
-  updateRelationType: async (id: number, data: { name?: string; code?: string; description?: string; icon?: string; color?: string; sort_order?: number; is_active?: boolean }) => {
-    const response = await apiClient.patch(`/product-relation-types/${id}`, data);
+  updateRelationType: async (
+    id: number,
+    data: {
+      name?: string;
+      code?: string;
+      description?: string;
+      icon?: string;
+      color?: string;
+      sort_order?: number;
+      is_active?: boolean;
+    },
+  ) => {
+    const response = await apiClient.patch(
+      `/product-relation-types/${id}`,
+      data,
+    );
     return response.data.data;
   },
 
@@ -162,11 +246,8 @@ export const productsApi = {
   },
 
   // Import
-  importFromExcel: async (data: {
-    products: Array<Record<string, any>>;
-  }) => {
-    const response = await apiClient.post('/products/import', data);
+  importFromExcel: async (data: { products: Array<Record<string, any>> }) => {
+    const response = await apiClient.post("/products/import", data);
     return response.data;
   },
 };
-

@@ -236,4 +236,47 @@ class Setting extends Model implements HasMedia
     {
         return $this->is_feature_flag;
     }
+
+    /**
+     * Get setting value by key (cached)
+     *
+     * @param  string  $key  Setting key (supports dot notation for groups, e.g. 'pricing.auto_update_on_purchase')
+     * @param  mixed  $default  Default value if setting not found
+     * @param  int|null  $userId  User ID for user-specific settings (null for global)
+     * @return mixed Setting value with correct type casting
+     */
+    public static function get(string $key, mixed $default = null, ?int $userId = null): mixed
+    {
+        return app(\App\Services\SettingService::class)->get($key, $default, $userId);
+    }
+
+    /**
+     * Set setting value by key (creates or updates)
+     *
+     * @param  string  $key  Setting key
+     * @param  mixed  $value  Value to set
+     * @param  int|null  $userId  User ID for user-specific settings (null for global)
+     * @param  string|null  $group  Setting group
+     * @param  bool  $isPublic  Whether setting is publicly accessible
+     */
+    public static function set(string $key, mixed $value, ?int $userId = null, ?string $group = null, bool $isPublic = false): Setting
+    {
+        return app(\App\Services\SettingService::class)->set($key, $value, $userId, $group, $isPublic);
+    }
+
+    /**
+     * Check if setting exists
+     */
+    public static function has(string $key, ?int $userId = null): bool
+    {
+        return app(\App\Services\SettingService::class)->has($key, $userId);
+    }
+
+    /**
+     * Delete setting by key
+     */
+    public static function forget(string $key, ?int $userId = null): bool
+    {
+        return app(\App\Services\SettingService::class)->delete($key, $userId);
+    }
 }

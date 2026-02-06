@@ -18,16 +18,16 @@ class WarehouseFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => $this->faker->unique()->bothify('WH-###'),
-            'name' => $this->faker->company(),
-            'type' => $this->faker->randomElement(WarehouseType::cases()),
-            'address' => $this->faker->streetAddress(),
-            'city' => $this->faker->city(),
-            'province' => $this->faker->stateAbbr(),
-            'postal_code' => $this->faker->postcode(),
-            'manager_id' => null, // Assuming manager will be assigned later
-            'notes' => $this->faker->optional()->sentence(),
-            'is_active' => $this->faker->boolean(90), // 90% chance of being active
+            'code' => 'WH-'.fake()->unique()->numberBetween(100, 999),
+            'name' => fake()->words(3, true),
+            'type' => fake()->randomElement(WarehouseType::cases()),
+            'address' => fake()->streetAddress,
+            'city' => fake()->city,
+            'province' => fake()->stateAbbr,
+            'postal_code' => fake()->postcode,
+            'manager_id' => null,
+            'notes' => fake()->optional()->sentence,
+            'is_active' => fake()->boolean(90),
         ];
     }
 }

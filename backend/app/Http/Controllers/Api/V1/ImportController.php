@@ -316,7 +316,9 @@ class ImportController extends Controller
         ]);
 
         $importAction = new \App\Actions\SupplierProduct\ImportSupplierCatalogAction(
-            new \App\Actions\SupplierProduct\UpsertSupplierProductAction
+            new \App\Actions\SupplierProduct\UpsertSupplierProductAction,
+            new \App\Actions\Product\CreateProductAction,
+            new \App\Actions\Product\UpdateProductAction
         );
 
         $imported = 0;
@@ -431,11 +433,6 @@ class ImportController extends Controller
                     'options' => ['physical', 'service', 'digital'],
                     'example' => 'physical',
                     'hidden' => true,
-                ],
-                'is_kit' => [
-                    'label' => 'È un Kit',
-                    'description' => 'Indica se il prodotto è composto da più elementi',
-                    'example' => '0',
                 ],
                 'is_package' => [
                     'label' => 'È un Pacco',
