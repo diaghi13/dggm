@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi } from "@/lib/api/products";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,26 @@ function ProductsPageContent() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
 
+  // Sync perPage with localStorage on mount (for products-table)
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedPageSize = localStorage.getItem("products-table-pageSize");
+      if (savedPageSize) {
+        const parsedSize = parseInt(savedPageSize, 10);
+        if (parsedSize !== perPage) {
+          setPerPage(parsedSize);
+        }
+      }
+    }
+  }, []);
+
+  // Save perPage to localStorage when it changes
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("products-table-pageSize", perPage.toString());
+    }
+  }, [perPage]);
+
   const { data: productsData, isLoading } = useQuery({
     queryKey: [
       "products",
@@ -93,12 +113,19 @@ function ProductsPageContent() {
   const meta = productsData?.meta;
 
   // Debug pagination
-  console.log("Pagination check:", {
+  console.log("Pagination debug:", {
+    productsData,
     hasMeta: !!meta,
+    metaKeys: meta ? Object.keys(meta) : [],
     total: meta?.total,
-    perPage: perPage,
+    currentPage: meta?.current_page,
+    lastPage: meta?.last_page,
+    perPageFromMeta: meta?.per_page,
+    perPageFromState: perPage,
     shouldShowPagination: meta?.total && meta.total > perPage,
     productsLength: products.length,
+    pageCalc: meta?.total ? Math.ceil(meta.total / perPage) : 0,
+    isNextDisabled: page >= Math.ceil((meta?.total || 0) / perPage),
   });
 
   const deleteMutation = useMutation({
@@ -371,8 +398,8 @@ function ProductsPageContent() {
             }
             pagination={{
               page,
-              perPage,
-              total: meta?.total || 0,
+              perPage: meta?.per_page || perPage, // Use meta.per_page if backend returns it
+              total: meta?.total || products.length,
               onPageChange: setPage,
               onPerPageChange: setPerPage,
             }}

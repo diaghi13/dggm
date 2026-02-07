@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Settings2, Plus } from 'lucide-react';
@@ -19,6 +19,33 @@ export default function StockMovementsPage() {
     from_date?: string;
     to_date?: string;
   }>({});
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
+
+  // Sync perPage with localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedPageSize = localStorage.getItem("stock-movements-table-pageSize");
+      if (savedPageSize) {
+        const parsedSize = parseInt(savedPageSize, 10);
+        if (parsedSize !== perPage) {
+          setPerPage(parsedSize);
+        }
+      }
+    }
+  }, []);
+
+  // Save perPage to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("stock-movements-table-pageSize", perPage.toString());
+    }
+  }, [perPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   // Define columns
   const columns = useMemo(() => createStockMovementsColumns(), []);
@@ -29,10 +56,12 @@ export default function StockMovementsPage() {
     type: filters.type,
     date_from: filters.from_date,
     date_to: filters.to_date,
-    per_page: 100,
+    page,
+    per_page: perPage,
   });
 
   const movements = movementsData?.data ?? [];
+  const meta = movementsData?.meta;
 
   // Calculate statistics
   const stats = {
@@ -139,7 +168,7 @@ export default function StockMovementsPage() {
       {/* Movements Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Storico Movimenti ({movements.length})</CardTitle>
+          <CardTitle>Storico Movimenti ({meta?.total || movements.length})</CardTitle>
           <CardDescription>Elenco cronologico di tutti i movimenti di magazzino</CardDescription>
         </CardHeader>
         <CardContent>
@@ -148,6 +177,13 @@ export default function StockMovementsPage() {
             data={movements}
             isLoading={isLoading}
             storageKey="stock-movements-table"
+            pagination={{
+              page,
+              perPage: meta?.per_page || perPage,
+              total: meta?.total || movements.length,
+              onPageChange: setPage,
+              onPerPageChange: setPerPage,
+            }}
             emptyState={
               <div className="text-center py-12">
                 <Settings2 className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />

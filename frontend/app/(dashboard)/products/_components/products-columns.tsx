@@ -28,22 +28,28 @@ export const createProductsColumns = (
     cell: ({ row }) => {
       const product = row.original;
       const productType = product.product_type;
-      
+
       let typeBadge = null;
-      if (productType === 'service') {
+      if (productType === "service") {
         typeBadge = (
-          <Badge variant="outline" className="ml-1 text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">
+          <Badge
+            variant="outline"
+            className="ml-1 text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+          >
             🔧 Servizio
           </Badge>
         );
-      } else if (productType === 'composite') {
+      } else if (productType === "composite") {
         typeBadge = (
-          <Badge variant="outline" className="ml-1 text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800">
+          <Badge
+            variant="outline"
+            className="ml-1 text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"
+          >
             🧩 Composito
           </Badge>
         );
       }
-      
+
       return (
         <div>
           <div className="flex items-center gap-1">

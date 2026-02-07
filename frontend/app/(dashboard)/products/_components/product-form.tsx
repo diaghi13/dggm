@@ -234,10 +234,10 @@ export function ProductForm({
   const suppliers = suppliersData?.data ?? [];
 
   // Determina quali sezioni mostrare in base al tipo di prodotto
-  const isService = formData.product_type === 'service';
-  const isComposite = formData.product_type === 'composite';
-  const isArticle = formData.product_type === 'article';
-  
+  const isService = formData.product_type === "service";
+  const isComposite = formData.product_type === "composite";
+  const isArticle = formData.product_type === "article";
+
   // I servizi non hanno scorte, package, o noleggio
   const showInventoryManagement = isArticle || isComposite;
   const showPackageOptions = isArticle;
@@ -887,94 +887,96 @@ export function ProductForm({
               Fornitore, livelli di riordino e tempi di consegna
             </CardDescription>
           </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="default_supplier_id">Fornitore Predefinito</Label>
-            <ComboboxSelect
-              value={formData.default_supplier_id?.toString() || ""}
-              onValueChange={(value) =>
-                setFormData({
-                  ...formData,
-                  default_supplier_id: value ? parseInt(value) : null,
-                })
-              }
-              onSearchChange={setSupplierSearch}
-              options={suppliers.map((supplier) => ({
-                value: supplier.id!.toString(),
-                label: supplier.company_name,
-              }))}
-              placeholder="Seleziona fornitore..."
-              emptyText="Nessun fornitore trovato"
-              loading={isLoadingSuppliers}
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="reorder_level">Scorta Minima</Label>
-              <Input
-                id="reorder_level"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.reorder_level ?? ""}
-                onChange={(e) => {
-                  const val = e.target.value;
+              <Label htmlFor="default_supplier_id">Fornitore Predefinito</Label>
+              <ComboboxSelect
+                value={formData.default_supplier_id?.toString() || ""}
+                onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    reorder_level: val === "" ? null : parseFloat(val),
-                  });
-                }}
-                className="h-11"
-                placeholder="0"
-              />
-              <p className="text-xs text-slate-500">
-                Livello di riordino automatico
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="reorder_quantity">Quantità Riordino</Label>
-              <Input
-                id="reorder_quantity"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.reorder_quantity ?? ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFormData({
-                    ...formData,
-                    reorder_quantity: val === "" ? null : parseFloat(val),
-                  });
-                }}
-                className="h-11"
-                placeholder="0"
-              />
-              <p className="text-xs text-slate-500">Quantità da ordinare</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lead_time_days">Tempo Consegna (giorni)</Label>
-              <Input
-                id="lead_time_days"
-                type="number"
-                min="0"
-                value={formData.lead_time_days || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    lead_time_days: parseInt(e.target.value) || null,
+                    default_supplier_id: value ? parseInt(value) : null,
                   })
                 }
-                className="h-11"
-                placeholder="7"
+                onSearchChange={setSupplierSearch}
+                options={suppliers.map((supplier) => ({
+                  value: supplier.id!.toString(),
+                  label: supplier.company_name,
+                }))}
+                placeholder="Seleziona fornitore..."
+                emptyText="Nessun fornitore trovato"
+                loading={isLoadingSuppliers}
               />
-              <p className="text-xs text-slate-500">Lead time del fornitore</p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="reorder_level">Scorta Minima</Label>
+                <Input
+                  id="reorder_level"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.reorder_level ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({
+                      ...formData,
+                      reorder_level: val === "" ? null : parseFloat(val),
+                    });
+                  }}
+                  className="h-11"
+                  placeholder="0"
+                />
+                <p className="text-xs text-slate-500">
+                  Livello di riordino automatico
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reorder_quantity">Quantità Riordino</Label>
+                <Input
+                  id="reorder_quantity"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.reorder_quantity ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({
+                      ...formData,
+                      reorder_quantity: val === "" ? null : parseFloat(val),
+                    });
+                  }}
+                  className="h-11"
+                  placeholder="0"
+                />
+                <p className="text-xs text-slate-500">Quantità da ordinare</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="lead_time_days">Tempo Consegna (giorni)</Label>
+                <Input
+                  id="lead_time_days"
+                  type="number"
+                  min="0"
+                  value={formData.lead_time_days || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      lead_time_days: parseInt(e.target.value) || null,
+                    })
+                  }
+                  className="h-11"
+                  placeholder="7"
+                />
+                <p className="text-xs text-slate-500">
+                  Lead time del fornitore
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Note */}

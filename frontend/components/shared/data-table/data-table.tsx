@@ -25,6 +25,10 @@ import {
   AlertCircle,
   Table as TableIcon,
   LayoutGrid,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { useUISettings } from "@/hooks/use-settings";
 import { DataTableCardView } from "./data-table-card-view";
@@ -569,10 +573,10 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Pagination - Always show if there's data, to allow changing perPage */}
       {(serverPagination && serverPagination.total > 0
-        ? serverPagination.total > serverPagination.perPage
-        : table.getPageCount() > 1) && (
+        ? serverPagination.total > 0  // Show if any data exists
+        : table.getRowModel().rows.length > 0) && (  // Show if any data exists
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 text-center sm:text-left">
@@ -645,10 +649,34 @@ export function DataTable<TData, TValue>({
               </Select>
             </div>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex gap-1 w-full sm:w-auto items-center">
+            {/* First page button */}
             <Button
               variant="outline"
               size="sm"
+              title="Prima pagina"
+              onClick={() => {
+                if (serverPagination) {
+                  serverPagination.onPageChange(1);
+                } else {
+                  table.setPageIndex(0);
+                }
+              }}
+              disabled={
+                serverPagination
+                  ? serverPagination.page <= 1
+                  : !table.getCanPreviousPage()
+              }
+              className="border-slate-300 dark:border-slate-700 h-8 w-8 p-0"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+
+            {/* Previous page button */}
+            <Button
+              variant="outline"
+              size="sm"
+              title="Pagina precedente"
               onClick={() => {
                 if (serverPagination) {
                   serverPagination.onPageChange(serverPagination.page - 1);
@@ -661,14 +689,101 @@ export function DataTable<TData, TValue>({
                   ? serverPagination.page <= 1
                   : !table.getCanPreviousPage()
               }
-              className="border-slate-300 dark:border-slate-700 flex-1 sm:flex-none"
+              className="border-slate-300 dark:border-slate-700 h-8 w-8 p-0"
             >
-              <span className="hidden sm:inline">Precedente</span>
-              <span className="sm:hidden">Prec</span>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
+
+            {/* Page numbers */}
+            {(() => {
+              const currentPage = serverPagination
+                ? serverPagination.page
+                : table.getState().pagination.pageIndex + 1;
+              const totalPages = serverPagination
+                ? Math.ceil(serverPagination.total / serverPagination.perPage)
+                : table.getPageCount();
+
+              // Logic to determine which pages to show
+              const getPageNumbers = () => {
+                const pages: (number | string)[] = [];
+                const maxVisible = 5; // Maximum page numbers to show
+
+                if (totalPages <= maxVisible + 2) {
+                  // Show all pages if total is small
+                  for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  // Always show first page
+                  pages.push(1);
+
+                  if (currentPage > 3) {
+                    pages.push("...");
+                  }
+
+                  // Show current page and neighbors
+                  const start = Math.max(2, currentPage - 1);
+                  const end = Math.min(totalPages - 1, currentPage + 1);
+
+                  for (let i = start; i <= end; i++) {
+                    pages.push(i);
+                  }
+
+                  if (currentPage < totalPages - 2) {
+                    pages.push("...");
+                  }
+
+                  // Always show last page
+                  pages.push(totalPages);
+                }
+
+                return pages;
+              };
+
+              return getPageNumbers().map((page, idx) => {
+                if (page === "...") {
+                  return (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="px-2 text-slate-500 dark:text-slate-400"
+                    >
+                      ...
+                    </span>
+                  );
+                }
+
+                const pageNum = page as number;
+                const isActive = pageNum === currentPage;
+
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={isActive ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      if (serverPagination) {
+                        serverPagination.onPageChange(pageNum);
+                      } else {
+                        table.setPageIndex(pageNum - 1);
+                      }
+                    }}
+                    className={cn(
+                      "h-8 w-8 p-0",
+                      !isActive &&
+                        "border-slate-300 dark:border-slate-700"
+                    )}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              });
+            })()}
+
+            {/* Next page button */}
             <Button
               variant="outline"
               size="sm"
+              title="Pagina successiva"
               onClick={() => {
                 if (serverPagination) {
                   serverPagination.onPageChange(serverPagination.page + 1);
@@ -682,10 +797,35 @@ export function DataTable<TData, TValue>({
                     Math.ceil(serverPagination.total / serverPagination.perPage)
                   : !table.getCanNextPage()
               }
-              className="border-slate-300 dark:border-slate-700 flex-1 sm:flex-none"
+              className="border-slate-300 dark:border-slate-700 h-8 w-8 p-0"
             >
-              <span className="hidden sm:inline">Successiva</span>
-              <span className="sm:hidden">Succ</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+
+            {/* Last page button */}
+            <Button
+              variant="outline"
+              size="sm"
+              title="Ultima pagina"
+              onClick={() => {
+                if (serverPagination) {
+                  const lastPage = Math.ceil(
+                    serverPagination.total / serverPagination.perPage
+                  );
+                  serverPagination.onPageChange(lastPage);
+                } else {
+                  table.setPageIndex(table.getPageCount() - 1);
+                }
+              }}
+              disabled={
+                serverPagination
+                  ? serverPagination.page >=
+                    Math.ceil(serverPagination.total / serverPagination.perPage)
+                  : !table.getCanNextPage()
+              }
+              className="border-slate-300 dark:border-slate-700 h-8 w-8 p-0"
+            >
+              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         </div>

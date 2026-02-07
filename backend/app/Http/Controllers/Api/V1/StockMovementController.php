@@ -14,6 +14,7 @@ use App\Queries\StockMovement\GetStockMovementsQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\PaginatedDataCollection;
 
 class StockMovementController extends Controller
 {
@@ -41,13 +42,7 @@ class StockMovementController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => StockMovementData::collect($movements->items(), DataCollection::class),
-            'meta' => [
-                'current_page' => $movements->currentPage(),
-                'last_page' => $movements->lastPage(),
-                'per_page' => $movements->perPage(),
-                'total' => $movements->total(),
-            ],
+            ...StockMovementData::collect($movements, PaginatedDataCollection::class)->toArray(),
         ]);
     }
 

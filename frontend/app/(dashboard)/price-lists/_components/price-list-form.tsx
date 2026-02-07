@@ -16,13 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { FormSection } from "@/components/form-section";
-import {
-  DollarSign,
-  Settings,
-  Calendar,
-  Filter,
-  Percent,
-} from "lucide-react";
+import { DollarSign, Settings, Calendar, Filter, Percent } from "lucide-react";
 
 const priceListSchema = z
   .object({
@@ -66,19 +60,25 @@ const priceListSchema = z
       return true;
     },
     {
-      message: "La data di fine validità deve essere successiva alla data di inizio",
+      message:
+        "La data di fine validità deve essere successiva alla data di inizio",
       path: ["valid_to"],
     },
   )
   .refine(
     (data) => {
       if (data.adjustment_type !== "none") {
-        return data.adjustment_value !== undefined && data.adjustment_value !== null && !isNaN(data.adjustment_value);
+        return (
+          data.adjustment_value !== undefined &&
+          data.adjustment_value !== null &&
+          !isNaN(data.adjustment_value)
+        );
       }
       return true;
     },
     {
-      message: "Il valore di aggiustamento è obbligatorio quando il tipo non è 'nessuno'",
+      message:
+        "Il valore di aggiustamento è obbligatorio quando il tipo non è 'nessuno'",
       path: ["adjustment_value"],
     },
   );
@@ -186,7 +186,11 @@ export function PriceListForm({
   };
 
   return (
-    <form id={id} onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form
+      id={id}
+      onSubmit={handleSubmit(handleFormSubmit)}
+      className="space-y-6"
+    >
       {/* Informazioni Base */}
       <FormSection title="Informazioni Base" icon={DollarSign}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -205,8 +209,8 @@ export function PriceListForm({
               <p className="text-sm text-red-500">{errors.code.message}</p>
             )}
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Identificativo univoco del listino. Utilizzato per riferimenti interni e API. 
-              Es: BASE_2026, SCONTI_ESTATE, LISTINO_VIP
+              Identificativo univoco del listino. Utilizzato per riferimenti
+              interni e API. Es: BASE_2026, SCONTI_ESTATE, LISTINO_VIP
             </p>
           </div>
 
@@ -224,7 +228,8 @@ export function PriceListForm({
               <p className="text-sm text-red-500">{errors.name.message}</p>
             )}
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Nome leggibile mostrato agli utenti. Es: &quot;Listino Sconti Estate 2026&quot;
+              Nome leggibile mostrato agli utenti. Es: &quot;Listino Sconti
+              Estate 2026&quot;
             </p>
           </div>
 
@@ -238,7 +243,8 @@ export function PriceListForm({
               disabled={isLoading}
             />
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Descrizione dettagliata dello scopo del listino e quando utilizzarlo
+              Descrizione dettagliata dello scopo del listino e quando
+              utilizzarlo
             </p>
           </div>
         </div>
@@ -267,9 +273,12 @@ export function PriceListForm({
               </SelectContent>
             </Select>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              <strong>Automatico:</strong> I prezzi vengono calcolati automaticamente applicando l&apos;aggiustamento configurato al costo base di ogni prodotto.
+              <strong>Automatico:</strong> I prezzi vengono calcolati
+              automaticamente applicando l&apos;aggiustamento configurato al
+              costo base di ogni prodotto.
               <br />
-              <strong>Manuale:</strong> I prezzi devono essere inseriti manualmente per ogni prodotto.
+              <strong>Manuale:</strong> I prezzi devono essere inseriti
+              manualmente per ogni prodotto.
             </p>
           </div>
 
@@ -279,7 +288,9 @@ export function PriceListForm({
             </Label>
             <Select
               value={watch("applies_to")}
-              onValueChange={(value) => setValue("applies_to", value as "sale" | "rental" | "both")}
+              onValueChange={(value) =>
+                setValue("applies_to", value as "sale" | "rental" | "both")
+              }
               disabled={isLoading}
             >
               <SelectTrigger id="applies_to">
@@ -292,7 +303,9 @@ export function PriceListForm({
               </SelectContent>
             </Select>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Specifica se questo listino si applica alla <strong>vendita</strong> di prodotti, al <strong>noleggio</strong>, o a entrambe le modalità
+              Specifica se questo listino si applica alla{" "}
+              <strong>vendita</strong> di prodotti, al <strong>noleggio</strong>
+              , o a entrambe le modalità
             </p>
           </div>
 
@@ -303,7 +316,10 @@ export function PriceListForm({
             <Select
               value={adjustmentType}
               onValueChange={(value) =>
-                setValue("adjustment_type", value as "percentage" | "fixed" | "none")
+                setValue(
+                  "adjustment_type",
+                  value as "percentage" | "fixed" | "none",
+                )
               }
               disabled={isLoading}
             >
@@ -317,11 +333,14 @@ export function PriceListForm({
               </SelectContent>
             </Select>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              <strong>Percentuale:</strong> Aggiunge una % al costo (es. costo 100€ + 20% = prezzo 120€)
+              <strong>Percentuale:</strong> Aggiunge una % al costo (es. costo
+              100€ + 20% = prezzo 120€)
               <br />
-              <strong>Valore Fisso:</strong> Aggiunge un importo fisso (es. costo 100€ + 15€ = prezzo 115€)
+              <strong>Valore Fisso:</strong> Aggiunge un importo fisso (es.
+              costo 100€ + 15€ = prezzo 115€)
               <br />
-              <strong>Nessuno:</strong> Il prezzo finale corrisponde al costo base del prodotto
+              <strong>Nessuno:</strong> Il prezzo finale corrisponde al costo
+              base del prodotto
             </p>
           </div>
 
@@ -351,8 +370,8 @@ export function PriceListForm({
                 </p>
               )}
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {adjustmentType === "percentage" 
-                  ? "Percentuale da aggiungere al costo. Es: 25 = +25% di ricarico" 
+                {adjustmentType === "percentage"
+                  ? "Percentuale da aggiungere al costo. Es: 25 = +25% di ricarico"
                   : "Importo fisso in euro da aggiungere al costo. Es: 10 = +10€"}
               </p>
             </div>
@@ -369,8 +388,9 @@ export function PriceListForm({
               disabled={isLoading}
             />
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Ordine di applicazione quando più listini sono validi contemporaneamente. 
-              <strong>0 = massima priorità</strong> (viene applicato per primo). 
+              Ordine di applicazione quando più listini sono validi
+              contemporaneamente.
+              <strong>0 = massima priorità</strong> (viene applicato per primo).
               Numeri più alti hanno priorità inferiore.
             </p>
           </div>
@@ -389,7 +409,8 @@ export function PriceListForm({
               disabled={isLoading}
             />
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Data di inizio validità del listino. Se non specificata, il listino è valido da subito
+              Data di inizio validità del listino. Se non specificata, il
+              listino è valido da subito
             </p>
           </div>
 
@@ -405,7 +426,8 @@ export function PriceListForm({
               <p className="text-sm text-red-500">{errors.valid_to.message}</p>
             )}
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Data di fine validità. Se non specificata, il listino rimane valido indefinitamente
+              Data di fine validità. Se non specificata, il listino rimane
+              valido indefinitamente
             </p>
           </div>
         </div>
@@ -420,8 +442,9 @@ export function PriceListForm({
                 Listino Attivo
               </Label>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Solo i listini attivi vengono considerati dal sistema per il calcolo dei prezzi. 
-                Disattiva temporaneamente un listino senza eliminarlo.
+                Solo i listini attivi vengono considerati dal sistema per il
+                calcolo dei prezzi. Disattiva temporaneamente un listino senza
+                eliminarlo.
               </p>
             </div>
             <Switch
@@ -438,8 +461,10 @@ export function PriceListForm({
                 Listino Predefinito
               </Label>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Il listino predefinito viene utilizzato automaticamente quando nessun altro listino 
-                specifico è applicabile al cliente o alla situazione. <strong>Può esistere un solo listino predefinito</strong>.
+                Il listino predefinito viene utilizzato automaticamente quando
+                nessun altro listino specifico è applicabile al cliente o alla
+                situazione.{" "}
+                <strong>Può esistere un solo listino predefinito</strong>.
               </p>
             </div>
             <Switch
@@ -460,8 +485,10 @@ export function PriceListForm({
                   Genera Prezzi Automaticamente
                 </Label>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Alla creazione del listino, genera automaticamente i prezzi per tutti i prodotti esistenti 
-                  applicando le regole di aggiustamento configurate. Puoi modificare i prezzi manualmente in seguito.
+                  Alla creazione del listino, genera automaticamente i prezzi
+                  per tutti i prodotti esistenti applicando le regole di
+                  aggiustamento configurate. Puoi modificare i prezzi
+                  manualmente in seguito.
                 </p>
               </div>
               <Switch

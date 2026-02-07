@@ -69,33 +69,29 @@ export function PriceListItemForm({
 }: PriceListItemFormProps) {
   // Determina quali campi mostrare in base al tipo di prodotto
   const productType = item.product?.product_type;
-  const isService = productType === 'service';
-  const isComposite = productType === 'composite';
-  const isArticle = productType === 'article';
+  const isService = productType === "service";
+  const isComposite = productType === "composite";
+  const isArticle = productType === "article";
   const isRentable = item.product?.is_rentable ?? true;
-  
+
   // I servizi tipicamente non hanno noleggio, e solo gli articoli noleggiabili possono essere noleggiati
   const canRent = !isService && isRentable && showRental;
   const canSell = showSale;
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-  } = useForm<PriceListItemFormValues>({
-    resolver: zodResolver(priceListItemSchema),
-    defaultValues: {
-      sale_price: item.sale_price || undefined,
-      is_manual_price: item.is_manual_price || false,
-      rental_daily: item.rental_daily || undefined,
-      rental_weekly: item.rental_weekly || undefined,
-      rental_monthly: item.rental_monthly || undefined,
-      is_manual_rental: item.is_manual_rental || false,
-      is_active: item.is_active !== null ? item.is_active : true,
-      notes: item.notes || undefined,
-    },
-  });
+  const { register, handleSubmit, watch, setValue } =
+    useForm<PriceListItemFormValues>({
+      resolver: zodResolver(priceListItemSchema),
+      defaultValues: {
+        sale_price: item.sale_price || undefined,
+        is_manual_price: item.is_manual_price || false,
+        rental_daily: item.rental_daily || undefined,
+        rental_weekly: item.rental_weekly || undefined,
+        rental_monthly: item.rental_monthly || undefined,
+        is_manual_rental: item.is_manual_rental || false,
+        is_active: item.is_active !== null ? item.is_active : true,
+        notes: item.notes || undefined,
+      },
+    });
 
   const isManualPrice = watch("is_manual_price");
   const isManualRental = watch("is_manual_rental");
@@ -117,7 +113,11 @@ export function PriceListItemForm({
   };
 
   return (
-    <form id={id} onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form
+      id={id}
+      onSubmit={handleSubmit(handleFormSubmit)}
+      className="space-y-6"
+    >
       {/* Informazioni Prodotto */}
       <FormSection title="Prodotto" icon={Package}>
         <div className="space-y-2">
@@ -125,18 +125,27 @@ export function PriceListItemForm({
             <p className="font-semibold text-slate-900 dark:text-slate-100">
               {item.product?.name}
             </p>
-            {productType === 'service' && (
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">
+            {productType === "service" && (
+              <Badge
+                variant="outline"
+                className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+              >
                 Servizio
               </Badge>
             )}
-            {productType === 'composite' && (
-              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800">
+            {productType === "composite" && (
+              <Badge
+                variant="outline"
+                className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"
+              >
                 Composito
               </Badge>
             )}
-            {productType === 'article' && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
+            {productType === "article" && (
+              <Badge
+                variant="outline"
+                className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
+              >
                 Articolo
               </Badge>
             )}
@@ -168,7 +177,10 @@ export function PriceListItemForm({
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
               <div className="space-y-0.5">
-                <Label htmlFor="is_manual_price" className="text-base font-medium">
+                <Label
+                  htmlFor="is_manual_price"
+                  className="text-base font-medium"
+                >
                   Prezzo Manuale
                 </Label>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -178,7 +190,9 @@ export function PriceListItemForm({
               <Switch
                 id="is_manual_price"
                 checked={isManualPrice ?? false}
-                onCheckedChange={(checked) => setValue("is_manual_price", checked)}
+                onCheckedChange={(checked) =>
+                  setValue("is_manual_price", checked)
+                }
                 disabled={isLoading}
               />
             </div>
@@ -214,7 +228,10 @@ export function PriceListItemForm({
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
               <div className="space-y-0.5">
-                <Label htmlFor="is_manual_rental" className="text-base font-medium">
+                <Label
+                  htmlFor="is_manual_rental"
+                  className="text-base font-medium"
+                >
                   Prezzi Manuali
                 </Label>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -224,7 +241,9 @@ export function PriceListItemForm({
               <Switch
                 id="is_manual_rental"
                 checked={isManualRental ?? false}
-                onCheckedChange={(checked) => setValue("is_manual_rental", checked)}
+                onCheckedChange={(checked) =>
+                  setValue("is_manual_rental", checked)
+                }
                 disabled={isLoading}
               />
             </div>
@@ -309,7 +328,8 @@ export function PriceListItemForm({
                 Prodotto Attivo
               </Label>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Disattiva per escludere temporaneamente questo prodotto dal listino
+                Disattiva per escludere temporaneamente questo prodotto dal
+                listino
               </p>
             </div>
             <Switch

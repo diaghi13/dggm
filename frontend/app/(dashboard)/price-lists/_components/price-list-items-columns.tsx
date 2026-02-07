@@ -11,7 +11,7 @@ export const createPriceListItemsColumns = (
   onEdit: (item: PriceListItem) => void,
   onDelete: (item: PriceListItem) => void,
   onRecalculate: (item: PriceListItem) => void,
-  appliesTo: "sale" | "rental" | "both"
+  appliesTo: "sale" | "rental" | "both",
 ): ColumnDef<PriceListItem>[] => {
   const columns: ColumnDef<PriceListItem>[] = [
     {
@@ -20,16 +20,22 @@ export const createPriceListItemsColumns = (
       cell: ({ row }) => {
         const productType = row.original.product?.product_type;
         let badge = null;
-        
-        if (productType === 'service') {
+
+        if (productType === "service") {
           badge = (
-            <Badge variant="outline" className="ml-1 text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">
+            <Badge
+              variant="outline"
+              className="ml-1 text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+            >
               Servizio
             </Badge>
           );
-        } else if (productType === 'composite') {
+        } else if (productType === "composite") {
           badge = (
-            <Badge variant="outline" className="ml-1 text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800">
+            <Badge
+              variant="outline"
+              className="ml-1 text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"
+            >
               Composito
             </Badge>
           );
@@ -120,7 +126,7 @@ export const createPriceListItemsColumns = (
             </div>
           );
         },
-      }
+      },
     );
 
     // Badge per prezzi noleggio manuali

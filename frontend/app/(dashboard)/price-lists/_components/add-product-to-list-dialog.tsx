@@ -13,7 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { ComboboxSelect } from "@/components/combobox-select";
 import { productsApi } from "@/lib/api/products";
-import { PriceListItemForm, PriceListItemFormData } from "./price-list-item-form";
+import {
+  PriceListItemForm,
+  PriceListItemFormData,
+} from "./price-list-item-form";
 import type { Product } from "@/lib/types";
 import { Save } from "lucide-react";
 
@@ -84,7 +87,7 @@ export function AddProductToListDialog({
                 value={selectedProduct?.id?.toString() || ""}
                 onValueChange={(value) => {
                   const product = products?.data.find(
-                    (p: Product) => p.id?.toString() === value
+                    (p: Product) => p.id?.toString() === value,
                   );
                   setSelectedProduct(product || null);
                 }}
@@ -96,22 +99,30 @@ export function AddProductToListDialog({
                   {selectedProduct.description || "Nessuna descrizione"}
                 </p>
               )}
-              {selectedProduct && selectedProduct.product_type === 'service' && (
-                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <span className="text-blue-600 dark:text-blue-400 text-xs">ℹ️</span>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    Questo è un servizio. I servizi possono essere solo venduti, non noleggiati.
-                  </p>
-                </div>
-              )}
-              {selectedProduct && selectedProduct.product_type === 'composite' && (
-                <div className="flex items-start gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <span className="text-purple-600 dark:text-purple-400 text-xs">📦</span>
-                  <p className="text-xs text-purple-700 dark:text-purple-300">
-                    Questo è un prodotto composito. Il prezzo può essere calcolato dalla somma dei componenti.
-                  </p>
-                </div>
-              )}
+              {selectedProduct &&
+                selectedProduct.product_type === "service" && (
+                  <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <span className="text-blue-600 dark:text-blue-400 text-xs">
+                      ℹ️
+                    </span>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      Questo è un servizio. I servizi possono essere solo
+                      venduti, non noleggiati.
+                    </p>
+                  </div>
+                )}
+              {selectedProduct &&
+                selectedProduct.product_type === "composite" && (
+                  <div className="flex items-start gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <span className="text-purple-600 dark:text-purple-400 text-xs">
+                      📦
+                    </span>
+                    <p className="text-xs text-purple-700 dark:text-purple-300">
+                      Questo è un prodotto composito. Il prezzo può essere
+                      calcolato dalla somma dei componenti.
+                    </p>
+                  </div>
+                )}
             </div>
 
             {/* Form Prezzi */}

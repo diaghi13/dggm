@@ -60,10 +60,7 @@ export default function PriceListsPage() {
   );
 
   const { data, isLoading } = useQuery({
-    queryKey: [
-      "price-lists",
-      { page, search, appliesToFilter, activeFilter },
-    ],
+    queryKey: ["price-lists", { page, search, appliesToFilter, activeFilter }],
     queryFn: () =>
       priceListsApi.getAll({
         page,

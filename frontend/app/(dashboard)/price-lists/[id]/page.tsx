@@ -115,9 +115,7 @@ export default function PriceListDetailPage() {
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(
-        err.response?.data?.message || "Errore durante la rimozione",
-      );
+      toast.error(err.response?.data?.message || "Errore durante la rimozione");
     },
   });
 
@@ -129,14 +127,12 @@ export default function PriceListDetailPage() {
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(
-        err.response?.data?.message || "Errore durante il ricalcolo",
-      );
+      toast.error(err.response?.data?.message || "Errore durante il ricalcolo");
     },
   });
 
   const addItemMutation = useMutation({
-    mutationFn: (data: PriceListItemFormData & { product_id: number }) => 
+    mutationFn: (data: PriceListItemFormData & { product_id: number }) =>
       priceListsApi.addItem(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["price-list", id] });
@@ -146,9 +142,7 @@ export default function PriceListDetailPage() {
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(
-        err.response?.data?.message || "Errore durante l'aggiunta",
-      );
+      toast.error(err.response?.data?.message || "Errore durante l'aggiunta");
     },
   });
 
@@ -165,17 +159,27 @@ export default function PriceListDetailPage() {
     setEditingItem(item);
   }, []);
 
-  const handleDeleteItem = useCallback((item: PriceListItem) => {
-    if (!item.id) return;
-    if (confirm(`Vuoi rimuovere ${item.product?.name || "questo prodotto"} dal listino?`)) {
-      deleteItemMutation.mutate(item.id);
-    }
-  }, [deleteItemMutation]);
+  const handleDeleteItem = useCallback(
+    (item: PriceListItem) => {
+      if (!item.id) return;
+      if (
+        confirm(
+          `Vuoi rimuovere ${item.product?.name || "questo prodotto"} dal listino?`,
+        )
+      ) {
+        deleteItemMutation.mutate(item.id);
+      }
+    },
+    [deleteItemMutation],
+  );
 
-  const handleRecalculateItem = useCallback((item: PriceListItem) => {
-    if (!item.id) return;
-    recalculateItemMutation.mutate(item.id);
-  }, [recalculateItemMutation]);
+  const handleRecalculateItem = useCallback(
+    (item: PriceListItem) => {
+      if (!item.id) return;
+      recalculateItemMutation.mutate(item.id);
+    },
+    [recalculateItemMutation],
+  );
 
   // Colonne DataTable
   const itemsColumns = useMemo(
@@ -184,9 +188,14 @@ export default function PriceListDetailPage() {
         handleEditItem,
         handleDeleteItem,
         handleRecalculateItem,
-        priceList?.applies_to || "both"
+        priceList?.applies_to || "both",
       ),
-    [handleEditItem, handleDeleteItem, handleRecalculateItem, priceList?.applies_to]
+    [
+      handleEditItem,
+      handleDeleteItem,
+      handleRecalculateItem,
+      priceList?.applies_to,
+    ],
   );
 
   if (isLoading) {
@@ -526,7 +535,10 @@ export default function PriceListDetailPage() {
 
       {/* Edit Item Dialog */}
       {editingItem && (
-        <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <Dialog
+          open={!!editingItem}
+          onOpenChange={(open) => !open && setEditingItem(null)}
+        >
           <DialogContent className="max-w-3xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200 dark:border-slate-800">
               <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
@@ -542,8 +554,14 @@ export default function PriceListDetailPage() {
                 item={editingItem}
                 onSubmit={handleUpdateItem}
                 isLoading={updateItemMutation.isPending}
-                showSale={priceList?.applies_to === "sale" || priceList?.applies_to === "both"}
-                showRental={priceList?.applies_to === "rental" || priceList?.applies_to === "both"}
+                showSale={
+                  priceList?.applies_to === "sale" ||
+                  priceList?.applies_to === "both"
+                }
+                showRental={
+                  priceList?.applies_to === "rental" ||
+                  priceList?.applies_to === "both"
+                }
               />
             </div>
             <DialogFooter className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50">
@@ -561,7 +579,9 @@ export default function PriceListDetailPage() {
                 disabled={updateItemMutation.isPending}
               >
                 <Save className="h-4 w-4 mr-2" />
-                {updateItemMutation.isPending ? "Salvataggio..." : "Salva Modifiche"}
+                {updateItemMutation.isPending
+                  ? "Salvataggio..."
+                  : "Salva Modifiche"}
               </Button>
             </DialogFooter>
           </DialogContent>

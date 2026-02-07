@@ -24,9 +24,7 @@ export default function NewPriceListPage() {
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(
-        err.response?.data?.message || "Errore durante la creazione",
-      );
+      toast.error(err.response?.data?.message || "Errore durante la creazione");
     },
   });
 
