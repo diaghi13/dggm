@@ -1,18 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
-import { stockMovementsApi } from '@/lib/api/stock-movements';
+import { useQuery } from "@tanstack/react-query";
+import { stockMovementsApi } from "@/lib/api/stock-movements";
 
 // Query Keys
 export const stockMovementKeys = {
-  all: ['stock-movements'] as const,
-  lists: () => [...stockMovementKeys.all, 'list'] as const,
-  list: (filters?: Record<string, unknown>) => [...stockMovementKeys.lists(), filters] as const,
-  detail: (id: number) => [...stockMovementKeys.all, 'detail', id] as const,
+  all: ["stock-movements"] as const,
+  lists: () => [...stockMovementKeys.all, "list"] as const,
+  list: (filters?: Record<string, unknown>) =>
+    [...stockMovementKeys.lists(), filters] as const,
+  detail: (id: number) => [...stockMovementKeys.all, "detail", id] as const,
   byProduct: (productId: number, limit?: number) =>
-    [...stockMovementKeys.all, 'product', productId, limit] as const,
+    [...stockMovementKeys.all, "product", productId, limit] as const,
   byWarehouse: (warehouseId: number) =>
-    [...stockMovementKeys.all, 'warehouse', warehouseId] as const,
+    [...stockMovementKeys.all, "warehouse", warehouseId] as const,
   rentalHistory: (filters?: Record<string, unknown>) =>
-    [...stockMovementKeys.all, 'rental-history', filters] as const,
+    [...stockMovementKeys.all, "rental-history", filters] as const,
 };
 
 // ============================================
@@ -54,7 +55,11 @@ export function useStockMovement(id: number, enabled = true) {
 /**
  * Hook per ottenere i movimenti di un prodotto specifico
  */
-export function useStockMovementsByProduct(productId: number, limit?: number, enabled = true) {
+export function useStockMovementsByProduct(
+  productId: number,
+  limit?: number,
+  enabled = true,
+) {
   return useQuery({
     queryKey: stockMovementKeys.byProduct(productId, limit),
     queryFn: () => stockMovementsApi.getByProduct(productId, limit),
@@ -66,7 +71,10 @@ export function useStockMovementsByProduct(productId: number, limit?: number, en
 /**
  * Hook per ottenere i movimenti di un magazzino specifico
  */
-export function useStockMovementsByWarehouse(warehouseId: number, enabled = true) {
+export function useStockMovementsByWarehouse(
+  warehouseId: number,
+  enabled = true,
+) {
   return useQuery({
     queryKey: stockMovementKeys.byWarehouse(warehouseId),
     queryFn: () => stockMovementsApi.getByWarehouse(warehouseId),
