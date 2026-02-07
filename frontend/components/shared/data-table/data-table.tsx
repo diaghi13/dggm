@@ -696,7 +696,11 @@ export function DataTable<TData, TValue>({
 
             {/* Current page indicator */}
             <span className="text-sm text-slate-600 dark:text-slate-400 px-2 min-w-[100px] text-center">
-              Pagina {serverPagination ? serverPagination.page : table.getState().pagination.pageIndex + 1} di{" "}
+              Pagina{" "}
+              {serverPagination
+                ? serverPagination.page
+                : table.getState().pagination.pageIndex + 1}{" "}
+              di{" "}
               {serverPagination
                 ? Math.ceil(serverPagination.total / serverPagination.perPage)
                 : table.getPageCount()}
