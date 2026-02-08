@@ -118,19 +118,20 @@ export default function PriceListDetailPage() {
   const items = Array.isArray(itemsData?.data) ? itemsData.data : [];
   const itemsMeta = itemsData?.meta;
 
-  // Sync itemsPerPage con localStorage
+  // Load itemsPerPage from localStorage on mount
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       const savedPageSize = localStorage.getItem("price-list-items-pageSize");
       if (savedPageSize) {
         const parsedSize = parseInt(savedPageSize, 10);
-        if (parsedSize !== itemsPerPage) {
+        if (!isNaN(parsedSize) && parsedSize > 0) {
           setItemsPerPage(parsedSize);
         }
       }
     }
-  }, [itemsPerPage]);
+  }, []); // Solo al mount
 
+  // Save itemsPerPage to localStorage when it changes
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem(
@@ -257,6 +258,37 @@ export default function PriceListDetailPage() {
     },
     [recalculateItemMutation],
   );
+
+  // Handlers per i filtri degli items
+  const handleSearchChange = useCallback((value: string) => {
+    setItemsSearch(value);
+    setItemsPage(1);
+  }, []);
+
+  const handleActiveFilterChange = useCallback((value: string) => {
+    setItemsActiveFilter(value);
+    setItemsPage(1);
+  }, []);
+
+  const handleManualPriceFilterChange = useCallback((value: string) => {
+    setItemsManualPriceFilter(value);
+    setItemsPage(1);
+  }, []);
+
+  const handleProductTypeFilterChange = useCallback((value: string) => {
+    setItemsProductTypeFilter(value);
+    setItemsPage(1);
+  }, []);
+
+  // Handlers per la paginazione
+  const handlePageChange = useCallback((page: number) => {
+    setItemsPage(page);
+  }, []);
+
+  const handlePerPageChange = useCallback((perPage: number) => {
+    setItemsPerPage(perPage);
+    setItemsPage(1); // Reset alla prima pagina quando cambia items per page
+  }, []);
 
   // Colonne DataTable
   const itemsColumns = useMemo(
@@ -592,25 +624,13 @@ export default function PriceListDetailPage() {
             <CardContent>
               <PriceListItemsFilters
                 search={itemsSearch}
-                onSearchChange={(value) => {
-                  setItemsSearch(value);
-                  setItemsPage(1);
-                }}
+                onSearchChange={handleSearchChange}
                 activeFilter={itemsActiveFilter}
-                onActiveFilterChange={(value) => {
-                  setItemsActiveFilter(value);
-                  setItemsPage(1);
-                }}
+                onActiveFilterChange={handleActiveFilterChange}
                 manualPriceFilter={itemsManualPriceFilter}
-                onManualPriceFilterChange={(value) => {
-                  setItemsManualPriceFilter(value);
-                  setItemsPage(1);
-                }}
+                onManualPriceFilterChange={handleManualPriceFilterChange}
                 productTypeFilter={itemsProductTypeFilter}
-                onProductTypeFilterChange={(value) => {
-                  setItemsProductTypeFilter(value);
-                  setItemsPage(1);
-                }}
+                onProductTypeFilterChange={handleProductTypeFilterChange}
               />
               {isLoadingItems ? (
                 <div className="flex items-center justify-center py-12">
@@ -638,8 +658,8 @@ export default function PriceListDetailPage() {
                     page: itemsPage,
                     perPage: itemsPerPage,
                     total: itemsMeta?.total || 0,
-                    onPageChange: setItemsPage,
-                    onPerPageChange: setItemsPerPage,
+                    onPageChange: handlePageChange,
+                    onPerPageChange: handlePerPageChange,
                   }}
                 />
               )}
