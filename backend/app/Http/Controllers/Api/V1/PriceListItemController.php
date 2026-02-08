@@ -18,6 +18,64 @@ class PriceListItemController extends Controller
     ) {}
 
     /**
+     * Get paginated price list items with products
+     */
+    public function index(Request $request, PriceList $priceList): JsonResponse
+    {
+        $this->authorize('view', $priceList);
+
+        $perPage = min($request->input('per_page', 100), 500);
+        $search = $request->input('search');
+        $isActive = $request->input('is_active');
+        $isManualPrice = $request->input('is_manual_price');
+        $productType = $request->input('product_type');
+
+        $query = $priceList->items()
+            ->join('products', 'price_list_items.product_id', '=', 'products.id')
+            ->select('price_list_items.*') // Select only price_list_items columns
+            ->with(['product.category', 'product.brand'])
+            // Search filter
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('products.name', 'like', "%{$search}%")
+                        ->orWhere('products.code', 'like', "%{$search}%");
+                });
+            })
+            // Active/Inactive filter
+            ->when($isActive !== null, function ($q) use ($isActive) {
+                $q->where('price_list_items.is_active', filter_var($isActive, FILTER_VALIDATE_BOOLEAN));
+            })
+            // Manual/Automatic price filter
+            ->when($isManualPrice !== null, function ($q) use ($isManualPrice) {
+                $q->where('price_list_items.is_manual_price', filter_var($isManualPrice, FILTER_VALIDATE_BOOLEAN));
+            })
+            // Product type filter (article, service, composite)
+            ->when($productType, function ($q) use ($productType) {
+                $q->where('products.product_type', $productType);
+            })
+            ->orderBy('products.name');
+
+        $items = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => PriceListItemData::collect($items->items(), \Spatie\LaravelData\DataCollection::class),
+            'meta' => [
+                'current_page' => $items->currentPage(),
+                'per_page' => $items->perPage(),
+                'total' => $items->total(),
+                'last_page' => $items->lastPage(),
+            ],
+            'links' => [
+                'first' => $items->url(1),
+                'last' => $items->url($items->lastPage()),
+                'prev' => $items->previousPageUrl(),
+                'next' => $items->nextPageUrl(),
+            ],
+        ]);
+    }
+
+    /**
      * Add a new item to the price list
      */
     public function store(Request $request, PriceList $priceList): JsonResponse

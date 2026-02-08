@@ -16,28 +16,58 @@ use Illuminate\Http\Request;
 class PriceListController extends Controller
 {
     /**
-     * Get all active price lists
+     * Get all active price lists with pagination support
      */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', PriceList::class);
 
-        $priceLists = app(GetActivePriceListsQuery::class)->execute();
+        $perPage = min($request->input('per_page', 15), 100);
+        $productId = $request->input('product_id');
 
+        $priceLists = app(GetActivePriceListsQuery::class, [
+            'productId' => $productId,
+            'perPage' => $perPage,
+        ])->execute();
+
+        // Handle paginated response
+        if ($priceLists instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator) {
+            return response()->json([
+                'success' => true,
+                'data' => PriceListData::collect($priceLists->items(), \Spatie\LaravelData\DataCollection::class),
+                'meta' => [
+                    'current_page' => $priceLists->currentPage(),
+                    'per_page' => $priceLists->perPage(),
+                    'total' => $priceLists->total(),
+                    'last_page' => $priceLists->lastPage(),
+                ],
+                'links' => [
+                    'first' => $priceLists->url(1),
+                    'last' => $priceLists->url($priceLists->lastPage()),
+                    'prev' => $priceLists->previousPageUrl(),
+                    'next' => $priceLists->nextPageUrl(),
+                ],
+            ]);
+        }
+
+        // Non-paginated response
         return response()->json([
             'success' => true,
-            'data' => PriceListData::collect($priceLists)->toArray(),
+            'data' => PriceListData::collect($priceLists, \Spatie\LaravelData\DataCollection::class),
         ]);
     }
 
     /**
-     * Get single price list with items
+     * Get single price list with basic info (without items)
+     * Use GET /price-lists/{id}/items for paginated items
      */
     public function show(PriceList $priceList): JsonResponse
     {
         $this->authorize('view', $priceList);
 
-        $priceList->load(['items.product', 'category']);
+        // Load only category and items count, NOT all items (too heavy - 13k+ items!)
+        $priceList->load(['category'])
+            ->loadCount('items');
 
         return response()->json([
             'success' => true,

@@ -17,12 +17,14 @@ use App\Events\PasswordChanged;
 use App\Events\PasswordReset;
 use App\Events\PasswordResetRequested;
 use App\Events\PriceListGenerated;
+use App\Events\PriceListItemsGenerationCompleted;
 use App\Events\SettingCreated;
 use App\Events\SettingDeleted;
 use App\Events\SettingUpdated;
 use App\Events\StockMovementCreated;
 use App\Events\StockMovementReversed;
 use App\Listeners\CheckLowStockAfterMovementListener;
+use App\Listeners\GeneratePriceListItemsListener;
 use App\Listeners\GenerateStockMovementsListener;
 use App\Listeners\InvalidatePricingCache;
 use App\Listeners\InvalidateSettingCache;
@@ -33,6 +35,7 @@ use App\Listeners\LogPasswordActivity;
 use App\Listeners\LogPriceListGeneration;
 use App\Listeners\LogStockMovementListener;
 use App\Listeners\LogWarehouseActivity;
+use App\Listeners\NotifyPriceListGenerationCompleted;
 use App\Listeners\NotifyWarehouseManagerListener;
 use App\Listeners\ReverseStockMovementsListener;
 use App\Listeners\SendLowStockAlert;
@@ -127,11 +130,15 @@ class EventServiceProvider extends ServiceProvider
 
         // Pricing Events
         PriceListGenerated::class => [
+            GeneratePriceListItemsListener::class, // MUST run first (dispatches batch jobs)
             LogPriceListGeneration::class,
             InvalidatePricingCache::class,
         ],
         BulkProductPricesUpdated::class => [
             InvalidatePricingCache::class,
+        ],
+        PriceListItemsGenerationCompleted::class => [
+            NotifyPriceListGenerationCompleted::class,
         ],
     ];
 

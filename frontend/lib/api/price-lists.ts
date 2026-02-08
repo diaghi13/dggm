@@ -19,6 +19,17 @@ export interface PriceListsParams {
   sort_order?: "asc" | "desc";
 }
 
+export interface PriceListItemsParams {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  is_active?: boolean;
+  is_manual_price?: boolean;
+  product_type?: "article" | "service" | "composite";
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+}
+
 export const priceListsApi = {
   // Price Lists CRUD
   getAll: async (
@@ -69,6 +80,16 @@ export const priceListsApi = {
   },
 
   // Price List Items CRUD
+  getItems: async (
+    priceListId: number,
+    params?: PriceListItemsParams,
+  ): Promise<PaginatedResponse<App.Data.PriceListItemData>> => {
+    const response = await apiClient.get<
+      PaginatedResponse<App.Data.PriceListItemData>
+    >(`/price-lists/${priceListId}/items`, { params });
+    return response.data;
+  },
+
   updateItem: async (
     priceListId: number,
     itemId: number,

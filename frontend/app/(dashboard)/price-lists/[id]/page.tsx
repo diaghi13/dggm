@@ -42,13 +42,14 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
   PriceListItemForm,
   PriceListItemFormData,
   createPriceListItemsColumns,
   AddProductToListDialog,
+  PriceListItemsFilters,
 } from "../_components";
 import type { PriceListItem } from "@/lib/types";
 
@@ -61,6 +62,12 @@ export default function PriceListDetailPage() {
   const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PriceListItem | null>(null);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [itemsPage, setItemsPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [itemsSearch, setItemsSearch] = useState("");
+  const [itemsActiveFilter, setItemsActiveFilter] = useState("all");
+  const [itemsManualPriceFilter, setItemsManualPriceFilter] = useState("all");
+  const [itemsProductTypeFilter, setItemsProductTypeFilter] = useState("all");
 
   const { data: priceList, isLoading } = useQuery({
     queryKey: ["price-list", id],
@@ -68,10 +75,76 @@ export default function PriceListDetailPage() {
     enabled: !!id,
   });
 
+  // Query separata per gli items paginati
+  const { data: itemsData, isLoading: isLoadingItems } = useQuery({
+    queryKey: [
+      "price-list-items",
+      id,
+      {
+        search: itemsSearch,
+        page: itemsPage,
+        per_page: itemsPerPage,
+        is_active: itemsActiveFilter,
+        is_manual_price: itemsManualPriceFilter,
+        product_type: itemsProductTypeFilter,
+      },
+    ],
+    queryFn: () =>
+      priceListsApi.getItems(id, {
+        search: itemsSearch || undefined,
+        page: itemsPage,
+        per_page: itemsPerPage,
+        is_active:
+          itemsActiveFilter === "active"
+            ? true
+            : itemsActiveFilter === "inactive"
+              ? false
+              : undefined,
+        is_manual_price:
+          itemsManualPriceFilter === "manual"
+            ? true
+            : itemsManualPriceFilter === "automatic"
+              ? false
+              : undefined,
+        product_type:
+          itemsProductTypeFilter !== "all"
+            ? (itemsProductTypeFilter as "article" | "service" | "composite")
+            : undefined,
+      }),
+    enabled: !!id,
+  });
+
+  // Estrae gli items e i metadata
+  const items = Array.isArray(itemsData?.data) ? itemsData.data : [];
+  const itemsMeta = itemsData?.meta;
+
+  // Sync itemsPerPage con localStorage
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedPageSize = localStorage.getItem("price-list-items-pageSize");
+      if (savedPageSize) {
+        const parsedSize = parseInt(savedPageSize, 10);
+        if (parsedSize !== itemsPerPage) {
+          setItemsPerPage(parsedSize);
+        }
+      }
+    }
+  }, [itemsPerPage]);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "price-list-items-pageSize",
+        itemsPerPage.toString(),
+      );
+    }
+  }, [itemsPerPage]);
+
   const regenerateMutation = useMutation({
     mutationFn: priceListsApi.regenerate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["price-list", id] });
+      queryClient.invalidateQueries({ queryKey: ["price-list-items", id] });
       queryClient.invalidateQueries({ queryKey: ["price-lists"] });
       setIsRegenerateDialogOpen(false);
       toast.success("Listino rigenerato con successo");
@@ -94,6 +167,7 @@ export default function PriceListDetailPage() {
     }) => priceListsApi.updateItem(id, itemId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["price-list", id] });
+      queryClient.invalidateQueries({ queryKey: ["price-list-items", id] });
       queryClient.invalidateQueries({ queryKey: ["price-lists"] });
       setEditingItem(null);
       toast.success("Prodotto aggiornato con successo");
@@ -110,6 +184,7 @@ export default function PriceListDetailPage() {
     mutationFn: (itemId: number) => priceListsApi.deleteItem(id, itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["price-list", id] });
+      queryClient.invalidateQueries({ queryKey: ["price-list-items", id] });
       queryClient.invalidateQueries({ queryKey: ["price-lists"] });
       toast.success("Prodotto rimosso dal listino");
     },
@@ -123,6 +198,7 @@ export default function PriceListDetailPage() {
     mutationFn: (itemId: number) => priceListsApi.recalculateItem(id, itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["price-list", id] });
+      queryClient.invalidateQueries({ queryKey: ["price-list-items", id] });
       toast.success("Prezzi ricalcolati con successo");
     },
     onError: (error: unknown) => {
@@ -136,6 +212,7 @@ export default function PriceListDetailPage() {
       priceListsApi.addItem(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["price-list", id] });
+      queryClient.invalidateQueries({ queryKey: ["price-list-items", id] });
       queryClient.invalidateQueries({ queryKey: ["price-lists"] });
       setIsAddItemDialogOpen(false);
       toast.success("Prodotto aggiunto al listino");
@@ -324,7 +401,7 @@ export default function PriceListDetailPage() {
         <TabsList>
           <TabsTrigger value="details">Dettagli</TabsTrigger>
           <TabsTrigger value="products">
-            Prodotti ({priceList.items?.length || 0})
+            Prodotti ({itemsMeta?.total || 0})
           </TabsTrigger>
         </TabsList>
 
@@ -513,7 +590,38 @@ export default function PriceListDetailPage() {
               </Button>
             </CardHeader>
             <CardContent>
-              {!priceList.items || priceList.items.length === 0 ? (
+              <PriceListItemsFilters
+                search={itemsSearch}
+                onSearchChange={(value) => {
+                  setItemsSearch(value);
+                  setItemsPage(1);
+                }}
+                activeFilter={itemsActiveFilter}
+                onActiveFilterChange={(value) => {
+                  setItemsActiveFilter(value);
+                  setItemsPage(1);
+                }}
+                manualPriceFilter={itemsManualPriceFilter}
+                onManualPriceFilterChange={(value) => {
+                  setItemsManualPriceFilter(value);
+                  setItemsPage(1);
+                }}
+                productTypeFilter={itemsProductTypeFilter}
+                onProductTypeFilterChange={(value) => {
+                  setItemsProductTypeFilter(value);
+                  setItemsPage(1);
+                }}
+              />
+              {isLoadingItems ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Package className="h-12 w-12 mx-auto mb-4 text-slate-400 dark:text-slate-600 animate-pulse" />
+                    <p className="text-slate-600 dark:text-slate-400">
+                      Caricamento prodotti...
+                    </p>
+                  </div>
+                </div>
+              ) : !items || items.length === 0 ? (
                 <EmptyState
                   icon={Package}
                   title="Nessun prodotto"
@@ -522,10 +630,17 @@ export default function PriceListDetailPage() {
               ) : (
                 <DataTable
                   columns={itemsColumns}
-                  data={priceList.items}
+                  data={items}
                   storageKey="price-list-items"
                   searchKey="product.name"
                   searchPlaceholder="Cerca prodotto..."
+                  pagination={{
+                    page: itemsPage,
+                    perPage: itemsPerPage,
+                    total: itemsMeta?.total || 0,
+                    onPageChange: setItemsPage,
+                    onPerPageChange: setItemsPerPage,
+                  }}
                 />
               )}
             </CardContent>

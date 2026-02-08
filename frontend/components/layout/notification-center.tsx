@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationsApi } from '@/lib/api/notifications';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { notificationsApi } from "@/lib/api/notifications";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Bell, Check, CheckCheck, Trash2, Loader2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { it } from 'date-fns/locale';
-import { useRouter } from 'next/navigation';
-import type { Notification } from '@/lib/types';
+} from "@/components/ui/dropdown-menu";
+import { Bell, Check, CheckCheck, Trash2, Loader2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { it } from "date-fns/locale";
+import { useRouter } from "next/navigation";
+import type { Notification } from "@/lib/types";
 
 export function NotificationCenter() {
   const router = useRouter();
@@ -23,39 +23,47 @@ export function NotificationCenter() {
 
   // Fetch unread count
   const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['notifications-unread-count'],
+    queryKey: ["notifications-unread-count"],
     queryFn: () => notificationsApi.getUnreadCount(),
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Fetch notifications when dropdown opens
   const { data: notificationsData, isLoading } = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ["notifications"],
     queryFn: () => notificationsApi.getAll({ per_page: 10 }),
     enabled: open,
   });
 
   const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: string) => notificationsApi.markAsRead(notificationId),
+    mutationFn: (notificationId: string) =>
+      notificationsApi.markAsRead(notificationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({
+        queryKey: ["notifications-unread-count"],
+      });
     },
   });
 
   const markAllAsReadMutation = useMutation({
     mutationFn: () => notificationsApi.markAllAsRead(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({
+        queryKey: ["notifications-unread-count"],
+      });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (notificationId: string) => notificationsApi.delete(notificationId),
+    mutationFn: (notificationId: string) =>
+      notificationsApi.delete(notificationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({
+        queryKey: ["notifications-unread-count"],
+      });
     },
   });
 
@@ -65,66 +73,100 @@ export function NotificationCenter() {
       markAsReadMutation.mutate(notification.id);
     }
 
-    // Navigate based on notification type
+    // Navigate based on notification data
     const data = notification.data;
 
-    if (data.type === 'worker_assigned' && data.site_worker_id) {
-      router.push('/dashboard/worker');
-    } else if (data.type === 'assignment_responded' && data.site_id) {
+    // Se c'è un'action URL, usala
+    if (data.action) {
+      router.push(data.action);
+      setOpen(false);
+      return;
+    }
+
+    // Altrimenti usa la logica basata sul tipo
+    if (data.type === "worker_assigned" && data.site_worker_id) {
+      router.push("/dashboard/worker");
+    } else if (data.type === "assignment_responded" && data.site_id) {
       router.push(`/dashboard/sites/${data.site_id}?tab=squadra`);
-    } else if (data.type === 'material_requested' && data.site_id) {
+    } else if (data.type === "material_requested" && data.site_id) {
       router.push(`/dashboard/sites/${data.site_id}?tab=richieste`);
-    } else if (data.type === 'material_request_approved' && data.site_id) {
-      router.push('/dashboard/worker');
-    } else if (data.type === 'material_request_rejected' && data.site_id) {
-      router.push('/dashboard/worker');
+    } else if (data.type === "material_request_approved" && data.site_id) {
+      router.push("/dashboard/worker");
+    } else if (data.type === "material_request_rejected" && data.site_id) {
+      router.push("/dashboard/worker");
     }
 
     setOpen(false);
   };
 
-  const getNotificationIcon = (type: string) => {
-    // Return different icons based on notification type
-    return '🔔';
+  const getNotificationIcon = (notification: Notification) => {
+    const data = notification.data;
+
+    // Se c'è un'icona specifica nei data, usala
+    if (data.icon) {
+      const iconMap: Record<string, string> = {
+        "check-circle": "✅",
+        info: "ℹ️",
+        warning: "⚠️",
+        error: "❌",
+        bell: "🔔",
+      };
+      return iconMap[data.icon] || "🔔";
+    }
+
+    // Altrimenti usa l'icona basata sul tipo
+    return "🔔";
   };
 
   const getNotificationTitle = (notification: Notification): string => {
     const data = notification.data;
 
+    // Se c'è un title specifico nei data, usalo
+    if (data.title) {
+      return data.title;
+    }
+
+    // Altrimenti usa la logica basata sul tipo
     switch (data.type) {
-      case 'worker_assigned':
+      case "worker_assigned":
         return data.requires_response
-          ? 'Nuova Assegnazione - Richiede Conferma'
-          : 'Nuova Assegnazione';
-      case 'assignment_responded':
-        return 'Risposta Assegnazione';
-      case 'material_requested':
-        return 'Richiesta Materiale';
-      case 'material_request_approved':
-        return 'Richiesta Approvata';
-      case 'material_request_rejected':
-        return 'Richiesta Rifiutata';
+          ? "Nuova Assegnazione - Richiede Conferma"
+          : "Nuova Assegnazione";
+      case "assignment_responded":
+        return "Risposta Assegnazione";
+      case "material_requested":
+        return "Richiesta Materiale";
+      case "material_request_approved":
+        return "Richiesta Approvata";
+      case "material_request_rejected":
+        return "Richiesta Rifiutata";
       default:
-        return 'Notifica';
+        return "Notifica";
     }
   };
 
   const getNotificationMessage = (notification: Notification): string => {
     const data = notification.data;
 
+    // Se c'è un message specifico nei data, usalo
+    if (data.message) {
+      return data.message;
+    }
+
+    // Altrimenti usa la logica basata sul tipo
     switch (data.type) {
-      case 'worker_assigned':
+      case "worker_assigned":
         return `Sei stato assegnato al cantiere ${data.site_name}`;
-      case 'assignment_responded':
-        return `${data.worker_name} ha ${data.accepted ? 'accettato' : 'rifiutato'} l'assegnazione`;
-      case 'material_requested':
+      case "assignment_responded":
+        return `${data.worker_name} ha ${data.accepted ? "accettato" : "rifiutato"} l'assegnazione`;
+      case "material_requested":
         return `${data.worker_name} ha richiesto ${data.material_name} per ${data.site_name}`;
-      case 'material_request_approved':
+      case "material_request_approved":
         return `La tua richiesta di ${data.material_name} è stata approvata`;
-      case 'material_request_rejected':
+      case "material_request_rejected":
         return `La tua richiesta di ${data.material_name} è stata rifiutata`;
       default:
-        return 'Hai una nuova notifica';
+        return "Hai una nuova notifica";
     }
   };
 
@@ -140,7 +182,7 @@ export function NotificationCenter() {
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
           )}
         </Button>
@@ -181,14 +223,21 @@ export function NotificationCenter() {
                 <div
                   key={notification.id}
                   className={`px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors ${
-                    !notification.read_at ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                    !notification.read_at
+                      ? "bg-blue-50/50 dark:bg-blue-900/10"
+                      : ""
                   }`}
                 >
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 mt-1">
-                      <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
+                      <span className="text-2xl">
+                        {getNotificationIcon(notification)}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0" onClick={() => handleNotificationClick(notification)}>
+                    <div
+                      className="flex-1 min-w-0"
+                      onClick={() => handleNotificationClick(notification)}
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                           {getNotificationTitle(notification)}
@@ -201,21 +250,34 @@ export function NotificationCenter() {
                         {getNotificationMessage(notification)}
                       </p>
                       <p className="text-xs text-slate-500 mt-2">
-                        {formatDistanceToNow(new Date(notification.created_at), {
-                          addSuffix: true,
-                          locale: it,
-                        })}
+                        {formatDistanceToNow(
+                          new Date(notification.created_at),
+                          {
+                            addSuffix: true,
+                            locale: it,
+                          },
+                        )}
                       </p>
                     </div>
                     <div className="flex-shrink-0">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <DropdownMenuTrigger
+                          asChild
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
                             <span className="sr-only">Azioni</span>
                             <span className="text-lg">⋮</span>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuContent
+                          align="end"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {!notification.read_at && (
                             <button
                               className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -256,7 +318,7 @@ export function NotificationCenter() {
               size="sm"
               className="w-full"
               onClick={() => {
-                router.push('/dashboard/notifications');
+                router.push("/dashboard/notifications");
                 setOpen(false);
               }}
             >

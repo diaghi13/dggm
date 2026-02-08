@@ -218,7 +218,7 @@ class ProductController extends Controller
             // Inventory
             'products.*.reorder_level' => 'nullable|numeric|min:0',
             'products.*.reorder_quantity' => 'nullable|numeric|min:0',
-            'products.*.lead_time_days' => 'nullable|integer|min:0',
+            'products.*.lead_time_days' => 'nullable|numeric|min:0',
             'products.*.location' => 'nullable|string|max:255',
 
             // Other

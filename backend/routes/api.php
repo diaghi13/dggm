@@ -199,6 +199,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/{priceList}/regenerate', [PriceListController::class, 'regenerate']);
 
             // Price List Items (nested resource)
+            Route::get('/{priceList}/items', [PriceListItemController::class, 'index']);
             Route::post('/{priceList}/items', [PriceListItemController::class, 'store']);
             Route::put('/{priceList}/items/{item}', [PriceListItemController::class, 'update']);
             Route::delete('/{priceList}/items/{item}', [PriceListItemController::class, 'destroy']);

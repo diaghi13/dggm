@@ -46,15 +46,18 @@ class PriceListData extends Data
 
         public ?string $valid_from,
         public ?string $valid_to,
-        public ?bool $is_active,
-        public ?bool $is_default,
-        public ?int $priority,
+        public bool $is_active = true,
+        public bool $is_default = false,
+        public int $priority = 0,
 
         // Relationships
         public ProductCategoryData|Lazy|null $category = null,
 
         /** @var DataCollection<PriceListItemData>|Lazy|null */
         public DataCollection|Lazy|null $items = null,
+
+        // Computed attributes
+        public readonly ?int $items_count = null,
     ) {}
 
     public static function rules(ValidationContext $context): array
