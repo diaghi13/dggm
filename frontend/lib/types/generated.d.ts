@@ -147,11 +147,12 @@ category_id: number | null;
 department_filter: string | null;
 valid_from: string | null;
 valid_to: string | null;
-is_active: boolean | null;
-is_default: boolean | null;
-priority: number | null;
+is_active: boolean;
+is_default: boolean;
+priority: number;
 category?: App.Data.ProductCategoryData | null;
 items?: Array<App.Data.PriceListItemData> | null;
+items_count: number | null;
 };
 export type PriceListItemData = {
 id: number | null;

@@ -463,3 +463,65 @@ it('simulates real Excel import (BTicino format)', function () {
         ->and($supplierProduct->discount_family_id)->toBe($this->discountFamily->id)
         ->and($supplierProduct->currency)->toBe('EUR');
 });
+
+it('sanitizes non-numeric lead_time_days to default value', function () {
+    $response = $this->postJson('/api/v1/import/supplier-catalog', [
+        'supplier_id' => $this->supplier->id,
+        'rows' => [
+            [
+                'code' => 'LEAD-001',
+                'name' => 'Product with alphabetic lead time',
+                'unit' => 'pz',
+                'purchase_price' => 50.00,
+                'lead_time_days' => 'ABC', // Non-numeric value
+            ],
+        ],
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'data' => [
+                'imported' => 1,
+            ],
+        ]);
+
+    $product = Product::where('code', 'LEAD-001')->first();
+    $supplierProduct = SupplierProduct::where('product_id', $product->id)->first();
+
+    // Should be sanitized to default (7 days)
+    expect($supplierProduct)->not->toBeNull()
+        ->and($supplierProduct->lead_time_days)->toBe(7);
+});
+
+it('preserves numeric lead_time_days values', function () {
+    $response = $this->postJson('/api/v1/import/supplier-catalog', [
+        'supplier_id' => $this->supplier->id,
+        'rows' => [
+            [
+                'code' => 'LEAD-002',
+                'name' => 'Product with numeric lead time',
+                'unit' => 'pz',
+                'purchase_price' => 50.00,
+                'lead_time_days' => '14', // String numeric value
+            ],
+            [
+                'code' => 'LEAD-003',
+                'name' => 'Product with integer lead time',
+                'unit' => 'pz',
+                'purchase_price' => 60.00,
+                'lead_time_days' => 21, // Integer value
+            ],
+        ],
+    ]);
+
+    $response->assertStatus(200);
+
+    $product1 = Product::where('code', 'LEAD-002')->first();
+    $supplierProduct1 = SupplierProduct::where('product_id', $product1->id)->first();
+    expect($supplierProduct1->lead_time_days)->toBe(14);
+
+    $product2 = Product::where('code', 'LEAD-003')->first();
+    $supplierProduct2 = SupplierProduct::where('product_id', $product2->id)->first();
+    expect($supplierProduct2->lead_time_days)->toBe(21);
+});

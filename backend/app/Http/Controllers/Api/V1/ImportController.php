@@ -308,7 +308,7 @@ class ImportController extends Controller
             'rows.*.minimum_order_quantity' => 'nullable|integer|min:1',
             'rows.*.maximum_order_quantity' => 'nullable|integer|min:1',
             'rows.*.multiple_order_quantity' => 'nullable|integer|min:1',
-            'rows.*.lead_time_days' => 'nullable|integer|min:0',
+            'rows.*.lead_time_days' => 'nullable', // Can be numeric or string, sanitized later
             'rows.*.payment_term' => 'nullable|string',
             'rows.*.price_multiplier' => 'nullable|numeric|min:0',
             'rows.*.currency' => 'nullable|string|max:3',
@@ -330,6 +330,11 @@ class ImportController extends Controller
             try {
                 // Inject supplier_id if not in row
                 $row['supplier_id'] = $row['supplier_id'] ?? $validated['supplier_id'];
+
+                // Sanitize lead_time_days: convert non-numeric to default (7 days)
+                if (isset($row['lead_time_days']) && ! is_numeric($row['lead_time_days'])) {
+                    $row['lead_time_days'] = 7;
+                }
 
                 $result = $importAction->execute($row);
 
