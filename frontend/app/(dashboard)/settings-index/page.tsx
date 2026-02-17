@@ -31,6 +31,7 @@ import {
   X,
   Wallet,
   Receipt,
+  Layout,
 } from "lucide-react";
 
 export default function SettingsIndexPage() {
@@ -48,7 +49,7 @@ export default function SettingsIndexPage() {
 
   const settingsSections = [
     {
-      title: "Impostazioni Generali",
+      title: "Generali",
       description: "Nome app, lingua, timezone e impostazioni base",
       icon: SettingsIcon,
       href: "/admin/settings?tab=general",
@@ -58,7 +59,7 @@ export default function SettingsIndexPage() {
       keywords: ["generale", "app", "lingua", "timezone"],
     },
     {
-      title: "Informazioni Azienda",
+      title: "Azienda",
       description: "Gestisci i dati della tua azienda",
       icon: Building2,
       href: "/admin/settings?tab=company",
@@ -68,7 +69,7 @@ export default function SettingsIndexPage() {
       keywords: ["azienda", "company", "dati"],
     },
     {
-      title: "Tema e Branding",
+      title: "Tema",
       description: "Colori, logo, favicon e personalizzazione visiva",
       icon: Palette,
       href: "/admin/settings?tab=theme",
@@ -78,9 +79,9 @@ export default function SettingsIndexPage() {
       keywords: ["tema", "colori", "logo", "branding"],
     },
     {
-      title: "Interfaccia Utente",
+      title: "Interfaccia",
       description: "Formato date, items per pagina e preferenze UI",
-      icon: Palette,
+      icon: Layout,
       href: "/admin/settings?tab=ui",
       color: "text-pink-600 dark:text-pink-400",
       bgColor: "bg-pink-100 dark:bg-pink-900/20",
@@ -88,7 +89,7 @@ export default function SettingsIndexPage() {
       keywords: ["ui", "interfaccia", "date", "paginazione"],
     },
     {
-      title: "Gestione Magazzino",
+      title: "Magazzino",
       description: "Configura inventario, movimenti e categorie materiali",
       icon: Package,
       href: "/admin/settings?tab=warehouse",
@@ -98,7 +99,7 @@ export default function SettingsIndexPage() {
       keywords: ["magazzino", "warehouse", "inventario", "stock"],
     },
     {
-      title: "Email e SMTP",
+      title: "Email",
       description: "Configura server email e notifiche via email",
       icon: Mail,
       href: "/admin/settings?tab=email",
@@ -118,7 +119,7 @@ export default function SettingsIndexPage() {
       keywords: ["notifiche", "notifications", "avvisi"],
     },
     {
-      title: "Gestione File",
+      title: "File",
       description: "Configura upload, storage e tipi di file supportati",
       icon: FileText,
       href: "/admin/settings?tab=files",
@@ -148,7 +149,7 @@ export default function SettingsIndexPage() {
       keywords: ["preventivi", "quotes", "pdf", "template", "layout"],
     },
     {
-      title: "Feature Flags",
+      title: "Funzionalità",
       description: "Abilita o disabilita funzionalità sperimentali",
       icon: Flag,
       href: "/admin/settings?tab=features",
@@ -221,6 +222,51 @@ export default function SettingsIndexPage() {
     setSearchQuery("");
   };
 
+  // Raggruppamento delle sezioni
+  const groupedSections = [
+    {
+      category: "Sistema",
+      description: "Configurazioni base dell'applicazione",
+      sections: filteredSections.filter((s) =>
+        [
+          "Generali",
+          "Azienda",
+          "Tema",
+          "Interfaccia",
+        ].includes(s.title),
+      ),
+    },
+    {
+      category: "Business",
+      description: "Gestione operativa e commerciale",
+      sections: filteredSections.filter((s) =>
+        [
+          "Magazzino",
+          "Prezzi & Noleggio",
+          "Preventivi",
+          "Risorse Finanziarie",
+          "Ruoli Cantiere",
+        ].includes(s.title),
+      ),
+    },
+    {
+      category: "Comunicazioni",
+      description: "Email e notifiche",
+      sections: filteredSections.filter((s) =>
+        ["Email", "Notifiche"].includes(s.title),
+      ),
+    },
+    {
+      category: "Avanzate",
+      description: "Opzioni avanzate e sperimentali",
+      sections: filteredSections.filter((s) =>
+        ["File", "Funzionalità", "Utenti & Permessi"].includes(
+          s.title,
+        ),
+      ),
+    },
+  ].filter((group) => group.sections.length > 0); // Mostra solo gruppi con sezioni
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header with dynamic primary color */}
@@ -244,7 +290,7 @@ export default function SettingsIndexPage() {
             </div>
             Impostazioni
           </h1>
-          <p className="text-muted-foreground mt-2 ml-[52px]">
+          <p className="text-muted-foreground mt-2 ml-13">
             Gestisci le impostazioni e configurazioni del sistema
           </p>
         </div>
@@ -290,66 +336,90 @@ export default function SettingsIndexPage() {
         </div>
       )}
 
-      {/* Settings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredSections.map((section) => {
-          const Icon = section.icon;
-          const settingsCount = section.prefix
-            ? getSettingsCount(section.prefix)
-            : null;
-          const isConfigured = settingsCount !== null && settingsCount > 0;
+      {/* Settings Grid con raggruppamenti */}
+      {groupedSections.length > 0 ? (
+        <div className="space-y-8">
+          {groupedSections.map((group) => (
+            <div key={group.category} className="space-y-4">
+              {/* Intestazione Gruppo */}
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-2">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  {group.category}
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                  {group.description}
+                </p>
+              </div>
 
-          return (
-            <Card
-              key={section.href}
-              className="hover:shadow-lg transition-shadow cursor-pointer group"
-              onClick={() => router.push(section.href)}
-            >
-              <CardHeader>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-start justify-between">
-                    <div className={`p-3 rounded-lg ${section.bgColor}`}>
-                      <Icon className={`h-6 w-6 ${section.color}`} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {settingsCount !== null && (
-                        <Badge
-                          variant={isConfigured ? "default" : "secondary"}
-                          className="text-xs"
-                          style={
-                            isConfigured
-                              ? {
-                                  backgroundColor: `${primaryColor}20`,
-                                  color: primaryColor,
-                                  border: `1px solid ${primaryColor}40`,
-                                }
-                              : undefined
-                          }
-                        >
-                          {settingsCount}{" "}
-                          {settingsCount === 1
-                            ? "impostazione"
-                            : "impostazioni"}
-                        </Badge>
-                      )}
-                      <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{section.title}</CardTitle>
-                    <CardDescription className="mt-1 text-sm">
-                      {section.description}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          );
-        })}
-      </div>
+              {/* Grid delle card del gruppo */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {group.sections.map((section) => {
+                  const Icon = section.icon;
+                  const settingsCount = section.prefix
+                    ? getSettingsCount(section.prefix)
+                    : null;
+                  const isConfigured =
+                    settingsCount !== null && settingsCount > 0;
+
+                  return (
+                    <Card
+                      key={section.href}
+                      className="hover:shadow-lg transition-shadow cursor-pointer group"
+                      onClick={() => router.push(section.href)}
+                    >
+                      <CardHeader>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-start justify-between">
+                            <div className={`p-3 rounded-lg ${section.bgColor}`}>
+                              <Icon className={`h-6 w-6 ${section.color}`} />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {settingsCount !== null && (
+                                <Badge
+                                  variant={
+                                    isConfigured ? "default" : "secondary"
+                                  }
+                                  className="text-xs"
+                                  style={
+                                    isConfigured
+                                      ? {
+                                          backgroundColor: `${primaryColor}20`,
+                                          color: primaryColor,
+                                          border: `1px solid ${primaryColor}40`,
+                                        }
+                                      : undefined
+                                  }
+                                >
+                                  {settingsCount}{" "}
+                                  {settingsCount === 1
+                                    ? "impostazione"
+                                    : "impostazioni"}
+                                </Badge>
+                              )}
+                              <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                            </div>
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">
+                              {section.title}
+                            </CardTitle>
+                            <CardDescription className="mt-1 text-sm">
+                              {section.description}
+                            </CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {/* Empty state */}
-      {filteredSections.length === 0 && (
+      {filteredSections.length === 0 && searchQuery && (
         <div className="text-center py-12">
           <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-semibold mb-2">Nessun risultato</h3>

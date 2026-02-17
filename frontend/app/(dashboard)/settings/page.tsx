@@ -7,6 +7,7 @@ import { usersApi, companySettingsApi, rolesApi, permissionsApi, Role, Permissio
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MaterialsSettingsSidebar } from '@/components/settings/materials-settings-sidebar';
 import {
   Dialog,
   DialogContent,
@@ -542,22 +543,28 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex items-center gap-2 mb-6">
-        <SettingsIcon className="h-6 w-6" />
-        <h1 className="text-3xl font-bold">Impostazioni Materiali</h1>
+    <div className="container mx-auto py-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <SettingsIcon className="h-7 w-7" />
+          Impostazioni Materiali
+        </h1>
+        <p className="text-slate-600 dark:text-slate-400 mt-1">
+          Gestisci categorie, tipi dipendenza, utenti e dati aziendali
+        </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="categories">Categorie</TabsTrigger>
-          <TabsTrigger value="dependency-types">Tipi Dipendenza</TabsTrigger>
-          <TabsTrigger value="users">Utenti</TabsTrigger>
-          <TabsTrigger value="company">Azienda</TabsTrigger>
-        </TabsList>
+      {/* Layout: Sidebar + Contenuto */}
+      <div className="flex gap-0 md:gap-6">
+        {/* Sidebar verticale */}
+        <MaterialsSettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {/* Categories Tab */}
-        <TabsContent value="categories">
+        {/* Contenuto principale */}
+        <main className="flex-1 min-w-0 w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            {/* Categories Tab */}
+            <TabsContent value="categories" className="mt-0">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -725,7 +732,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* Dependency Types Tab */}
-        <TabsContent value="dependency-types">
+        <TabsContent value="dependency-types" className="mt-0">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -893,7 +900,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* Users Tab */}
-        <TabsContent value="users">
+        <TabsContent value="users" className="mt-0">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -1018,7 +1025,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* Company Settings Tab */}
-        <TabsContent value="company">
+        <TabsContent value="company" className="mt-0">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1083,6 +1090,8 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+        </main>
+      </div>
     </div>
   );
 }

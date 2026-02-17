@@ -20,7 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -828,12 +828,12 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Layout: Sidebar + Contenuto */}
-      <div className="flex gap-6">
+      <div className="flex gap-0 md:gap-6">
         {/* Sidebar verticale */}
         <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
         {/* Contenuto principale */}
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 w-full">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
