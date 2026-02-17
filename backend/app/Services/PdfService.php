@@ -75,9 +75,11 @@ class PdfService
         if (env('CHROME_NO_SANDBOX', false)) {
             $browsershot->noSandbox()
                 ->addChromiumArguments([
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu',
-                    '--no-first-run',
+                    'disable-dev-shm-usage',
+                    'disable-gpu',
+                    'no-first-run',
+                    'no-zygote',
+                    'disable-crash-reporter',
                 ]);
         }
 
