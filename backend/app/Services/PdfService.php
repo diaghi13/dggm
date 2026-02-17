@@ -79,7 +79,7 @@ class PdfService
                     'disable-gpu',
                     'no-first-run',
                     'no-zygote',
-                    'disable-crash-reporter',
+                    'disable-breakpad',
                 ]);
         }
 
