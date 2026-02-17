@@ -39,4 +39,11 @@ return [
         'url' => env('EMBEDDING_SERVICE_URL', 'http://localhost:5001'),
         'timeout' => env('EMBEDDING_SERVICE_TIMEOUT', 30),
     ],
+
+    'browsershot' => [
+        'node_binary' => env('NODE_BINARY'),
+        'npm_binary' => env('NPM_BINARY'),
+        'chrome_path' => env('CHROME_PATH'),
+        'no_sandbox' => env('CHROME_NO_SANDBOX', false),
+    ],
 ];

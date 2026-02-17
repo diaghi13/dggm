@@ -61,18 +61,18 @@ class PdfService
             ->waitUntilNetworkIdle();
 
         // Set custom Node/NPM/Chrome paths if configured
-        if ($nodeBinary = env('NODE_BINARY')) {
+        if ($nodeBinary = config('services.browsershot.node_binary')) {
             $browsershot->setNodeBinary($nodeBinary);
         }
-        if ($npmBinary = env('NPM_BINARY')) {
+        if ($npmBinary = config('services.browsershot.npm_binary')) {
             $browsershot->setNpmBinary($npmBinary);
         }
-        if ($chromePath = env('CHROME_PATH')) {
+        if ($chromePath = config('services.browsershot.chrome_path')) {
             $browsershot->setChromePath($chromePath);
         }
 
         // Required flags for headless Chrome in server/container environments
-        if (env('CHROME_NO_SANDBOX', false)) {
+        if (config('services.browsershot.no_sandbox')) {
             $browsershot->noSandbox()
                 ->addChromiumArguments([
                     'disable-dev-shm-usage',
