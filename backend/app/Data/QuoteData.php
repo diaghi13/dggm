@@ -6,11 +6,13 @@ use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Required;
+use Spatie\LaravelData\Attributes\WithTransformer;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\Lazy;
 use Spatie\LaravelData\Optional;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
+use Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer;
 
 class QuoteData extends Data
 {
@@ -48,12 +50,16 @@ class QuoteData extends Data
         // Status & Date (with defaults)
         public string $status = 'draft',
 
+        #[WithTransformer(DateTimeInterfaceTransformer::class, format: 'Y-m-d')]
         public ?\Carbon\Carbon $issue_date = null,
 
+        #[WithTransformer(DateTimeInterfaceTransformer::class, format: 'Y-m-d')]
         public ?\Carbon\Carbon $expiry_date = null,
 
+        #[WithTransformer(DateTimeInterfaceTransformer::class, format: 'Y-m-d')]
         public ?\Carbon\Carbon $sent_date = null,
 
+        #[WithTransformer(DateTimeInterfaceTransformer::class, format: 'Y-m-d')]
         public ?\Carbon\Carbon $approved_date = null,
 
         // Riferimenti
@@ -95,10 +101,12 @@ class QuoteData extends Data
         // Lavori
         public ?string $work_start_description = null,
 
+        #[WithTransformer(DateTimeInterfaceTransformer::class, format: 'Y-m-d')]
         public ?\Carbon\Carbon $work_start_date = null,
 
         public ?string $work_duration_description = null,
 
+        #[WithTransformer(DateTimeInterfaceTransformer::class, format: 'Y-m-d')]
         public ?\Carbon\Carbon $work_end_date = null,
 
         // Flags visualizzazione (with defaults)
