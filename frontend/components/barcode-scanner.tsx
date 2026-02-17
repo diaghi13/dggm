@@ -47,17 +47,19 @@ export function BarcodeScanner({
 
     try {
       const track = streamRef.current.getVideoTracks()[0];
-      const capabilities = track.getCapabilities() as any;
+      const capabilities = track.getCapabilities() as MediaTrackCapabilities & {
+        torch?: boolean;
+      };
 
       if (capabilities.torch) {
         await track.applyConstraints({
-          // @ts-ignore - torch non è nel tipo standard ma è supportato
+          // @ts-expect-error - torch non è nel tipo standard ma è supportato su alcuni dispositivi
           advanced: [{ torch: !torchEnabled }],
         });
         setTorchEnabled(!torchEnabled);
       }
-    } catch (err) {
-      console.error("Errore toggle torcia:", err);
+    } catch (error) {
+      console.error("Errore toggle torcia:", error);
     }
   };
 
@@ -68,7 +70,7 @@ export function BarcodeScanner({
     if (scannerRef.current) {
       try {
         scannerRef.current.reset();
-      } catch (err) {
+      } catch {
         // Ignora errori
       }
       scannerRef.current = null;
@@ -160,7 +162,9 @@ export function BarcodeScanner({
 
       // Verifica supporto torcia (principalmente Android)
       const track = stream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities() as any;
+      const capabilities = track.getCapabilities() as MediaTrackCapabilities & {
+        torch?: boolean;
+      };
       if (capabilities.torch) {
         setHasTorch(true);
       }
@@ -207,7 +211,7 @@ export function BarcodeScanner({
               onOpenChange(false);
               return;
             }
-          } catch (err) {
+          } catch {
             // Errori normali durante scan - ignora
           }
 

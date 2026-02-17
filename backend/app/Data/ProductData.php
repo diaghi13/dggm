@@ -133,6 +133,8 @@ class ProductData extends Data
         public DataCollection|Lazy|null $relations = null,
         #[DataCollectionOf(ProductMediaData::class)]
         public DataCollection|Lazy|null $media = null,
+        #[DataCollectionOf(PriceListItemData::class)]
+        public DataCollection|Lazy|null $priceListItems = null,
 
         // Computed properties (read-only from model accessors)
         #[Computed]
@@ -188,6 +190,7 @@ class ProductData extends Data
             defaultSupplier: Lazy::whenLoaded('defaultSupplier', $product, fn () => SupplierData::from($product->defaultSupplier)),
             relations: Lazy::whenLoaded('relations', $product, fn () => ProductRelationData::collect($product->relations)),
             media: Lazy::whenLoaded('media', $product, fn () => ProductMediaData::collect($product->media)),
+            priceListItems: Lazy::whenLoaded('priceListItems', $product, fn () => PriceListItemData::collect($product->priceListItems)),
             // Computed properties from model accessors
             composite_total_cost: $product->composite_total_cost,
             total_stock: $product->total_stock,

@@ -1,5 +1,10 @@
-import { apiClient } from './client';
-import { Quote, QuoteFormData, PaginatedResponse } from '@/lib/types';
+import { apiClient } from "./client";
+import {
+  Quote,
+  QuoteFormData,
+  QuoteItem,
+  PaginatedResponse,
+} from "@/lib/types";
 
 interface GetQuotesParams {
   page?: number;
@@ -7,24 +12,31 @@ interface GetQuotesParams {
   search?: string;
   status?: string;
   customer_id?: number;
+  project_manager_id?: number;
   is_active?: boolean;
+  from_date?: string;
+  to_date?: string;
   sort_by?: string;
-  sort_order?: 'asc' | 'desc';
+  sort_order?: "asc" | "desc";
 }
 
 export const quotesApi = {
   async getAll(params?: GetQuotesParams): Promise<PaginatedResponse<Quote>> {
-    const response = await apiClient.get('/quotes', { params });
+    const response = await apiClient.get("/quotes", { params });
     return response.data;
   },
 
   async getById(id: number): Promise<Quote> {
-    const response = await apiClient.get(`/quotes/${id}`);
+    const response = await apiClient.get(`/quotes/${id}`, {
+      params: {
+        with: "items,customer,projectManager,priceList,paymentTerm,financialResource,warrantyType,site",
+      },
+    });
     return response.data.data;
   },
 
   async create(data: QuoteFormData): Promise<Quote> {
-    const response = await apiClient.post('/quotes', data);
+    const response = await apiClient.post("/quotes", data);
     return response.data.data;
   },
 
@@ -42,33 +54,62 @@ export const quotesApi = {
     return response.data.data;
   },
 
+  async approve(id: number): Promise<Quote> {
+    const response = await apiClient.post(`/quotes/${id}/approve`);
+    return response.data.data;
+  },
+
+  async reject(id: number): Promise<Quote> {
+    const response = await apiClient.post(`/quotes/${id}/reject`);
+    return response.data.data;
+  },
+
+  async send(id: number): Promise<Quote> {
+    const response = await apiClient.post(`/quotes/${id}/send`);
+    return response.data.data;
+  },
+
+  async convertToSite(id: number): Promise<{ quote: Quote; site_id: number }> {
+    const response = await apiClient.post(`/quotes/${id}/convert-to-site`);
+    return response.data.data;
+  },
+
+  async savePdf(id: number): Promise<{ pdf_url: string; file_name: string }> {
+    const response = await apiClient.post(`/quotes/${id}/save-pdf`);
+    return response.data.data;
+  },
+
   async downloadPdf(id: number): Promise<Blob> {
     const response = await apiClient.get(`/quotes/${id}/pdf/download`, {
-      responseType: 'blob',
+      responseType: "blob",
     });
     return response.data;
   },
 
   async previewPdf(id: number): Promise<Blob> {
     const response = await apiClient.get(`/quotes/${id}/pdf/preview`, {
-      responseType: 'blob',
+      responseType: "blob",
     });
     return response.data;
   },
 
   // Media Library (Spatie)
   async uploadMedia(quoteId: number, formData: FormData): Promise<any> {
-    const response = await apiClient.post(`/media/quotes/${quoteId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
+    const response = await apiClient.post(
+      `/media/quotes/${quoteId}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       },
-    });
+    );
     return response.data.data;
   },
 
   async downloadMedia(mediaId: number): Promise<Blob> {
     const response = await apiClient.get(`/media/${mediaId}/download`, {
-      responseType: 'blob',
+      responseType: "blob",
     });
     return response.data;
   },

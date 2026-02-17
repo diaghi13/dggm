@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CodeController;
 use App\Http\Controllers\Api\V1\ContractorController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DdtController;
@@ -120,6 +121,9 @@ Route::prefix('v1')->group(function () {
         // Standard CRUD for settings
         Route::apiResource('settings', SettingController::class);
 
+        // Code generation (progressive codes for entities)
+        Route::get('codes/generate/{entity}', [CodeController::class, 'generate']);
+
         // Customers
         Route::apiResource('customers', CustomerController::class);
 
@@ -134,7 +138,18 @@ Route::prefix('v1')->group(function () {
 
         // Quotes
         Route::apiResource('quotes', QuoteController::class);
+
+        // Quote Status Management
         Route::patch('quotes/{quote}/status', [QuoteController::class, 'changeStatus']);
+        Route::post('quotes/{quote}/approve', [QuoteController::class, 'approve']);
+        Route::post('quotes/{quote}/reject', [QuoteController::class, 'reject']);
+        Route::post('quotes/{quote}/send', [QuoteController::class, 'send']);
+
+        // Quote Actions
+        Route::post('quotes/{quote}/convert-to-site', [QuoteController::class, 'convertToSite']);
+        Route::post('quotes/{quote}/save-pdf', [QuoteController::class, 'savePdf']);
+
+        // Quote PDF
         Route::get('quotes/{quote}/pdf/download', [QuoteController::class, 'downloadPdf']);
         Route::get('quotes/{quote}/pdf/preview', [QuoteController::class, 'previewPdf']);
 
@@ -186,11 +201,23 @@ Route::prefix('v1')->group(function () {
         // Payment Terms
         Route::apiResource('payment-terms', \App\Http\Controllers\Api\V1\PaymentTermController::class);
 
+        // Financial Resources (company bank accounts, cash registers, cards)
+        Route::prefix('financial-resources')->group(function () {
+            Route::get('active', [\App\Http\Controllers\Api\V1\FinancialResourceController::class, 'getActive']);
+            Route::get('defaults', [\App\Http\Controllers\Api\V1\FinancialResourceController::class, 'getDefaults']);
+        });
+        Route::apiResource('financial-resources', \App\Http\Controllers\Api\V1\FinancialResourceController::class);
+
         // Discount Families
         Route::apiResource('discount-families', \App\Http\Controllers\Api\V1\DiscountFamilyController::class);
 
+        // Warranty Types
+        Route::get('warranty-types/default', [\App\Http\Controllers\Api\V1\WarrantyTypeController::class, 'getDefault']);
+        Route::apiResource('warranty-types', \App\Http\Controllers\Api\V1\WarrantyTypeController::class);
+
         // Price Lists
         Route::prefix('price-lists')->group(function () {
+            Route::get('default', [PriceListController::class, 'getDefault']);
             Route::get('/', [PriceListController::class, 'index']);
             Route::post('/', [PriceListController::class, 'store']);
             Route::get('/{priceList}', [PriceListController::class, 'show']);

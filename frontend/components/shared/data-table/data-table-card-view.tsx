@@ -8,23 +8,23 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUISettings } from "@/hooks/use-settings";
 
-interface DataTableCardViewProps<TData> {
+interface DataTableCardViewProps<TData, TValue = unknown> {
   data: TData[];
-  columns: ColumnDef<TData, any>[];
+  columns: ColumnDef<TData, TValue>[];
   onRowClick?: (row: TData) => void;
   isLoading?: boolean;
   emptyState?: React.ReactNode;
   highlightedColumns?: string[]; // Columns to show prominently at top
 }
 
-export function DataTableCardView<TData>({
+export function DataTableCardView<TData, TValue = unknown>({
   data,
   columns,
   onRowClick,
   isLoading,
   emptyState,
   highlightedColumns = [],
-}: DataTableCardViewProps<TData>) {
+}: DataTableCardViewProps<TData, TValue>) {
   const [expandedRows, setExpandedRows] = React.useState<Set<number>>(
     new Set(),
   );
@@ -79,7 +79,7 @@ export function DataTableCardView<TData>({
 
   const getColumnValue = (
     row: TData,
-    column: ColumnDef<TData, any>,
+    column: ColumnDef<TData, TValue>,
     rowIndex: number,
   ) => {
     // If column has a custom cell renderer, use it (preserves badges, links, icons, etc.)
@@ -95,28 +95,38 @@ export function DataTableCardView<TData>({
           column: { id: "id" in column ? column.id : "" },
           getValue: () => {
             if ("accessorKey" in column && column.accessorKey) {
-              return (row as any)[column.accessorKey as string];
+              return (row as Record<string, unknown>)[
+                column.accessorKey as string
+              ];
             }
             return undefined;
           },
-        } as any);
+        } as never);
       }
     }
 
     // Fallback to raw value
     if ("accessorKey" in column && column.accessorKey) {
-      const value = (row as any)[column.accessorKey as string];
+      const value = (row as Record<string, unknown>)[
+        column.accessorKey as string
+      ];
       // Handle various data types
       if (value === null || value === undefined) return "-";
       if (typeof value === "boolean") return value ? "Sì" : "No";
-      if (typeof value === "object" && value.name) return value.name;
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "name" in value &&
+        typeof value.name === "string"
+      )
+        return value.name;
       return String(value);
     }
 
     return null;
   };
 
-  const getColumnHeader = (column: ColumnDef<TData, any>) => {
+  const getColumnHeader = (column: ColumnDef<TData, TValue>) => {
     if ("header" in column) {
       if (typeof column.header === "string") {
         return column.header;
@@ -124,7 +134,7 @@ export function DataTableCardView<TData>({
       // If header is a function, try to render it and extract text
       if (typeof column.header === "function") {
         try {
-          const rendered = column.header({} as any);
+          const rendered = column.header({} as never);
           // If it returns a string, use it
           if (typeof rendered === "string") {
             return rendered;
@@ -138,7 +148,7 @@ export function DataTableCardView<TData>({
               }
             }
           }
-        } catch (e) {
+        } catch {
           // If rendering fails, continue to fallback
         }
       }

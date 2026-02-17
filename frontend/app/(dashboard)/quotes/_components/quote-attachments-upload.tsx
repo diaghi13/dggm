@@ -89,6 +89,21 @@ export function QuoteAttachmentsUpload({ quoteId, attachments, onAttachmentsChan
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected: (fileRejections) => {
+      fileRejections.forEach(({ file, errors }) => {
+        errors.forEach((error) => {
+          if (error.code === 'file-too-large') {
+            toast.error('File troppo grande', {
+              description: `${file.name} supera i 10MB`,
+            });
+          } else {
+            toast.error('File non accettato', {
+              description: `${file.name}: ${error.message}`,
+            });
+          }
+        });
+      });
+    },
     disabled: readOnly || uploading,
     maxSize: 10 * 1024 * 1024,
   });

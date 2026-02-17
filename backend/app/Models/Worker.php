@@ -295,22 +295,10 @@ class Worker extends Model
     }
 
     /**
-     * Generate unique worker code (WRK-00001)
+     * Generate unique worker code (LAV-00001)
      */
     private static function generateCode(): string
     {
-        $lastWorker = self::withTrashed()
-            ->where('code', 'like', 'WRK-%')
-            ->orderByRaw('CAST(SUBSTRING(code, 5) AS UNSIGNED) DESC')
-            ->first();
-
-        if (! $lastWorker) {
-            return 'WRK-00001';
-        }
-
-        $lastNumber = (int) substr($lastWorker->code, 4);
-        $newNumber = $lastNumber + 1;
-
-        return 'WRK-'.str_pad($newNumber, 5, '0', STR_PAD_LEFT);
+        return app(\App\Services\CodeGeneratorService::class)->generate('worker');
     }
 }

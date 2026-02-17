@@ -29,6 +29,7 @@ interface ProductAutocompleteProps {
   placeholder?: string;
   className?: string;
   showBarcodeScanner?: boolean;
+  priceListId?: number | null;
 }
 
 export function ProductAutocomplete({
@@ -37,6 +38,7 @@ export function ProductAutocomplete({
   placeholder = "Cerca prodotto...",
   className,
   showBarcodeScanner = true,
+  priceListId,
 }: ProductAutocompleteProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -70,12 +72,16 @@ export function ProductAutocomplete({
 
   // Fetch materials with search
   const { data: materialsData, isLoading } = useQuery({
-    queryKey: ["products", { is_active: true, search: debouncedSearch }],
+    queryKey: [
+      "products",
+      { is_active: true, search: debouncedSearch, price_list_id: priceListId },
+    ],
     queryFn: () =>
       productsApi.getAll({
         is_active: true,
         search: debouncedSearch,
         per_page: 50,
+        price_list_id: priceListId || undefined,
       }),
     enabled: open, // Only load when popover is open
   });
@@ -271,12 +277,39 @@ export function ProductAutocomplete({
                         <div className="flex-shrink-0 text-right">
                           <p className="text-sm font-medium text-slate-900">
                             €{" "}
-                            {Number(
-                              material.manufacturer_cost_price || 0,
-                            ).toFixed(2)}
+                            {(() => {
+                              // If price list is active and item has price list items, show that price
+                              if (
+                                priceListId &&
+                                material.priceListItems &&
+                                material.priceListItems.length > 0
+                              ) {
+                                const priceListItem =
+                                  material.priceListItems.find(
+                                    (item) =>
+                                      item.price_list_id === priceListId,
+                                  );
+                                if (priceListItem?.final_sale_price) {
+                                  return Number(
+                                    priceListItem.final_sale_price,
+                                  ).toFixed(2);
+                                }
+                              }
+                              // Fallback to standard cost
+                              return Number(
+                                material.standard_cost || 0,
+                              ).toFixed(2);
+                            })()}
                           </p>
                           <p className="text-xs text-slate-500">
                             {material.unit}
+                            {priceListId &&
+                              material.priceListItems &&
+                              material.priceListItems.length > 0 && (
+                                <span className="block text-blue-600 font-medium">
+                                  da listino
+                                </span>
+                              )}
                           </p>
                         </div>
                       </CommandItem>

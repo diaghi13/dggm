@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\QuoteItemType;
+use App\Models\Product;
+use App\Models\Quote;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,28 +23,96 @@ class QuoteItemFactory extends Factory
         $unitPrice = fake()->randomFloat(2, 10, 500);
 
         return [
-            'quote_id' => \App\Models\Quote::factory(),
-            'material_id' => null,
-            'type' => fake()->randomElement(['material', 'labor', 'service', 'other']),
+            'quote_id' => Quote::factory(),
+            'parent_id' => null,
+            'product_id' => null,
+            'price_list_item_id' => null,
+            'type' => QuoteItemType::Item,
+            'code' => fake()->optional()->bothify('ITEM-###'),
             'description' => fake()->sentence(),
-            'quantity' => $quantity,
-            'unit' => fake()->randomElement(['pz', 'kg', 'm', 'm²', 'h']),
-            'unit_price' => $unitPrice,
-            'total' => $quantity * $unitPrice,
             'notes' => fake()->optional()->sentence(),
             'sort_order' => 0,
+            'unit' => fake()->randomElement(['pz', 'kg', 'm', 'm²', 'h']),
+            'quantity' => $quantity,
+            'unit_price' => $unitPrice,
+            'discount_percentage' => 0,
             'hide_unit_price' => false,
+            'subtotal' => $quantity * $unitPrice,
+            'discount_amount' => 0,
+            'total' => $quantity * $unitPrice,
+            'vat_rate' => 22,
+            'vat_amount' => 0,
+            'total_with_vat' => 0,
+            'include_image' => false,
         ];
     }
 
     /**
-     * Indicate that the quote item is a material type.
+     * Indicate that the quote item is a section.
+     */
+    public function section(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => QuoteItemType::Section,
+            'quantity' => 0,
+            'unit_price' => 0,
+            'subtotal' => 0,
+            'discount_amount' => 0,
+            'total' => 0,
+            'vat_amount' => 0,
+            'total_with_vat' => 0,
+        ]);
+    }
+
+    /**
+     * Indicate that the quote item is labor.
+     */
+    public function labor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => QuoteItemType::Labor,
+            'unit' => 'h',
+            'description' => 'Labor hours',
+        ]);
+    }
+
+    /**
+     * Indicate that the quote item is a material.
      */
     public function material(): static
     {
         return $this->state(fn (array $attributes) => [
-            'material_id' => \App\Models\Material::factory(),
-            'type' => 'material',
+            'type' => QuoteItemType::Material,
+        ]);
+    }
+
+    /**
+     * Indicate that the quote item has a product.
+     */
+    public function withProduct(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'product_id' => Product::factory(),
+        ]);
+    }
+
+    /**
+     * Indicate that the quote item has a discount.
+     */
+    public function withDiscount(float $percentage = 10): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'discount_percentage' => $percentage,
+        ]);
+    }
+
+    /**
+     * Indicate that the quote item has a custom VAT rate.
+     */
+    public function withVat(float $rate = 22): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'vat_rate' => $rate,
         ]);
     }
 }

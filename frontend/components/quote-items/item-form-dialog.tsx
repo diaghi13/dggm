@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Folder, FileText } from "lucide-react";
 import { ProductAutocomplete } from "@/app/(dashboard)/products/_components/product-autocomplete";
+import { productsApi } from "@/lib/api/products";
 import { QuoteItem, ItemFormData } from "./types";
 import { calculateTotals } from "./utils";
 
@@ -32,6 +33,7 @@ interface ItemFormDialogProps {
   setFormData: (data: ItemFormData) => void;
   editingItem: QuoteItem | null;
   localItems: QuoteItem[];
+  priceListId?: number | null;
 }
 
 export function ItemFormDialog({
@@ -42,6 +44,7 @@ export function ItemFormDialog({
   setFormData,
   editingItem,
   localItems,
+  priceListId,
 }: ItemFormDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -108,8 +111,8 @@ export function ItemFormDialog({
                     )
                     .map((section) => (
                       <SelectItem
-                        key={section.id}
-                        value={section.id.toString()}
+                        key={section.id!}
+                        value={section.id!.toString()}
                       >
                         <div className="flex items-center gap-2">
                           <Folder className="w-4 h-4 text-blue-600" />
@@ -126,35 +129,94 @@ export function ItemFormDialog({
             </div>
           )}
 
-          {/* Material Selection */}
+          {/* Price List Item Selection */}
           {formData.type === "item" && (
             <div className="space-y-2">
               <Label className="text-slate-700 font-medium">
-                Prodotto dal Magazzino (opzionale)
+                Articolo dal Catalogo (opzionale)
               </Label>
+              {!priceListId && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                  💡 Seleziona un listino prezzi nel preventivo per utilizzare i
+                  prezzi configurati
+                </div>
+              )}
               <ProductAutocomplete
-                value={formData.material_id}
-                onSelect={(material) => {
-                  if (material) {
-                    setFormData({
-                      ...formData,
-                      material_id: material.id,
-                      code: material.code,
-                      description: material.name,
-                      unit: material.unit || "",
-                      unit_price: Number(material.standard_cost || 0),
-                    });
+                value={formData.product_id}
+                priceListId={priceListId}
+                onSelect={async (product) => {
+                  if (product) {
+                    try {
+                      // Fetch pricing from API if price list is selected
+                      if (priceListId && product.id) {
+                        const pricingData = await productsApi.getPricing(
+                          product.id,
+                          priceListId,
+                        );
+
+                        // effective_price is an object with sale_price, rental_daily, etc.
+                        const effectivePrice = Number(
+                          pricingData.effective_price?.sale_price ||
+                            product.standard_cost ||
+                            0,
+                        );
+
+                        setFormData({
+                          ...formData,
+                          product_id: product.id,
+                          price_list_item_id:
+                            pricingData.effective_price?.price_list_id ?? null,
+                          code: product.code || "",
+                          description: product.name || "",
+                          unit: product.unit || "",
+                          unit_price: effectivePrice,
+                          vat_rate: formData.vat_rate || 22,
+                        });
+                      } else {
+                        // Use standard cost if no price list
+                        const standardCost = Number(product.standard_cost || 0);
+
+                        setFormData({
+                          ...formData,
+                          product_id: product.id,
+                          price_list_item_id: null,
+                          code: product.code || "",
+                          description: product.name || "",
+                          unit: product.unit || "",
+                          unit_price: standardCost,
+                          vat_rate: formData.vat_rate || 22,
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Error fetching product pricing:", error);
+                      // Fallback to standard cost on error
+                      const fallbackCost = Number(product.standard_cost || 0);
+
+                      setFormData({
+                        ...formData,
+                        product_id: product.id,
+                        price_list_item_id: null,
+                        code: product.code || "",
+                        description: product.name || "",
+                        unit: product.unit || "",
+                        unit_price: fallbackCost,
+                        vat_rate: formData.vat_rate || 22,
+                      });
+                    }
                   } else {
                     setFormData({
                       ...formData,
-                      material_id: null,
+                      product_id: null,
+                      price_list_item_id: null,
                     });
                   }
                 }}
-                placeholder="Cerca nel catalogo materiali..."
+                placeholder="Cerca prodotto nel catalogo..."
               />
               <p className="text-xs text-slate-500">
-                Seleziona un materiale dal catalogo per pre-compilare i campi
+                {priceListId
+                  ? "Il prezzo verrà preso dal listino selezionato nel preventivo"
+                  : "Verrà usato il costo standard del prodotto"}
               </p>
             </div>
           )}
@@ -203,6 +265,30 @@ export function ItemFormDialog({
             />
           </div>
 
+          {/* Show Subtotal for Sections */}
+          {/* {formData.type === "section" && (
+            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <input
+                type="checkbox"
+                id="show-subtotal"
+                checked={formData.show_subtotal ?? true}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    show_subtotal: e.target.checked,
+                  })
+                }
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <Label
+                htmlFor="show-subtotal"
+                className="text-sm text-slate-700 cursor-pointer flex-1"
+              >
+                Mostra subtotale della sezione
+              </Label>
+            </div>
+          )} */}
+
           {formData.type === "item" && (
             <>
               {/* Quantity & Unit */}
@@ -248,7 +334,7 @@ export function ItemFormDialog({
                   <Input
                     type="number"
                     step="0.01"
-                    value={formData.unit_price ?? 0}
+                    value={formData.unit_price ?? ""}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
@@ -277,68 +363,120 @@ export function ItemFormDialog({
                 </div>
               </div>
 
-              {/* Hide Unit Price */}
-              <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <input
-                  type="checkbox"
-                  id="hide-price"
-                  checked={formData.hide_unit_price}
-                  onChange={(e) =>
+              {/* VAT Rate */}
+              <div className="space-y-2">
+                <Label className="text-slate-700 font-medium">
+                  Aliquota IVA %
+                </Label>
+                <Select
+                  value={formData.vat_rate?.toString() ?? "22"}
+                  onValueChange={(value) =>
                     setFormData({
                       ...formData,
-                      hide_unit_price: e.target.checked,
+                      vat_rate: parseFloat(value),
                     })
                   }
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <Label
-                  htmlFor="hide-price"
-                  className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Nascondi prezzo unitario nel preventivo
-                </Label>
+                  <SelectTrigger className="h-11 border-slate-300">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Esente (0%)</SelectItem>
+                    <SelectItem value="4">Ridotta 4%</SelectItem>
+                    <SelectItem value="5">Ridotta 5%</SelectItem>
+                    <SelectItem value="10">Ridotta 10%</SelectItem>
+                    <SelectItem value="22">Ordinaria 22%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Hide Unit Price & Include Image */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <input
+                    type="checkbox"
+                    id="hide-price"
+                    checked={formData.hide_unit_price}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        hide_unit_price: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <Label
+                    htmlFor="hide-price"
+                    className="text-sm text-slate-700 cursor-pointer"
+                  >
+                    Nascondi prezzo unitario nel preventivo
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <input
+                    type="checkbox"
+                    id="include-image"
+                    checked={formData.include_image}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        include_image: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <Label
+                    htmlFor="include-image"
+                    className="text-sm text-slate-700 cursor-pointer"
+                  >
+                    Includi immagine prodotto nel preventivo
+                  </Label>
+                </div>
               </div>
 
               {/* Calculated Total */}
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-slate-700">
-                    Totale Calcolato:
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-600">Subtotale:</span>
+                  <span className="font-medium">
+                    € {calculateTotals(formData).subtotal.toFixed(2)}
                   </span>
-                  <span className="text-2xl font-bold text-blue-600">
+                </div>
+                {(formData.discount_percentage ?? 0) > 0 && (
+                  <div className="flex justify-between items-center text-sm text-red-600">
+                    <span>Sconto ({formData.discount_percentage}%):</span>
+                    <span className="font-medium">
+                      - € {calculateTotals(formData).discount_amount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-sm border-t pt-2">
+                  <span className="text-slate-600">Imponibile:</span>
+                  <span className="font-medium">
                     € {calculateTotals(formData).total.toFixed(2)}
                   </span>
                 </div>
-                {formData.discount_percentage > 0 && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Subtotale: € {calculateTotals(formData).subtotal.toFixed(2)}{" "}
-                    - Sconto: €{" "}
-                    {calculateTotals(formData).discount_amount.toFixed(2)}
-                  </p>
+                {(formData.vat_rate ?? 0) > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-600">
+                      IVA ({formData.vat_rate}%):
+                    </span>
+                    <span className="font-medium">
+                      € {calculateTotals(formData).vat_amount.toFixed(2)}
+                    </span>
+                  </div>
                 )}
+                <div className="flex justify-between items-center border-t pt-2">
+                  <span className="text-sm font-medium text-slate-700">
+                    Totale con IVA:
+                  </span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    € {calculateTotals(formData).total_with_vat.toFixed(2)}
+                  </span>
+                </div>
               </div>
             </>
-          )}
-
-          {/* Show Subtotal for Sections */}
-          {formData.type === "section" && (
-            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <input
-                type="checkbox"
-                id="show-subtotal"
-                checked={formData.show_subtotal ?? false}
-                onChange={(e) =>
-                  setFormData({ ...formData, show_subtotal: e.target.checked })
-                }
-                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-              />
-              <Label
-                htmlFor="show-subtotal"
-                className="text-sm text-slate-700 cursor-pointer"
-              >
-                Mostra subtotale parziale per questa sezione
-              </Label>
-            </div>
           )}
         </div>
 

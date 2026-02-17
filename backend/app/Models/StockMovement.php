@@ -134,10 +134,9 @@ class StockMovement extends Model
     // Generate unique code
     public static function generateCode(): string
     {
-        $date = now()->format('Ymd');
-        $count = self::whereDate('created_at', now())->count() + 1;
-
-        return "MOV-{$date}-".str_pad($count, 3, '0', STR_PAD_LEFT);
+        return app(\App\Services\CodeGeneratorService::class)->generate('movement', [
+            'date' => now()->format('Ymd'),
+        ]);
     }
 
     // Boot

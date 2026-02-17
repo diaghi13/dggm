@@ -58,6 +58,38 @@ class PriceListController extends Controller
     }
 
     /**
+     * Get default price list
+     *
+     * Returns the active default price list that is currently valid
+     */
+    public function getDefault(): JsonResponse
+    {
+        $this->authorize('viewAny', PriceList::class);
+
+        $pricingService = app(ProductPricingService::class);
+        $defaultPriceList = $pricingService->getDefaultPriceList();
+
+        if (! $defaultPriceList) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'message' => 'No default price list found',
+                    'code' => 'NO_DEFAULT_PRICE_LIST',
+                ],
+            ], 404);
+        }
+
+        // Load category and items count
+        $defaultPriceList->load(['category'])
+            ->loadCount('items');
+
+        return response()->json([
+            'success' => true,
+            'data' => PriceListData::from($defaultPriceList),
+        ]);
+    }
+
+    /**
      * Get single price list with basic info (without items)
      * Use GET /price-lists/{id}/items for paginated items
      */

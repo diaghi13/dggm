@@ -16,6 +16,7 @@ export const productsApi = {
     sort_direction?: string;
     page?: number;
     per_page?: number;
+    price_list_id?: number;
   }) => {
     const response = await apiClient.get("/products", { params });
     return response.data;
@@ -53,6 +54,12 @@ export const productsApi = {
 
   calculatePrice: async (id: number) => {
     const response = await apiClient.post(`/products/${id}/calculate-price`);
+    return response.data.data;
+  },
+
+  getPricing: async (id: number, priceListId?: number) => {
+    const params = priceListId ? { price_list_id: priceListId } : {};
+    const response = await apiClient.get(`/products/${id}/pricing`, { params });
     return response.data.data;
   },
 

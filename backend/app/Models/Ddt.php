@@ -217,9 +217,8 @@ class Ddt extends Model implements HasMedia
 
     public static function generateCode(): string
     {
-        $date = now()->format('Y');
-        $count = self::whereYear('created_at', now()->year)->count() + 1;
-
-        return 'DDT-'.$date.'-'.str_pad($count, 4, '0', STR_PAD_LEFT);
+        return app(\App\Services\CodeGeneratorService::class)->generate('ddt', [
+            'year' => now()->year,
+        ]);
     }
 }

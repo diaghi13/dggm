@@ -15,7 +15,8 @@ class QuoteItem extends Model
     protected $fillable = [
         'quote_id',
         'parent_id',
-        'material_id',
+        'product_id',
+        'price_list_item_id',
         'type',
         'code',
         'description',
@@ -29,6 +30,10 @@ class QuoteItem extends Model
         'subtotal',
         'discount_amount',
         'total',
+        'vat_rate',
+        'vat_amount',
+        'total_with_vat',
+        'include_image',
     ];
 
     protected function casts(): array
@@ -42,6 +47,10 @@ class QuoteItem extends Model
             'subtotal' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total' => 'decimal:2',
+            'vat_rate' => 'decimal:2',
+            'vat_amount' => 'decimal:2',
+            'total_with_vat' => 'decimal:2',
+            'include_image' => 'boolean',
         ];
     }
 
@@ -61,9 +70,14 @@ class QuoteItem extends Model
         return $this->hasMany(QuoteItem::class, 'parent_id')->orderBy('sort_order');
     }
 
-    public function material(): BelongsTo
+    public function product(): BelongsTo
     {
-        return $this->belongsTo(Material::class);
+        return $this->belongsTo(Product::class);
+    }
+
+    public function priceListItem(): BelongsTo
+    {
+        return $this->belongsTo(PriceListItem::class);
     }
 
     // Methods
@@ -74,10 +88,33 @@ class QuoteItem extends Model
             $this->subtotal = 0;
             $this->discount_amount = 0;
             $this->total = 0;
+            $this->vat_amount = 0;
+            $this->total_with_vat = 0;
         } else {
-            $this->subtotal = ($this->quantity ?? 0) * ($this->unit_price ?? 0);
+            // IVA (usa vat_rate riga o default da Setting)
+            $vatRate = $this->vat_rate ?? (float) Setting::get('pricing.default_vat_rate', 22);
+
+            // Se i prezzi sono IVA inclusa, scorporo per ottenere il prezzo netto
+            $unitPrice = ($this->unit_price ?? 0);
+            if ($this->quote && $this->quote->vat_included_in_prices && $vatRate > 0) {
+                $unitPrice = $unitPrice / (1 + $vatRate / 100);
+            }
+
+            // Subtotale
+            $this->subtotal = ($this->quantity ?? 0) * $unitPrice;
+
+            // Sconto riga
             $this->discount_amount = ($this->subtotal * ($this->discount_percentage ?? 0)) / 100;
             $this->total = $this->subtotal - $this->discount_amount;
+
+            // Applica sconto documento sul totale imponibile prima di IVA
+            $imponibile = $this->total;
+            if ($this->quote && $this->quote->discount_percentage > 0) {
+                $imponibile = $imponibile * (1 - ($this->quote->discount_percentage / 100));
+            }
+
+            $this->vat_amount = ($imponibile * $vatRate) / 100;
+            $this->total_with_vat = $imponibile + $this->vat_amount;
         }
     }
 

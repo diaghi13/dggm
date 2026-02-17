@@ -10,12 +10,20 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class GetProductsQuery
 {
     /**
-     * @param  array{'is_active': bool,'category': string,'product_type': string,'rentable': bool,'composites': bool,'low_stock': number,'search': string,'semantic_search': string,'sort_field': string,'sort_direction': string}  $filters
+     * @param  array{'is_active': bool,'category': string,'product_type': string,'rentable': bool,'composites': bool,'low_stock': number,'search': string,'semantic_search': string,'sort_field': string,'sort_direction': string, 'price_list_id': number}  $filters
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Database\Eloquent\Collection
      */
     public static function execute(array $filters = [], ?int $perPage = null)
     {
         $query = \App\Models\Product::query()->with(['defaultSupplier', 'category']);
+
+        // Load price list item if price_list_id is provided
+        if (! empty($filters['price_list_id'])) {
+            $query->with(['priceListItems' => function ($q) use ($filters) {
+                $q->where('price_list_id', $filters['price_list_id'])
+                    ->where('is_active', true);
+            }]);
+        }
 
         if (! empty($filters['semantic_search'])) {
             return (new static)->semanticSearch($filters, $perPage ?? 20);
@@ -86,6 +94,14 @@ class GetProductsQuery
     private function semanticSearch(array $filters, int $perPage): LengthAwarePaginator
     {
         $query = Product::query()->with(['defaultSupplier']);
+
+        // Load price list item if price_list_id is provided
+        if (! empty($filters['price_list_id'])) {
+            $query->with(['priceListItems' => function ($q) use ($filters) {
+                $q->where('price_list_id', $filters['price_list_id'])
+                    ->where('is_active', true);
+            }]);
+        }
 
         // Applica comunque i filtri standard
         if (isset($filters['is_active'])) {
@@ -161,6 +177,15 @@ class GetProductsQuery
             \Log::error('Vector search failed: '.$e->getMessage());
 
             $query = Product::query()->with(['defaultSupplier']);
+
+            // Load price list item if price_list_id is provided
+            if (! empty($filters['price_list_id'])) {
+                $query->with(['priceListItems' => function ($q) use ($filters) {
+                    $q->where('price_list_id', $filters['price_list_id'])
+                        ->where('is_active', true);
+                }]);
+            }
+
             $search = $filters['semantic_search'];
             $query->where(function ($q) use ($search) {
                 $q->where('code', 'like', "%{$search}%")

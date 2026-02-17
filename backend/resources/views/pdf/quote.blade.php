@@ -1,470 +1,543 @@
-<!DOCTYPE html>
+<?php
+/**
+ * @var \App\Models\Quote $quote
+ * @var array $colors
+ * @var array $vatBreakdown
+ * @var array $company
+ */
+?>
+
+    <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preventivo {{ $quote->code }}</title>
+    <title>Preventivo Template</title>
+    <!-- Use Tailwind CDN for simplicity in this template. For production, inline the CSS. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {sans: ['Inter', 'sans-serif']},
+                    colors: {
+                        primary: '{{ $colors['primary'] }}',
+                        secondary: '{{ $colors['secondary'] }}',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: {{ $template->font_size ?? 10 }}pt;
-            color: #1e293b;
-            line-height: 1.6;
+            font-family: 'Inter', sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            margin: 0;
         }
 
-        .page {
-            padding: 40px;
+        @page {
+            margin: 10mm 0mm 30mm 0mm; /* top, right, bottom (spazio per footer), left */
+            size: A4 portrait;
         }
 
-        .header {
-            margin-bottom: 30px;
-            border-bottom: 3px solid {{ $template->primary_color ?? '#3B82F6' }};
-            padding-bottom: 20px;
+        .page-break {
+            page-break-before: always;
         }
 
-        .company-info {
-            text-align: right;
-            margin-bottom: 15px;
+        .avoid-break {
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
 
-        .company-name {
-            font-size: 20pt;
-            font-weight: bold;
-            color: {{ $template->primary_color ?? '#3B82F6' }};
-            margin-bottom: 5px;
+        /* Forza il blocco totali a non spezzarsi e a saltare pagina se necessario */
+        .totals-wrapper {
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
 
-        .company-details {
-            font-size: 9pt;
-            color: #64748b;
-            line-height: 1.4;
-        }
-
-        .quote-title {
-            font-size: 24pt;
-            font-weight: bold;
-            color: #0f172a;
-            margin-top: 20px;
-            margin-bottom: 10px;
-        }
-
-        .quote-code {
-            font-size: 14pt;
-            color: #64748b;
-            font-weight: 600;
-        }
-
-        .info-grid {
-            display: table;
-            width: 100%;
-            margin: 30px 0;
-        }
-
-        .info-row {
-            display: table-row;
-        }
-
-        .info-col {
-            display: table-cell;
-            width: 50%;
-            padding: 15px;
-            vertical-align: top;
-        }
-
-        .info-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-        }
-
-        .info-label {
-            font-size: 9pt;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
-        .info-value {
-            font-size: 11pt;
-            color: #0f172a;
-            font-weight: 600;
-        }
-
-        .section-title {
-            font-size: 14pt;
-            font-weight: bold;
-            color: #0f172a;
-            margin: 30px 0 15px 0;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-
-        .items-table thead th {
-            background: {{ $template->primary_color ?? '#3B82F6' }};
-            color: white;
-            padding: 12px 8px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 10pt;
-        }
-
-        .items-table th.text-right,
-        .items-table td.text-right {
-            text-align: right;
-        }
-
-        .items-table tbody tr {
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .items-table tbody tr.section-row {
-            background: #f1f5f9;
-            font-weight: bold;
-        }
-
-        .items-table tbody td {
-            padding: 10px 8px;
-            font-size: 9.5pt;
-        }
-
-        .item-description {
-            font-weight: 500;
-            color: #0f172a;
-        }
-
-        .item-notes {
-            font-size: 8.5pt;
-            color: #64748b;
-            font-style: italic;
-            margin-top: 3px;
-        }
-
-        .totals {
-            margin-top: 30px;
-            float: right;
-            width: 350px;
-        }
-
-        .totals-table {
-            width: 100%;
-        }
-
-        .totals-table tr {
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .totals-table td {
-            padding: 10px 8px;
-        }
-
-        .totals-table td.label {
-            text-align: left;
-            color: #64748b;
-        }
-
-        .totals-table td.value {
-            text-align: right;
-            font-weight: 600;
-            color: #0f172a;
-        }
-
-        .totals-table tr.total-row {
-            background: #f8fafc;
-            font-size: 12pt;
-            border-top: 2px solid {{ $template->primary_color ?? '#3B82F6' }};
-        }
-
-        .totals-table tr.total-row td {
-            padding: 15px 8px;
-            font-weight: bold;
-        }
-
-        .totals-table tr.total-row td.value {
-            color: {{ $template->primary_color ?? '#3B82F6' }};
-            font-size: 14pt;
-        }
-
-        .notes {
-            clear: both;
-            margin-top: 40px;
-            padding: 20px;
-            background: #f8fafc;
-            border-left: 4px solid {{ $template->secondary_color ?? '#64748B' }};
-            border-radius: 4px;
-        }
-
-        .notes-title {
-            font-weight: bold;
-            color: #0f172a;
-            margin-bottom: 8px;
-        }
-
-        .notes-content {
-            color: #475569;
-            font-size: 9pt;
-            line-height: 1.5;
-            white-space: pre-wrap;
-        }
-
-        .footer {
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 2px solid #e2e8f0;
-            text-align: center;
-            color: #64748b;
-            font-size: 8.5pt;
-        }
-
-        .clearfix {
-            clear: both;
+        /* Proteggi il footer da page break */
+        footer {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            display: block;
         }
     </style>
 </head>
-<body>
-    <div class="page">
-        <!-- Header -->
-        <div class="header">
-            <div class="company-info">
-                <div class="company-name">{{ $company['name'] }}</div>
-                <div class="company-details">
-                    {{ $company['address'] }}, {{ $company['postal_code'] }} {{ $company['city'] }} ({{ $company['province'] }})<br>
-                    P.IVA: {{ $company['vat'] }} | Tel: {{ $company['phone'] }} | Email: {{ $company['email'] }}
-                </div>
-            </div>
-            <div class="quote-title">PREVENTIVO</div>
-            <div class="quote-code">{{ $quote->code }}</div>
-        </div>
+<body class="bg-white text-slate-700">
+<!-- Main Container A4 size approx in px at 96dpi is ~794x1123, but for print we use auto width -->
+<div class="w-full max-w-4xl mx-auto pl-8 pr-8 pb-8 relative min-h-screen flex flex-col">
 
-        <!-- Customer & Quote Info -->
-        <div class="info-grid">
-            <div class="info-row">
-                <div class="info-col">
-                    <div class="info-box">
-                        <div class="info-label">Cliente</div>
-                        <div class="info-value">{{ $quote->customer->display_name }}</div>
-                        @if($quote->customer->vat)
-                            <div class="info-value" style="font-size: 9pt; color: #64748b;">P.IVA: {{ $quote->customer->vat }}</div>
-                        @endif
-                        @if($quote->full_address)
-                            <div style="font-size: 9pt; color: #475569; margin-top: 5px;">{{ $quote->full_address }}</div>
-                        @endif
-                    </div>
-                </div>
-                <div class="info-col">
-                    <div class="info-box">
-                        <div class="info-label">Oggetto</div>
-                        <div class="info-value">{{ $quote->title }}</div>
-                        @if($quote->description)
-                            <div style="font-size: 9pt; color: #475569; margin-top: 5px;">{{ $quote->description }}</div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            <div class="info-row">
-                <div class="info-col">
-                    <div class="info-box">
-                        <div class="info-label">Data Emissione</div>
-                        <div class="info-value">{{ $quote->issue_date->format('d/m/Y') }}</div>
-                    </div>
-                </div>
-                <div class="info-col">
-                    <div class="info-box">
-                        <div class="info-label">Validità</div>
-                        <div class="info-value">
-                            @if($quote->valid_until)
-                                Fino al {{ $quote->valid_until->format('d/m/Y') }}
-                            @else
-                                Non specificata
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Items -->
-        @if($quote->items && $quote->items->count() > 0)
-            <div class="section-title">Dettaglio Voci</div>
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        @if($template && $template->show_item_codes)
-                            <th style="width: 10%;">Codice</th>
-                        @endif
-                        <th style="width: 40%;">Descrizione</th>
-                        <th style="width: 10%;" class="text-right">Q.tà</th>
-                        @if($template && $template->show_unit_column)
-                            <th style="width: 10%;">U.M.</th>
-                        @endif
-                        @if($quote->show_unit_prices)
-                            <th style="width: 12%;" class="text-right">Prezzo Unit.</th>
-                        @endif
-                        @if($quote->discount_percentage > 0)
-                            <th style="width: 10%;" class="text-right">Sconto</th>
-                        @endif
-                        <th style="width: 15%;" class="text-right">Totale</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($quote->items->where('parent_id', null) as $item)
-                        @if($item->type === 'section')
-                            <tr class="section-row">
-                                <td colspan="{{
-                                    ($template && $template->show_item_codes ? 1 : 0) +
-                                    1 +
-                                    1 +
-                                    ($template && $template->show_unit_column ? 1 : 0) +
-                                    ($quote->show_unit_prices ? 1 : 0) +
-                                    ($quote->discount_percentage > 0 ? 1 : 0) +
-                                    1
-                                }}">
-                                    {{ $item->description }}
-                                </td>
-                            </tr>
-                            @foreach($item->children as $child)
-                                <tr>
-                                    @if($template && $template->show_item_codes)
-                                        <td>{{ $child->code }}</td>
-                                    @endif
-                                    <td>
-                                        <div class="item-description">{{ $child->description }}</div>
-                                        @if($child->notes)
-                                            <div class="item-notes">{{ $child->notes }}</div>
-                                        @endif
-                                    </td>
-                                    <td class="text-right">{{ number_format($child->quantity, 2, ',', '.') }}</td>
-                                    @if($template && $template->show_unit_column)
-                                        <td>{{ $child->unit }}</td>
-                                    @endif
-                                    @if($quote->show_unit_prices && !$child->hide_unit_price)
-                                        <td class="text-right">€ {{ number_format($child->unit_price, 2, ',', '.') }}</td>
-                                    @elseif($quote->show_unit_prices)
-                                        <td class="text-right">-</td>
-                                    @endif
-                                    @if($quote->discount_percentage > 0)
-                                        <td class="text-right">{{ number_format($child->discount_percentage, 0) }}%</td>
-                                    @endif
-                                    <td class="text-right"><strong>€ {{ number_format($child->total, 2, ',', '.') }}</strong></td>
-                                </tr>
-                            @endforeach
-                        @else
-                            <tr>
-                                @if($template && $template->show_item_codes)
-                                    <td>{{ $item->code }}</td>
-                                @endif
-                                <td>
-                                    <div class="item-description">{{ $item->description }}</div>
-                                    @if($item->notes)
-                                        <div class="item-notes">{{ $item->notes }}</div>
-                                    @endif
-                                </td>
-                                <td class="text-right">{{ number_format($item->quantity, 2, ',', '.') }}</td>
-                                @if($template && $template->show_unit_column)
-                                    <td>{{ $item->unit }}</td>
-                                @endif
-                                @if($quote->show_unit_prices && !$item->hide_unit_price)
-                                    <td class="text-right">€ {{ number_format($item->unit_price, 2, ',', '.') }}</td>
-                                @elseif($quote->show_unit_prices)
-                                    <td class="text-right">-</td>
-                                @endif
-                                @if($quote->discount_percentage > 0)
-                                    <td class="text-right">{{ number_format($item->discount_percentage, 0) }}%</td>
-                                @endif
-                                <td class="text-right"><strong>€ {{ number_format($item->total, 2, ',', '.') }}</strong></td>
-                            </tr>
-                        @endif
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
-
-        <!-- Totals -->
-        <div class="totals">
-            <table class="totals-table">
-                <tr>
-                    <td class="label">Subtotale</td>
-                    <td class="value">€ {{ number_format($quote->subtotal, 2, ',', '.') }}</td>
-                </tr>
-                @if($quote->discount_percentage > 0)
-                    <tr>
-                        <td class="label">Sconto ({{ number_format($quote->discount_percentage, 0) }}%)</td>
-                        <td class="value" style="color: #ef4444;">- € {{ number_format($quote->discount_amount, 2, ',', '.') }}</td>
-                    </tr>
-                @endif
-                @if($quote->show_tax)
-                    <tr>
-                        <td class="label">
-                            IVA ({{ number_format($quote->tax_percentage, 0) }}%)
-                            @if($quote->tax_included)
-                                <span style="font-size: 8pt;">(inclusa)</span>
-                            @endif
-                        </td>
-                        <td class="value">€ {{ number_format($quote->tax_amount, 2, ',', '.') }}</td>
-                    </tr>
-                @endif
-                <tr class="total-row">
-                    <td class="label">TOTALE</td>
-                    <td class="value">€ {{ number_format($quote->total_amount, 2, ',', '.') }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="clearfix"></div>
-
-        <!-- Payment Info -->
-        @if($quote->payment_method || $quote->payment_terms)
-            <div class="section-title">Pagamento</div>
-            @if($quote->payment_method)
-                <div style="margin: 10px 0;">
-                    <strong>Metodo:</strong> {{ $quote->payment_method }}
-                </div>
-            @endif
-            @if($quote->payment_terms)
-                <div style="margin: 10px 0;">
-                    <strong>Termini:</strong> {{ $quote->payment_terms }}
-                </div>
-            @endif
-        @endif
-
-        <!-- Notes -->
-        @if($quote->notes)
-            <div class="notes">
-                <div class="notes-title">Note</div>
-                <div class="notes-content">{{ $quote->notes }}</div>
-            </div>
-        @endif
-
-        @if($quote->terms_and_conditions)
-            <div class="notes">
-                <div class="notes-title">Termini e Condizioni</div>
-                <div class="notes-content">{{ $quote->terms_and_conditions }}</div>
-            </div>
-        @endif
-
-        <!-- Footer -->
-        <div class="footer">
-            @if($quote->footer_text)
-                {{ $quote->footer_text }}
+    <!-- Header -->
+    <header class="flex justify-between items-start border-b-2 border-slate-900 pb-8 mb-8">
+        <div class="w-1/2">
+            @if($company['logo'])
+                <img src="{{ $company['logo'] }}" alt="Logo" class="h-16 w-auto object-contain mb-4">
             @else
-                Grazie per aver scelto i nostri servizi. Per qualsiasi informazione non esitate a contattarci.
+                <div class="h-16 w-48 bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-4">LOGO
+                </div>
             @endif
-            <br><br>
-            <small>Documento generato il {{ now()->format('d/m/Y H:i') }}</small>
+            <div class="text-4xl font-bold text-slate-900 tracking-tight">PREVENTIVO</div>
+            <div class="text-primary font-medium text-lg">Nr. {{ $quote->code }}</div>
+            <div class="text-slate-500 mt-1">Data: {{ $quote->issue_date->format('d F Y') }}</div>
+            @if($quote->valid_until)
+                <div class="text-xs text-slate-400 mt-1">Valido fino
+                    al: {{ $quote->valid_until->format('d F Y') }}</div>
+            @endif
+        </div>
+        <div class="w-1/2 text-right">
+            <h2 class="text-xl font-bold text-slate-900">{{ $company['name'] }}</h2>
+            <div class="text-slate-500 leading-relaxed mt-2 text-xs">
+                {{ $company['address'] }}<br>
+                {{ $company['postal_code'] }} {{ $company['city'] }}<br>
+                P.IVA: {{ $company['vat'] }}<br>
+                {{ $company['phone'] }} | {{ $company['email'] }}<br>
+                {{ $company['website'] }}
+            </div>
+        </div>
+    </header>
+
+    <!-- Clients Info -->
+    <div class="flex justify-between gap-10 mb-10">
+        <div class="flex-1">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-primary mb-3 border-b border-slate-100 pb-1">
+                Spett.le Cliente</h3>
+            <div
+                class="text-slate-900 font-semibold text-lg">{{ $quote->customer->business_name ?? $quote->customer->display_name }}</div>
+            <div class="text-slate-600 mt-1 text-sm">
+                @if($quote->customer->contact_person)
+                    <div class="font-medium">{{ $quote->customer->contact_person }}</div>
+                @endif
+                @if($quote->address)
+                    {{ $quote->address }}<br>
+                @elseif($quote->customer->address)
+                    {{ $quote->customer->address }}<br>
+                @endif
+                @if($quote->city)
+                    {{ $quote->postal_code }} {{ $quote->city }}<br>
+                @elseif($quote->customer->city)
+                    {{ $quote->customer->postal_code }} {{ $quote->customer->city }}<br>
+                @endif
+                @if($quote->customer->vat)
+                    P.IVA/C.F.: {{ $quote->customer->vat }}
+                @endif
+            </div>
+        </div>
+        <div class="flex-1">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-primary mb-3 border-b border-slate-100 pb-1">
+                Dettagli</h3>
+            @if($quote->title)
+                <div class="mb-3">
+                    <span class="block text-xs text-slate-400">Oggetto</span>
+                    <span class="font-medium text-slate-900 text-sm">{{ $quote->title }}</span>
+                </div>
+            @endif
+            @if($quote->description)
+                <div>
+                    <span class="block text-xs text-slate-400">Descrizione</span>
+                    <span
+                        class="font-medium text-slate-900 text-sm">{{ \Illuminate\Support\Str::limit($quote->description, 100) }}</span>
+                </div>
+            @endif
+            @if($quote->address && $quote->city)
+                <div>
+                    <span class="block text-xs text-slate-400">Destinazione</span>
+                    <span class="font-medium text-slate-900 text-sm">{{ $quote->full_address }}</span>
+                </div>
+            @endif
         </div>
     </div>
+
+    <!-- Table -->
+    <div class="mb-8">
+        <table class="w-full text-left border-collapse">
+            @php
+                // Controlla se il primo item è una sezione
+                $firstItem = $quote->items->whereNull('parent_id')->first();
+                $firstIsSection = $firstItem && $firstItem->type === \App\Enums\QuoteItemType::Section;
+            @endphp
+            @if(!$firstIsSection)
+                <thead>
+                <tr class="border-b-2 border-slate-800 text-slate-900 text-xs uppercase tracking-wide">
+                    @if($quote->show_product_codes)
+                        <th class="py-2 font-bold w-20">Codice</th>
+                    @endif
+                    <th class="py-2 font-bold">Descrizione</th>
+                    <th class="py-2 font-bold w-12 text-center">U.M.</th>
+                    <th class="py-2 font-bold w-12 text-center">Q.tà</th>
+                    @if($quote->show_unit_prices)
+                        <th class="py-2 font-bold w-24 text-right">Prezzo</th>
+                    @endif
+                    <th class="py-2 font-bold w-16 text-center">Sc.%</th>
+                    @if($quote->show_vat || $quote->tax_included)
+                        <th class="py-2 font-bold w-12 text-center">IVA</th>
+                    @endif
+                    @if($quote->show_unit_prices)
+                        <th class="py-2 font-bold w-24 text-right">Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
+                    @endif
+                </tr>
+                </thead>
+            @endif
+            <tbody class="text-slate-600 text-sm">
+            @foreach($quote->items->whereNull('parent_id') as $item)
+                @if($item->type === \App\Enums\QuoteItemType::Section)
+                    <!-- SECTION - Solo nome, descrizione e totale opzionale -->
+                    @php
+                        // Calcola numero totale colonne della tabella
+                        $totalTableColumns = 5; // Descrizione, U.M., Q.tà, Sc.%, Totale (sempre visibili)
+                        if($quote->show_product_codes) $totalTableColumns++; // Codice
+                        if($quote->show_unit_prices) $totalTableColumns++; // Prezzo
+                        if($quote->show_vat || $quote->tax_included) $totalTableColumns++; // IVA
+                        if ($quote->show_unit_prices) $totalTableColumns++; // Totale colonna se i prezzi unitari sono mostrati (altrimenti non ha senso mostrare totale se non si vedono i prezzi)
+                    @endphp
+                    <tr class="bg-gray-100 border-b border-slate-200">
+                        @if($quote->show_section_totals)
+                            <!-- Sezione con totale: colspan = tutte le colonne -1 -->
+                            <td colspan="{{ $totalTableColumns - 1 }}" class="py-2 pl-3 align-middle">
+                                <div class="font-bold text-slate-900 uppercase text-xs">{{ $item->description }}</div>
+                                @if($item->notes)
+                                    <div class="text-[10px] text-slate-500 italic">{{ $item->notes }}</div>
+                                @endif
+                            </td>
+                            <td class="py-2 text-right font-bold text-slate-900 text-xs align-middle">
+                                {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }} €
+                            </td>
+                        @else
+                            <!-- Sezione senza totale: colspan = tutte le colonne -->
+                            <td colspan="{{ $totalTableColumns }}" class="py-2 pl-3 align-middle">
+                                <div class="font-bold text-slate-900 uppercase text-xs">{{ $item->description }}</div>
+                                @if($item->notes)
+                                    <div class="text-[10px] text-slate-500 italic">{{ $item->notes }}</div>
+                                @endif
+                            </td>
+                        @endif
+                    </tr>
+                    <!-- Header ripetuto sotto la sezione (stesso stile header principale) -->
+                    <tr class="border-b-2 border-slate-800 text-slate-900 text-xs uppercase tracking-wide">
+                        @if($quote->show_product_codes)
+                            <th class="py-2 font-bold w-20">Codice</th>
+                        @endif
+                        <th class="py-2 font-bold">Descrizione</th>
+                        <th class="py-2 font-bold w-12 text-center">U.M.</th>
+                        <th class="py-2 font-bold w-12 text-center">Q.tà</th>
+                        @if($quote->show_unit_prices)
+                            <th class="py-2 font-bold w-24 text-right">Prezzo</th>
+                        @endif
+                        <th class="py-2 font-bold w-16 text-center">Sc.%</th>
+                        @if($quote->show_vat || $quote->tax_included)
+                            <th class="py-2 font-bold w-12 text-center">IVA</th>
+                        @endif
+                        @if($quote->show_unit_prices)
+                            <th class="py-2 font-bold w-24 text-right">Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
+                        @endif
+                    </tr>
+                    @foreach($item->children as $child)
+                        <!-- Item -->
+                        <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                            @if($quote->show_product_codes)
+                                <td class="py-3 font-mono text-xs text-slate-500 align-top">{{ $child->code ?? ($child->product ? $child->product->code : '') }}</td>
+                            @endif
+                            <td class="py-3 align-top">
+                                <div class="font-bold text-slate-800">{{ $child->description }}</div>
+                                @if($child->notes)
+                                    <div
+                                        class="text-xs mt-1 text-slate-500 whitespace-pre-line">{{ $child->notes }}</div>
+                                @endif
+                            </td>
+                            <td class="py-3 text-center align-top text-xs">{{ $child->unit ?? 'pz' }}</td>
+                            <td class="py-3 text-center align-top">{{ number_format($child->quantity, 0) }}</td>
+                            @if($quote->show_unit_prices)
+                                <td class="py-3 text-right align-top">
+                                    @if(!$child->hide_unit_price)
+                                        <div>{{ number_format($child->unit_price, 2, ',', '.') }} €</div>
+                                    @else
+                                        <span class="text-slate-300">-</span>
+                                    @endif
+                                </td>
+                            @endif
+                            <td class="py-3 text-center align-top text-xs">{{ $child->discount_percentage > 0 ? '-' . number_format($child->discount_percentage, 0) . '%' : '-' }}</td>
+                            @if($quote->show_vat || $quote->tax_included)
+                                <td class="py-3 text-center align-top text-xs">{{ number_format($child->vat_rate ?? 0, 0) }}%</td>
+                            @endif
+                            @if($quote->show_unit_prices)
+                                <td class="py-3 text-right font-bold text-slate-900 align-top">
+                                    {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }} €
+                                </td>
+                            @endif
+                        </tr>
+                    @endforeach
+                @elseif($item->type === \App\Enums\QuoteItemType::Item)
+                    <!-- Non-section item -->
+                    <tr class="border-b border-slate-100">
+                        @if($quote->show_product_codes)
+                            <td class="py-3 font-mono text-xs text-slate-500 align-top">{{ $item->code ?? ($item->product ? $item->product->code : '') }}</td>
+                        @endif
+                        <td class="py-3 align-top">
+                            <div class="font-bold text-slate-900">{{ $item->description }}</div>
+                            @if($item->notes)
+                                <div class="text-xs mt-1 text-slate-500 whitespace-pre-line">{{ $item->notes }}</div>
+                            @endif
+                        </td>
+                        <td class="py-3 text-center align-top text-xs">{{ $item->unit ?? 'pz' }}</td>
+                        <td class="py-3 text-center align-top">{{ number_format($item->quantity, 0) }}</td>
+                        @if($quote->show_unit_prices)
+                            <td class="py-3 text-right align-top">
+                                @if(!$item->hide_unit_price)
+                                    <div>{{ number_format($item->unit_price, 2, ',', '.') }} €</div>
+                                @else
+                                    <span class="text-slate-300">-</span>
+                                @endif
+                            </td>
+                        @endif
+                        <td class="py-3 text-center align-top text-xs">{{ $item->discount_percentage > 0 ? '-' . number_format($item->discount_percentage, 0) . '%' : '-' }}</td>
+                        @if($quote->show_vat || $quote->tax_included)
+                            <td class="py-3 text-center align-top text-xs">{{ number_format($item->vat_rate ?? 0, 0) }}%</td>
+                        @endif
+                        <td class="py-3 text-right font-bold text-slate-900 align-top">
+                            {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }} €
+                        </td>
+                    </tr>
+                @endif
+            @endforeach
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Totals -->
+    <div class="flex justify-end mb-10 avoid-break totals-wrapper">
+        <div class="w-5/12">
+            @if($quote->vat_included_in_prices || $quote->tax_included)
+                {{-- IVA INCLUSA nei totali --}}
+                <div class="flex justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500">Imponibile (senza IVA)</span>
+                    <span class="font-medium">{{ number_format($quote->subtotal, 2, ',', '.') }} €</span>
+                </div>
+                @if($quote->discount_amount > 0)
+                    <div class="flex justify-between py-2 border-b border-slate-100 text-xs text-green-600">
+                        <span>Sconti Applicati</span>
+                        <span>- {{ number_format($quote->discount_amount, 2, ',', '.') }} €</span>
+                    </div>
+                @endif
+                @foreach($vatBreakdown as $rate => $amount)
+                    <div class="flex justify-between py-2 border-b border-slate-100 text-xs">
+                        <span class="text-slate-500">IVA {{ number_format($rate, 0) }}%</span>
+                        <span>{{ number_format($amount, 2, ',', '.') }} €</span>
+                    </div>
+                @endforeach
+                <div class="flex justify-between py-3 border-b-2 border-slate-800 mt-2">
+                    <span class="font-bold text-lg text-primary">TOTALE (IVA inclusa)</span>
+                    <span class="font-bold text-lg text-primary">{{ number_format($quote->total_amount, 2, ',', '.') }} €</span>
+                </div>
+            @else
+                {{-- IVA NON INCLUSA nei prezzi --}}
+                <div class="flex justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500">Imponibile</span>
+                    <span class="font-medium">{{ number_format($quote->subtotal, 2, ',', '.') }} €</span>
+                </div>
+                @if($quote->discount_amount > 0)
+                    <div class="flex justify-between py-2 border-b border-slate-100 text-xs text-green-600">
+                        <span>Sconti Applicati</span>
+                        <span>- {{ number_format($quote->discount_amount, 2, ',', '.') }} €</span>
+                    </div>
+                @endif
+                @if($quote->show_vat)
+                    @foreach($vatBreakdown as $rate => $amount)
+                        <div class="flex justify-between py-2 border-b border-slate-100 text-xs">
+                            <span class="text-slate-500">IVA {{ number_format($rate, 0) }}%</span>
+                            <span>{{ number_format($amount, 2, ',', '.') }} €</span>
+                        </div>
+                    @endforeach
+                    <div class="flex justify-between py-3 border-b-2 border-slate-800 mt-2">
+                        <span class="font-bold text-lg text-primary">TOTALE + IVA</span>
+                        <span class="font-bold text-lg text-primary">{{ number_format($quote->total_amount, 2, ',', '.') }} €</span>
+                    </div>
+                @else
+                    {{-- IVA non mostrata: solo totale imponibile --}}
+                    <div class="flex justify-between py-3 border-b-2 border-slate-800 mt-2">
+                        <span class="font-bold text-lg text-primary">TOTALE
+                            <span class="text-sm">(esc. IVA)</span>
+                        </span>
+                        <span class="font-bold text-lg text-primary">{{ number_format($quote->subtotal, 2, ',', '.') }} €</span>
+                    </div>
+                @endif
+            @endif
+
+            @if($quote->deposit_amount > 0)
+                <div class="flex justify-between py-2 text-slate-500 text-sm mt-1">
+                    <span>Acconto ({{ $quote->deposit_percentage > 0 ? number_format($quote->deposit_percentage, 0) . '%' : 'Fisso' }})</span>
+                    <span>- {{ number_format($quote->deposit_amount, 2, ',', '.') }} €</span>
+                </div>
+                <div class="flex justify-between py-2 font-bold text-primary bg-blue-50 px-2 rounded mt-2">
+                    <span>Saldo a Finire</span>
+                    @if($quote->tax_included)
+                        <span>{{ number_format($quote->total_amount - $quote->deposit_amount, 2, ',', '.') }} €</span>
+                    @else
+                        <span>{{ number_format($quote->subtotal - $quote->deposit_amount, 2, ',', '.') }} €</span>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Terms -->
+    <div class="space-y-6 mb-10 text-xs text-slate-600">
+        @if($quote->paymentTerm || $quote->financialResource || $quote->work_start_description || $quote->work_duration_description || \App\Models\Setting::get('company.iban'))
+            <div class="grid grid-cols-2 gap-8 bg-slate-50 p-6 rounded-lg avoid-break">
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-2">Pagamento & Banca</h4>
+                    <p class="mb-2">
+                        @if($quote->paymentTerm)
+                            {{ $quote->paymentTerm->name }}
+                            @if($quote->paymentTerm->description)
+                                <br><span
+                                    style="font-size: 8pt; color: #64748b;">{{ $quote->paymentTerm->description }}</span>
+                            @endif
+                        @else
+                            Secondo accordi
+                        @endif
+                    </p>
+
+                    @if($quote->financialResource)
+                        {{-- Usa risorsa finanziaria dal preventivo --}}
+                        @if($quote->financialResource->type === \App\Enums\FinancialResourceType::BANK_ACCOUNT)
+                            <div class="p-2 border border-slate-200 bg-white rounded" style="font-size: 10px;">
+                                <span
+                                    class="block font-semibold text-slate-700">{{ $quote->financialResource->name }}</span>
+                                @if($quote->financialResource->details['bank_name'] ?? null)
+                                    <span
+                                        class="block text-slate-600 text-[9px]">{{ $quote->financialResource->details['bank_name'] }}</span>
+                                @endif
+                                @if($quote->financialResource->details['iban'] ?? null)
+                                    <span
+                                        class="block font-mono text-slate-900 mt-1">{{ $quote->financialResource->details['iban'] }}</span>
+                                @endif
+                                @if($quote->financialResource->details['bic'] ?? null)
+                                    <span
+                                        class="block text-slate-600 text-[9px]">BIC/SWIFT: {{ $quote->financialResource->details['bic'] }}</span>
+                                @endif
+                            </div>
+                        @elseif($quote->financialResource->type === \App\Enums\FinancialResourceType::CASH)
+                            <div class="p-2 border border-slate-200 bg-white rounded" style="font-size: 10px;">
+                                <span
+                                    class="block font-semibold text-slate-700">💵 {{ $quote->financialResource->name }}</span>
+                                <span class="block text-slate-600 text-[9px]">Pagamento in contanti</span>
+                            </div>
+                        @elseif($quote->financialResource->type === \App\Enums\FinancialResourceType::CARD)
+                            <div class="p-2 border border-slate-200 bg-white rounded" style="font-size: 10px;">
+                                <span
+                                    class="block font-semibold text-slate-700">💳 {{ $quote->financialResource->name }}</span>
+                                @if($quote->financialResource->details['card_type'] ?? null)
+                                    <span
+                                        class="block text-slate-600 text-[9px]">{{ ucfirst($quote->financialResource->details['card_type']) }}</span>
+                                @endif
+                                @if($quote->financialResource->details['last_four'] ?? null)
+                                    <span
+                                        class="block font-mono text-slate-900 text-[9px]">**** {{ $quote->financialResource->details['last_four'] }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    @elseif(\App\Models\Setting::get('company.iban'))
+                        {{-- Fallback ai vecchi settings --}}
+                        <div class="p-2 border border-slate-200 bg-white rounded" style="font-size: 10px;">
+                            <span
+                                class="block font-semibold text-slate-700">{{ \App\Models\Setting::get('company.bank_name', 'Banca Intesa Sanpaolo') }}</span>
+                            <span class="font-mono text-slate-900">{{ \App\Models\Setting::get('company.iban') }}</span>
+                        </div>
+                    @endif
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-2">Tempi di Esecuzione</h4>
+                    @if($quote->work_start_description || $quote->work_start_date)
+                        <div class="mb-2">
+                            <span class="block font-semibold text-slate-700 text-[10px]">INIZIO LAVORI</span>
+                            <span>{{ $quote->work_start_description ?? $quote->work_start_date?->format('d/m/Y') }}</span>
+                        </div>
+                    @endif
+                    @if($quote->work_duration_description)
+                        <div>
+                            <span class="block font-semibold text-slate-700 text-[10px]">DURATA LAVORI</span>
+                            <span>{{ $quote->work_duration_description }}</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
+        @if($quote->notes)
+            <div class="avoid-break">
+                <h4 class="font-bold text-primary text-sm mb-1 uppercase tracking-wider">Note Operative</h4>
+                <p class="text-justify leading-relaxed border-l-2 border-primary pl-3">{{ $quote->notes }}</p>
+            </div>
+        @endif
+
+        @if($quote->warrantyType)
+            <div class="avoid-break">
+                <h4 class="font-bold text-slate-900 text-sm mb-1 uppercase tracking-wider">Garanzia</h4>
+                <p class="text-justify leading-relaxed">
+                    {{ $quote->warrantyType->name }}
+                    @if($quote->warrantyType->description)
+                        - {{ $quote->warrantyType->description }}
+                    @endif
+                </p>
+
+                @if($quote->warrantyType->exclusions && count($quote->warrantyType->exclusions) > 0)
+                    <div class="mt-2">
+                        <p class="font-semibold text-slate-700 text-xs mb-1">Esclusioni:</p>
+                        <ul class="list-disc list-inside text-sm text-slate-600 space-y-0.5">
+                            @foreach($quote->warrantyType->exclusions as $exclusion)
+                                <li class="leading-relaxed">{{ $exclusion }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        @if($quote->include_terms_and_conditions && $quote->terms_and_conditions)
+            <div class="avoid-break pt-4 border-t border-slate-200">
+                <h4 class="font-bold text-slate-500 text-[10px] mb-1 uppercase tracking-wider">Condizioni di
+                    Vendita</h4>
+                <p class="text-justify leading-relaxed text-[10px] text-slate-500">{{ $quote->terms_and_conditions }}</p>
+            </div>
+        @endif
+    </div>
+
+    <!-- Photo Attachment Section -->
+    @if(count($quoteImages) > 0)
+        <div class="mt-10 avoid-break">
+            <h3 class="text-xl font-bold text-primary mb-6 border-b border-primary pb-2">Allegato Fotografico</h3>
+            <div class="grid grid-cols-2 gap-6">
+                @foreach($quoteImages as $image)
+                    <div class="border border-slate-200 rounded p-3 avoid-break">
+                        <div
+                            class="aspect-video bg-white mb-3 overflow-hidden rounded relative flex items-center justify-center">
+                            <img src="{{ $image['imagePath'] }}" alt="{{ $image['name'] }}"
+                                 class="object-contain w-full h-full">
+                        </div>
+                        <div class="font-bold text-slate-800">{{ $image['name'] }}</div>
+                        @if($image['description'] !== $image['name'])
+                            <div class="text-xs text-slate-500 mt-1">{{ $image['description'] }}</div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    <div class="mt-auto pt-8 border-t border-slate-200 avoid-break">
+        <div class="flex justify-between items-end">
+            <div class="text-center w-2/5">
+                <div class="h-16 border-b border-slate-300 mb-2"></div>
+                <div class="text-xs text-slate-400 uppercase tracking-wide">Timbro e Firma Azienda</div>
+            </div>
+            <div class="text-center w-2/5">
+                <div class="h-16 border-b border-slate-300 mb-2"></div>
+                <div class="text-xs text-slate-400 uppercase tracking-wide">Timbro e Firma per Accettazione</div>
+            </div>
+        </div>
+    </div>
+    <!-- Footer gestito da Browsershot (PdfService->footerHtml()) -->
+</div>
 </body>
 </html>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/stores/auth-store";
+import { LoadingScreen } from "@/components/loading-screen";
 
 /**
  * Provider che inizializza lo stato auth al mount dell'app
@@ -10,11 +11,11 @@ import { useAuthStore } from "@/stores/auth-store";
 export function AuthInitProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, refreshUser, hasHydrated } = useAuthStore();
   const hasInitialized = useRef(false);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     // Aspetta che Zustand abbia completato l'hydration dal localStorage
     if (!hasHydrated) {
-      console.log("⏳ Waiting for auth store hydration...");
       return;
     }
 
@@ -25,17 +26,24 @@ export function AuthInitProvider({ children }: { children: React.ReactNode }) {
 
     // Se l'utente è autenticato, aggiorna i dati da auth/me
     if (isAuthenticated) {
-      console.log("🔄 User is authenticated, refreshing data from auth/me...");
       hasInitialized.current = true;
+      setIsInitializing(true);
 
-      refreshUser().catch((error) => {
-        console.error("❌ Failed to refresh user data:", error);
-        // Se fallisce, l'utente verrà reindirizzato al login
-      });
-    } else {
-      console.log("👤 User not authenticated, skipping refresh");
+      refreshUser()
+        .catch(() => {
+          // Se fallisce, clearAuth è già stato chiamato in refreshUser()
+          // Il DashboardLayout vedrà isAuthenticated: false e reindirizzerà
+        })
+        .finally(() => {
+          setIsInitializing(false);
+        });
     }
   }, [isAuthenticated, refreshUser, hasHydrated]);
+
+  // Mostra loading mentre verifica l'autenticazione
+  if (isInitializing) {
+    return <LoadingScreen message="Verifica autenticazione..." />;
+  }
 
   return <>{children}</>;
 }

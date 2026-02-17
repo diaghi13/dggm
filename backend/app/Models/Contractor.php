@@ -162,22 +162,10 @@ class Contractor extends Model
     }
 
     /**
-     * Generate unique contractor code (CTR-00001)
+     * Generate unique contractor code (CON-00001)
      */
     private static function generateCode(): string
     {
-        $lastContractor = self::withTrashed()
-            ->where('code', 'like', 'CTR-%')
-            ->orderByRaw('CAST(SUBSTRING(code, 5) AS UNSIGNED) DESC')
-            ->first();
-
-        if (! $lastContractor) {
-            return 'CTR-00001';
-        }
-
-        $lastNumber = (int) substr($lastContractor->code, 4);
-        $newNumber = $lastNumber + 1;
-
-        return 'CTR-'.str_pad($newNumber, 5, '0', STR_PAD_LEFT);
+        return app(\App\Services\CodeGeneratorService::class)->generate('contractor');
     }
 }

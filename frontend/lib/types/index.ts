@@ -45,30 +45,18 @@ export interface AuthResponse {
 // Customer Types
 export type CustomerType = "individual" | "company";
 
-export interface Customer {
+// Usa il tipo generato ed estende con i campi calcolati/aggiuntivi
+export type Customer = Omit<App.Data.CustomerData, "type"> & {
   id: number;
   type: CustomerType;
-  first_name: string | null;
-  last_name: string | null;
-  company_name: string | null;
   display_name: string;
-  vat_number: string | null;
-  tax_code: string | null;
-  email: string | null;
-  phone: string | null;
-  mobile: string | null;
-  address: string | null;
-  city: string | null;
-  province: string | null;
-  postal_code: string | null;
-  country: string;
   payment_terms: string;
   discount_percentage: string;
-  notes: string | null;
+  country: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
+};
 
 export interface CustomerFormData {
   type: CustomerType;
@@ -265,6 +253,20 @@ export interface SupplierFormData {
   }>;
 }
 
+// Quote Attachment
+export interface QuoteAttachment {
+  id: number;
+  filename: string;
+  original_filename: string;
+  mime_type: string;
+  file_size: number;
+  file_size_human: string;
+  url: string;
+  type: string;
+  description?: string;
+  sort_order: number;
+}
+
 // Quote Types
 export type QuoteStatus =
   | "draft"
@@ -273,96 +275,36 @@ export type QuoteStatus =
   | "rejected"
   | "expired"
   | "converted";
+
 export type QuoteItemType = "section" | "item" | "labor" | "material";
 
-export interface QuoteItem {
-  id: number;
-  quote_id: number;
-  parent_id: number | null;
-  type: QuoteItemType;
-  code: string | null;
-  sort_order: number;
-  description: string;
-  unit: string | null;
-  quantity: number | null;
-  unit_price: number | null;
-  hide_unit_price?: boolean;
-  subtotal: number;
-  discount_percentage: number;
-  discount_amount: number;
-  total: number;
-  notes: string | null;
-  children?: QuoteItem[];
-  created_at: string;
-  updated_at: string;
-}
+// Usa i tipi generati dal backend
+export type Quote = Omit<App.Data.QuoteData, "customer"> & {
+  customer?: Customer;
+  attachments?: QuoteAttachment[];
+};
+export type QuoteItem = App.Data.QuoteItemData;
 
-export interface Quote {
-  id: number;
-  code: string;
-  title: string;
-  description?: string | null;
-  customer_id: number;
-  customer?: {
-    id: number;
-    display_name: string;
-    type: CustomerType;
-  };
-  project_manager_id: number | null;
-  project_manager?: {
-    id: number;
-    name: string;
-    email: string;
-  };
-  status: QuoteStatus;
-  issue_date: string;
-  valid_until?: string | null;
-  expiry_date: string | null;
-  address?: string | null;
-  city?: string | null;
-  province?: string | null;
-  postal_code?: string | null;
-  subtotal: number | string;
-  discount_percentage: number;
-  discount_amount: number | string;
-  tax_percentage: number;
-  tax_amount: number | string;
-  tax_included?: boolean;
-  show_tax?: boolean;
-  show_unit_prices?: boolean;
-  total_amount: number | string;
-  notes: string | null;
-  terms_and_conditions?: string | null;
-  footer_text?: string | null;
-  full_address?: string | null;
-  payment_method?: string | null;
-  payment_terms?: string | null;
-  is_active: boolean;
-  items?: QuoteItem[];
-  attachments?: any[];
-  site_id?: number | null;
-  site?: {
-    id: number;
-    code: string;
-    name: string;
-    status: SiteStatus;
-  };
-  created_at: string;
-  updated_at: string;
-}
-
-export interface QuoteFormData {
+// Form data per la creazione/modifica (campi opzionali)
+export type QuoteFormData = Partial<
+  Omit<
+    App.Data.QuoteData,
+    | "customer"
+    | "projectManager"
+    | "priceList"
+    | "paymentTerm"
+    | "warrantyType"
+    | "site"
+    | "items"
+    | "full_address"
+  >
+> & {
   title: string;
   customer_id: number;
-  project_manager_id?: number;
-  status?: QuoteStatus;
-  issue_date: string;
-  expiry_date?: string;
-  discount_percentage?: number;
-  tax_percentage?: number;
-  notes?: string;
-  is_active?: boolean;
-}
+  items?: App.Data.QuoteItemData[];
+  payment_method_id?: number | null;
+  attachments?: QuoteAttachment[];
+};
 
 // DDT (Documento Di Trasporto) Types
 export type DdtType =
@@ -1305,3 +1247,10 @@ export interface PriceListFormData {
 export interface PriceListWithItems extends PriceList {
   items: PriceListItem[];
 }
+
+// ============================================
+// PAYMENT TERM & WARRANTY TYPES - Re-export from generated.d.ts
+// ============================================
+
+export type PaymentTermData = App.Data.PaymentTermData;
+export type WarrantyTypeData = App.Data.WarrantyTypeData;

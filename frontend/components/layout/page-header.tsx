@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 
 interface PageHeaderProps {
-  title: string;
+  title: string | React.ReactNode;
   description?: string;
   icon?: LucideIcon;
   actions?: React.ReactNode;
@@ -31,7 +31,9 @@ export function PageHeader({
                 {title}
               </h1>
               {description && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{description}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                  {description}
+                </p>
               )}
             </div>
           </div>

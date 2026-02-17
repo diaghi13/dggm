@@ -179,22 +179,10 @@ class Supplier extends Model
     }
 
     /**
-     * Generate unique supplier code (SUP-00001)
+     * Generate unique supplier code (FOR-00001)
      */
     private static function generateCode(): string
     {
-        $lastSupplier = self::withTrashed()
-            ->where('code', 'like', 'SUP-%')
-            ->orderByRaw('CAST(SUBSTRING(code, 5) AS UNSIGNED) DESC')
-            ->first();
-
-        if (! $lastSupplier) {
-            return 'SUP-00001';
-        }
-
-        $lastNumber = (int) substr($lastSupplier->code, 4);
-        $newNumber = $lastNumber + 1;
-
-        return 'SUP-'.str_pad($newNumber, 5, '0', STR_PAD_LEFT);
+        return app(\App\Services\CodeGeneratorService::class)->generate('supplier');
     }
 }

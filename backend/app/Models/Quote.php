@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\QuoteItemType;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,7 +36,6 @@ class Quote extends Model implements HasMedia
         'discount_percentage',
         'discount_amount',
         'tax_percentage',
-        'show_tax',
         'tax_included',
         'show_unit_prices',
         'tax_amount',
@@ -47,25 +47,51 @@ class Quote extends Model implements HasMedia
         'notes',
         'terms_and_conditions',
         'footer_text',
+        // NEW: Price list and payment
+        'price_list_id',
+        'payment_term_id',
+        'financial_resource_id',
+        'deposit_percentage',
+        'deposit_amount',
+        // NEW: Work timeline
+        'work_start_description',
+        'work_start_date',
+        'work_duration_description',
+        'work_end_date',
+        // NEW: Warranty and display options
+        'warranty_type_id',
+        'show_product_codes',
+        'show_vat',
+        'show_section_totals',
+        'vat_included_in_prices',
+        'include_terms_and_conditions',
     ];
 
     protected function casts(): array
     {
         return [
-            'issue_date' => 'date',
-            'expiry_date' => 'date',
-            'valid_until' => 'date',
-            'sent_date' => 'date',
-            'approved_date' => 'date',
+            'issue_date' => 'date:Y-m-d',
+            'expiry_date' => 'date:Y-m-d',
+            'valid_until' => 'date:Y-m-d',
+            'sent_date' => 'date:Y-m-d',
+            'approved_date' => 'date:Y-m-d',
+            'work_start_date' => 'date:Y-m-d',
+            'work_end_date' => 'date:Y-m-d',
             'subtotal' => 'decimal:2',
             'discount_percentage' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'tax_percentage' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
-            'show_tax' => 'boolean',
+            'deposit_percentage' => 'decimal:2',
+            'deposit_amount' => 'decimal:2',
             'tax_included' => 'boolean',
             'show_unit_prices' => 'boolean',
+            'show_product_codes' => 'boolean',
+            'show_vat' => 'boolean',
+            'show_section_totals' => 'boolean',
+            'vat_included_in_prices' => 'boolean',
+            'include_terms_and_conditions' => 'boolean',
         ];
     }
 
@@ -95,6 +121,26 @@ class Quote extends Model implements HasMedia
         return $this->belongsTo(Site::class);
     }
 
+    public function priceList(): BelongsTo
+    {
+        return $this->belongsTo(PriceList::class);
+    }
+
+    public function paymentTerm(): BelongsTo
+    {
+        return $this->belongsTo(PaymentTerm::class);
+    }
+
+    public function financialResource(): BelongsTo
+    {
+        return $this->belongsTo(FinancialResource::class);
+    }
+
+    public function warrantyType(): BelongsTo
+    {
+        return $this->belongsTo(WarrantyType::class);
+    }
+
     // Scopes
     public function scopeOfStatus($query, string $status)
     {
@@ -121,15 +167,37 @@ class Quote extends Model implements HasMedia
     // Methods
     public function calculateTotals(): void
     {
-        $subtotal = $this->items()
-            ->whereNull('parent_id')
-            ->sum('total');
+        // First, update parent items with totals from their children
+        $parentItems = $this->items()->whereNull('parent_id')->with('children')->get();
 
-        $this->subtotal = $subtotal;
-        $this->discount_amount = ($subtotal * $this->discount_percentage) / 100;
-        $amountAfterDiscount = $subtotal - $this->discount_amount;
-        $this->tax_amount = ($amountAfterDiscount * $this->tax_percentage) / 100;
-        $this->total_amount = $amountAfterDiscount + $this->tax_amount;
+        foreach ($parentItems as $parentItem) {
+            if ($parentItem->children->count() > 0) {
+                // If item has children, sum their totals
+                $parentItem->subtotal = $parentItem->children->sum('subtotal');
+                $parentItem->discount_amount = $parentItem->children->sum('discount_amount');
+                $parentItem->total = $parentItem->children->sum('total');
+                $parentItem->vat_amount = $parentItem->children->sum('vat_amount');
+                $parentItem->total_with_vat = $parentItem->children->sum('total_with_vat');
+                $parentItem->saveQuietly();
+            }
+        }
+
+        // Now calculate quote totals from parent items
+        // Reload items to get updated totals
+        $items = $this->items()->whereNull('parent_id')->get();
+
+        $this->subtotal = $items->sum('subtotal');
+        $this->discount_amount = ($this->subtotal * $this->discount_percentage) / 100;
+        $totalImponibile = $this->subtotal - $this->discount_amount;
+
+        // IVA sommata dalle righe (già calcolata con sconto applicato)
+        $this->tax_amount = $items->sum('vat_amount');
+        $this->total_amount = $totalImponibile + $this->tax_amount;
+
+        // Calcola acconto se percentuale presente
+        if ($this->deposit_percentage > 0) {
+            $this->deposit_amount = ($this->total_amount * $this->deposit_percentage) / 100;
+        }
 
         $this->saveQuietly();
     }
@@ -172,7 +240,7 @@ class Quote extends Model implements HasMedia
         }
 
         $site = Site::create([
-            'code' => 'SITE-'.str_pad($this->id, 4, '0', STR_PAD_LEFT),
+            'code' => app(\App\Services\CodeGeneratorService::class)->generate('site'),
             'name' => $this->title,
             'customer_id' => $this->customer_id,
             'project_manager_id' => $this->project_manager_id,
@@ -238,6 +306,14 @@ class Quote extends Model implements HasMedia
         }
     }
 
+    // Media Collections
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('pdfs')->useDisk('public');
+        $this->addMediaCollection('attachments')->useDisk('public');
+        $this->addMediaCollection('custom_images')->useDisk('public');
+    }
+
     // Attributes
     public function getFullAddressAttribute(): string
     {
@@ -251,17 +327,24 @@ class Quote extends Model implements HasMedia
         return implode(', ', $parts);
     }
 
+    /**
+     * Check if quote has warranty
+     */
+    protected function hasWarranty(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->warranty_type_id !== null
+        );
+    }
+
     // Boot
     protected static function booted(): void
     {
         static::creating(function ($quote) {
             if (empty($quote->code)) {
-                $quote->code = 'Q-'.now()->format('Y').'-'.str_pad(
-                    Quote::whereYear('created_at', now()->year)->count() + 1,
-                    4,
-                    '0',
-                    STR_PAD_LEFT
-                );
+                $quote->code = app(\App\Services\CodeGeneratorService::class)->generate('quote', [
+                    'year' => now()->year,
+                ]);
             }
         });
     }

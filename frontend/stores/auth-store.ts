@@ -81,9 +81,6 @@ export const useAuthStore = create<AuthState>()(
       refreshUser: async () => {
         try {
           const authData = await authApi.me();
-          console.log("🔍 auth/me response:", authData);
-          console.log("🔍 settings received:", authData.settings);
-          console.log("🔍 settings.global:", authData.settings?.global);
           set({
             user: authData.user,
             settings: authData.settings,

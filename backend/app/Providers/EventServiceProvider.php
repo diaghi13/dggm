@@ -18,12 +18,20 @@ use App\Events\PasswordReset;
 use App\Events\PasswordResetRequested;
 use App\Events\PriceListGenerated;
 use App\Events\PriceListItemsGenerationCompleted;
+use App\Events\QuoteApproved;
+use App\Events\QuoteConvertedToSite;
+use App\Events\QuoteCreated;
+use App\Events\QuoteDeleted;
+use App\Events\QuoteRejected;
+use App\Events\QuoteSent;
+use App\Events\QuoteUpdated;
 use App\Events\SettingCreated;
 use App\Events\SettingDeleted;
 use App\Events\SettingUpdated;
 use App\Events\StockMovementCreated;
 use App\Events\StockMovementReversed;
 use App\Listeners\CheckLowStockAfterMovementListener;
+use App\Listeners\ClearQuotePdfCacheOnUpdate;
 use App\Listeners\GeneratePriceListItemsListener;
 use App\Listeners\GenerateStockMovementsListener;
 use App\Listeners\InvalidatePricingCache;
@@ -33,9 +41,11 @@ use App\Listeners\LogInventoryAdjustmentListener;
 use App\Listeners\LogInventoryReservationListener;
 use App\Listeners\LogPasswordActivity;
 use App\Listeners\LogPriceListGeneration;
+use App\Listeners\LogQuoteActivity;
 use App\Listeners\LogStockMovementListener;
 use App\Listeners\LogWarehouseActivity;
 use App\Listeners\NotifyPriceListGenerationCompleted;
+use App\Listeners\NotifyProjectManagerOfQuoteApproval;
 use App\Listeners\NotifyWarehouseManagerListener;
 use App\Listeners\ReverseStockMovementsListener;
 use App\Listeners\SendLowStockAlert;
@@ -139,6 +149,31 @@ class EventServiceProvider extends ServiceProvider
         ],
         PriceListItemsGenerationCompleted::class => [
             NotifyPriceListGenerationCompleted::class,
+        ],
+
+        // Quote Events
+        QuoteCreated::class => [
+            LogQuoteActivity::class,
+        ],
+        QuoteUpdated::class => [
+            LogQuoteActivity::class,
+            ClearQuotePdfCacheOnUpdate::class,
+        ],
+        QuoteSent::class => [
+            LogQuoteActivity::class,
+        ],
+        QuoteApproved::class => [
+            LogQuoteActivity::class,
+            NotifyProjectManagerOfQuoteApproval::class,
+        ],
+        QuoteRejected::class => [
+            LogQuoteActivity::class,
+        ],
+        QuoteDeleted::class => [
+            LogQuoteActivity::class,
+        ],
+        QuoteConvertedToSite::class => [
+            LogQuoteActivity::class,
         ],
     ];
 

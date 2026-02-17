@@ -29,6 +29,7 @@ import {
   DollarSign,
   Search,
   X,
+  Wallet,
 } from "lucide-react";
 
 export default function SettingsIndexPage() {
@@ -144,6 +145,25 @@ export default function SettingsIndexPage() {
       bgColor: "bg-emerald-100 dark:bg-emerald-900/20",
       prefix: "features",
       keywords: ["features", "flags", "funzionalità"],
+    },
+    {
+      title: "Risorse Finanziarie",
+      description:
+        "Gestisci conti bancari, casse e metodi di pagamento dell'azienda",
+      icon: Wallet,
+      href: "/settings/financial-resources",
+      color: "text-teal-600 dark:text-teal-400",
+      bgColor: "bg-teal-100 dark:bg-teal-900/20",
+      prefix: null, // Non ha settings
+      keywords: [
+        "risorse",
+        "finanziarie",
+        "conti",
+        "bancari",
+        "cassa",
+        "pagamento",
+        "financial",
+      ],
     },
     {
       title: "Ruoli Cantiere",

@@ -730,8 +730,7 @@ class Product extends Model implements HasMedia
         static::creating(function ($product) {
             // Auto-generate code if empty (manufacturer code or auto-generated)
             if (empty($product->code)) {
-                $count = Product::count() + 1;
-                $product->code = 'PROD-'.str_pad($count, 5, '0', STR_PAD_LEFT);
+                $product->code = app(\App\Services\CodeGeneratorService::class)->generate('product');
             }
 
             // Auto-generate internal_code (fake code for customers)

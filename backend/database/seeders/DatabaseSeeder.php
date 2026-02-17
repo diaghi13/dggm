@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             ProductRelationTypeSeeder::class,
             SettingSeeder::class,
             SiteRoleSeeder::class,
+            WarrantyTypeSeeder::class,
         ]);
 
         // Create a super admin user

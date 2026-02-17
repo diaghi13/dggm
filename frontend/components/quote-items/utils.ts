@@ -1,11 +1,11 @@
-import { QuoteItem, ItemFormData } from './types';
+import { QuoteItem, ItemFormData } from "./types";
 
 /**
  * Appiattisce gli items in un array piatto (per il drag and drop)
  */
 export const flattenItems = (items: QuoteItem[]): QuoteItem[] => {
   const result: QuoteItem[] = [];
-  items.forEach(item => {
+  items.forEach((item) => {
     result.push(item);
     if (item.children && item.children.length > 0) {
       result.push(...item.children);
@@ -44,26 +44,39 @@ export const removeItem = (items: QuoteItem[], id: number): QuoteItem[] => {
 /**
  * Calcola i totali per un item del form
  */
-export const calculateTotals = (item: ItemFormData): Pick<QuoteItem, 'subtotal' | 'discount_amount' | 'total'> => {
-  if (item.type === 'section') {
-    return { subtotal: 0, discount_amount: 0, total: 0 };
+export const calculateTotals = (item: ItemFormData) => {
+  if (item.type === "section") {
+    return {
+      subtotal: 0,
+      discount_amount: 0,
+      total: 0,
+      vat_amount: 0,
+      total_with_vat: 0,
+    };
   }
   const quantity = Number(item.quantity) || 0;
   const unitPrice = Number(item.unit_price) || 0;
   const discountPercentage = Number(item.discount_percentage) || 0;
+  const vatRate = Number(item.vat_rate) || 0;
 
   const subtotal = quantity * unitPrice;
   const discount_amount = (subtotal * discountPercentage) / 100;
   const total = subtotal - discount_amount;
-  return { subtotal, discount_amount, total };
+  const vat_amount = (total * vatRate) / 100;
+  const total_with_vat = total + vat_amount;
+
+  return { subtotal, discount_amount, total, vat_amount, total_with_vat };
 };
 
 /**
  * Calcola il totale di un item (ricorsivo per sezioni)
  */
 export const calculateItemTotal = (item: QuoteItem): number => {
-  if (item.type === 'section' && item.children) {
-    return item.children.reduce((sum, child) => sum + calculateItemTotal(child), 0);
+  if (item.type === "section" && item.children) {
+    return item.children.reduce(
+      (sum, child) => sum + calculateItemTotal(child),
+      0,
+    );
   }
   return Number(item.total || 0);
 };
@@ -74,10 +87,9 @@ export const calculateItemTotal = (item: QuoteItem): number => {
 export const calculateSectionTotal = (item: QuoteItem): number => {
   if (!item.children) return 0;
   return item.children.reduce((sum, child) => {
-    if (child.type === 'section' && child.children) {
+    if (child.type === "section" && child.children) {
       return sum + calculateSectionTotal(child);
     }
     return sum + Number(child.total || 0);
   }, 0);
 };
-

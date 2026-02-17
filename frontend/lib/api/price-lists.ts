@@ -42,6 +42,22 @@ export const priceListsApi = {
     return response.data;
   },
 
+  getDefault: async (): Promise<PriceList | null> => {
+    try {
+      const response = await apiClient.get<ApiResponse<PriceList>>(
+        "/price-lists/default",
+      );
+      return response.data.data;
+    } catch (error: unknown) {
+      // Return null if no default price list found (404)
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError?.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
   getById: async (id: number): Promise<PriceListWithItems> => {
     const response = await apiClient.get<ApiResponse<PriceListWithItems>>(
       `/price-lists/${id}`,

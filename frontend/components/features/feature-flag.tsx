@@ -35,7 +35,16 @@ export function FeatureFlagAll({
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }) {
-  const allEnabled = flags.every((flag) => useFeatureFlag(flag));
+  // Call hooks for each flag directly (not in a map callback)
+  const flag0 = useFeatureFlag(flags[0] || "");
+  const flag1 = useFeatureFlag(flags[1] || "");
+  const flag2 = useFeatureFlag(flags[2] || "");
+  const flag3 = useFeatureFlag(flags[3] || "");
+  const flag4 = useFeatureFlag(flags[4] || "");
+
+  // Collect the results dynamically based on actual flags length
+  const flagStates = [flag0, flag1, flag2, flag3, flag4].slice(0, flags.length);
+  const allEnabled = flags.length === 0 || flagStates.every((state) => state);
 
   if (!allEnabled && fallback) {
     return <>{fallback}</>;
@@ -56,7 +65,16 @@ export function FeatureFlagAny({
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }) {
-  const anyEnabled = flags.some((flag) => useFeatureFlag(flag));
+  // Call hooks for each flag directly (not in a map callback)
+  const flag0 = useFeatureFlag(flags[0] || "");
+  const flag1 = useFeatureFlag(flags[1] || "");
+  const flag2 = useFeatureFlag(flags[2] || "");
+  const flag3 = useFeatureFlag(flags[3] || "");
+  const flag4 = useFeatureFlag(flags[4] || "");
+
+  // Collect the results dynamically based on actual flags length
+  const flagStates = [flag0, flag1, flag2, flag3, flag4].slice(0, flags.length);
+  const anyEnabled = flags.length > 0 && flagStates.some((state) => state);
 
   if (!anyEnabled && fallback) {
     return <>{fallback}</>;

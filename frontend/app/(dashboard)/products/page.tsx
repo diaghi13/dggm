@@ -78,7 +78,7 @@ function ProductsPageContent() {
         }
       }
     }
-  }, []);
+  }, [perPage]);
 
   // Save perPage to localStorage when it changes
   React.useEffect(() => {

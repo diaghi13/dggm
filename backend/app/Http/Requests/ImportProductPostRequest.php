@@ -22,7 +22,7 @@ class ImportProductPostRequest extends FormRequest
         $leadTimeDays = $this->input('products.*.lead_time_days', 5);
 
         $this->merge([
-            'products.*.lead_time_days' => is_numeric($leadTimeDays) ? (int)$leadTimeDays : 5,
+            'products.*.lead_time_days' => is_numeric($leadTimeDays) ? (int) $leadTimeDays : 5,
         ]);
     }
 

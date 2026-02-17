@@ -48,20 +48,20 @@ export function PreviewStep({
           // Parse all rows
           const jsonData = XLSX.utils.sheet_to_json(worksheet, {
             header: 1,
-          }) as any[][];
+          }) as unknown[][];
           const headers = jsonData[0] as string[];
           const dataRows = jsonData.slice(1);
 
           // Map and validate each row
           const parsedRows = dataRows
             .map((row, index) => {
-              const rowData: Record<string, any> = {};
+              const rowData: Record<string, unknown> = {};
               const errors: string[] = [];
 
               // Map columns based on mappings
               mappings.forEach((mapping) => {
                 if (mapping.dbField) {
-                  let value: any;
+                  let value: unknown;
 
                   // Handle composed fields
                   if (mapping.isComposed && mapping.excelColumns) {

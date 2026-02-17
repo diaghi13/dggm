@@ -1,8 +1,11 @@
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   GripVertical,
   Edit,
@@ -12,9 +15,9 @@ import {
   Folder,
   FileText,
   EyeOff,
-} from 'lucide-react';
-import { QuoteItem } from './types';
-import { calculateSectionTotal } from './utils';
+} from "lucide-react";
+import { QuoteItem } from "./types";
+import { calculateSectionTotal } from "./utils";
 
 interface SortableItemProps {
   item: QuoteItem;
@@ -47,33 +50,38 @@ export function SortableItem({
     transition,
     isDragging,
   } = useSortable({
-    id: item.id,
+    id: item.id!,
     data: {
       type: item.type,
       item: item,
-    }
+    },
   });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : transition,
+    transition: isDragging ? "none" : transition,
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const isSection = item.type === 'section';
+  const isSection = item.type === "section";
   const hasChildren = item.children && item.children.length > 0;
-  const sectionTotal = isSection && item.show_subtotal ? calculateSectionTotal(item) : null;
+  // show_subtotal non esiste nel tipo QuoteItemData
+  const sectionTotal = isSection ? calculateSectionTotal(item) : null;
 
   return (
-    <div ref={setNodeRef} style={style} className={`${level > 0 ? 'ml-8' : ''}`}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${level > 0 ? "ml-8" : ""}`}
+    >
       <div
         className={`
           group flex items-start gap-3 p-4 rounded-lg border bg-white
           hover:border-blue-300 hover:shadow-md
-          ${isDragging ? '' : 'transition-all'}
-          ${isSection ? 'bg-slate-50 border-slate-300' : 'border-slate-200 dark:border-slate-800'}
-          ${isDragOverSection && isSection ? 'border-blue-500 border-2 border-dashed bg-blue-50/50 shadow-lg' : ''}
-          ${isDragOverRootItem && !isSection ? 'border-green-500 border-2 border-dashed bg-green-50/50 shadow-lg' : ''}
+          ${isDragging ? "" : "transition-all"}
+          ${isSection ? "bg-slate-50 border-slate-300" : "border-slate-200 dark:border-slate-800"}
+          ${isDragOverSection && isSection ? "border-blue-500 border-2 border-dashed bg-blue-50/50 shadow-lg" : ""}
+          ${isDragOverRootItem && !isSection ? "border-green-500 border-2 border-dashed bg-green-50/50 shadow-lg" : ""}
         `}
       >
         {/* Drag Handle */}
@@ -88,7 +96,7 @@ export function SortableItem({
         {/* Expand/Collapse for sections */}
         {isSection && (
           <button
-            onClick={() => onToggleExpand(item.id)}
+            onClick={() => onToggleExpand(item.id!)}
             className="mt-1 text-slate-400 hover:text-slate-600"
           >
             {isExpanded ? (
@@ -100,9 +108,11 @@ export function SortableItem({
         )}
 
         {/* Icon */}
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mt-0.5 ${
-          isSection ? 'bg-blue-100' : 'bg-green-100'
-        }`}>
+        <div
+          className={`w-10 h-10 rounded-lg flex items-center justify-center mt-0.5 ${
+            isSection ? "bg-blue-100" : "bg-green-100"
+          }`}
+        >
           {isSection ? (
             <Folder className="w-5 h-5 text-blue-600" />
           ) : (
@@ -120,8 +130,11 @@ export function SortableItem({
                     {item.code}
                   </span>
                 )}
-                <Badge variant={isSection ? 'default' : 'outline'} className="text-xs">
-                  {isSection ? 'Sezione' : 'Voce'}
+                <Badge
+                  variant={isSection ? "default" : "outline"}
+                  className="text-xs"
+                >
+                  {isSection ? "Sezione" : "Voce"}
                 </Badge>
                 {item.hide_unit_price && (
                   <Badge variant="outline" className="text-xs gap-1">
@@ -129,29 +142,37 @@ export function SortableItem({
                     Prezzo nascosto
                   </Badge>
                 )}
-                {isSection && item.show_subtotal && (
-                  <Badge variant="secondary" className="text-xs">
-                    Subtotale parziale
-                  </Badge>
-                )}
               </div>
-              <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{item.description}</h4>
+              <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                {item.description}
+              </h4>
               {item.notes && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{item.notes}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                  {item.notes}
+                </p>
               )}
               {!isSection && (
                 <div className="flex items-center gap-4 text-sm text-slate-600">
                   <span>
-                    Q.tà: <span className="font-medium text-slate-900">{item.quantity}</span>
+                    Q.tà:{" "}
+                    <span className="font-medium text-slate-900">
+                      {item.quantity}
+                    </span>
                   </span>
                   {showUnitPrices && !item.hide_unit_price && (
                     <span>
-                      Prezzo: <span className="font-medium text-slate-900">€ {parseFloat(String(item.unit_price)).toFixed(2)}</span>
+                      Prezzo:{" "}
+                      <span className="font-medium text-slate-900">
+                        € {parseFloat(String(item.unit_price)).toFixed(2)}
+                      </span>
                     </span>
                   )}
                   {item.unit && (
                     <span>
-                      Unità: <span className="font-medium text-slate-900">{item.unit}</span>
+                      Unità:{" "}
+                      <span className="font-medium text-slate-900">
+                        {item.unit}
+                      </span>
                     </span>
                   )}
                   {item.discount_percentage > 0 && (
@@ -168,7 +189,10 @@ export function SortableItem({
               {!isSection && (
                 <div className="text-right">
                   <p className="text-lg font-bold text-slate-900">
-                    € {item.total.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                    €{" "}
+                    {item.total.toLocaleString("it-IT", {
+                      minimumFractionDigits: 2,
+                    })}
                   </p>
                   {item.discount_percentage > 0 && (
                     <p className="text-xs text-slate-500 line-through">
@@ -181,7 +205,10 @@ export function SortableItem({
                 <div className="text-right">
                   <p className="text-sm text-slate-600 mb-0.5">Subtotale:</p>
                   <p className="text-lg font-bold text-blue-600">
-                    € {sectionTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                    €{" "}
+                    {sectionTotal.toLocaleString("it-IT", {
+                      minimumFractionDigits: 2,
+                    })}
                   </p>
                 </div>
               )}
@@ -198,7 +225,7 @@ export function SortableItem({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 hover:bg-red-50 hover:text-red-600"
-                  onClick={() => onDelete(item.id)}
+                  onClick={() => onDelete(item.id!)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -212,7 +239,7 @@ export function SortableItem({
       {isSection && isExpanded && hasChildren && (
         <div className="mt-2 space-y-2">
           <SortableContext
-            items={item.children!.map((child) => child.id)}
+            items={item.children!.map((child) => child.id || 0)}
             strategy={verticalListSortingStrategy}
           >
             {item.children!.map((child) => (
@@ -233,4 +260,3 @@ export function SortableItem({
     </div>
   );
 }
-

@@ -81,7 +81,8 @@ export default function WarehouseDetailPage() {
   const movements = movementsData?.data ?? [];
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) => warehousesApi.update(id, data),
+    mutationFn: (data: Partial<App.Data.WarehouseData>) =>
+      warehousesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["warehouse", id] });
       queryClient.invalidateQueries({ queryKey: ["warehouses"] });
@@ -90,16 +91,16 @@ export default function WarehouseDetailPage() {
       });
       setIsEditing(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
       toast.error("Errore", {
         description:
-          error.response?.data?.message ||
-          "Impossibile aggiornare il magazzino",
+          err.response?.data?.message || "Impossibile aggiornare il magazzino",
       });
     },
   });
 
-  const handleUpdate = (data: any) => {
+  const handleUpdate = (data: Partial<App.Data.WarehouseData>) => {
     updateMutation.mutate(data);
   };
 

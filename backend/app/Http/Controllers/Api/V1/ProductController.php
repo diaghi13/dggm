@@ -44,6 +44,7 @@ class ProductController extends Controller
             'semantic_search',
             'sort_field',
             'sort_direction',
+            'price_list_id',
         ]);
 
         $perPage = min($request->input('per_page', 20), 100);
@@ -77,7 +78,7 @@ class ProductController extends Controller
     /**
      * Display the specified product
      */
-    public function show(Product $product): JsonResponse
+    public function show(Request $request, Product $product): JsonResponse
     {
         $this->authorize('view', $product);
 
@@ -89,6 +90,14 @@ class ProductController extends Controller
             'relations',
             'media',
         ]);
+
+        // Load price list item if price_list_id is provided
+        if ($request->has('price_list_id')) {
+            $product->load(['priceListItems' => function ($q) use ($request) {
+                $q->where('price_list_id', $request->input('price_list_id'))
+                    ->where('is_active', true);
+            }]);
+        }
 
         return response()->json([
             'success' => true,

@@ -167,11 +167,23 @@ class RoleAndPermissionSeeder extends Seeder
             'payment-terms.edit',
             'payment-terms.delete',
 
+            // Financial Resources (company bank accounts, cash, POS)
+            'financial-resources.view',
+            'financial-resources.create',
+            'financial-resources.edit',
+            'financial-resources.delete',
+
             // Discount Families
             'discount-families.view',
             'discount-families.create',
             'discount-families.edit',
             'discount-families.delete',
+
+            // Warranty Types
+            'warranty-types.view',
+            'warranty-types.create',
+            'warranty-types.edit',
+            'warranty-types.delete',
 
             // Price Lists
             'price-lists.view',
@@ -265,7 +277,7 @@ class RoleAndPermissionSeeder extends Seeder
             'site_materials.view', 'site_materials.create', 'site_materials.update', 'site_materials.delete',
             'material_requests.view', 'material_requests.approve', 'material_requests.reject', 'material_requests.deliver', 'material_requests.delete',
             'ddts.view', 'ddts.create', 'ddts.update', 'ddts.delete', 'ddts.confirm', 'ddts.cancel',
-            'quotes.view', 'quotes.create', 'quotes.edit', 'quotes.approve', 'quotes.convert-to-site',
+            'quotes.view', 'quotes.create', 'quotes.edit', 'quotes.delete', 'quotes.approve', 'quotes.convert-to-site',
             'time-trackings.view', 'time-trackings.approve',
             'warehouse.view',
             'materials.view', 'materials.create', 'materials.edit',
@@ -275,6 +287,7 @@ class RoleAndPermissionSeeder extends Seeder
             'product-relations.view', 'product-relations.create', 'product-relations.edit', 'product-relations.delete',
             'product-brands.view', 'product-brands.create', 'product-brands.edit',
             'payment-terms.view',
+            'financial-resources.view',
             'discount-families.view',
             'price-lists.view',
             'invoices.view',
@@ -338,6 +351,7 @@ class RoleAndPermissionSeeder extends Seeder
             'product-relations.view', 'product-relations.create', 'product-relations.edit', 'product-relations.delete',
             'product-brands.view', 'product-brands.create', 'product-brands.edit', 'product-brands.delete',
             'payment-terms.view', 'payment-terms.create', 'payment-terms.edit', 'payment-terms.delete',
+            'financial-resources.view', 'financial-resources.create', 'financial-resources.edit', 'financial-resources.delete',
             'discount-families.view', 'discount-families.create', 'discount-families.edit', 'discount-families.delete',
             'price-lists.view', 'price-lists.create', 'price-lists.edit', 'price-lists.delete', 'price-lists.regenerate',
             'vehicles.view',
