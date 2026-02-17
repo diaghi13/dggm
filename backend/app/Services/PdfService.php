@@ -60,12 +60,15 @@ class PdfService
             ->footerHtml($footerHtml)
             ->waitUntilNetworkIdle();
 
-        // Set custom Node/NPM paths if configured
+        // Set custom Node/NPM/Chrome paths if configured
         if ($nodeBinary = env('NODE_BINARY')) {
             $browsershot->setNodeBinary($nodeBinary);
         }
         if ($npmBinary = env('NPM_BINARY')) {
             $browsershot->setNpmBinary($npmBinary);
+        }
+        if ($chromePath = env('CHROME_PATH')) {
+            $browsershot->setChromePath($chromePath);
         }
 
         $pdfContent = $browsershot->pdf();
