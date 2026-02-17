@@ -71,6 +71,16 @@ class PdfService
             $browsershot->setChromePath($chromePath);
         }
 
+        // Required flags for headless Chrome in server/container environments
+        if (env('CHROME_NO_SANDBOX', false)) {
+            $browsershot->noSandbox()
+                ->addChromiumArguments([
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--no-first-run',
+                ]);
+        }
+
         $pdfContent = $browsershot->pdf();
 
         return $this->mergeWithAttachments($pdfContent, $quote);
