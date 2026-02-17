@@ -89,11 +89,23 @@
         <div class="w-1/2 text-right">
             <h2 class="text-xl font-bold text-slate-900">{{ $company['name'] }}</h2>
             <div class="text-slate-500 leading-relaxed mt-2 text-xs">
-                {{ $company['address'] }}<br>
-                {{ $company['postal_code'] }} {{ $company['city'] }}<br>
-                P.IVA: {{ $company['vat'] }}<br>
-                {{ $company['phone'] }} | {{ $company['email'] }}<br>
-                {{ $company['website'] }}
+                @if($company['address'])
+                    {{ $company['address'] }}<br>
+                @endif
+                @if($company['postal_code'] || $company['city'] || $company['province'])
+                    {{ implode(' ', array_filter([$company['postal_code'], $company['city'], $company['province'] ? '('.$company['province'].')' : null])) }}<br>
+                @endif
+                @if($company['vat'])
+                    P.IVA: {{ $company['vat'] }}@if($company['fiscal_code']) | C.F.: {{ $company['fiscal_code'] }}@endif<br>
+                @elseif($company['fiscal_code'])
+                    C.F.: {{ $company['fiscal_code'] }}<br>
+                @endif
+                @if($company['phone'] || $company['email'])
+                    {{ implode(' | ', array_filter([$company['phone'], $company['email']])) }}<br>
+                @endif
+                @if($company['website'])
+                    {{ $company['website'] }}
+                @endif
             </div>
         </div>
     </header>
@@ -294,9 +306,11 @@
                         @if($quote->show_vat || $quote->tax_included)
                             <td class="py-3 text-center align-top text-xs">{{ number_format($item->vat_rate ?? 0, 0) }}%</td>
                         @endif
-                        <td class="py-3 text-right font-bold text-slate-900 align-top">
-                            {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }} €
-                        </td>
+                        @if($quote->show_unit_prices)
+                            <td class="py-3 text-right font-bold text-slate-900 align-top">
+                                {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }} €
+                            </td>
+                        @endif
                     </tr>
                 @endif
             @endforeach
@@ -528,11 +542,19 @@
     <div class="mt-auto pt-8 border-t border-slate-200 avoid-break">
         <div class="flex justify-between items-end">
             <div class="text-center w-2/5">
-                <div class="h-16 border-b border-slate-300 mb-2"></div>
+                @if(!empty($company['stamp']))
+                    <img src="{{ $company['stamp'] }}" class="h-32 mx-auto object-contain mb-2" alt="Timbro">
+                @else
+                    <div class="h-32 border-b border-slate-300 mb-2"></div>
+                @endif
                 <div class="text-xs text-slate-400 uppercase tracking-wide">Timbro e Firma Azienda</div>
             </div>
             <div class="text-center w-2/5">
-                <div class="h-16 border-b border-slate-300 mb-2"></div>
+                @if(!empty($company['sigla']))
+                    <img src="{{ $company['sigla'] }}" class="h-32 mx-auto object-contain mb-2" alt="Firma">
+                @else
+                    <div class="h-32 border-b border-slate-300 mb-2"></div>
+                @endif
                 <div class="text-xs text-slate-400 uppercase tracking-wide">Timbro e Firma per Accettazione</div>
             </div>
         </div>

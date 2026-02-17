@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Quote;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use setasign\Fpdi\Fpdi;
 use Spatie\Browsershot\Browsershot;
@@ -44,8 +45,13 @@ class PdfService
             'quoteImages' => $quoteImages,
         ];
 
+        // Select view based on company template setting
+        $templateKey = \App\Models\Setting::get('company.quote_template', 'modern') ?: 'modern';
+        $viewMap = ['modern' => 'pdf.quote', 'classic' => 'pdf.quote-classic', 'minimal' => 'pdf.quote-minimal'];
+        $viewName = $viewMap[$templateKey] ?? 'pdf.quote';
+
         // Generate HTML from Blade template
-        $html = View::make('pdf.quote', $data)->render();
+        $html = View::make($viewName, $data)->render();
 
         // Generate footer HTML
         $footerHtml = $this->generateFooterHtml($data['company']);
@@ -145,17 +151,46 @@ class PdfService
     protected function getCompanyInfo(): array
     {
         return [
-            'name' => \App\Models\Setting::get('company.name', config('app.name', 'Laravel')),
-            'address' => \App\Models\Setting::get('company.address', 'Via Roma 123'),
-            'city' => \App\Models\Setting::get('company.city', 'Milano'),
-            'postal_code' => \App\Models\Setting::get('company.postal_code', '20100'),
-            'province' => \App\Models\Setting::get('company.province', 'MI'),
-            'vat' => \App\Models\Setting::get('company.vat', 'IT12345678901'),
-            'phone' => \App\Models\Setting::get('company.phone', '+39 02 1234567'),
-            'email' => \App\Models\Setting::get('company.email', 'info@dggm.it'),
-            'website' => \App\Models\Setting::get('company.website', 'www.dggm.it'),
-            'logo' => \App\Models\Setting::get('company.logo'), // Path to logo if needed
+            'name' => \App\Models\Setting::get('company.name', config('app.name', 'Laravel')) ?: null,
+            'address' => \App\Models\Setting::get('company.address') ?: null,
+            'city' => \App\Models\Setting::get('company.city') ?: null,
+            'postal_code' => \App\Models\Setting::get('company.postal_code') ?: null,
+            'province' => \App\Models\Setting::get('company.province') ?: null,
+            'vat' => \App\Models\Setting::get('company.vat') ?: null,
+            'fiscal_code' => \App\Models\Setting::get('company.fiscal_code') ?: null,
+            'phone' => \App\Models\Setting::get('company.phone') ?: null,
+            'email' => \App\Models\Setting::get('company.email') ?: null,
+            'website' => \App\Models\Setting::get('company.website') ?: null,
+            'logo' => $this->getImageAsDataUrl('company.logo'),
+            'stamp' => $this->getImageAsDataUrl('company.stamp'),
+            'sigla' => $this->getImageAsDataUrl('company.sigla'),
         ];
+    }
+
+    protected function getImageAsDataUrl(string $settingKey): ?string
+    {
+        $relativePath = \App\Models\Setting::get($settingKey);
+
+        if (! $relativePath) {
+            return null;
+        }
+
+        $filename = basename($relativePath);
+        $filePath = Storage::disk('public')->path('company/'.$filename);
+
+        if (! file_exists($filePath)) {
+            return null;
+        }
+
+        $mimeType = mime_content_type($filePath) ?: 'image/png';
+
+        return 'data:'.$mimeType.';base64,'.base64_encode(file_get_contents($filePath));
+    }
+
+    /** @deprecated Use getImageAsDataUrl('company.logo') */
+    protected function getLogoAsDataUrl(): ?string
+    {
+        return $this->getImageAsDataUrl('company.logo');
     }
 
     protected function getThemeColors(): array
@@ -269,11 +304,26 @@ class PdfService
     {
         $date = now()->format('d/m/Y H:i');
 
+        $contactParts = array_filter([
+            $company['email'],
+            $company['phone'],
+            $company['website'],
+        ]);
+        $contactLine = implode(' | ', $contactParts);
+
+        $vatParts = array_filter([
+            $company['vat'] ? 'P.IVA: '.$company['vat'] : null,
+            $company['fiscal_code'] ? 'C.F.: '.$company['fiscal_code'] : null,
+        ]);
+        $vatLine = implode(' | ', $vatParts);
+
+        $contactHtml = $contactLine ? "<br>{$contactLine}" : '';
+        $vatHtml = $vatLine ? "<br><span style=\"font-size: 7pt;\">{$vatLine}</span>" : '';
+
         return <<<HTML
         <div style="width: 100%; font-size: 8pt; text-align: center; color: #64748b; padding: 10px 20px; border-top: 1px solid #e2e8f0; margin: 0 auto;">
             <div style="max-width: 800px; margin: 0 auto;">
-                <strong>{$company['name']}</strong><br>
-                {$company['email']} | {$company['phone']} | {$company['website']}<br>
+                <strong>{$company['name']}</strong>{$contactHtml}{$vatHtml}<br>
                 <span style="font-size: 7pt; color: #94a3b8;">Documento generato il {$date}</span>
             </div>
         </div>

@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   XCircle,
   Edit,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
@@ -221,6 +222,7 @@ export default function QuoteDetailPage() {
 
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const { data: quote, isLoading } = useQuery({
     queryKey: ["quote", quoteId],
@@ -338,8 +340,9 @@ export default function QuoteDetailPage() {
   }, [quoteId, pdfBlob, loadingPdf]);
 
   const handleDownloadPdf = useCallback(async () => {
-    if (!quote) return;
+    if (!quote || downloadingPdf) return;
 
+    setDownloadingPdf(true);
     try {
       const blob = await quotesApi.downloadPdf(quoteId);
       const url = window.URL.createObjectURL(blob);
@@ -357,8 +360,10 @@ export default function QuoteDetailPage() {
         description:
           err.response?.data?.message || "Impossibile scaricare il PDF",
       });
+    } finally {
+      setDownloadingPdf(false);
     }
-  }, [quote, quoteId]);
+  }, [quote, quoteId, downloadingPdf]);
 
   const handleBack = useCallback(() => {
     router.push("/quotes");
@@ -468,9 +473,13 @@ export default function QuoteDetailPage() {
                 Converti in Cantiere
               </Button>
             )}
-            <Button onClick={handleDownloadPdf}>
-              <FileDown className="mr-2 h-4 w-4" />
-              PDF
+            <Button onClick={handleDownloadPdf} disabled={downloadingPdf}>
+              {downloadingPdf ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="mr-2 h-4 w-4" />
+              )}
+              {downloadingPdf ? "Generazione..." : "PDF"}
             </Button>
           </div>
         }

@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             ProductCategorySeeder::class,
             ProductRelationTypeSeeder::class,
             SettingSeeder::class,
+            CompanySettingsSeeder::class,
+            QuoteSettingsSeeder::class,
             SiteRoleSeeder::class,
             WarrantyTypeSeeder::class,
         ]);

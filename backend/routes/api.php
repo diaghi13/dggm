@@ -114,6 +114,14 @@ Route::prefix('v1')->group(function () {
             Route::get('key/{key}', [SettingController::class, 'getByKey'])->where('key', '.*');
             Route::post('key/{key}', [SettingController::class, 'setByKey'])->where('key', '.*');
 
+            // Company Logo
+            Route::post('company/logo', [SettingController::class, 'uploadCompanyLogo']);
+            Route::delete('company/logo', [SettingController::class, 'deleteCompanyLogo']);
+
+            // Company Images (stamp, signature)
+            Route::post('company/image/{type}', [SettingController::class, 'uploadCompanyImage']);
+            Route::delete('company/image/{type}', [SettingController::class, 'deleteCompanyImage']);
+
             // Reset to default
             Route::post('{setting}/reset', [SettingController::class, 'reset']);
         });

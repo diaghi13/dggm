@@ -14,6 +14,7 @@ use App\Services\FeatureFlagService;
 use App\Services\SettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
@@ -252,7 +253,7 @@ class SettingController extends Controller
         $this->authorize('create', Setting::class);
 
         $validated = $request->validate([
-            'value' => 'required',
+            'value' => ['nullable', 'string'],
             'user_id' => 'nullable|integer|exists:users,id',
             'group' => 'nullable|string|max:100',
             'is_public' => 'nullable|boolean',
@@ -264,7 +265,7 @@ class SettingController extends Controller
 
         $setting = app(SettingService::class)->set(
             $key,
-            $validated['value'],
+            $validated['value'] ?? '',
             $userId,
             $group,
             $isPublic
@@ -291,5 +292,83 @@ class SettingController extends Controller
             'data' => SettingData::from($setting->fresh()),
             'message' => 'Setting reset to default value',
         ]);
+    }
+
+    /**
+     * Upload company logo
+     */
+    public function uploadCompanyLogo(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()->hasRole(['super-admin', 'admin']), 403);
+
+        $request->validate([
+            'logo' => ['required', 'image', 'mimes:jpeg,png,jpg,svg,webp', 'max:2048'],
+        ]);
+
+        $file = $request->file('logo');
+        $file->storeAs('company', 'logo.'.$file->getClientOriginalExtension(), 'public');
+        $relativePath = '/storage/company/logo.'.$file->getClientOriginalExtension();
+
+        \App\Models\Setting::set('company.logo', $relativePath, null, 'company', true);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['url' => $relativePath],
+        ]);
+    }
+
+    /**
+     * Delete company logo
+     */
+    public function deleteCompanyLogo(): JsonResponse
+    {
+        abort_unless(auth()->user()->hasRole(['super-admin', 'admin']), 403);
+
+        $current = \App\Models\Setting::get('company.logo');
+        if ($current) {
+            Storage::disk('public')->delete('company/'.basename($current));
+            \App\Models\Setting::set('company.logo', null);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Upload company image (stamp or signature)
+     */
+    public function uploadCompanyImage(Request $request, string $type): JsonResponse
+    {
+        abort_unless(in_array($type, ['stamp', 'sigla']), 404);
+        abort_unless(auth()->user()->hasRole(['super-admin', 'admin']), 403);
+
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+        ]);
+
+        $file = $request->file('image');
+        $filename = "{$type}.png";
+        $file->storeAs('company', $filename, 'public');
+        $relativePath = "/storage/company/{$filename}";
+
+        \App\Models\Setting::set("company.{$type}", $relativePath, null, 'company', true);
+
+        return response()->json(['success' => true, 'data' => ['url' => $relativePath]]);
+    }
+
+    /**
+     * Delete company image (stamp or signature)
+     */
+    public function deleteCompanyImage(string $type): JsonResponse
+    {
+        abort_unless(in_array($type, ['stamp', 'sigla']), 404);
+        abort_unless(auth()->user()->hasRole(['super-admin', 'admin']), 403);
+
+        $current = \App\Models\Setting::get("company.{$type}");
+        if ($current) {
+            Storage::disk('public')->delete('company/'.basename($current));
+            \App\Models\Setting::set("company.{$type}", null);
+        }
+
+        return response()->json(['success' => true]);
     }
 }

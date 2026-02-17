@@ -132,17 +132,17 @@ export default function SettingsPage() {
   // Update company form when data is loaded
   useEffect(() => {
     if (companySettings) {
-      setCompanyName(companySettings.company_name || '');
-      setCompanyVat(companySettings.vat_number || '');
-      setCompanyTaxCode(companySettings.tax_code || '');
-      setCompanyAddress(companySettings.address || '');
-      setCompanyCity(companySettings.city || '');
-      setCompanyProvince(companySettings.province || '');
-      setCompanyPostalCode(companySettings.postal_code || '');
-      setCompanyCountry(companySettings.country || 'IT');
-      setCompanyPhone(companySettings.phone || '');
-      setCompanyEmail(companySettings.email || '');
-      setCompanyWebsite(companySettings.website || '');
+      setCompanyName(companySettings['company.name'] || '');
+      setCompanyVat(companySettings['company.vat'] || '');
+      setCompanyTaxCode(companySettings['company.fiscal_code'] || '');
+      setCompanyAddress(companySettings['company.address'] || '');
+      setCompanyCity(companySettings['company.city'] || '');
+      setCompanyProvince(companySettings['company.province'] || '');
+      setCompanyPostalCode(companySettings['company.postal_code'] || '');
+      setCompanyCountry(companySettings['company.country'] || 'IT');
+      setCompanyPhone(companySettings['company.phone'] || '');
+      setCompanyEmail(companySettings['company.email'] || '');
+      setCompanyWebsite(companySettings['company.website'] || '');
     }
   }, [companySettings]);
 
@@ -368,17 +368,17 @@ export default function SettingsPage() {
 
   const handleCompanySubmit = () => {
     updateCompanyMutation.mutate({
-      company_name: companyName,
-      vat_number: companyVat,
-      tax_code: companyTaxCode,
-      address: companyAddress,
-      city: companyCity,
-      province: companyProvince,
-      postal_code: companyPostalCode,
-      country: companyCountry,
-      phone: companyPhone,
-      email: companyEmail,
-      website: companyWebsite,
+      'company.name': companyName,
+      'company.vat': companyVat,
+      'company.fiscal_code': companyTaxCode,
+      'company.address': companyAddress,
+      'company.city': companyCity,
+      'company.province': companyProvince,
+      'company.postal_code': companyPostalCode,
+      'company.country': companyCountry,
+      'company.phone': companyPhone,
+      'company.email': companyEmail,
+      'company.website': companyWebsite,
     });
   };
 

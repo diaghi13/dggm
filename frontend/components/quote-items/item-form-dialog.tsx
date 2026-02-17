@@ -165,7 +165,8 @@ export function ItemFormDialog({
                           ...formData,
                           product_id: product.id,
                           price_list_item_id:
-                            pricingData.effective_price?.price_list_item_id ?? null,
+                            pricingData.effective_price?.price_list_item_id ??
+                            null,
                           code: product.code || "",
                           description: product.name || "",
                           unit: product.unit || "",

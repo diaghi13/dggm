@@ -30,7 +30,7 @@ class CodeGeneratorService
     private function getPrefix(string $entity): string
     {
         return match ($entity) {
-            'quote' => $this->settingService->get('quotes.code_prefix', 'PREV'),
+            'quote' => strtoupper((string) ($this->settingService->get('quotes.code_prefix', 'PREV') ?: 'PREV')),
             'product' => $this->settingService->get('products.code_prefix', 'PRD'),
             'ddt' => $this->settingService->get('warehouse.ddt_code_prefix', 'DDT'),
             'movement' => $this->settingService->get('warehouse.movement_code_prefix', 'MOV'),
@@ -61,31 +61,56 @@ class CodeGeneratorService
     }
 
     /**
-     * Parse format string and replace placeholders
+     * Parse format string and replace placeholders.
+     *
+     * Supported placeholders:
+     *   {prefix}       → configured prefix (e.g. PREV)
+     *   {year}         → 4-digit year (e.g. 2026)
+     *   {year:2}       → 2-digit year (e.g. 26)
+     *   {month}        → 2-digit month (e.g. 02)
+     *   {day}          → 2-digit day (e.g. 17)
+     *   {date}         → compact date Ymd (e.g. 20260217)
+     *   {number:N}     → sequential counter zero-padded to N digits, resets yearly
+     *   {number:N:monthly} → sequential counter that resets monthly
      */
     private function parseFormat(string $format, string $prefix, string $entity, array $context): string
     {
+        $now = now();
         $replacements = [
             '{prefix}' => $prefix,
-            '{year}' => $context['year'] ?? now()->format('Y'),
-            '{date}' => $context['date'] ?? now()->format('Ymd'),
+            '{year}' => $context['year'] ?? $now->format('Y'),
+            '{year:2}' => $now->format('y'),
+            '{month}' => $now->format('m'),
+            '{day}' => $now->format('d'),
+            '{date}' => $context['date'] ?? $now->format('Ymd'),
         ];
 
         $code = str_replace(array_keys($replacements), array_values($replacements), $format);
 
-        // Handle {number:X} placeholder
+        // Handle {number:N} — yearly counter (default)
         if (preg_match('/{number:(\d+)}/', $code, $matches)) {
             $padding = (int) $matches[1];
-            $number = $this->getNextNumber($entity, $context);
+            $number = $this->getNextNumber($entity, array_merge($context, ['reset' => 'yearly']));
             $code = preg_replace('/{number:\d+}/', str_pad($number, $padding, '0', STR_PAD_LEFT), $code);
+        }
+
+        // Handle {number:N:monthly} — monthly counter
+        if (preg_match('/{number:(\d+):monthly}/', $code, $matches)) {
+            $padding = (int) $matches[1];
+            $number = $this->getNextNumber($entity, array_merge($context, ['reset' => 'monthly']));
+            $code = preg_replace('/{number:\d+:monthly}/', str_pad($number, $padding, '0', STR_PAD_LEFT), $code);
         }
 
         return $code;
     }
 
     /**
-     * Get next sequential number for entity
-     * Uses database count to determine next number
+     * Get next sequential number for entity.
+     * Context key 'reset' controls the counter scope:
+     *   'yearly'  (default) → count resets each calendar year
+     *   'monthly'           → count resets each calendar month
+     *   'daily'             → count resets each day
+     *   'global'            → never resets (lifetime counter)
      */
     private function getNextNumber(string $entity, array $context): int
     {
@@ -96,18 +121,28 @@ class CodeGeneratorService
         }
 
         $query = $modelClass::query();
+        $now = now();
+        $reset = $context['reset'] ?? 'yearly';
 
-        // Apply year/date filters based on context
-        if (isset($context['year'])) {
-            $query->whereYear('created_at', $context['year']);
-        } elseif (isset($context['date'])) {
-            // Convert Ymd format to Y-m-d for proper date comparison
-            $date = $context['date'];
-            if (strlen($date) === 8 && is_numeric($date)) {
-                // Format: Ymd (20260211) -> Y-m-d (2026-02-11)
-                $date = substr($date, 0, 4).'-'.substr($date, 4, 2).'-'.substr($date, 6, 2);
-            }
-            $query->whereDate('created_at', $date);
+        switch ($reset) {
+            case 'monthly':
+                $query->whereYear('created_at', $now->year)
+                    ->whereMonth('created_at', $now->month);
+                break;
+
+            case 'daily':
+                $query->whereDate('created_at', $now->toDateString());
+                break;
+
+            case 'global':
+                // No date filter — lifetime counter
+                break;
+
+            case 'yearly':
+            default:
+                $year = $context['year'] ?? $now->year;
+                $query->whereYear('created_at', $year);
+                break;
         }
 
         return $query->count() + 1;

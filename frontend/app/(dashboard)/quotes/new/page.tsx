@@ -20,23 +20,24 @@ export default function NewQuotePage() {
   const isMounted = useRef(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Load settings for defaults
-  const showProductCodesDefault = useSetting<boolean>(
-    "quotes.show_product_codes_by_default",
-    true,
-  );
-  const showVatDefault = useSetting<boolean>(
-    "quotes.show_vat_by_default",
-    true,
-  );
-  const vatIncludedDefault = useSetting<boolean>(
-    "quotes.vat_included_in_prices_by_default",
-    false,
-  );
-  const termsTemplate = useSetting<string>(
-    "quotes.terms_and_conditions_template",
-    "",
-  );
+  // Load all quote defaults from settings (loaded via auth/me into Zustand store)
+  const showUnitPricesDefault = useSetting<boolean>("quotes.show_unit_prices_by_default", true);
+  const showProductCodesDefault = useSetting<boolean>("quotes.show_product_codes_by_default", true);
+  const showVatDefault = useSetting<boolean>("quotes.show_vat_by_default", true);
+  const showSectionTotalsDefault = useSetting<boolean>("quotes.show_section_totals_by_default", true);
+  const vatIncludedDefault = useSetting<boolean>("quotes.vat_included_in_prices_by_default", false);
+  const taxIncludedDefault = useSetting<boolean>("quotes.tax_included_by_default", false);
+  const includeTermsDefault = useSetting<boolean>("quotes.include_terms_and_conditions_by_default", true);
+  const defaultNotes = useSetting<string>("quotes.default_notes", "");
+  const defaultValidityDays = useSetting<number>("quotes.default_validity_days", 30);
+  const termsTemplate = useSetting<string>("quotes.terms_and_conditions_template", "");
+
+  // Calcola la data di scadenza dai giorni di validità predefiniti
+  const defaultExpiryDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + (defaultValidityDays || 30));
+    return d.toISOString().split("T")[0];
+  })();
 
   // Load default price list
   const { data: defaultPriceList } = useDefaultPriceList();
@@ -52,7 +53,7 @@ export default function NewQuotePage() {
     postal_code: null,
     status: "draft",
     issue_date: new Date().toISOString().split("T")[0],
-    expiry_date: null,
+    expiry_date: defaultExpiryDate,
     price_list_id: null,
     payment_term_id: null,
     financial_resource_id: null,
@@ -69,13 +70,14 @@ export default function NewQuotePage() {
     work_start_date: null,
     work_duration_description: null,
     work_end_date: null,
-    tax_included: false,
-    show_unit_prices: true,
-    show_product_codes: showProductCodesDefault,
-    show_vat: showVatDefault,
-    vat_included_in_prices: vatIncludedDefault,
-    include_terms_and_conditions: true,
-    notes: null,
+    tax_included: taxIncludedDefault ?? false,
+    show_unit_prices: showUnitPricesDefault ?? true,
+    show_product_codes: showProductCodesDefault ?? true,
+    show_vat: showVatDefault ?? true,
+    show_section_totals: showSectionTotalsDefault ?? true,
+    vat_included_in_prices: vatIncludedDefault ?? false,
+    include_terms_and_conditions: includeTermsDefault ?? true,
+    notes: defaultNotes || null,
     terms_and_conditions: termsTemplate || null,
     footer_text: null,
     items: [],

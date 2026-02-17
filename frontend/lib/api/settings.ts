@@ -71,18 +71,21 @@ export interface CreateSettingData {
 }
 
 export interface CompanySetting {
-  company_name: string;
-  vat_number: string;
-  tax_code: string;
-  address: string;
-  city: string;
-  province: string;
-  postal_code: string;
-  country: string;
-  phone: string;
-  email: string;
-  website: string;
-  logo?: string;
+  "company.name": string;
+  "company.vat": string;
+  "company.fiscal_code": string;
+  "company.address": string;
+  "company.city": string;
+  "company.province": string;
+  "company.postal_code": string;
+  "company.country": string;
+  "company.phone": string;
+  "company.email": string;
+  "company.website": string;
+  "company.logo"?: string;
+  "company.stamp"?: string;
+  "company.sigla"?: string;
+  "company.quote_template"?: string;
 }
 
 // General System Settings API
@@ -312,6 +315,12 @@ export const SETTING_GROUPS = {
     label: "Prezzi & Noleggio",
     description: "Configurazione prezzi prodotti e tariffe noleggio",
     icon: "DollarSign",
+  },
+  QUOTES: {
+    key: "quotes",
+    label: "Preventivi",
+    description: "Template, impostazioni predefinite e opzioni di esportazione",
+    icon: "Receipt",
   },
   FEATURES: {
     key: "features",

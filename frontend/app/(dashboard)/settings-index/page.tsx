@@ -30,6 +30,7 @@ import {
   Search,
   X,
   Wallet,
+  Receipt,
 } from "lucide-react";
 
 export default function SettingsIndexPage() {
@@ -135,6 +136,16 @@ export default function SettingsIndexPage() {
       bgColor: "bg-amber-100 dark:bg-amber-900/20",
       prefix: "pricing",
       keywords: ["prezzi", "pricing", "noleggio", "rental"],
+    },
+    {
+      title: "Preventivi",
+      description: "Template PDF, layout grafico e impostazioni dei preventivi",
+      icon: Receipt,
+      href: "/admin/settings?tab=quotes",
+      color: "text-rose-600 dark:text-rose-400",
+      bgColor: "bg-rose-100 dark:bg-rose-900/20",
+      prefix: "company.quote",
+      keywords: ["preventivi", "quotes", "pdf", "template", "layout"],
     },
     {
       title: "Feature Flags",
