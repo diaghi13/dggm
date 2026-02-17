@@ -228,12 +228,7 @@ export default function SettingsIndexPage() {
       category: "Sistema",
       description: "Configurazioni base dell'applicazione",
       sections: filteredSections.filter((s) =>
-        [
-          "Generali",
-          "Azienda",
-          "Tema",
-          "Interfaccia",
-        ].includes(s.title),
+        ["Generali", "Azienda", "Tema", "Interfaccia"].includes(s.title),
       ),
     },
     {
@@ -260,9 +255,7 @@ export default function SettingsIndexPage() {
       category: "Avanzate",
       description: "Opzioni avanzate e sperimentali",
       sections: filteredSections.filter((s) =>
-        ["File", "Funzionalità", "Utenti & Permessi"].includes(
-          s.title,
-        ),
+        ["File", "Funzionalità", "Utenti & Permessi"].includes(s.title),
       ),
     },
   ].filter((group) => group.sections.length > 0); // Mostra solo gruppi con sezioni
@@ -370,7 +363,9 @@ export default function SettingsIndexPage() {
                       <CardHeader>
                         <div className="flex flex-col gap-3">
                           <div className="flex items-start justify-between">
-                            <div className={`p-3 rounded-lg ${section.bgColor}`}>
+                            <div
+                              className={`p-3 rounded-lg ${section.bgColor}`}
+                            >
                               <Icon className={`h-6 w-6 ${section.color}`} />
                             </div>
                             <div className="flex items-center gap-2">
