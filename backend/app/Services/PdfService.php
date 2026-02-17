@@ -80,6 +80,7 @@ class PdfService
                     'no-first-run',
                     'no-zygote',
                     'disable-breakpad',
+                    'disable-crash-reporter',
                 ]);
         }
 
