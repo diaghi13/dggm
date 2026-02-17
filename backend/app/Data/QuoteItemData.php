@@ -32,7 +32,6 @@ class QuoteItemData extends Data
         #[Exists('products', 'id')]
         public ?int $product_id = null,
 
-        #[Exists('price_list_items', 'id')]
         public ?int $price_list_item_id = null,
 
         #[Max(100)]
@@ -93,7 +92,7 @@ class QuoteItemData extends Data
             'quote_id' => ['nullable', 'integer'],
             'parent_id' => ['nullable', 'integer'],
             'product_id' => ['nullable', 'exists:products,id'],
-            'price_list_item_id' => ['nullable', 'exists:price_list_items,id'],
+            'price_list_item_id' => ['nullable', 'integer'],
             'type' => ['required'],
             'code' => ['nullable', 'string', 'max:100'],
             'description' => ['required', 'string', 'max:1000'],

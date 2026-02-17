@@ -106,6 +106,7 @@ class ProductPricingService
                     'rental_weekly' => $item->rental_weekly,
                     'rental_monthly' => $item->rental_monthly,
                     'price_list_id' => $priceList->id,
+                    'price_list_item_id' => $item->id,
                     'price_list_name' => $priceList->name,
                     'source' => 'price_list',
                 ];
