@@ -46,4 +46,8 @@ return [
         'chrome_path' => env('CHROME_PATH'),
         'no_sandbox' => env('CHROME_NO_SANDBOX', false),
     ],
+
+    'libreoffice' => [
+        'binary' => env('LIBREOFFICE_BINARY', 'libreoffice'),
+    ],
 ];

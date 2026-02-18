@@ -7,7 +7,7 @@
  */
 ?>
 
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -28,8 +28,14 @@
             size: A4 portrait;
         }
 
-        .page-break { page-break-before: always; }
-        .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+        .page-break {
+            page-break-before: always;
+        }
+
+        .avoid-break {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
     </style>
 </head>
 <body class="bg-white text-black">
@@ -53,7 +59,8 @@
     <div class="grid grid-cols-2 gap-12 mb-16">
         <div>
             <div class="text-xs font-bold uppercase mb-2 border-b border-black">Cliente</div>
-            <div class="text-lg leading-tight font-bold">{{ $quote->customer->business_name ?? $quote->customer->display_name }}</div>
+            <div
+                class="text-lg leading-tight font-bold">{{ $quote->customer->business_name ?? $quote->customer->display_name }}</div>
             <div class="text-sm mt-1 text-gray-600">
                 @if($quote->address)
                     {{ $quote->address }}, {{ $quote->city }}
@@ -71,7 +78,8 @@
                 <div class="text-sm font-bold">{{ $quote->title }}</div>
             @endif
             @if($quote->description)
-                <div class="text-xs mt-1 text-gray-500">{{ \Illuminate\Support\Str::limit($quote->description, 100) }}</div>
+                <div
+                    class="text-xs mt-1 text-gray-500">{{ \Illuminate\Support\Str::limit($quote->description, 100) }}</div>
             @endif
             <div class="text-xs mt-4">DATA: {{ $quote->issue_date->format('d/m/Y') }}</div>
             @if($quote->valid_until)
@@ -96,7 +104,8 @@
                 <div style="width: 48px; flex-shrink: 0; text-align: center;">IVA</div>
             @endif
             @if($quote->show_unit_prices)
-                <div style="width: 96px; flex-shrink: 0; text-align: right;">Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? '*' : '' }}</div>
+                <div style="width: 96px; flex-shrink: 0; text-align: right;">
+                    Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? '*' : '' }}</div>
             @endif
         </div>
 
@@ -107,7 +116,8 @@
                     <div class="font-bold uppercase text-sm">{{ $item->description }}</div>
                     @if($quote->show_section_totals && $quote->show_unit_prices)
                         <div class="font-bold text-sm">
-                            {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }} €
+                            {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }}
+                            €
                         </div>
                     @endif
                 </div>
@@ -115,7 +125,8 @@
                 @foreach($item->children as $child)
                     <div class="py-3 border-b border-gray-200 flex text-sm">
                         @if($quote->show_product_codes)
-                            <div style="width: 80px; flex-shrink: 0;" class="text-xs py-1 opacity-60">{{ $child->code ?? ($child->product ? $child->product->code : '') }}</div>
+                            <div style="width: 80px; flex-shrink: 0;"
+                                 class="text-xs py-1 opacity-60">{{ $child->code ?? ($child->product ? $child->product->code : '') }}</div>
                         @endif
                         <div class="flex-1 py-1">
                             <div class="font-bold">{{ $child->description }}</div>
@@ -123,7 +134,8 @@
                                 <div class="text-xs text-gray-500">{{ $child->notes }}</div>
                             @endif
                         </div>
-                        <div style="width: 48px; flex-shrink: 0; text-align: center;" class="py-1">{{ number_format($child->quantity, 0) }}</div>
+                        <div style="width: 48px; flex-shrink: 0; text-align: center;"
+                             class="py-1">{{ number_format($child->quantity, 0) }}</div>
                         @if($quote->show_unit_prices)
                             <div style="width: 96px; flex-shrink: 0; text-align: right;" class="py-1">
                                 @if(!$child->hide_unit_price)
@@ -132,11 +144,14 @@
                             </div>
                         @endif
                         @if($quote->show_vat || $quote->tax_included)
-                            <div style="width: 48px; flex-shrink: 0; text-align: center;" class="py-1 text-xs">{{ number_format($child->vat_rate ?? 0, 0) }}%</div>
+                            <div style="width: 48px; flex-shrink: 0; text-align: center;"
+                                 class="py-1 text-xs">{{ number_format($child->vat_rate ?? 0, 0) }}%
+                            </div>
                         @endif
                         @if($quote->show_unit_prices)
                             <div style="width: 96px; flex-shrink: 0; text-align: right;" class="py-1 font-bold">
-                                {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }} €
+                                {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }}
+                                €
                             </div>
                         @endif
                     </div>
@@ -144,7 +159,8 @@
             @elseif($item->type === \App\Enums\QuoteItemType::Item)
                 <div class="py-3 border-b border-gray-200 flex text-sm">
                     @if($quote->show_product_codes)
-                        <div style="width: 80px; flex-shrink: 0;" class="text-xs py-1 opacity-60">{{ $item->code ?? ($item->product ? $item->product->code : '') }}</div>
+                        <div style="width: 80px; flex-shrink: 0;"
+                             class="text-xs py-1 opacity-60">{{ $item->code ?? ($item->product ? $item->product->code : '') }}</div>
                     @endif
                     <div class="flex-1 py-1">
                         <div class="font-bold">{{ $item->description }}</div>
@@ -152,7 +168,8 @@
                             <div class="text-xs text-gray-500">{{ $item->notes }}</div>
                         @endif
                     </div>
-                    <div style="width: 48px; flex-shrink: 0; text-align: center;" class="py-1">{{ number_format($item->quantity, 0) }}</div>
+                    <div style="width: 48px; flex-shrink: 0; text-align: center;"
+                         class="py-1">{{ number_format($item->quantity, 0) }}</div>
                     @if($quote->show_unit_prices)
                         <div style="width: 96px; flex-shrink: 0; text-align: right;" class="py-1">
                             @if(!$item->hide_unit_price)
@@ -161,11 +178,14 @@
                         </div>
                     @endif
                     @if($quote->show_vat || $quote->tax_included)
-                        <div style="width: 48px; flex-shrink: 0; text-align: center;" class="py-1 text-xs">{{ number_format($item->vat_rate ?? 0, 0) }}%</div>
+                        <div style="width: 48px; flex-shrink: 0; text-align: center;"
+                             class="py-1 text-xs">{{ number_format($item->vat_rate ?? 0, 0) }}%
+                        </div>
                     @endif
                     @if($quote->show_unit_prices)
                         <div style="width: 96px; flex-shrink: 0; text-align: right;" class="py-1 font-bold">
-                            {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }} €
+                            {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }}
+                            €
                         </div>
                     @endif
                 </div>
@@ -242,10 +262,13 @@
                     <div>
                         <div class="text-xs font-bold uppercase mb-2 border-b border-black">ESECUZIONE</div>
                         @if($quote->work_start_description || $quote->work_start_date)
-                            <p class="text-xs"><span class="font-bold">INIZIO:</span> {{ $quote->work_start_description ?? $quote->work_start_date?->format('d/m/Y') }}</p>
+                            <p class="text-xs"><span
+                                    class="font-bold">INIZIO:</span> {{ $quote->work_start_description ?? $quote->work_start_date?->format('d/m/Y') }}
+                            </p>
                         @endif
                         @if($quote->work_duration_description)
-                            <p class="text-xs"><span class="font-bold">DURATA:</span> {{ $quote->work_duration_description }}</p>
+                            <p class="text-xs"><span
+                                    class="font-bold">DURATA:</span> {{ $quote->work_duration_description }}</p>
                         @endif
                     </div>
                 @endif
@@ -262,7 +285,9 @@
         @if($quote->warrantyType)
             <div class="mb-8">
                 <div class="text-xs font-bold uppercase mb-2 border-b border-black inline-block">GARANZIA</div>
-                <p class="text-xs leading-relaxed">{{ $quote->warrantyType->name }}@if($quote->warrantyType->description) — {{ $quote->warrantyType->description }}@endif</p>
+                <p class="text-xs leading-relaxed">{{ $quote->warrantyType->name }}@if($quote->warrantyType->description)
+                        — {{ $quote->warrantyType->description }}
+                    @endif</p>
                 @if($quote->warrantyType->exclusions && count($quote->warrantyType->exclusions) > 0)
                     <ul class="text-xs mt-1 list-disc list-inside text-gray-600">
                         @foreach($quote->warrantyType->exclusions as $exclusion)
@@ -288,13 +313,17 @@
             <div class="grid grid-cols-2 gap-6">
                 @foreach($quoteImages as $image)
                     <div class="avoid-break">
-                        <div class="aspect-video bg-gray-200 mb-2 overflow-hidden" style="filter: grayscale(100%);">
-                            <img src="{{ $image['imagePath'] }}" alt="{{ $image['name'] }}" class="object-cover w-full h-full" style="mix-blend-mode: multiply;">
+                        <div class="aspect-video bg-white mb-2 overflow-hidden" style="filter: grayscale(100%);">
+                            <img src="{{ $image['imagePath'] }}" alt="{{ $image['name'] }}"
+                                 class="object-contain w-full h-full" style="mix-blend-mode: multiply;">
                         </div>
-                        <div class="font-bold text-sm uppercase">{{ $image['name'] }}</div>
-                        @if($image['description'] !== $image['name'])
-                            <div class="text-xs text-gray-500 mt-1">{{ $image['description'] }}</div>
-                        @endif
+                        <div class="text-center text-ellipsis">
+                            <div class="text-sm uppercase">{{ $image['internal_code'] }}</div>
+                            <div class="font-bold text-sm uppercase">{{ $image['name'] }}</div>
+                            @if($image['description'] !== $image['name'])
+                                <div class="text-xs text-gray-500 mt-1">{{ $image['description'] }}</div>
+                            @endif
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -306,7 +335,8 @@
         <div class="flex justify-between gap-10">
             <div class="w-1/2">
                 @if(!empty($company['stamp']))
-                    <img src="{{ $company['stamp'] }}" class="h-20 object-contain mb-2" alt="Timbro" style="filter: grayscale(100%);">
+                    <img src="{{ $company['stamp'] }}" class="h-20 object-contain mb-2" alt="Timbro"
+                         style="filter: grayscale(100%);">
                 @endif
                 <p class="text-xs font-bold leading-tight">{{ $company['name'] }}</p>
             </div>

@@ -28,13 +28,25 @@ class ProductMediaController extends Controller
     {
         $this->authorize('view', $product);
 
+        // Map a Media collection to an array of ProductMediaData DTOs.
+        // Note: ProductMediaData::collect() returns the original MediaCollection unchanged,
+        // so we must map explicitly using from().
+        $toDto = fn ($collection) => $collection
+            ->map(fn ($m) => ProductMediaData::from($m))
+            ->values()
+            ->all();
+
+        // Filter out internal PDF conversions — those are managed automatically
+        $excludeConversions = fn ($collection) => $collection
+            ->reject(fn ($media) => $media->getCustomProperty('is_pdf_conversion', false));
+
         $mediaByCollection = [
-            'images' => ProductMediaData::collect($product->getMedia('images')),
-            'technical_sheets' => ProductMediaData::collect($product->getMedia('technical_sheets')),
-            'certifications' => ProductMediaData::collect($product->getMedia('certifications')),
-            'manuals' => ProductMediaData::collect($product->getMedia('manuals')),
-            'drawings' => ProductMediaData::collect($product->getMedia('drawings')),
-            'documents' => ProductMediaData::collect($product->getMedia('documents')),
+            'images' => $toDto($product->getMedia('images')),
+            'technical_sheets' => $toDto($excludeConversions($product->getMedia('technical_sheets'))),
+            'certifications' => $toDto($excludeConversions($product->getMedia('certifications'))),
+            'manuals' => $toDto($excludeConversions($product->getMedia('manuals'))),
+            'drawings' => $toDto($excludeConversions($product->getMedia('drawings'))),
+            'documents' => $toDto($excludeConversions($product->getMedia('documents'))),
         ];
 
         return response()->json([

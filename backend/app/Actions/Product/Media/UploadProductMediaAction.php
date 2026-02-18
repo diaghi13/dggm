@@ -3,7 +3,9 @@
 namespace App\Actions\Product\Media;
 
 use App\Data\ProductMediaData;
+use App\Jobs\ConvertDocumentToPdfJob;
 use App\Models\Product;
+use App\Services\DocumentConverterService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -30,6 +32,11 @@ class UploadProductMediaAction
             if (isset($data->sort_order) && ! ($data->sort_order instanceof \Spatie\LaravelData\Optional)) {
                 $media->order_column = $data->sort_order;
                 $media->save();
+            }
+
+            // Dispatch PDF conversion job for non-PDF documents (Word, Excel, etc.)
+            if (app(DocumentConverterService::class)->needsConversion($media->mime_type)) {
+                ConvertDocumentToPdfJob::dispatch($media->id);
             }
 
             return $media;

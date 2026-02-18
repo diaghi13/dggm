@@ -13,10 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  productMediaApi,
-  type UploadMediaRequest,
-} from "@/lib/api/product-media";
+import { productMediaApi, type UploadMediaRequest } from "@/lib/api/product-media";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -132,6 +129,7 @@ export function ProductMediaSection({
   readOnly = false,
 }: ProductMediaSectionProps) {
   const queryClient = useQueryClient();
+  // uploading is only used by the inline CollectionContent dropzone
   const [uploading, setUploading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [mediaToDelete, setMediaToDelete] =
@@ -331,13 +329,10 @@ export function ProductMediaSection({
       <UploadMediaDialog
         open={uploadDialogOpen}
         onOpenChange={setUploadDialogOpen}
+        productId={productId}
         collection={collections.find((c) => c.key === activeCollection)!}
         currentCount={media[activeCollection]?.length || 0}
-        uploading={uploading}
-        onDrop={(files) => {
-          handleDrop(activeCollection, files);
-          setUploadDialogOpen(false);
-        }}
+        onSuccess={() => setUploadDialogOpen(false)}
       />
 
       {/* Edit Media Dialog */}

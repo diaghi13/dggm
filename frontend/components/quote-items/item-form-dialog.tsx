@@ -24,6 +24,7 @@ import { ProductAutocomplete } from "@/app/(dashboard)/products/_components/prod
 import { productsApi } from "@/lib/api/products";
 import { QuoteItem, ItemFormData } from "./types";
 import { calculateTotals } from "./utils";
+import { MediaSelector } from "./media-selector";
 
 interface ItemFormDialogProps {
   isOpen: boolean;
@@ -391,50 +392,38 @@ export function ItemFormDialog({
                 </Select>
               </div>
 
-              {/* Hide Unit Price & Include Image */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <input
-                    type="checkbox"
-                    id="hide-price"
-                    checked={formData.hide_unit_price}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        hide_unit_price: e.target.checked,
-                      })
-                    }
-                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <Label
-                    htmlFor="hide-price"
-                    className="text-sm text-slate-700 cursor-pointer"
-                  >
-                    Nascondi prezzo unitario nel preventivo
-                  </Label>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <input
-                    type="checkbox"
-                    id="include-image"
-                    checked={formData.include_image}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        include_image: e.target.checked,
-                      })
-                    }
-                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <Label
-                    htmlFor="include-image"
-                    className="text-sm text-slate-700 cursor-pointer"
-                  >
-                    Includi immagine prodotto nel preventivo
-                  </Label>
-                </div>
+              {/* Hide Unit Price */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                <input
+                  type="checkbox"
+                  id="hide-price"
+                  checked={formData.hide_unit_price}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      hide_unit_price: e.target.checked,
+                    })
+                  }
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <Label
+                  htmlFor="hide-price"
+                  className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer"
+                >
+                  Nascondi prezzo unitario nel preventivo
+                </Label>
               </div>
+
+              {/* Media selector — shown only when a product is linked */}
+              {formData.product_id && (
+                <MediaSelector
+                  productId={formData.product_id}
+                  value={formData.included_media_ids ?? null}
+                  onChange={(ids) =>
+                    setFormData({ ...formData, included_media_ids: ids ?? undefined })
+                  }
+                />
+              )}
 
               {/* Calculated Total */}
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-2">

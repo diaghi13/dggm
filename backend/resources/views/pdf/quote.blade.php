@@ -93,10 +93,13 @@
                     {{ $company['address'] }}<br>
                 @endif
                 @if($company['postal_code'] || $company['city'] || $company['province'])
-                    {{ implode(' ', array_filter([$company['postal_code'], $company['city'], $company['province'] ? '('.$company['province'].')' : null])) }}<br>
+                    {{ implode(' ', array_filter([$company['postal_code'], $company['city'], $company['province'] ? '('.$company['province'].')' : null])) }}
+                    <br>
                 @endif
                 @if($company['vat'])
-                    P.IVA: {{ $company['vat'] }}@if($company['fiscal_code']) | C.F.: {{ $company['fiscal_code'] }}@endif<br>
+                    P.IVA: {{ $company['vat'] }}@if($company['fiscal_code'])
+                        | C.F.: {{ $company['fiscal_code'] }}
+                    @endif<br>
                 @elseif($company['fiscal_code'])
                     C.F.: {{ $company['fiscal_code'] }}<br>
                 @endif
@@ -186,7 +189,8 @@
                         <th class="py-2 font-bold w-12 text-center">IVA</th>
                     @endif
                     @if($quote->show_unit_prices)
-                        <th class="py-2 font-bold w-24 text-right">Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
+                        <th class="py-2 font-bold w-24 text-right">
+                            Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
                     @endif
                 </tr>
                 </thead>
@@ -213,7 +217,8 @@
                                 @endif
                             </td>
                             <td class="py-2 text-right font-bold text-slate-900 text-xs align-middle">
-                                {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }} €
+                                {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }}
+                                €
                             </td>
                         @else
                             <!-- Sezione senza totale: colspan = tutte le colonne -->
@@ -241,7 +246,8 @@
                             <th class="py-2 font-bold w-12 text-center">IVA</th>
                         @endif
                         @if($quote->show_unit_prices)
-                            <th class="py-2 font-bold w-24 text-right">Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
+                            <th class="py-2 font-bold w-24 text-right">
+                                Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
                         @endif
                     </tr>
                     @foreach($item->children as $child)
@@ -270,11 +276,14 @@
                             @endif
                             <td class="py-3 text-center align-top text-xs">{{ $child->discount_percentage > 0 ? '-' . number_format($child->discount_percentage, 0) . '%' : '-' }}</td>
                             @if($quote->show_vat || $quote->tax_included)
-                                <td class="py-3 text-center align-top text-xs">{{ number_format($child->vat_rate ?? 0, 0) }}%</td>
+                                <td class="py-3 text-center align-top text-xs">{{ number_format($child->vat_rate ?? 0, 0) }}
+                                    %
+                                </td>
                             @endif
                             @if($quote->show_unit_prices)
                                 <td class="py-3 text-right font-bold text-slate-900 align-top">
-                                    {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }} €
+                                    {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }}
+                                    €
                                 </td>
                             @endif
                         </tr>
@@ -304,11 +313,14 @@
                         @endif
                         <td class="py-3 text-center align-top text-xs">{{ $item->discount_percentage > 0 ? '-' . number_format($item->discount_percentage, 0) . '%' : '-' }}</td>
                         @if($quote->show_vat || $quote->tax_included)
-                            <td class="py-3 text-center align-top text-xs">{{ number_format($item->vat_rate ?? 0, 0) }}%</td>
+                            <td class="py-3 text-center align-top text-xs">{{ number_format($item->vat_rate ?? 0, 0) }}
+                                %
+                            </td>
                         @endif
                         @if($quote->show_unit_prices)
                             <td class="py-3 text-right font-bold text-slate-900 align-top">
-                                {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }} €
+                                {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }}
+                                €
                             </td>
                         @endif
                     </tr>
@@ -529,10 +541,13 @@
                             <img src="{{ $image['imagePath'] }}" alt="{{ $image['name'] }}"
                                  class="object-contain w-full h-full">
                         </div>
-                        <div class="font-bold text-slate-800">{{ $image['name'] }}</div>
-                        @if($image['description'] !== $image['name'])
-                            <div class="text-xs text-slate-500 mt-1">{{ $image['description'] }}</div>
-                        @endif
+                        <div class="text-center text-ellipsis">
+                            <div class="text-sm uppercase">{{ $image['internal_code'] }}</div>
+                            <div class="font-bold text-slate-800">{{ $image['name'] }}</div>
+                            @if($image['description'] !== $image['name'])
+                                <div class="text-xs text-slate-500 mt-1">{{ $image['description'] }}</div>
+                            @endif
+                        </div>
                     </div>
                 @endforeach
             </div>

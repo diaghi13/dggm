@@ -18,7 +18,9 @@ class PdfService
             'customer',
             'projectManager',
             'items.product.media',
+            'items.priceListItem.product.media',
             'items.children.product.media',
+            'items.children.priceListItem.product.media',
             'paymentTerm',
             'financialResource',
             'warrantyType',
@@ -201,58 +203,67 @@ class PdfService
         ];
     }
 
-    protected function collectQuoteImages(Quote $quote): array
+    /**
+     * Build a lookup of products-by-code for items resolved only via code (prevent N+1).
+     */
+    private function buildProductsByCode(\Illuminate\Support\Collection $allItems): array
     {
-        $images = [];
-
-        // Get all items (including children) - use unique by ID to avoid duplicates
-        $allItems = $quote->items->concat($quote->items->flatMap->children)->unique('id');
-
-        // Collect all codes from items that need images but don't have product_id
         $codesNeeded = $allItems
-            ->filter(fn ($item) => $item->include_image && ! $item->product_id && ! $item->price_list_item_id && $item->code)
+            ->filter(fn ($item) => ! $item->product_id && ! $item->price_list_item_id && $item->code)
             ->pluck('code')
             ->unique()
             ->values();
 
-        // Load all products with these codes in one query (prevent N+1)
-        $productsByCode = [];
-        if ($codesNeeded->isNotEmpty()) {
-            $productsByCode = \App\Models\Product::with('media')
-                ->whereIn('code', $codesNeeded->toArray())
-                ->get()
-                ->keyBy('code');
+        if ($codesNeeded->isEmpty()) {
+            return [];
         }
 
-        foreach ($allItems as $item) {
-            // Skip if item doesn't want to include image
-            if (! $item->include_image) {
-                continue;
-            }
+        return \App\Models\Product::with('media')
+            ->whereIn('code', $codesNeeded->toArray())
+            ->get()
+            ->keyBy('code')
+            ->all();
+    }
 
-            // Get product via multiple strategies:
-            // 1. Direct product_id relationship
-            // 2. Through price_list_item_id -> product relationship
-            // 3. Lookup by code from pre-loaded products
+    protected function collectQuoteImages(Quote $quote): array
+    {
+        $images = [];
+        $allItems = $quote->items->concat($quote->items->flatMap->children)->unique('id');
+        $productsByCode = $this->buildProductsByCode($allItems);
+
+        foreach ($allItems as $item) {
             $product = $item->product
                 ?? $item->priceListItem?->product
                 ?? ($item->code ? $productsByCode[$item->code] ?? null : null);
 
-            // Skip if no product found
             if (! $product) {
                 continue;
             }
 
-            // Get images marked for quotes from the product
-            $productImages = $product->getImagesForQuotes();
+            if ($item->included_media_ids !== null) {
+                // Explicit selection: include only the specified IDs (empty = none)
+                if (empty($item->included_media_ids)) {
+                    continue;
+                }
+                $productImages = $product->getMedia('images')
+                    ->filter(fn ($m) => in_array($m->id, $item->included_media_ids));
+            } else {
+                // null = default → include all images marked use_in_quotes
+                $productImages = $product->getImagesForQuotes();
+                if ($productImages->isEmpty()) {
+                    continue;
+                }
+            }
 
             foreach ($productImages as $media) {
+                $mediumPath = $media->getPath('medium');
                 $images[] = [
                     'id' => $media->id,
+                    'internal_code' => $product->internal_code,
                     'name' => $product->name,
                     'description' => $item->description,
-                    'imageUrl' => $media->getUrl('medium'), // Use medium conversion for better quality
-                    'imagePath' => $media->getPath('medium'),
+                    'imageUrl' => $media->getUrl('medium'),
+                    'imagePath' => file_exists($mediumPath) ? $mediumPath : $media->getPath(),
                 ];
             }
         }
@@ -260,14 +271,76 @@ class PdfService
         return $images;
     }
 
+    /**
+     * Collect product PDFs for the quote, grouped by product for separator pages.
+     *
+     * @return array<int, array{product_name: string, document_name: string, pdf_media: \Spatie\MediaLibrary\MediaCollections\Models\Media}>
+     */
+    protected function collectProductPdfsForQuote(Quote $quote): array
+    {
+        $result = [];
+        $seenPdfIds = [];
+
+        $allItems = $quote->items->concat($quote->items->flatMap->children)->unique('id');
+        $productsByCode = $this->buildProductsByCode($allItems);
+
+        foreach ($allItems as $item) {
+            $product = $item->product
+                ?? $item->priceListItem?->product
+                ?? ($item->code ? $productsByCode[$item->code] ?? null : null);
+
+            if (! $product) {
+                continue;
+            }
+
+            // Determine which documents to include for this item
+            if ($item->included_media_ids !== null) {
+                // Explicit selection: include only the specified IDs (empty = none)
+                if (empty($item->included_media_ids)) {
+                    continue;
+                }
+                $documents = $product->getDocumentsForQuotes()
+                    ->filter(fn ($m) => in_array($m->id, $item->included_media_ids));
+            } else {
+                // null = default → include all documents marked use_in_quotes
+                $documents = $product->getDocumentsForQuotes();
+            }
+
+            foreach ($documents as $media) {
+                // Resolve the PDF to merge (native PDF or converted version)
+                $pdfMedia = null;
+                if ($media->mime_type === 'application/pdf') {
+                    $pdfMedia = $media;
+                } elseif ($pdfMediaId = $media->getCustomProperty('pdf_media_id')) {
+                    $pdfMedia = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($pdfMediaId);
+                }
+
+                if (! $pdfMedia || in_array($pdfMedia->id, $seenPdfIds)) {
+                    continue; // Skip duplicates and unconverted docs
+                }
+
+                $seenPdfIds[] = $pdfMedia->id;
+                $result[] = [
+                    'product_name' => $product->name,
+                    'document_name' => $media->getCustomProperty('description') ?: $media->name,
+                    'pdf_media' => $pdfMedia,
+                ];
+            }
+        }
+
+        return $result;
+    }
+
     protected function mergeWithAttachments(string $mainPdfContent, Quote $quote): string
     {
-        $pdfAttachments = $quote->getMedia('attachments')
+        $productPdfGroups = $this->collectProductPdfsForQuote($quote);
+
+        $quoteAttachments = $quote->getMedia('attachments')
             ->filter(fn ($m) => $m->mime_type === 'application/pdf')
             ->sortBy('order_column')
             ->values();
 
-        if ($pdfAttachments->isEmpty()) {
+        if (empty($productPdfGroups) && $quoteAttachments->isEmpty()) {
             return $mainPdfContent;
         }
 
@@ -276,6 +349,7 @@ class PdfService
         file_put_contents($tempMain, $mainPdfContent);
 
         try {
+            // Copy main quote pages
             $count = $pdf->setSourceFile($tempMain);
             for ($i = 1; $i <= $count; $i++) {
                 $tpl = $pdf->importPage($i);
@@ -284,8 +358,32 @@ class PdfService
                 $pdf->useTemplate($tpl);
             }
 
-            foreach ($pdfAttachments as $media) {
-                $count = $pdf->setSourceFile($media->getPath());
+            // Product documents — each with a separator page
+            foreach ($productPdfGroups as $group) {
+                $this->addSeparatorPage($pdf, $group['product_name'], $group['document_name']);
+
+                $path = $group['pdf_media']->getPath();
+                if (! file_exists($path)) {
+                    continue;
+                }
+
+                $count = $pdf->setSourceFile($path);
+                for ($i = 1; $i <= $count; $i++) {
+                    $tpl = $pdf->importPage($i);
+                    $size = $pdf->getTemplateSize($tpl);
+                    $pdf->addPage($size['orientation'], [$size['width'], $size['height']]);
+                    $pdf->useTemplate($tpl);
+                }
+            }
+
+            // Quote-level attachments (no separator — user added them manually)
+            foreach ($quoteAttachments as $media) {
+                $path = $media->getPath();
+                if (! file_exists($path)) {
+                    continue;
+                }
+
+                $count = $pdf->setSourceFile($path);
                 for ($i = 1; $i <= $count; $i++) {
                     $tpl = $pdf->importPage($i);
                     $size = $pdf->getTemplateSize($tpl);
@@ -298,6 +396,48 @@ class PdfService
         }
 
         return $pdf->Output('S');
+    }
+
+    /**
+     * Add a clean separator page before each product document.
+     * Uses ISO-8859-1 encoding (FPDF limitation — accented Italian chars handled via iconv).
+     */
+    protected function addSeparatorPage(Fpdi $pdf, string $productName, string $documentName): void
+    {
+        $pdf->AddPage('P', [210, 297]); // A4 portrait
+
+        // Top accent bar (primary blue)
+        $pdf->SetFillColor(37, 99, 235);
+        $pdf->Rect(0, 0, 210, 6, 'F');
+
+        // Product name
+        $pdf->SetFont('Helvetica', 'B', 20);
+        $pdf->SetTextColor(15, 23, 42);
+        $pdf->SetXY(20, 40);
+        $pdf->Cell(170, 12, $this->toFpdfString($productName), 0, 1, 'L');
+
+        // Divider line
+        $pdf->SetDrawColor(226, 232, 240);
+        $pdf->SetLineWidth(0.3);
+        $pdf->Line(20, 57, 190, 57);
+
+        // Document name
+        $pdf->SetFont('Helvetica', '', 13);
+        $pdf->SetTextColor(100, 116, 139);
+        $pdf->SetXY(20, 62);
+        $pdf->Cell(170, 8, $this->toFpdfString($documentName), 0, 1, 'L');
+
+        // Bottom accent bar
+        $pdf->SetFillColor(37, 99, 235);
+        $pdf->Rect(0, 291, 210, 6, 'F');
+    }
+
+    /**
+     * Convert a UTF-8 string to ISO-8859-1 for FPDF (handles Italian accented chars).
+     */
+    private function toFpdfString(string $text): string
+    {
+        return iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text) ?: $text;
     }
 
     protected function generateFooterHtml(array $company): string

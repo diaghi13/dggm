@@ -29,9 +29,9 @@ class ProductMediaData extends Data
 
         public string|Optional $url,
 
-        public string|Optional $thumb_url,
+        public Optional|string|null $thumb_url,
 
-        public string|Optional $medium_url,
+        public Optional|string|null $medium_url,
 
         #[Max(500)]
         public ?string $description,
@@ -48,6 +48,11 @@ class ProductMediaData extends Data
         public int|Optional $sort_order,
 
         public string|Optional $created_at,
+
+        // PDF conversion status (read-only, populated from custom properties)
+        public bool|Optional $is_pdf_conversion,
+        public ?int $pdf_media_id,
+        public ?string $pdf_url,
     ) {}
 
     /**
@@ -61,6 +66,14 @@ class ProductMediaData extends Data
         $url = self::fixMediaUrl($media->getUrl());
         $thumbUrl = $media->hasGeneratedConversion('thumb') ? self::fixMediaUrl($media->getUrl('thumb')) : null;
         $mediumUrl = $media->hasGeneratedConversion('medium') ? self::fixMediaUrl($media->getUrl('medium')) : null;
+
+        // Resolve PDF conversion info
+        $pdfMediaId = $customProperties['pdf_media_id'] ?? null;
+        $pdfUrl = null;
+        if ($pdfMediaId) {
+            $pdfMedia = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($pdfMediaId);
+            $pdfUrl = $pdfMedia ? self::fixMediaUrl($pdfMedia->getUrl()) : null;
+        }
 
         return new self(
             id: $media->id,
@@ -79,6 +92,9 @@ class ProductMediaData extends Data
             valid_until: $customProperties['valid_until'] ?? null,
             sort_order: $media->order_column ?? 0,
             created_at: $media->created_at?->toISOString() ?? '',
+            is_pdf_conversion: $customProperties['is_pdf_conversion'] ?? false,
+            pdf_media_id: $pdfMediaId,
+            pdf_url: $pdfUrl,
         );
     }
 
@@ -120,9 +136,11 @@ class ProductMediaData extends Data
         // Add image-specific properties
         if ($this->collection_name === 'images') {
             $properties['is_primary'] = $this->is_primary;
-            $properties['use_in_quotes'] = $this->use_in_quotes;
             $properties['use_in_projects'] = $this->use_in_projects;
         }
+
+        // use_in_quotes applies to both images and documents
+        $properties['use_in_quotes'] = $this->use_in_quotes;
 
         // Add document-specific properties
         if (in_array($this->collection_name, ['technical_sheets', 'certifications', 'manuals', 'drawings', 'documents'])) {

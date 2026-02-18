@@ -75,6 +75,9 @@ class QuoteItemData extends Data
 
         public bool $include_image = false,
 
+        /** @var int[]|null Explicit list of media IDs to include. null = use use_in_quotes default. */
+        public ?array $included_media_ids = null,
+
         // Relazioni (output only)
         public ProductData|Lazy|Optional $product = new Optional,
 
@@ -110,6 +113,8 @@ class QuoteItemData extends Data
             'total_with_vat' => ['nullable', 'numeric', 'min:0'],
             'hide_unit_price' => ['nullable', 'boolean'],
             'include_image' => ['nullable', 'boolean'],
+            'included_media_ids' => ['nullable', 'array'],
+            'included_media_ids.*' => ['integer'],
         ];
     }
 }

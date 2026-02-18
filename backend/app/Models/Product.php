@@ -467,6 +467,45 @@ class Product extends Model implements HasMedia
     }
 
     /**
+     * Get all media (any collection) marked for use in quotes
+     * Includes both images and documents (PDFs, technical sheets, etc.)
+     */
+    public function getMediaForQuotes(): \Illuminate\Support\Collection
+    {
+        $documentCollections = ['technical_sheets', 'certifications', 'manuals', 'drawings', 'documents'];
+
+        $images = $this->getImagesForQuotes();
+
+        $documents = collect();
+        foreach ($documentCollections as $collection) {
+            $documents = $documents->merge(
+                $this->getMedia($collection)
+                    ->filter(fn (Media $media) => $media->getCustomProperty('use_in_quotes', false) === true)
+            );
+        }
+
+        return $images->merge($documents);
+    }
+
+    /**
+     * Get documents (non-image) marked for use in quotes
+     */
+    public function getDocumentsForQuotes(): \Illuminate\Support\Collection
+    {
+        $documentCollections = ['technical_sheets', 'certifications', 'manuals', 'drawings', 'documents'];
+
+        $documents = collect();
+        foreach ($documentCollections as $collection) {
+            $documents = $documents->merge(
+                $this->getMedia($collection)
+                    ->filter(fn (Media $media) => $media->getCustomProperty('use_in_quotes', false) === true)
+            );
+        }
+
+        return $documents;
+    }
+
+    /**
      * Get images marked for use in projects
      */
     public function getImagesForProjects()

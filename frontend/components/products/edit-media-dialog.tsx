@@ -138,9 +138,9 @@ export function EditMediaDialog({
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="use_in_quotes">Usa nei Preventivi</Label>
+                  <Label htmlFor="use_in_quotes">Includi nei Preventivi</Label>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Mostra questa immagine nei preventivi
+                    Allegata al PDF del preventivo
                   </p>
                 </div>
                 <Switch
@@ -154,9 +154,9 @@ export function EditMediaDialog({
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="use_in_projects">Usa nei Progetti</Label>
+                  <Label htmlFor="use_in_projects">Includi nei Progetti</Label>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Mostra questa immagine nei progetti
+                    Usata nella documentazione dei progetti
                   </p>
                 </div>
                 <Switch
@@ -171,6 +171,26 @@ export function EditMediaDialog({
           )}
 
           {/* Document-specific fields */}
+          {isDocument && (
+            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <div className="space-y-0.5">
+                <Label htmlFor="use_in_quotes_doc">
+                  Includi nei Preventivi
+                </Label>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Allegato al PDF del preventivo
+                </p>
+              </div>
+              <Switch
+                id="use_in_quotes_doc"
+                checked={formData.use_in_quotes || false}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, use_in_quotes: checked })
+                }
+              />
+            </div>
+          )}
+
           {isDocument && (
             <div className="space-y-4">
               <div className="space-y-2">

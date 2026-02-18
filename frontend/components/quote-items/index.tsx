@@ -109,6 +109,7 @@ export function QuoteItemsBuilder({
       total_with_vat: 0,
       hide_unit_price: false,
       include_image: false,
+      included_media_ids: [], // Default: nessun media selezionato
       //show_subtotal: true,
     });
     setIsDialogOpen(true);
@@ -187,6 +188,7 @@ export function QuoteItemsBuilder({
         notes: formData.notes ?? null,
         hide_unit_price: formData.hide_unit_price ?? false,
         include_image: formData.include_image ?? false,
+        included_media_ids: formData.included_media_ids ?? null,
         //show_subtotal: formData.show_subtotal ?? true,
         ...totals,
       };

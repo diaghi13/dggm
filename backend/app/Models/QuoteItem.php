@@ -34,6 +34,7 @@ class QuoteItem extends Model
         'vat_amount',
         'total_with_vat',
         'include_image',
+        'included_media_ids',
     ];
 
     protected function casts(): array
@@ -51,6 +52,7 @@ class QuoteItem extends Model
             'vat_amount' => 'decimal:2',
             'total_with_vat' => 'decimal:2',
             'include_image' => 'boolean',
+            'included_media_ids' => 'array',
         ];
     }
 
