@@ -32,7 +32,7 @@ class ProductMediaController extends Controller
         // Note: ProductMediaData::collect() returns the original MediaCollection unchanged,
         // so we must map explicitly using from().
         $toDto = fn ($collection) => $collection
-            ->map(fn ($m) => ProductMediaData::from($m))
+            ->map(fn ($m) => ProductMediaData::fromMedia($m))
             ->values()
             ->all();
 
@@ -103,7 +103,7 @@ class ProductMediaController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'File caricato con successo.',
-            'data' => ProductMediaData::from($media),
+            'data' => ProductMediaData::fromMedia($media),
         ], 201);
     }
 
@@ -121,7 +121,7 @@ class ProductMediaController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => ProductMediaData::from($media),
+            'data' => ProductMediaData::fromMedia($media),
         ]);
     }
 
@@ -165,7 +165,7 @@ class ProductMediaController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Proprietà aggiornate con successo.',
-            'data' => ProductMediaData::from($updatedMedia),
+            'data' => ProductMediaData::fromMedia($updatedMedia),
         ]);
     }
 
@@ -210,7 +210,7 @@ class ProductMediaController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Ordine aggiornato con successo.',
-            'data' => ProductMediaData::from($updatedMedia),
+            'data' => ProductMediaData::fromMedia($updatedMedia),
         ]);
     }
 
