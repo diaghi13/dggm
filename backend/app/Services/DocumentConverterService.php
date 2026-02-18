@@ -35,9 +35,13 @@ class DocumentConverterService
         $binary = config('services.libreoffice.binary', 'libreoffice');
         $outputDir = sys_get_temp_dir();
 
+        // Use a per-process temp profile dir to avoid lock conflicts when running as www-data
+        $profileDir = sys_get_temp_dir().'/libreoffice-profile-'.getmypid();
+
         $process = new Process([
             $binary,
             '--headless',
+            '-env:UserInstallation=file://'.$profileDir,
             '--convert-to', 'pdf',
             '--outdir', $outputDir,
             $sourcePath,
