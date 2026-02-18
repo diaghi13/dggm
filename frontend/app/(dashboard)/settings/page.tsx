@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi } from "@/lib/api/products";
 import {
@@ -9,7 +10,6 @@ import {
   rolesApi,
   permissionsApi,
   Role,
-  Permission,
 } from "@/lib/api/users";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { MaterialsSettingsSidebar } from "@/components/settings/materials-settings-sidebar";
 import {
   Dialog,
@@ -50,7 +50,6 @@ import {
   Settings as SettingsIcon,
   Users,
   Building2,
-  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -74,7 +73,30 @@ interface DependencyType {
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("categories");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabParam || "categories");
+
+  // Sync activeTab with URL parameter
+  useEffect(() => {
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabParam]);
+
+  // Function to handle tab change and update URL
+  const handleTabChange = useCallback(
+    (tab: string) => {
+      setActiveTab(tab);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", tab);
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
 
   // Category state
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -609,14 +631,14 @@ export default function SettingsPage() {
         {/* Sidebar verticale */}
         <MaterialsSettingsSidebar
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
         />
 
         {/* Contenuto principale */}
         <main className="flex-1 min-w-0 w-full">
           <Tabs
             value={activeTab}
-            onValueChange={setActiveTab}
+            onValueChange={handleTabChange}
             className="w-full"
           >
             {/* Categories Tab */}

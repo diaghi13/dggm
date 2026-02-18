@@ -67,7 +67,7 @@ import {
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -97,11 +97,32 @@ export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
   const { refreshUser } = useAuthStore();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const tabParam = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(tabParam || "general");
   const [changedSettings, setChangedSettings] = useState<
     Record<string, string>
   >({});
+
+  // Sync activeTab with URL parameter
+  useEffect(() => {
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabParam]);
+
+  // Function to handle tab change and update URL
+  const handleTabChange = useCallback(
+    (tab: string) => {
+      setActiveTab(tab);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", tab);
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
 
   // Company form state
   const [companyForm, setCompanyForm] = useState<Partial<CompanySetting>>({});
@@ -830,13 +851,13 @@ export default function AdminSettingsPage() {
       {/* Layout: Sidebar + Contenuto */}
       <div className="flex gap-0 md:gap-6">
         {/* Sidebar verticale */}
-        <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <SettingsSidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
         {/* Contenuto principale */}
         <main className="flex-1 min-w-0 w-full">
           <Tabs
             value={activeTab}
-            onValueChange={setActiveTab}
+            onValueChange={handleTabChange}
             className="w-full"
           >
             {/* Company Settings Tab */}
