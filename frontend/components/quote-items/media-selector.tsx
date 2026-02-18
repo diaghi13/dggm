@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Image as ImageIcon,
@@ -17,9 +17,9 @@ import { Badge } from "@/components/ui/badge";
 
 interface MediaSelectorProps {
   productId: number;
-  /** Current explicit selection. null = default (all use_in_quotes). */
-  value: number[] | null;
-  onChange: (value: number[] | null) => void;
+  /** Current explicit selection as array of IDs. Empty array = none. */
+  value: number[];
+  onChange: (value: number[]) => void;
 }
 
 const DOCUMENT_COLLECTIONS = [
@@ -49,22 +49,32 @@ export function MediaSelector({
   });
 
   // Candidates: images + documents with use_in_quotes=true, excluding PDF conversions
-  const candidateImages =
-    allMedia?.images.filter((m) => m.use_in_quotes && !m.is_pdf_conversion) ??
-    [];
-
-  const candidateDocuments = DOCUMENT_COLLECTIONS.flatMap((col) =>
-    (allMedia?.[col] ?? []).filter(
-      (m) => m.use_in_quotes && !m.is_pdf_conversion,
-    ),
+  const candidateImages = useMemo(
+    () =>
+      allMedia?.images.filter(
+        (m) => m.use_in_quotes && !m.is_pdf_conversion,
+      ) ?? [],
+    [allMedia?.images],
   );
 
-  const allCandidates = [...candidateImages, ...candidateDocuments];
+  const candidateDocuments = useMemo(
+    () =>
+      DOCUMENT_COLLECTIONS.flatMap((col) =>
+        (allMedia?.[col] ?? []).filter(
+          (m) => m.use_in_quotes && !m.is_pdf_conversion,
+        ),
+      ),
+    [allMedia],
+  );
 
-  // Logic: null = include ALL, [] = include NONE, [ids] = include SPECIFIC
-  // Display: if value is null, show all as checked
-  const effectiveIds: number[] =
-    value !== null ? value : allCandidates.map((m) => m.id!).filter(Boolean);
+  const allCandidates = useMemo(
+    () => [...candidateImages, ...candidateDocuments],
+    [candidateImages, candidateDocuments],
+  );
+
+  // Simple logic: value is always an explicit array of IDs
+  // [] = none, [1,2,3] = those specific IDs
+  const effectiveIds: number[] = value;
 
   const totalSelected = effectiveIds.length;
   const totalCandidates = allCandidates.length;
@@ -76,27 +86,23 @@ export function MediaSelector({
   }
 
   const toggle = (mediaId: number, checked: boolean) => {
-    const current =
-      value !== null ? value : allCandidates.map((m) => m.id!).filter(Boolean);
     const next = checked
-      ? [...current, mediaId]
-      : current.filter((id) => id !== mediaId);
-
-    // If all candidates are selected → reset to null (= include all)
-    const allSelected = allCandidates.every((m) => next.includes(m.id!));
-    onChange(allSelected ? null : next);
+      ? [...value, mediaId]
+      : value.filter((id) => id !== mediaId);
+    onChange(next);
   };
 
   const toggleAll = (checked: boolean) => {
     if (checked) {
-      onChange(null); // null = include all (default backend behavior)
+      // Select all explicitly (not null)
+      const allIds = allCandidates.map((m) => m.id!).filter(Boolean);
+      onChange(allIds);
     } else {
       onChange([]); // empty = include nothing
     }
   };
 
-  const allChecked =
-    value === null || allCandidates.every((m) => effectiveIds.includes(m.id!));
+  const allChecked = effectiveIds.length > 0 && allCandidates.every((m) => effectiveIds.includes(m.id!));
   const someChecked = !allChecked && totalSelected > 0;
 
   return (

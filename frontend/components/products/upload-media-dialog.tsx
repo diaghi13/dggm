@@ -128,6 +128,7 @@ export function UploadMediaDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product", productId] });
+      queryClient.invalidateQueries({ queryKey: ["product-media", productId] });
       toast.success("File caricato con successo");
       onOpenChange(false);
       onSuccess?.();
@@ -161,18 +162,21 @@ export function UploadMediaDialog({
     disabled: isAtLimit || uploadMutation.isPending,
     maxSize: collection.maxSize,
     multiple: false,
-    accept: collection.accepts.split(",").reduce(
-      (acc, type) => {
-        acc[type.trim()] = [];
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    ),
+    accept:
+      collection.accepts === "*"
+        ? {}
+        : collection.accepts.split(",").reduce(
+            (acc, type) => {
+              acc[type.trim()] = [];
+              return acc;
+            },
+            {} as Record<string, string[]>,
+          ),
   });
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen && uploadMutation.isPending) return;
-    if (newOpen) {
+    if (!newOpen) {
       setSelectedFile(null);
       setForm(defaultForm);
     }
@@ -223,8 +227,10 @@ export function UploadMediaDialog({
                     Trascina un file qui o clicca per selezionare
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {collection.accepts.replace(/\./g, "").toUpperCase()} · max{" "}
-                    {formatFileSize(collection.maxSize)}
+                    {collection.accepts === "*"
+                      ? "Tutti i tipi di file"
+                      : collection.accepts.replace(/\./g, "").toUpperCase()}{" "}
+                    · max {formatFileSize(collection.maxSize)}
                   </p>
                 </>
               )}

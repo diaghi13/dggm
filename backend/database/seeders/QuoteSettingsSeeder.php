@@ -23,9 +23,10 @@ class QuoteSettingsSeeder extends Seeder
             ['key' => 'quotes.vat_included_in_prices_by_default',      'description' => 'Prezzi IVA inclusa di default',              'type' => 'boolean', 'order' => 8,  'default_value' => '0'],
             ['key' => 'quotes.tax_included_by_default',                'description' => 'Totale IVA inclusa di default',              'type' => 'boolean', 'order' => 9,  'default_value' => '0'],
             ['key' => 'quotes.include_terms_and_conditions_by_default', 'description' => 'Includi condizioni generali di default',    'type' => 'boolean', 'order' => 10, 'default_value' => '1'],
+            ['key' => 'quotes.show_document_separator_page',            'description' => 'Mostra pagina separatrice prima degli allegati prodotto nel PDF', 'type' => 'boolean', 'order' => 11, 'default_value' => '1'],
             // Testi predefiniti
-            ['key' => 'quotes.default_notes',                          'description' => 'Note predefinite preventivo',                'type' => 'string',  'order' => 11, 'default_value' => null],
-            ['key' => 'quotes.terms_and_conditions_template',          'description' => 'Condizioni generali predefinite',            'type' => 'string',  'order' => 12, 'default_value' => null],
+            ['key' => 'quotes.default_notes',                          'description' => 'Note predefinite preventivo',                'type' => 'string',  'order' => 12, 'default_value' => null],
+            ['key' => 'quotes.terms_and_conditions_template',          'description' => 'Condizioni generali predefinite',            'type' => 'string',  'order' => 13, 'default_value' => null],
         ];
 
         foreach ($settings as $setting) {

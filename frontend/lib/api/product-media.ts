@@ -149,4 +149,25 @@ export const productMediaApi = {
     );
     return data;
   },
+
+  /**
+   * Download all files in a collection as a ZIP archive
+   */
+  downloadCollectionZip: async (
+    productId: number,
+    collection: string,
+  ): Promise<void> => {
+    const response = await apiClient.get(
+      `/products/${productId}/media/download-zip?collection=${collection}`,
+      { responseType: "blob" },
+    );
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `media-${productId}-${collection}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
 };

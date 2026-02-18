@@ -81,8 +81,8 @@ const collections: Array<{
     label: "Schede Tecniche",
     icon: FileText,
     description: "Schede tecniche e specifiche",
-    accepts: ".pdf,.doc,.docx,.xls,.xlsx",
-    maxSize: 20 * 1024 * 1024, // 20MB
+    accepts: "*",
+    maxSize: 50 * 1024 * 1024, // 50MB
     maxFiles: 10,
   },
   {
@@ -90,8 +90,8 @@ const collections: Array<{
     label: "Certificazioni",
     icon: FileCheck,
     description: "Certificati e conformità",
-    accepts: ".pdf,.doc,.docx,.xls,.xlsx",
-    maxSize: 20 * 1024 * 1024, // 20MB
+    accepts: "*",
+    maxSize: 50 * 1024 * 1024, // 50MB
     maxFiles: 10,
   },
   {
@@ -99,16 +99,16 @@ const collections: Array<{
     label: "Manuali",
     icon: BookOpen,
     description: "Manuali utente e installazione",
-    accepts: ".pdf,.doc,.docx,.xls,.xlsx",
-    maxSize: 20 * 1024 * 1024, // 20MB
+    accepts: "*",
+    maxSize: 50 * 1024 * 1024, // 50MB
     maxFiles: 10,
   },
   {
     key: "drawings",
     label: "Disegni Tecnici",
     icon: FileImage,
-    description: "Disegni CAD e planimetrie",
-    accepts: ".pdf,.dwg,.dxf",
+    description: "Disegni CAD, DXF, DWG e planimetrie",
+    accepts: "*",
     maxSize: 50 * 1024 * 1024, // 50MB
     maxFiles: 10,
   },
@@ -117,8 +117,8 @@ const collections: Array<{
     label: "Documenti",
     icon: FileBox,
     description: "Altri documenti",
-    accepts: ".pdf,.doc,.docx,.xls,.xlsx",
-    maxSize: 20 * 1024 * 1024, // 20MB
+    accepts: "*",
+    maxSize: 50 * 1024 * 1024, // 50MB
     maxFiles: 10,
   },
 ];
@@ -243,6 +243,22 @@ export function ProductMediaSection({
     deleteMutation.mutate({ mediaId: mediaToDelete.id });
   }, [mediaToDelete, deleteMutation]);
 
+  const handleDownloadZip = useCallback(
+    async (collectionKey: string) => {
+      try {
+        await productMediaApi.downloadCollectionZip(productId, collectionKey);
+        toast.success("Download ZIP completato");
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        toast.error("Errore download ZIP", {
+          description:
+            err.response?.data?.message || "Impossibile scaricare il file ZIP",
+        });
+      }
+    },
+    [productId],
+  );
+
   return (
     <div className="space-y-6">
       {!readOnly && (
@@ -285,10 +301,12 @@ export function ProductMediaSection({
             <CollectionContent
               collection={collection}
               media={media[collection.key] || []}
+              productId={productId}
               readOnly={readOnly}
               uploading={uploading}
               onDrop={(files) => handleDrop(collection.key, files)}
               onDownload={handleDownload}
+              onDownloadZip={handleDownloadZip}
               onEdit={(mediaItem) => {
                 setMediaToEdit(mediaItem);
                 setEditDialogOpen(true);

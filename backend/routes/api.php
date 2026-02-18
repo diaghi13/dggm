@@ -177,6 +177,7 @@ Route::prefix('v1')->group(function () {
         // Product Media
         Route::get('products/{product}/media', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'index']);
         Route::post('products/{product}/media', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'store']);
+        Route::get('products/{product}/media/download-zip', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'downloadCollectionZip']);
         Route::get('products/{product}/media/{media}', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'show']);
         Route::put('products/{product}/media/{media}', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'update']);
         Route::delete('products/{product}/media/{media}', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'destroy']);

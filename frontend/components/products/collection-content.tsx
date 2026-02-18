@@ -22,6 +22,7 @@ import {
   Maximize2,
   Minimize2,
   X,
+  Archive,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -67,10 +68,12 @@ interface CollectionContentProps {
     maxFiles: number;
   };
   media: App.Data.ProductMediaData[];
+  productId?: number;
   readOnly?: boolean;
   uploading?: boolean;
   onDrop: (files: File[]) => void;
   onDownload: (mediaItem: App.Data.ProductMediaData) => void;
+  onDownloadZip?: (collectionKey: string) => void;
   onEdit: (mediaItem: App.Data.ProductMediaData) => void;
   onDelete: (mediaItem: App.Data.ProductMediaData) => void;
 }
@@ -78,10 +81,12 @@ interface CollectionContentProps {
 export function CollectionContent({
   collection,
   media,
+  productId: _productId,
   readOnly = false,
   uploading = false,
   onDrop,
   onDownload,
+  onDownloadZip,
   onEdit,
   onDelete,
 }: CollectionContentProps) {
@@ -233,22 +238,37 @@ export function CollectionContent({
     onDrop,
     disabled: readOnly || uploading,
     maxSize: collection.maxSize,
-    accept: collection.accepts.split(",").reduce(
-      (acc, type) => {
-        acc[type.trim()] = [];
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    ),
+    accept:
+      collection.accepts === "*"
+        ? {}
+        : collection.accepts.split(",").reduce(
+            (acc, type) => {
+              acc[type.trim()] = [];
+              return acc;
+            },
+            {} as Record<string, string[]>,
+          ),
   });
 
   return (
     <div className="space-y-4">
       {media.length > 0 ? (
         <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            File ({media.length})
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              File ({media.length})
+            </Label>
+            {collection.key !== "images" && onDownloadZip && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDownloadZip(collection.key)}
+              >
+                <Archive className="mr-2 h-4 w-4" />
+                Scarica ZIP
+              </Button>
+            )}
+          </div>
           <div
             className={`grid gap-4 ${collection.key === "images" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}
           >

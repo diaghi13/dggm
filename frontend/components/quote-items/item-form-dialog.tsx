@@ -418,9 +418,9 @@ export function ItemFormDialog({
               {formData.product_id && (
                 <MediaSelector
                   productId={formData.product_id}
-                  value={formData.included_media_ids ?? null}
+                  value={formData.included_media_ids ?? []}
                   onChange={(ids) =>
-                    setFormData({ ...formData, included_media_ids: ids ?? undefined })
+                    setFormData({ ...formData, included_media_ids: ids })
                   }
                 />
               )}

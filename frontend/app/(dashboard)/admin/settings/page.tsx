@@ -2589,6 +2589,11 @@ export default function AdminSettingsPage() {
                           label: "Includi condizioni generali",
                           desc: "Aggiungi T&C al fondo del preventivo",
                         },
+                        {
+                          key: "quotes.show_document_separator_page",
+                          label: "Pagina separatrice allegati",
+                          desc: "Inserisce una pagina separatrice prima di ogni allegato prodotto nel PDF",
+                        },
                       ] as const
                     ).map(({ key, label, desc }) => (
                       <div

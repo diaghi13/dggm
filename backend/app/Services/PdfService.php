@@ -358,9 +358,12 @@ class PdfService
                 $pdf->useTemplate($tpl);
             }
 
-            // Product documents — each with a separator page
+            // Product documents — each optionally preceded by a separator page
+            $showSeparator = \App\Models\Setting::get('quotes.show_document_separator_page', '1');
             foreach ($productPdfGroups as $group) {
-                $this->addSeparatorPage($pdf, $group['product_name'], $group['document_name']);
+                if (filter_var($showSeparator, FILTER_VALIDATE_BOOLEAN)) {
+                    $this->addSeparatorPage($pdf, $group['product_name'], $group['document_name']);
+                }
 
                 $path = $group['pdf_media']->getPath();
                 if (! file_exists($path)) {

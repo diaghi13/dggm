@@ -663,32 +663,32 @@ export default function ProductDetailPage() {
                   images:
                     product.media?.filter(
                       (m: App.Data.ProductMediaData) =>
-                        m.collection_name === "images",
+                        m.collection_name === "images" && !m.is_pdf_conversion,
                     ) || [],
                   technical_sheets:
                     product.media?.filter(
                       (m: App.Data.ProductMediaData) =>
-                        m.collection_name === "technical_sheets",
+                        m.collection_name === "technical_sheets" && !m.is_pdf_conversion,
                     ) || [],
                   certifications:
                     product.media?.filter(
                       (m: App.Data.ProductMediaData) =>
-                        m.collection_name === "certifications",
+                        m.collection_name === "certifications" && !m.is_pdf_conversion,
                     ) || [],
                   manuals:
                     product.media?.filter(
                       (m: App.Data.ProductMediaData) =>
-                        m.collection_name === "manuals",
+                        m.collection_name === "manuals" && !m.is_pdf_conversion,
                     ) || [],
                   drawings:
                     product.media?.filter(
                       (m: App.Data.ProductMediaData) =>
-                        m.collection_name === "drawings",
+                        m.collection_name === "drawings" && !m.is_pdf_conversion,
                     ) || [],
                   documents:
                     product.media?.filter(
                       (m: App.Data.ProductMediaData) =>
-                        m.collection_name === "documents",
+                        m.collection_name === "documents" && !m.is_pdf_conversion,
                     ) || [],
                 }}
               />

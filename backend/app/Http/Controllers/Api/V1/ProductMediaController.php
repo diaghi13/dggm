@@ -215,14 +215,62 @@ class ProductMediaController extends Controller
     }
 
     /**
+     * Download all files in a collection as a ZIP archive
+     */
+    public function downloadCollectionZip(Request $request, Product $product): \Illuminate\Http\Response
+    {
+        $this->authorize('view', $product);
+
+        $collection = $request->query('collection', 'documents');
+        $allowedCollections = ['technical_sheets', 'certifications', 'manuals', 'drawings', 'documents'];
+
+        if (! in_array($collection, $allowedCollections)) {
+            abort(400, 'Collezione non valida.');
+        }
+
+        $mediaItems = $product->getMedia($collection)
+            ->reject(fn ($m) => $m->getCustomProperty('is_pdf_conversion', false));
+
+        if ($mediaItems->isEmpty()) {
+            abort(404, 'Nessun file in questa collezione.');
+        }
+
+        $zipFilename = tempnam(sys_get_temp_dir(), 'media_zip_').'.zip';
+
+        try {
+            $zip = new \ZipArchive;
+            $zip->open($zipFilename, \ZipArchive::CREATE);
+
+            foreach ($mediaItems as $media) {
+                $path = $media->getPath();
+                if (file_exists($path)) {
+                    $zip->addFile($path, $media->file_name);
+                }
+            }
+
+            $zip->close();
+
+            $collectionLabel = str_replace('_', '-', $collection);
+            $productCode = str_replace(['/', '\\', ' '], '-', $product->code ?? $product->id);
+            $downloadName = "media-{$productCode}-{$collectionLabel}.zip";
+
+            return response(file_get_contents($zipFilename), 200, [
+                'Content-Type' => 'application/zip',
+                'Content-Disposition' => "attachment; filename=\"{$downloadName}\"",
+            ]);
+        } finally {
+            @unlink($zipFilename);
+        }
+    }
+
+    /**
      * Get maximum file size in KB based on collection
      */
     private function getMaxFileSize(string $collection): int
     {
         return match ($collection) {
-            'images' => 10240, // 10MB
-            'drawings' => 51200, // 50MB
-            default => 20480, // 20MB for documents
+            'images' => 10240,  // 10MB
+            default => 51200,   // 50MB for all documents
         };
     }
 
@@ -233,18 +281,15 @@ class ProductMediaController extends Controller
      */
     private function validateFileType($file, string $collection): void
     {
-        $allowedMimes = match ($collection) {
-            'images' => ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-            'drawings' => ['application/pdf', 'application/x-dxf', 'application/acad', 'image/vnd.dwg'],
-            default => ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-        };
-
-        if (! in_array($file->getMimeType(), $allowedMimes)) {
-            throw ValidationException::withMessages([
-                'file' => ['Tipo di file non valido per questa collezione.'],
-            ]);
+        if ($collection === 'images') {
+            $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (! in_array($file->getMimeType(), $allowedMimes)) {
+                throw ValidationException::withMessages([
+                    'file' => ['Tipo di file non valido. Sono accettate solo immagini (JPEG, PNG, WebP).'],
+                ]);
+            }
         }
+        // All other collections accept any file type
     }
 
     /**
