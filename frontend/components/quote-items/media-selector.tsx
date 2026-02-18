@@ -51,9 +51,8 @@ export function MediaSelector({
   // Candidates: images + documents with use_in_quotes=true, excluding PDF conversions
   const candidateImages = useMemo(
     () =>
-      allMedia?.images.filter(
-        (m) => m.use_in_quotes && !m.is_pdf_conversion,
-      ) ?? [],
+      allMedia?.images.filter((m) => m.use_in_quotes && !m.is_pdf_conversion) ??
+      [],
     [allMedia?.images],
   );
 
@@ -102,7 +101,9 @@ export function MediaSelector({
     }
   };
 
-  const allChecked = effectiveIds.length > 0 && allCandidates.every((m) => effectiveIds.includes(m.id!));
+  const allChecked =
+    effectiveIds.length > 0 &&
+    allCandidates.every((m) => effectiveIds.includes(m.id!));
   const someChecked = !allChecked && totalSelected > 0;
 
   return (

@@ -127,12 +127,6 @@ export function QuoteItemsBuilder({
   };
 
   const handleSave = () => {
-    // Log per verificare i media inclusi
-    console.log(
-      "[QuoteItemsBuilder] Salvando item con included_media_ids:",
-      formData.included_media_ids,
-    );
-
     const totals = calculateTotals(formData);
 
     if (editingItem) {
