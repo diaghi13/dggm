@@ -57,9 +57,9 @@ class StockMovementData extends Data
         #[Exists('warehouses', 'id')]
         public ?int $to_warehouse_id,
 
-        // Site allocation specific
-        #[Exists('sites', 'id')]
-        public ?int $site_id,
+        // Project allocation specific
+        #[Exists('projects', 'id')]
+        public ?int $project_id,
 
         // Supplier intake specific
         #[Exists('suppliers', 'id')]
@@ -81,7 +81,7 @@ class StockMovementData extends Data
         public Lazy|WarehouseData|null $warehouse = null,
         public Lazy|WarehouseData|null $from_warehouse = null,
         public Lazy|WarehouseData|null $to_warehouse = null,
-        public ?Lazy $site = null, // SiteData when created
+        public ?Lazy $project = null, // ProjectData when created
         public Lazy|SupplierData|null $supplier = null,
         public Lazy|UserData|null $user = null,
         public ?Lazy $ddt = null, // DdtData when created
@@ -120,7 +120,7 @@ class StockMovementData extends Data
             movement_date: $movement->movement_date->toDateString(),
             from_warehouse_id: $movement->from_warehouse_id,
             to_warehouse_id: $movement->to_warehouse_id,
-            site_id: $movement->site_id,
+            project_id: $movement->project_id,
             supplier_id: $movement->supplier_id,
             supplier_document: $movement->supplier_document,
             user_id: $movement->user_id,
@@ -132,7 +132,7 @@ class StockMovementData extends Data
             warehouse: Lazy::whenLoaded('warehouse', $movement, fn () => WarehouseData::from($movement->warehouse)),
             from_warehouse: Lazy::whenLoaded('fromWarehouse', $movement, fn () => WarehouseData::from($movement->fromWarehouse)),
             to_warehouse: Lazy::whenLoaded('toWarehouse', $movement, fn () => WarehouseData::from($movement->toWarehouse)),
-            // site: Lazy::whenLoaded('site', $movement, fn () => SiteData::from($movement->site)),
+            // project: Lazy::whenLoaded('project', $movement, fn () => ProjectData::from($movement->project)),
             supplier: Lazy::whenLoaded('supplier', $movement, fn () => SupplierData::from($movement->supplier)),
             user: Lazy::whenLoaded('user', $movement, fn () => UserData::from($movement->user)),
             // ddt: Lazy::whenLoaded('ddt', $movement, fn () => DdtData::from($movement->ddt)),
@@ -201,7 +201,7 @@ class StockMovementData extends Data
             'movement_date.required' => 'La data del movimento è obbligatoria.',
             'from_warehouse_id.exists' => 'Il magazzino di provenienza selezionato non esiste.',
             'to_warehouse_id.exists' => 'Il magazzino di destinazione selezionato non esiste.',
-            'site_id.exists' => 'Il cantiere selezionato non esiste.',
+            'project_id.exists' => 'Il progetto selezionato non esiste.',
             'supplier_id.exists' => 'Il fornitore selezionato non esiste.',
         ];
     }

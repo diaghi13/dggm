@@ -51,6 +51,20 @@ const statusLabels: Record<string, string> = {
   converted: "Convertito",
 };
 
+const quoteTypeColors: Record<string, string> = {
+  sale: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600",
+  rental:
+    "bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700",
+  event:
+    "bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700",
+};
+
+const quoteTypeLabels: Record<string, string> = {
+  sale: "Vendita",
+  rental: "Noleggio",
+  event: "Evento",
+};
+
 // Helper function to build hierarchical items tree
 function buildItemsTree(items: QuoteItem[]) {
   const itemsMap = new Map<number, QuoteItem & { children: QuoteItem[] }>();
@@ -86,10 +100,28 @@ function buildItemsTree(items: QuoteItem[]) {
   return rootItems;
 }
 
+const billingUnitLabel: Record<string, string> = {
+  unit: "pz",
+  hour: "ora",
+  day: "gg",
+  week: "sett",
+  month: "mese",
+  flat: "fisso",
+};
+
+const hasRentalItems = (items: QuoteItem[]): boolean =>
+  items.some(
+    (i) =>
+      i.billing_unit &&
+      i.billing_unit !== "unit" &&
+      i.billing_unit !== "flat",
+  );
+
 // Helper function to render items tree recursively
 function renderItemsTree(
   items: QuoteItem[],
   level: number = 0,
+  showRentalColumns: boolean = false,
 ): React.ReactElement[] {
   const tree = level === 0 ? buildItemsTree(items) : items;
   const elements: React.ReactElement[] = [];
@@ -161,6 +193,24 @@ function renderItemsTree(
             </>
           )}
         </td>
+        {showRentalColumns && (
+          <td className="px-3 py-2 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
+            {!isSection &&
+            item.billing_unit &&
+            item.billing_unit !== "unit" ? (
+              <span className="inline-flex items-center gap-1">
+                <span className="font-medium">
+                  {billingUnitLabel[item.billing_unit] ?? item.billing_unit}
+                </span>
+                {item.duration != null && (
+                  <span className="text-slate-400">× {item.duration}</span>
+                )}
+              </span>
+            ) : (
+              <span className="text-slate-300 dark:text-slate-600">—</span>
+            )}
+          </td>
+        )}
         <td className="px-4 py-3 text-right font-medium">
           {!isSection && `€ ${(item.unit_price || 0).toFixed(2)}`}
         </td>
@@ -207,7 +257,9 @@ function renderItemsTree(
 
     // Recursively render children
     if (item.children && item.children.length > 0) {
-      elements.push(...renderItemsTree(item.children, level + 1));
+      elements.push(
+        ...renderItemsTree(item.children, level + 1, showRentalColumns),
+      );
     }
   });
 
@@ -236,9 +288,9 @@ export default function QuoteDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
 
-      if (data.status === "converted" && data.site_id) {
-        toast.success("Preventivo convertito in cantiere", {
-          description: `Il cantiere ${data.site?.code || ""} è stato creato con successo`,
+      if (data.status === "converted" && data.project_id) {
+        toast.success("Preventivo convertito in progetto", {
+          description: `Il progetto ${data.project?.code || ""} è stato creato con successo`,
         });
       } else {
         toast.success("Stato aggiornato", {
@@ -302,21 +354,21 @@ export default function QuoteDetailPage() {
     },
   });
 
-  const convertToSiteMutation = useMutation({
-    mutationFn: () => quotesApi.convertToSite(quoteId),
+  const convertToProjectMutation = useMutation({
+    mutationFn: () => quotesApi.convertToProject(quoteId),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
-      toast.success("Preventivo convertito in cantiere", {
-        description: "Sei stato reindirizzato al nuovo cantiere",
+      toast.success("Preventivo convertito in progetto", {
+        description: "Sei stato reindirizzato al nuovo progetto creato",
       });
-      router.push(`/sites/${data.site_id}`);
+      router.push(`/projects/${data.project_id}`);
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
       toast.error("Errore", {
         description:
           err.response?.data?.message ||
-          "Impossibile convertire il preventivo in cantiere",
+          "Impossibile convertire il preventivo in progetto",
       });
     },
   });
@@ -373,6 +425,10 @@ export default function QuoteDetailPage() {
     router.push(`/quotes/${quoteId}/edit`);
   }, [router, quoteId]);
 
+  const flatItems = quote?.items ?? [];
+  const showRentalColumns =
+    quote?.quote_type !== "sale" || hasRentalItems(flatItems);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -413,12 +469,19 @@ export default function QuoteDetailPage() {
             >
               {statusLabels[quote.status]}
             </Badge>
-            {quote.site_id && quote.site && (
+            {quote.quote_type && (
+              <Badge
+                className={`${quoteTypeColors[quote.quote_type]} font-medium text-xs border`}
+              >
+                {quoteTypeLabels[quote.quote_type]}
+              </Badge>
+            )}
+            {quote.project_id && quote.project && (
               <Badge
                 className="bg-emerald-50 text-emerald-700 border-emerald-200 font-medium text-xs border cursor-pointer hover:bg-emerald-100 transition-colors"
-                onClick={() => router.push(`/sites/${quote.site_id}`)}
+                onClick={() => router.push(`/projects/${quote.project_id}`)}
               >
-                🏗️ {quote.site.code}
+                🏗️ {quote.project?.code}
               </Badge>
             )}
           </div>
@@ -464,13 +527,13 @@ export default function QuoteDetailPage() {
                 </Button>
               </>
             )}
-            {quote.status === "approved" && !quote.site_id && (
+            {quote.status === "approved" && !quote.project_id && (
               <Button
                 variant="outline"
-                onClick={() => convertToSiteMutation.mutate()}
-                disabled={convertToSiteMutation.isPending}
+                onClick={() => convertToProjectMutation.mutate()}
+                disabled={convertToProjectMutation.isPending}
               >
-                Converti in Cantiere
+                Converti in Progetto
               </Button>
             )}
             <Button onClick={handleDownloadPdf} disabled={downloadingPdf}>
@@ -778,6 +841,18 @@ export default function QuoteDetailPage() {
                           </p>
                         </div>
                       )}
+                      {(quote.quote_type === "event" ||
+                        quote.quote_type === "rental") &&
+                        quote.event_days != null && (
+                          <div className="col-span-2 p-3 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800">
+                            <Label className="text-xs text-violet-700 dark:text-violet-400 uppercase tracking-wider">
+                              Durata
+                            </Label>
+                            <p className="font-semibold text-base mt-1 text-violet-900 dark:text-violet-100">
+                              {quote.event_days} gg
+                            </p>
+                          </div>
+                        )}
                     </div>
                   </CardContent>
                 </Card>
@@ -792,7 +867,10 @@ export default function QuoteDetailPage() {
                         Voci del Preventivo ({quote.items.length})
                       </CardTitle>
                       {quote.vat_included_in_prices && (
-                        <Badge variant="secondary" className="text-xs font-normal">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs font-normal"
+                        >
                           Prezzi con IVA inclusa
                         </Badge>
                       )}
@@ -809,6 +887,11 @@ export default function QuoteDetailPage() {
                             <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                               Q.tà
                             </th>
+                            {showRentalColumns && (
+                              <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400">
+                                Fatturazione
+                              </th>
+                            )}
                             <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                               Prezzo Unit.
                             </th>
@@ -824,7 +907,7 @@ export default function QuoteDetailPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                          {renderItemsTree(quote.items)}
+                          {renderItemsTree(quote.items, 0, showRentalColumns)}
                         </tbody>
                       </table>
                     </div>
@@ -845,7 +928,9 @@ export default function QuoteDetailPage() {
                     quoteId={quoteId}
                     attachments={quote.attachments ?? []}
                     onAttachmentsChange={() =>
-                      queryClient.invalidateQueries({ queryKey: ["quote", quoteId] })
+                      queryClient.invalidateQueries({
+                        queryKey: ["quote", quoteId],
+                      })
                     }
                   />
                 </CardContent>

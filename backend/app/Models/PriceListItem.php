@@ -38,8 +38,11 @@ class PriceListItem extends Model
         'sale_price',
         'is_manual_price',
         'rental_daily',
+        'rental_hourly',
+        'rental_half_day',
         'rental_weekly',
         'rental_monthly',
+        'rental_seasonal',
         'is_manual_rental',
         'is_active',
         'notes',
@@ -51,8 +54,11 @@ class PriceListItem extends Model
             'sale_price' => 'decimal:2',
             'is_manual_price' => 'boolean',
             'rental_daily' => 'decimal:2',
+            'rental_hourly' => 'decimal:2',
+            'rental_half_day' => 'decimal:2',
             'rental_weekly' => 'decimal:2',
             'rental_monthly' => 'decimal:2',
+            'rental_seasonal' => 'decimal:2',
             'is_manual_rental' => 'boolean',
             'is_active' => 'boolean',
         ];
@@ -101,6 +107,26 @@ class PriceListItem extends Model
     }
 
     /**
+     * Get final rental hourly price (NET, VAT excluded)
+     */
+    protected function finalRentalHourly(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->rental_hourly
+        );
+    }
+
+    /**
+     * Get final rental half-day price (NET, VAT excluded)
+     */
+    protected function finalRentalHalfDay(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->rental_half_day
+        );
+    }
+
+    /**
      * Get final rental weekly price (NET, VAT excluded)
      */
     protected function finalRentalWeekly(): Attribute
@@ -117,6 +143,16 @@ class PriceListItem extends Model
     {
         return Attribute::make(
             get: fn () => $this->rental_monthly
+        );
+    }
+
+    /**
+     * Get final rental seasonal price (NET, VAT excluded)
+     */
+    protected function finalRentalSeasonal(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->rental_seasonal
         );
     }
 

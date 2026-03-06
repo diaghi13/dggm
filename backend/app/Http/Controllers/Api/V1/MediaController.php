@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Media;
+use App\Models\Project;
 use App\Models\Quote;
-use App\Models\Site;
 use Illuminate\Http\Request;
 
 class MediaController extends Controller
@@ -32,7 +32,7 @@ class MediaController extends Controller
         // Authorization check
         if ($model instanceof Quote) {
             $this->authorize('update', $model);
-        } elseif ($model instanceof Site) {
+        } elseif ($model instanceof Project) {
             $this->authorize('update', $model);
         }
 
@@ -76,7 +76,7 @@ class MediaController extends Controller
 
         if ($model instanceof Quote) {
             $this->authorize('view', $model);
-        } elseif ($model instanceof Site) {
+        } elseif ($model instanceof Project) {
             $this->authorize('view', $model);
         }
 
@@ -93,7 +93,7 @@ class MediaController extends Controller
 
         if ($model instanceof Quote) {
             $this->authorize('update', $model);
-        } elseif ($model instanceof Site) {
+        } elseif ($model instanceof Project) {
             $this->authorize('update', $model);
         }
 
@@ -112,7 +112,7 @@ class MediaController extends Controller
     {
         return match ($type) {
             'quotes' => Quote::find($id),
-            'sites' => Site::find($id),
+            'projects' => Project::find($id),
             // Aggiungi altri modelli qui quando implementati
             // 'customers' => Customer::find($id),
             // 'employees' => Employee::find($id),

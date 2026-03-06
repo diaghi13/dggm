@@ -122,7 +122,7 @@ class WorkerRateController extends Controller
             'hours' => ['required', 'numeric', 'min:0'],
             'is_overtime' => ['boolean'],
             'is_holiday' => ['boolean'],
-            'site_id' => ['nullable', 'exists:sites,id'],
+            'project_id' => ['nullable', 'exists:projects,id'],
             'date' => ['nullable', 'date'],
         ]);
 
@@ -131,7 +131,7 @@ class WorkerRateController extends Controller
             $validated['hours'],
             $validated['is_overtime'] ?? false,
             $validated['is_holiday'] ?? false,
-            $validated['site_id'] ?? null,
+            $validated['project_id'] ?? null,
             isset($validated['date']) ? new \DateTime($validated['date']) : null
         );
 

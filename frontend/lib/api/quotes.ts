@@ -69,8 +69,10 @@ export const quotesApi = {
     return response.data.data;
   },
 
-  async convertToSite(id: number): Promise<{ quote: Quote; site_id: number }> {
-    const response = await apiClient.post(`/quotes/${id}/convert-to-site`);
+  async convertToProject(
+    id: number,
+  ): Promise<{ quote: Quote; project_id: number }> {
+    const response = await apiClient.post(`/quotes/${id}/convert-to-project`);
     return response.data.data;
   },
 

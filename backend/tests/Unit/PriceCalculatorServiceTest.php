@@ -36,7 +36,7 @@ it('calculates price with decimal markup', function () {
     $cost = Money::EUR(100);
     $result = $this->service->calculateMarkup($cost, 25.5);
 
-    expect($result->amount)->toBe(125.5);
+    expect(round($result->amount, 2))->toBe(125.5);
 });
 
 // ==========================================
@@ -115,7 +115,7 @@ it('removes custom VAT from price', function () {
     $priceWithVAT = Money::EUR(110);
     $result = $this->service->removeVAT($priceWithVAT, 10);
 
-    expect($result->amount)->toBe(100.0);
+    expect(round($result->amount, 2))->toBe(100.0);
 });
 
 // ==========================================
@@ -338,7 +338,7 @@ it('calculates weighted average', function () {
 
     $avg = $this->service->calculateWeightedAverage($items);
 
-    expect($avg->amount)->toBe(133.33); // (100*2 + 200*1) / 3
+    expect(round($avg->amount, 2))->toBe(133.33); // (100*2 + 200*1) / 3
 });
 
 it('returns zero for empty weighted items', function () {

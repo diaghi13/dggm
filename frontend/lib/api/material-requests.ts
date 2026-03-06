@@ -14,34 +14,34 @@ export interface MaterialRequestsParams {
   status?: MaterialRequestStatus;
   priority?: MaterialRequestPriority;
   worker_id?: number;
-  site_id?: number;
+  project_id?: number;
 }
 
 export const materialRequestsApi = {
-  // Get material requests for a site
-  getRequestsBySite: async (
-    siteId: number,
+  // Get material requests for a project
+  getRequestsByProject: async (
+    projectId: number,
     params?: MaterialRequestsParams
   ): Promise<MaterialRequest[]> => {
     const { data } = await apiClient.get<ApiResponse<MaterialRequest[]>>(
-      `/sites/${siteId}/material-requests`,
+      `/projects/${projectId}/material-requests`,
       { params }
     );
     return data.data;
   },
 
-  // Get pending requests count for a site
-  getPendingCount: async (siteId: number): Promise<number> => {
+  // Get pending requests count for a project
+  getPendingCount: async (projectId: number): Promise<number> => {
     const { data } = await apiClient.get<ApiResponse<{ count: number }>>(
-      `/sites/${siteId}/material-requests/pending-count`
+      `/projects/${projectId}/material-requests/pending-count`
     );
     return data.data.count;
   },
 
-  // Get statistics for a site
-  getStats: async (siteId: number): Promise<MaterialRequestStats> => {
+  // Get statistics for a project
+  getStats: async (projectId: number): Promise<MaterialRequestStats> => {
     const { data } = await apiClient.get<ApiResponse<MaterialRequestStats>>(
-      `/sites/${siteId}/material-requests/stats`
+      `/projects/${projectId}/material-requests/stats`
     );
     return data.data;
   },

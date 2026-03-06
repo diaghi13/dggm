@@ -24,6 +24,9 @@ class QuoteResource extends JsonResource
             'postal_code' => $this->postal_code,
             'full_address' => $this->full_address,
             'status' => $this->status,
+            'quote_type' => $this->quote_type?->value,
+            'event_days' => $this->event_days,
+            'effective_event_days' => $this->effective_event_days,
             'issue_date' => $this->issue_date?->format('Y-m-d'),
             'expiry_date' => $this->expiry_date?->format('Y-m-d'),
             'valid_until' => $this->valid_until?->format('Y-m-d'),
@@ -45,8 +48,8 @@ class QuoteResource extends JsonResource
             'footer_text' => $this->footer_text,
             'template_id' => $this->template_id,
             'template' => new QuoteTemplateResource($this->whenLoaded('template')),
-            'site_id' => $this->site_id,
-            'site' => $this->whenLoaded('site'),
+            'project_id' => $this->project_id,
+            'project' => $this->whenLoaded('project'),
             'items' => QuoteItemResource::collection($this->whenLoaded('items')),
             'attachments' => $this->getMedia('attachments')->map(function ($media) {
                 return [

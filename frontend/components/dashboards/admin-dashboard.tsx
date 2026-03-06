@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { customersApi } from "@/lib/api/customers";
-import { sitesApi } from "@/lib/api/sites";
+import { projectsApi } from "@/lib/api/projects";
 import { quotesApi } from "@/lib/api/quotes";
 import {
   Users,
@@ -25,9 +25,9 @@ export default function AdminDashboard() {
     queryFn: () => customersApi.getAll({ per_page: 5, is_active: true }),
   });
 
-  const { data: sitesData } = useQuery({
-    queryKey: ["sites", { per_page: 5 }],
-    queryFn: () => sitesApi.getAll({ per_page: 5 }),
+  const { data: projectsData } = useQuery({
+    queryKey: ["projects", { per_page: 5 }],
+    queryFn: () => projectsApi.getAll({ per_page: 5 }),
   });
 
   const { data: quotesData } = useQuery({
@@ -47,14 +47,14 @@ export default function AdminDashboard() {
       permission: "customers.view",
     },
     {
-      title: "Cantieri Aperti",
-      value: sitesData?.data.length || 0,
+      title: "Progetti Aperti",
+      value: projectsData?.data.length || 0,
       change: "+8%",
       trend: "up" as const,
       icon: Building2,
       color: "green" as const,
-      href: "/sites",
-      permission: "sites.view",
+      href: "/projects",
+      permission: "projects.view",
     },
     {
       title: "Preventivi",

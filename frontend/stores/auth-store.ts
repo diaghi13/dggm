@@ -10,6 +10,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   hasHydrated: boolean;
+  isAuthChecked: boolean; // true dopo che AuthInitProvider ha completato la verifica del token
 
   setAuth: (user: User, settings?: UserSettings, features?: string[]) => void;
   clearAuth: () => void;
@@ -17,6 +18,7 @@ interface AuthState {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setHasHydrated: (hydrated: boolean) => void;
+  setAuthChecked: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -28,6 +30,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       hasHydrated: false,
+      isAuthChecked: false,
 
       setAuth: (user, settings, features) => {
         set({
@@ -49,6 +52,10 @@ export const useAuthStore = create<AuthState>()(
 
       setHasHydrated: (hydrated) => {
         set({ hasHydrated: hydrated });
+      },
+
+      setAuthChecked: () => {
+        set({ isAuthChecked: true });
       },
 
       login: async (email, password) => {
@@ -87,9 +94,14 @@ export const useAuthStore = create<AuthState>()(
             features: authData.features,
             isAuthenticated: true,
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error("Failed to refresh user:", error);
           get().clearAuth();
+          // Se il token è invalido (401), chiama logout per cancellare il cookie httpOnly.
+          // /auth/logout è ora una route pubblica che cancella sempre il cookie.
+          if (error?.response?.status === 401) {
+            try { await authApi.logout(); } catch { /* ignora */ }
+          }
           throw error;
         }
       },

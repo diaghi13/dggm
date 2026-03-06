@@ -60,7 +60,7 @@ class Contractor extends Model
 
     public function laborCosts(): HasMany
     {
-        return $this->hasMany(SiteLaborCost::class);
+        return $this->hasMany(ProjectLaborCost::class);
     }
 
     // ==================== SCOPES ====================

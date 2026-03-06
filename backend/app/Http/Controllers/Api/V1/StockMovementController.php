@@ -30,7 +30,7 @@ class StockMovementController extends Controller
         $query = new GetStockMovementsQuery(
             productId: $request->input('product_id'),
             warehouseId: $request->input('warehouse_id'),
-            siteId: $request->input('site_id'),
+            projectId: $request->input('project_id'),
             type: $type,
             dateFrom: $request->input('date_from'),
             dateTo: $request->input('date_to'),
@@ -75,7 +75,7 @@ class StockMovementController extends Controller
 
         $query = new GetRentalHistoryQuery(
             productId: $request->input('product_id'),
-            siteId: $request->input('site_id'),
+            projectId: $request->input('project_id'),
             activeOnly: $request->boolean('active_only', false),
         );
 
@@ -138,6 +138,7 @@ class StockMovementController extends Controller
                 unitCost: $request->input('unit_cost'),
                 notes: $request->input('notes'),
                 referenceDocument: $request->input('reference'),
+                type: StockMovementType::INTAKE,
             );
 
             return response()->json([

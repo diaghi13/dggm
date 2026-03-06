@@ -148,18 +148,18 @@ class ContractorService
     public function getWorkHistory(Contractor $contractor): Collection
     {
         return $contractor->laborCosts()
-            ->with('site')
-            ->select('site_id')
+            ->with('project')
+            ->select('project_id')
             ->selectRaw('SUM(total_cost) as total_cost')
             ->selectRaw('MIN(work_date) as first_date')
             ->selectRaw('MAX(work_date) as last_date')
             ->selectRaw('COUNT(*) as entries_count')
-            ->groupBy('site_id')
+            ->groupBy('project_id')
             ->orderByDesc('last_date')
             ->get()
             ->map(function ($record) {
                 return [
-                    'site' => $record->site,
+                    'project' => $record->project,
                     'total_cost' => $record->total_cost,
                     'first_date' => $record->first_date,
                     'last_date' => $record->last_date,
@@ -174,7 +174,7 @@ class ContractorService
     public function getPendingInvoices(Contractor $contractor): Collection
     {
         return $contractor->laborCosts()
-            ->with('site')
+            ->with('project')
             ->where('is_invoiced', false)
             ->orderBy('work_date')
             ->get();

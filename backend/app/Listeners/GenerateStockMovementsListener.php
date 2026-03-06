@@ -8,7 +8,6 @@ use App\Events\DdtConfirmed;
 use App\Events\StockMovementCreated;
 use App\Models\Inventory;
 use App\Models\StockMovement;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,24 +24,22 @@ class GenerateStockMovementsListener
     {
         $ddt = $event->ddt->fresh(['items.product', 'fromWarehouse', 'toWarehouse']);
 
-        DB::transaction(function () use ($ddt) {
-            match ($ddt->type) {
-                DdtType::Incoming => $this->processIncoming($ddt),
-                DdtType::Outgoing => $this->processOutgoing($ddt),
-                DdtType::Internal => $this->processInternal($ddt),
-                DdtType::RentalOut => $this->processRentalOut($ddt),
-                DdtType::RentalReturn => $this->processRentalReturn($ddt),
-                DdtType::ReturnFromCustomer => $this->processReturnFromCustomer($ddt),
-                DdtType::ReturnToSupplier => $this->processReturnToSupplier($ddt),
-            };
+        match ($ddt->type) {
+            DdtType::Incoming => $this->processIncoming($ddt),
+            DdtType::Outgoing => $this->processOutgoing($ddt),
+            DdtType::Internal => $this->processInternal($ddt),
+            DdtType::RentalOut => $this->processRentalOut($ddt),
+            DdtType::RentalReturn => $this->processRentalReturn($ddt),
+            DdtType::ReturnFromCustomer => $this->processReturnFromCustomer($ddt),
+            DdtType::ReturnToSupplier => $this->processReturnToSupplier($ddt),
+        };
 
-            Log::info('Stock movements generated for DDT', [
-                'ddt_id' => $ddt->id,
-                'ddt_code' => $ddt->code,
-                'type' => $ddt->type->value,
-                'items_count' => $ddt->items->count(),
-            ]);
-        });
+        Log::info('Stock movements generated for DDT', [
+            'ddt_id' => $ddt->id,
+            'ddt_code' => $ddt->code,
+            'type' => $ddt->type->value,
+            'items_count' => $ddt->items->count(),
+        ]);
     }
 
     /**
@@ -90,9 +87,9 @@ class GenerateStockMovementsListener
                 'warehouse_id' => $ddt->from_warehouse_id,
                 'type' => StockMovementType::OUTPUT,
                 'quantity' => $item->quantity,
-                'unit_cost' => $item->unit_cost,
+                'unit_cost' => $item->unit_cost ?? $item->product?->standard_cost,
                 'movement_date' => $ddt->ddt_date,
-                'site_id' => $ddt->site_id,
+                'project_id' => $ddt->project_id,
                 'user_id' => $ddt->created_by,
                 'notes' => "DDT Outgoing: {$ddt->code}",
                 'reference_document' => $ddt->code,
@@ -113,6 +110,8 @@ class GenerateStockMovementsListener
     private function processInternal($ddt): void
     {
         foreach ($ddt->items as $item) {
+            $unitCost = $item->unit_cost ?? $item->product?->standard_cost;
+
             // Create outgoing movement
             $movementOut = StockMovement::create([
                 'ddt_id' => $ddt->id,
@@ -122,7 +121,7 @@ class GenerateStockMovementsListener
                 'to_warehouse_id' => $ddt->to_warehouse_id,
                 'type' => StockMovementType::TRANSFER,
                 'quantity' => $item->quantity,
-                'unit_cost' => $item->unit_cost,
+                'unit_cost' => $unitCost,
                 'movement_date' => $ddt->ddt_date,
                 'user_id' => $ddt->created_by,
                 'notes' => "Transfer OUT: {$ddt->code}",
@@ -138,7 +137,7 @@ class GenerateStockMovementsListener
                 'to_warehouse_id' => $ddt->to_warehouse_id,
                 'type' => StockMovementType::TRANSFER,
                 'quantity' => $item->quantity,
-                'unit_cost' => $item->unit_cost,
+                'unit_cost' => $unitCost,
                 'movement_date' => $ddt->ddt_date,
                 'user_id' => $ddt->created_by,
                 'notes' => "Transfer IN: {$ddt->code}",
@@ -168,15 +167,19 @@ class GenerateStockMovementsListener
                 'warehouse_id' => $ddt->from_warehouse_id,
                 'type' => StockMovementType::RENTAL_OUT,
                 'quantity' => $item->quantity,
-                'unit_cost' => $item->unit_cost,
+                'unit_cost' => $item->unit_cost ?? $item->product?->standard_cost,
                 'movement_date' => $ddt->ddt_date,
-                'site_id' => $ddt->site_id,
+                'project_id' => $ddt->project_id,
                 'user_id' => $ddt->created_by,
                 'notes' => "Rental OUT: {$ddt->code}",
                 'reference_document' => $ddt->code,
             ]);
 
             $this->updateInventory($item->product_id, $ddt->from_warehouse_id, -$item->quantity, 'remove');
+            $product = \App\Models\Product::find($item->product_id);
+            if ($product) {
+                $product->increment('quantity_out_on_rental', $item->quantity);
+            }
             StockMovementCreated::dispatch($movement);
         }
     }
@@ -196,13 +199,17 @@ class GenerateStockMovementsListener
                 'quantity' => $item->quantity,
                 'unit_cost' => $item->unit_cost,
                 'movement_date' => $ddt->ddt_date,
-                'site_id' => $ddt->site_id,
+                'project_id' => $ddt->project_id,
                 'user_id' => $ddt->created_by,
                 'notes' => "Rental RETURN: {$ddt->code}",
                 'reference_document' => $ddt->code,
             ]);
 
             $this->updateInventory($item->product_id, $ddt->from_warehouse_id, $item->quantity, 'add');
+            $product = \App\Models\Product::find($item->product_id);
+            if ($product) {
+                $product->decrement('quantity_out_on_rental', $item->quantity);
+            }
             StockMovementCreated::dispatch($movement);
         }
     }

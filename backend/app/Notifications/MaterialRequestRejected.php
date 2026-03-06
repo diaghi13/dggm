@@ -37,16 +37,16 @@ class MaterialRequestRejected extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $material = $this->materialRequest->material;
-        $site = $this->materialRequest->site;
+        $project = $this->materialRequest->project;
         $rejectedBy = $this->materialRequest->respondedByUser;
 
         $message = (new MailMessage)
             ->error()
-            ->subject("Richiesta Materiale Rifiutata - {$site->name}")
+            ->subject("Richiesta Materiale Rifiutata - {$project->name}")
             ->greeting("Ciao {$notifiable->name},")
             ->line('La tua richiesta di materiale è stata **rifiutata**.')
             ->line('')
-            ->line("**Cantiere:** {$site->name}")
+            ->line("**Progetto:** {$project->name}")
             ->line("**Materiale:** {$material->name}")
             ->line("**Quantità richiesta:** {$this->materialRequest->quantity_requested} {$this->materialRequest->unit_of_measure}")
             ->line("**Rifiutata da:** {$rejectedBy->name}");
@@ -57,7 +57,7 @@ class MaterialRequestRejected extends Notification implements ShouldQueue
                 ->line($this->materialRequest->rejection_reason);
         }
 
-        $message->action('Visualizza Dettagli', url("/dashboard/sites/{$site->id}"))
+        $message->action('Visualizza Dettagli', url("/dashboard/projects/{$project->id}"))
             ->line('Contatta il tuo responsabile per ulteriori informazioni.');
 
         return $message;
@@ -73,8 +73,8 @@ class MaterialRequestRejected extends Notification implements ShouldQueue
         return [
             'type' => 'material_request_rejected',
             'material_request_id' => $this->materialRequest->id,
-            'site_id' => $this->materialRequest->site_id,
-            'site_name' => $this->materialRequest->site->name,
+            'project_id' => $this->materialRequest->project_id,
+            'project_name' => $this->materialRequest->project->name,
             'material_name' => $this->materialRequest->material->name,
             'rejection_reason' => $this->materialRequest->rejection_reason,
             'rejected_by' => $this->materialRequest->respondedByUser->name,

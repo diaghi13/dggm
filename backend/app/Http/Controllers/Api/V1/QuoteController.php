@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Quote\ApproveQuoteAction;
-use App\Actions\Quote\ConvertQuoteToSiteAction;
+use App\Actions\Quote\ConvertQuoteToProjectAction;
 use App\Actions\Quote\CreateQuoteAction;
 use App\Actions\Quote\DeleteQuoteAction;
 use App\Actions\Quote\RejectQuoteAction;
@@ -29,7 +29,7 @@ class QuoteController extends Controller
         private readonly ApproveQuoteAction $approveAction,
         private readonly RejectQuoteAction $rejectAction,
         private readonly SendQuoteAction $sendAction,
-        private readonly ConvertQuoteToSiteAction $convertAction,
+        private readonly ConvertQuoteToProjectAction $convertAction,
         private readonly SaveQuotePdfAction $savePdfAction
     ) {}
 
@@ -850,7 +850,7 @@ class QuoteController extends Controller
      *                 property="data",
      *                 type="object",
      *                 @OA\Property(property="quote", ref="#/components/schemas/Quote"),
-     *                 @OA\Property(property="site_id", type="integer", example=42, description="ID of the newly created site")
+     *                 @OA\Property(property="project_id", type="integer", example=42, description="ID of the newly created project")
      *             ),
      *             @OA\Property(property="message", type="string", example="Preventivo convertito in cantiere con successo")
      *         )
@@ -889,13 +889,13 @@ class QuoteController extends Controller
      *     )
      * )
      */
-    public function convertToSite(Quote $quote): JsonResponse
+    public function convertToProject(Quote $quote): JsonResponse
     {
-        $this->authorize('convertToSite', $quote);
+        $this->authorize('convertToProject', $quote);
 
-        $site = $this->convertAction->execute($quote);
+        $project = $this->convertAction->execute($quote);
 
-        if (! $site) {
+        if (! $project) {
             return response()->json([
                 'success' => false,
                 'message' => 'Il preventivo deve essere approvato prima della conversione',
@@ -909,9 +909,9 @@ class QuoteController extends Controller
             'success' => true,
             'data' => [
                 'quote' => QuoteData::from($quote)->include('items', 'items.children'),
-                'site_id' => $site->id,
+                'project_id' => $project->id,
             ],
-            'message' => 'Preventivo convertito in cantiere con successo',
+            'message' => 'Preventivo convertito in progetto con successo',
         ]);
     }
 

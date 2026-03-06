@@ -13,12 +13,16 @@ import { useSetting } from "@/hooks/use-settings";
 import { useDefaultPriceList } from "@/hooks/use-price-lists";
 import { QuoteForm } from "@/components/quotes/quote-form";
 import { PageHeader } from "@/components/layout/page-header";
+import { QuoteTypeSelectionDialog } from "@/components/quotes/quote-type-selection-dialog";
 
 export default function NewQuotePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const isMounted = useRef(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [selectedQuoteType, setSelectedQuoteType] = useState<
+    "sale" | "rental" | "event" | null
+  >(null);
 
   // Load all quote defaults from settings (loaded via auth/me into Zustand store)
   const showUnitPricesDefault = useSetting<boolean>("quotes.show_unit_prices_by_default", true);
@@ -52,6 +56,7 @@ export default function NewQuotePage() {
     province: null,
     postal_code: null,
     status: "draft",
+    quote_type: "sale",
     issue_date: new Date().toISOString().split("T")[0],
     expiry_date: defaultExpiryDate,
     price_list_id: null,
@@ -157,7 +162,27 @@ export default function NewQuotePage() {
     navigateWithConfirm("/quotes");
   }, [navigateWithConfirm]);
 
+  const handleTypeSelect = useCallback(
+    (type: "sale" | "rental" | "event") => {
+      setSelectedQuoteType(type);
+      setFormData((prev) => ({ ...prev, quote_type: type }));
+    },
+    [],
+  );
+
+  const handleTypeCancel = useCallback(() => {
+    router.push("/quotes");
+  }, [router]);
+
   return (
+    <>
+      <QuoteTypeSelectionDialog
+        open={selectedQuoteType === null}
+        onSelect={handleTypeSelect}
+        onCancel={handleTypeCancel}
+      />
+
+      {selectedQuoteType !== null && (
     <div className="space-y-6">
       <PageHeader
         title="Nuovo Preventivo"
@@ -193,5 +218,7 @@ export default function NewQuotePage() {
         onItemsChange={handleItemsChange}
       />
     </div>
+      )}
+    </>
   );
 }

@@ -24,8 +24,11 @@ class PriceListItemData extends Data
 
         public ?bool $is_manual_price,
         public ?float $rental_daily,
+        public ?float $rental_hourly,
+        public ?float $rental_half_day,
         public ?float $rental_weekly,
         public ?float $rental_monthly,
+        public ?float $rental_seasonal,
         public ?bool $is_manual_rental,
         public ?bool $is_active,
         public ?string $notes,
@@ -42,10 +45,19 @@ class PriceListItemData extends Data
         public ?float $final_rental_daily = null,
 
         #[Computed]
+        public ?float $final_rental_hourly = null,
+
+        #[Computed]
+        public ?float $final_rental_half_day = null,
+
+        #[Computed]
         public ?float $final_rental_weekly = null,
 
         #[Computed]
         public ?float $final_rental_monthly = null,
+
+        #[Computed]
+        public ?float $final_rental_seasonal = null,
     ) {}
 
     public static function rules(): array
@@ -56,8 +68,11 @@ class PriceListItemData extends Data
             'sale_price' => ['required', 'numeric', 'min:0'],
             'is_manual_price' => ['nullable', 'boolean'],
             'rental_daily' => ['nullable', 'numeric', 'min:0'],
+            'rental_hourly' => ['nullable', 'numeric', 'min:0'],
+            'rental_half_day' => ['nullable', 'numeric', 'min:0'],
             'rental_weekly' => ['nullable', 'numeric', 'min:0'],
             'rental_monthly' => ['nullable', 'numeric', 'min:0'],
+            'rental_seasonal' => ['nullable', 'numeric', 'min:0'],
             'is_manual_rental' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string'],

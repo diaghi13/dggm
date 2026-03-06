@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customersApi } from "@/lib/api/customers";
 import { quotesApi } from "@/lib/api/quotes";
-import { sitesApi } from "@/lib/api/sites";
+import { projectsApi } from "@/lib/api/projects";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -56,14 +56,14 @@ export default function CustomerDetailPage() {
     enabled: !!customerId,
   });
 
-  const { data: sitesData } = useQuery({
-    queryKey: ["customer-sites", customerId],
-    queryFn: () => sitesApi.getAll({ customer_id: customerId, per_page: 50 }),
+  const { data: projectsData } = useQuery({
+    queryKey: ["customer-projects", customerId],
+    queryFn: () => projectsApi.getAll({ customer_id: customerId, per_page: 50 }),
     enabled: !!customerId,
   });
 
   const quotes = quotesData?.data ?? [];
-  const sites = sitesData?.data ?? [];
+  const sites = projectsData?.data ?? [];
 
   const updateMutation = useMutation({
     mutationFn: (data: any) => customersApi.update(customerId, data),
@@ -185,7 +185,7 @@ export default function CustomerDetailPage() {
         <TabsList>
           <TabsTrigger value="info">Informazioni</TabsTrigger>
           <TabsTrigger value="quotes">Preventivi ({quotes.length})</TabsTrigger>
-          <TabsTrigger value="sites">Cantieri ({sites.length})</TabsTrigger>
+          <TabsTrigger value="sites">Progetti ({sites.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="info" className="space-y-6">
@@ -453,14 +453,14 @@ export default function CustomerDetailPage() {
         <TabsContent value="sites" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Cantieri</CardTitle>
+              <CardTitle>Progetti</CardTitle>
             </CardHeader>
             <CardContent>
               {sites.length === 0 ? (
                 <div className="text-center py-8">
                   <MapPin className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-700" />
                   <p className="text-slate-600 dark:text-slate-400">
-                    Nessun cantiere associato
+                    Nessun progetto associato
                   </p>
                 </div>
               ) : (
@@ -504,7 +504,7 @@ export default function CustomerDetailPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/sites/${site.id}`}>Visualizza</Link>
+                            <Link href={`/projects/${site.id}`}>Visualizza</Link>
                           </Button>
                         </TableCell>
                       </TableRow>

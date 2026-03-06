@@ -30,6 +30,7 @@ interface ProductAutocompleteProps {
   className?: string;
   showBarcodeScanner?: boolean;
   priceListId?: number | null;
+  quoteType?: string | null;
 }
 
 export function ProductAutocomplete({
@@ -39,7 +40,9 @@ export function ProductAutocomplete({
   className,
   showBarcodeScanner = true,
   priceListId,
+  quoteType,
 }: ProductAutocompleteProps) {
+  const isRentalOrEvent = quoteType === "rental" || quoteType === "event";
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -171,22 +174,34 @@ export function ProductAutocomplete({
                   <span className="truncate font-medium">
                     {selectedMaterial.code}
                   </span>
-                  <span className="truncate text-sm text-slate-600">
+                  <span className="truncate text-sm text-slate-600 dark:text-slate-400">
                     - {selectedMaterial.name}
                   </span>
-                  {selectedMaterial.category && (
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "ml-auto flex-shrink-0 text-xs",
-                        categoryColors[
-                          selectedMaterial.category.code || "general"
-                        ] || categoryColors.general,
-                      )}
-                    >
-                      {selectedMaterial.category.name}
-                    </Badge>
-                  )}
+                  <div className="ml-auto flex-shrink-0 flex items-center gap-1">
+                    {selectedMaterial.product_type === "service" && (
+                      <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800">
+                        Servizio
+                      </Badge>
+                    )}
+                    {selectedMaterial.product_type === "composite" && (
+                      <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800">
+                        Composito
+                      </Badge>
+                    )}
+                    {selectedMaterial.category && (
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-xs",
+                          categoryColors[
+                            selectedMaterial.category.code || "general"
+                          ] || categoryColors.general,
+                        )}
+                      >
+                        {selectedMaterial.category.name}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <span className="flex items-center gap-2">
@@ -252,8 +267,8 @@ export function ProductAutocomplete({
                         />
                         <Package className="h-4 w-4 flex-shrink-0 text-slate-400" />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-slate-900">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
                               {material.code}
                             </span>
                             {material.category && (
@@ -269,48 +284,100 @@ export function ProductAutocomplete({
                                 {material.category.name}
                               </Badge>
                             )}
+                            {material.product_type === "service" && (
+                              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800">
+                                Servizio
+                              </Badge>
+                            )}
+                            {material.product_type === "composite" && (
+                              <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800">
+                                Composito
+                              </Badge>
+                            )}
                           </div>
-                          <p className="text-sm text-slate-600 truncate">
+                          <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
                             {material.name}
                           </p>
                         </div>
                         <div className="flex-shrink-0 text-right">
-                          <p className="text-sm font-medium text-slate-900">
-                            €{" "}
-                            {(() => {
-                              // If price list is active and item has price list items, show that price
-                              if (
-                                priceListId &&
-                                material.priceListItems &&
-                                material.priceListItems.length > 0
-                              ) {
-                                const priceListItem =
-                                  material.priceListItems.find(
-                                    (item) =>
-                                      item.price_list_id === priceListId,
-                                  );
-                                if (priceListItem?.final_sale_price) {
-                                  return Number(
-                                    priceListItem.final_sale_price,
-                                  ).toFixed(2);
-                                }
+                          {(() => {
+                            const priceListItem = priceListId && material.priceListItems
+                              ? material.priceListItems.find((item) => item.price_list_id === priceListId)
+                              : null;
+
+                            if (priceListItem) {
+                              const showRental = isRentalOrEvent && material.product_type !== "service";
+                              if (!showRental) {
+                                // Sale/service: show sale price from list
+                                return (
+                                  <>
+                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                      € {Number(priceListItem.final_sale_price || 0).toFixed(2)}
+                                    </p>
+                                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                      vendita
+                                    </p>
+                                  </>
+                                );
                               }
-                              // Fallback to standard cost
-                              return Number(
-                                material.standard_cost || 0,
-                              ).toFixed(2);
-                            })()}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {material.unit}
-                            {priceListId &&
-                              material.priceListItems &&
-                              material.priceListItems.length > 0 && (
-                                <span className="block text-blue-600 font-medium">
-                                  da listino
-                                </span>
-                              )}
-                          </p>
+                              // Rental mode: show rental daily if available, else fall through
+                              if (priceListItem.final_rental_daily != null) {
+                                return (
+                                  <>
+                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                      € {Number(priceListItem.final_rental_daily).toFixed(2)}
+                                    </p>
+                                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                      noleggio/gg
+                                    </p>
+                                  </>
+                                );
+                              }
+                              // Rental price not set in list — fall through to estimate
+                            }
+
+                            // Senza listino: mostra prezzo di riferimento migliore disponibile
+                            if (isRentalOrEvent && material.product_type !== "service") {
+                              // Preferenza: base_day > MSRP > standard_cost
+                              if (material.estimated_base_day) {
+                                return (
+                                  <>
+                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                      € {Number(material.estimated_base_day).toFixed(2)}
+                                    </p>
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                      stima/gg
+                                    </p>
+                                  </>
+                                );
+                              }
+                              if (material.manufacturer_retail_price) {
+                                return (
+                                  <>
+                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                      € {Number(material.manufacturer_retail_price).toFixed(2)}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                      MSRP
+                                    </p>
+                                  </>
+                                );
+                              }
+                            }
+
+                            // Sale / service / no rental ref: mostra MSRP o costo standard
+                            const fallbackPrice = material.manufacturer_retail_price ?? material.standard_cost;
+                            return (
+                              <>
+                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                  € {Number(fallbackPrice || 0).toFixed(2)}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {material.manufacturer_retail_price ? "MSRP" : (material.unit ?? "std.")}
+                                </p>
+                              </>
+                            );
+                          })()}
                         </div>
                       </CommandItem>
                     ))}

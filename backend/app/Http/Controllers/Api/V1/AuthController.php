@@ -103,11 +103,15 @@ class AuthController extends Controller
     }
 
     /**
-     * Logout user (revoke current token and clear cookie)
+     * Logout user (revoke current token and clear cookie).
+     * Public route: always clears the cookie, even if the token is already invalid.
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        // Try to revoke the token if valid; ignore if already expired/missing (e.g. after DB reset)
+        if ($request->user()) {
+            $request->user()->currentAccessToken()->delete();
+        }
 
         return response()->json([
             'success' => true,

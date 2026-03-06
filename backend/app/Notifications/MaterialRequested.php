@@ -38,13 +38,13 @@ class MaterialRequested extends Notification implements ShouldQueue
     {
         $material = $this->materialRequest->material;
         $worker = $this->materialRequest->requestedByWorker;
-        $site = $this->materialRequest->site;
+        $project = $this->materialRequest->project;
         $priority = $this->materialRequest->priority->label();
 
         $message = (new MailMessage)
-            ->subject("Nuova Richiesta Materiale - {$site->name}")
+            ->subject("Nuova Richiesta Materiale - {$project->name}")
             ->greeting("Ciao {$notifiable->name},")
-            ->line("**{$worker->full_name}** ha richiesto materiale per il cantiere **{$site->name}**.")
+            ->line("**{$worker->full_name}** ha richiesto materiale per il progetto **{$project->name}**.")
             ->line('')
             ->line("**Materiale:** {$material->name}")
             ->line("**Quantità:** {$this->materialRequest->quantity_requested} {$this->materialRequest->unit_of_measure}")
@@ -60,7 +60,7 @@ class MaterialRequested extends Notification implements ShouldQueue
                 ->line($this->materialRequest->reason);
         }
 
-        $message->action('Visualizza Richiesta', url("/dashboard/sites/{$site->id}?tab=richieste"))
+        $message->action('Visualizza Richiesta', url("/dashboard/projects/{$project->id}?tab=richieste"))
             ->line('Accedi alla piattaforma per approvare o rifiutare la richiesta.');
 
         return $message;
@@ -76,8 +76,8 @@ class MaterialRequested extends Notification implements ShouldQueue
         return [
             'type' => 'material_requested',
             'material_request_id' => $this->materialRequest->id,
-            'site_id' => $this->materialRequest->site_id,
-            'site_name' => $this->materialRequest->site->name,
+            'project_id' => $this->materialRequest->project_id,
+            'project_name' => $this->materialRequest->project->name,
             'material_name' => $this->materialRequest->material->name,
             'quantity' => $this->materialRequest->quantity_requested,
             'priority' => $this->materialRequest->priority->value,

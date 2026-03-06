@@ -40,6 +40,11 @@ class Product extends Model implements HasMedia
         'package_volume',
         'package_dimensions',
         'is_rentable',
+        'ownership_type',
+        'is_premium',
+        'subrental_markup',
+        'rental_price_estimated',
+        'estimated_base_day',
         'quantity_out_on_rental',
         'unit',
         'standard_cost',
@@ -71,6 +76,11 @@ class Product extends Model implements HasMedia
             'package_volume' => 'decimal:2',
             'is_package' => 'boolean',
             'is_rentable' => 'boolean',
+            'ownership_type' => 'string',
+            'is_premium' => 'boolean',
+            'subrental_markup' => 'decimal:2',
+            'rental_price_estimated' => 'boolean',
+            'estimated_base_day' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }
@@ -125,15 +135,35 @@ class Product extends Model implements HasMedia
         return $this->hasMany(StockMovement::class, 'material_id');
     }
 
-    public function siteAssignments(): HasMany
+    public function projectMaterials(): HasMany
     {
-        return $this->hasMany(SiteMaterial::class, 'material_id');
+        return $this->hasMany(ProjectMaterial::class, 'product_id');
+    }
+
+    public function subrentalCostHistory(): HasMany
+    {
+        return $this->hasMany(SubrentalCostHistory::class);
     }
 
     // Category relationship (NEW)
     public function category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'category_id');
+    }
+
+    public function subrentalSuppliers(): HasMany
+    {
+        return $this->hasMany(ProductSubrentalSupplier::class);
+    }
+
+    public function preferredSubrentalSupplier(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ProductSubrentalSupplier::class)->where('is_preferred', true);
+    }
+
+    public function embedding(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ProductEmbedding::class);
     }
 
     /**
@@ -406,6 +436,23 @@ class Product extends Model implements HasMedia
             ->with('relatedProduct')
             ->get()
             ->sum(fn ($rel) => $rel->calculateQuantity(1) * $rel->relatedProduct->effective_purchase_price);
+    }
+
+    /**
+     * Calculate composite sale price as sum of component sale prices × quantity.
+     *
+     * Delegates to ProductPricingService::calculateCompositePrices() so the
+     * logic lives in the service layer (service for calculations — no DB writes).
+     */
+    public function calculateCompositeSalePrice(): float
+    {
+        if ($this->product_type !== ProductType::COMPOSITE) {
+            return 0.0;
+        }
+
+        $prices = app(\App\Services\ProductPricingService::class)->calculateCompositePrices($this);
+
+        return $prices['sale_price'];
     }
 
     /**
@@ -749,7 +796,11 @@ class Product extends Model implements HasMedia
         $visited[] = $this->id;
 
         foreach ($this->components as $component) {
-            $product = $component->product;
+            $product = $component->relatedProduct;
+
+            if (! $product) {
+                continue;
+            }
 
             if ($product->product_type === ProductType::COMPOSITE) {
                 if ($product->hasCircularDependency($visited)) {

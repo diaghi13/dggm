@@ -11,6 +11,8 @@ import {
   permissionsApi,
   Role,
 } from "@/lib/api/users";
+import { rentalProfilesApi } from "@/lib/api/rental-profiles";
+import type { RentalProfile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,6 +32,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -60,6 +69,8 @@ interface Category {
   description: string | null;
   sort_order: number;
   is_active: boolean;
+  rental_profile_id: number | null;
+  rentalProfile: RentalProfile | null;
 }
 
 interface DependencyType {
@@ -105,6 +116,9 @@ export default function SettingsPage() {
   const [categoryCode, setCategoryCode] = useState("");
   const [categoryDescription, setCategoryDescription] = useState("");
   const [categorySortOrder, setCategorySortOrder] = useState("0");
+  const [categoryRentalProfileId, setCategoryRentalProfileId] = useState<
+    number | null
+  >(null);
 
   // Dependency Type state
   const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
@@ -189,6 +203,12 @@ export default function SettingsPage() {
       setCompanyWebsite(companySettings["company.website"] || "");
     }
   }, [companySettings]);
+
+  // Fetch rental profiles
+  const { data: rentalProfiles = [] } = useQuery<RentalProfile[]>({
+    queryKey: ["rental-profiles"],
+    queryFn: rentalProfilesApi.getAll,
+  });
 
   // Fetch categories
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
@@ -316,6 +336,7 @@ export default function SettingsPage() {
     setCategoryCode("");
     setCategoryDescription("");
     setCategorySortOrder("0");
+    setCategoryRentalProfileId(null);
   };
 
   const resetTypeForm = () => {
@@ -557,6 +578,7 @@ export default function SettingsPage() {
           code: categoryCode,
           description: categoryDescription || undefined,
           sort_order: parseInt(categorySortOrder) || 0,
+          rental_profile_id: categoryRentalProfileId,
         },
       });
     } else {
@@ -565,6 +587,7 @@ export default function SettingsPage() {
         code: categoryCode,
         description: categoryDescription || undefined,
         sort_order: parseInt(categorySortOrder) || 0,
+        rental_profile_id: categoryRentalProfileId,
       });
     }
   };
@@ -601,6 +624,7 @@ export default function SettingsPage() {
     setCategoryCode(category.code);
     setCategoryDescription(category.description || "");
     setCategorySortOrder(category.sort_order.toString());
+    setCategoryRentalProfileId(category.rental_profile_id ?? null);
     setIsCategoryDialogOpen(true);
   };
 
@@ -731,6 +755,46 @@ export default function SettingsPage() {
                               placeholder="0"
                             />
                           </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="category-rental-profile">
+                              Profilo Noleggio
+                            </Label>
+                            <Select
+                              value={
+                                categoryRentalProfileId !== null
+                                  ? String(categoryRentalProfileId)
+                                  : "__global__"
+                              }
+                              onValueChange={(value) =>
+                                setCategoryRentalProfileId(
+                                  value === "__global__" ? null : Number(value),
+                                )
+                              }
+                            >
+                              <SelectTrigger id="category-rental-profile">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__global__">
+                                  Nessun profilo (impostazioni globali)
+                                </SelectItem>
+                                {rentalProfiles.map((profile) => (
+                                  <SelectItem
+                                    key={profile.id}
+                                    value={String(profile.id)}
+                                  >
+                                    {profile.name} — {profile.sector}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              Profilo tariffe noleggio specifico per questa
+                              categoria. Se non selezionato, verranno usate le
+                              impostazioni globali.
+                            </p>
+                          </div>
                         </div>
 
                         <DialogFooter>
@@ -774,6 +838,7 @@ export default function SettingsPage() {
                           <TableHead>Codice</TableHead>
                           <TableHead>Descrizione</TableHead>
                           <TableHead className="text-center">Ordine</TableHead>
+                          <TableHead>Profilo Noleggio</TableHead>
                           <TableHead className="text-right">Azioni</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -791,6 +856,20 @@ export default function SettingsPage() {
                             </TableCell>
                             <TableCell className="text-center">
                               {category.sort_order}
+                            </TableCell>
+                            <TableCell>
+                              {category.rentalProfile ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs font-normal"
+                                >
+                                  {category.rentalProfile.name}
+                                </Badge>
+                              ) : (
+                                <span className="text-sm text-slate-400 dark:text-slate-600">
+                                  —
+                                </span>
+                              )}
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">

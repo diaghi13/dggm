@@ -14,7 +14,7 @@ class MaterialRequest extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'site_id',
+        'project_id',
         'material_id',
         'requested_by_worker_id',
         'requested_by_user_id',
@@ -53,9 +53,9 @@ class MaterialRequest extends Model
     }
 
     // Relationships
-    public function site(): BelongsTo
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(Site::class);
+        return $this->belongsTo(Project::class);
     }
 
     public function material(): BelongsTo
@@ -119,9 +119,9 @@ class MaterialRequest extends Model
         return $query->whereIn('priority', [MaterialRequestPriority::High, MaterialRequestPriority::Urgent]);
     }
 
-    public function scopeBySite($query, int $siteId)
+    public function scopeByProject($query, int $projectId)
     {
-        return $query->where('site_id', $siteId);
+        return $query->where('project_id', $projectId);
     }
 
     public function scopeByWorker($query, int $workerId)

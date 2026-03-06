@@ -94,9 +94,9 @@ class Worker extends Model
         return $this->hasOne(WorkerPayrollData::class);
     }
 
-    public function sites(): BelongsToMany
+    public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Site::class, 'site_workers')
+        return $this->belongsToMany(Project::class, 'project_workers')
             ->withPivot([
                 'site_role',
                 'assigned_from',
@@ -109,14 +109,14 @@ class Worker extends Model
             ->withTimestamps();
     }
 
-    public function siteAssignments(): HasMany
+    public function projectAssignments(): HasMany
     {
-        return $this->hasMany(SiteWorker::class);
+        return $this->hasMany(ProjectWorker::class);
     }
 
     public function laborCosts(): HasMany
     {
-        return $this->hasMany(SiteLaborCost::class);
+        return $this->hasMany(ProjectLaborCost::class);
     }
 
     // ==================== SCOPES ====================
@@ -231,52 +231,52 @@ class Worker extends Model
     }
 
     /**
-     * Get total hours worked on a specific site
+     * Get total hours worked on a specific project
      */
-    public function getTotalHoursOnSite(int $siteId): float
+    public function getTotalHoursOnProject(int $projectId): float
     {
         return $this->laborCosts()
-            ->where('site_id', $siteId)
+            ->where('project_id', $projectId)
             ->sum('hours_worked') ?? 0;
     }
 
     /**
-     * Get total cost generated on a specific site
+     * Get total cost generated on a specific project
      */
-    public function getTotalCostOnSite(int $siteId): float
+    public function getTotalCostOnProject(int $projectId): float
     {
         return $this->laborCosts()
-            ->where('site_id', $siteId)
+            ->where('project_id', $projectId)
             ->sum('total_cost') ?? 0;
     }
 
     /**
-     * Get active site assignments
+     * Get active project assignments
      */
-    public function getActiveSites()
+    public function getActiveProjects()
     {
-        return $this->sites()
+        return $this->projects()
             ->wherePivot('is_active', true)
             ->wherePivot('assigned_from', '<=', now())
             ->where(function ($query) {
                 $query->wherePivotNull('assigned_to')
-                    ->orWhere('site_workers.assigned_to', '>=', now());
+                    ->orWhere('project_workers.assigned_to', '>=', now());
             })
             ->get();
     }
 
     /**
-     * Check if worker is assigned to a specific site
+     * Check if worker is assigned to a specific project
      */
-    public function isAssignedToSite(int $siteId): bool
+    public function isAssignedToProject(int $projectId): bool
     {
-        return $this->sites()
-            ->where('sites.id', $siteId)
+        return $this->projects()
+            ->where('projects.id', $projectId)
             ->wherePivot('is_active', true)
             ->wherePivot('assigned_from', '<=', now())
             ->where(function ($query) {
                 $query->wherePivotNull('assigned_to')
-                    ->orWhere('site_workers.assigned_to', '>=', now());
+                    ->orWhere('project_workers.assigned_to', '>=', now());
             })
             ->exists();
     }

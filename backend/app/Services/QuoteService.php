@@ -59,7 +59,7 @@ class QuoteService
             }
         });
 
-        return $quote->fresh(['customer', 'projectManager', 'items.children', 'template', 'site']);
+        return $quote->fresh(['customer', 'projectManager', 'items.children', 'template', 'project']);
     }
 
     protected function syncItems(Quote $quote, array $items): void
@@ -115,12 +115,5 @@ class QuoteService
     protected function approveQuote(Quote $quote): void
     {
         $quote->approve();
-
-        // Automatically convert to site when approved
-        $site = $quote->convertToSite();
-
-        if (! $site) {
-            throw new \Exception('Failed to convert quote to site');
-        }
     }
 }

@@ -18,8 +18,9 @@ use App\Events\PasswordReset;
 use App\Events\PasswordResetRequested;
 use App\Events\PriceListGenerated;
 use App\Events\PriceListItemsGenerationCompleted;
+use App\Events\ProductCostUpdated;
 use App\Events\QuoteApproved;
-use App\Events\QuoteConvertedToSite;
+use App\Events\QuoteConvertedToProject;
 use App\Events\QuoteCreated;
 use App\Events\QuoteDeleted;
 use App\Events\QuoteRejected;
@@ -49,14 +50,27 @@ use App\Listeners\NotifyProjectManagerOfQuoteApproval;
 use App\Listeners\NotifyWarehouseManagerListener;
 use App\Listeners\ReverseStockMovementsListener;
 use App\Listeners\SendLowStockAlert;
+use App\Listeners\UpdateCompositePricesFromComponentListener;
 use App\Listeners\UpdateProductStandardCostListener;
-use App\Listeners\UpdateSiteMaterialsListener;
+use App\Listeners\UpdateProjectMaterialQuantitiesListener;
 use App\Listeners\UpdateWarehouseCache;
 use App\Listeners\UpsertSupplierProductFromDdtListener;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
 {
+    /**
+     * Register services — disable auto-discovery FIRST to prevent the base
+     * Illuminate\Foundation\Support\Providers\EventServiceProvider instance
+     * (loaded separately) from scanning app/Listeners and registering duplicate
+     * listeners via type-hint detection.
+     */
+    public function register(): void
+    {
+        static::disableEventDiscovery();
+        parent::register();
+    }
+
     /**
      * The event listener mappings for the application.
      *
@@ -108,7 +122,7 @@ class EventServiceProvider extends ServiceProvider
             LogDdtActivityListener::class,
         ],
         DdtDelivered::class => [
-            UpdateSiteMaterialsListener::class, // MUST run first
+            UpdateProjectMaterialQuantitiesListener::class, // MUST run first
             NotifyWarehouseManagerListener::class,
             LogDdtActivityListener::class,
         ],
@@ -136,6 +150,16 @@ class EventServiceProvider extends ServiceProvider
         ],
         PasswordChanged::class => [
             LogPasswordActivity::class,
+        ],
+
+        // Product Cost Events
+        // RecalculatePriceListItemsForProductJob is dispatched directly in
+        // UpdateProductStandardCostListener, conditional on the
+        // pricing.auto_recalculate_price_list_on_purchase setting.
+        // UpdateCompositePricesFromComponentListener propagates cost changes
+        // to all parent composite products that contain this product.
+        ProductCostUpdated::class => [
+            UpdateCompositePricesFromComponentListener::class,
         ],
 
         // Pricing Events
@@ -172,7 +196,7 @@ class EventServiceProvider extends ServiceProvider
         QuoteDeleted::class => [
             LogQuoteActivity::class,
         ],
-        QuoteConvertedToSite::class => [
+        QuoteConvertedToProject::class => [
             LogQuoteActivity::class,
         ],
     ];

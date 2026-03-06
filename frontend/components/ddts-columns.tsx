@@ -67,13 +67,13 @@ export const createDdtsColumns = (
         return <TextCell text={ddt.customer.name} />;
       }
 
-      if (ddt.site) {
+      if (ddt.project) {
         return (
           <Link
-            href={`/sites/${ddt.site.id}`}
+            href={`/projects/${ddt.project.id}`}
             className="hover:underline text-blue-600 dark:text-blue-400 text-sm"
           >
-            {ddt.site.code} - {ddt.site.name}
+            {ddt.project.code} - {ddt.project.name}
           </Link>
         );
       }

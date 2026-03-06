@@ -18,7 +18,7 @@ class GetQuoteByIdQuery
             'paymentTerm',
             'financialResource',
             'warrantyType',
-            'site',
+            'project',
             'template',
             'items' => function ($query) {
                 $query->with(['product', 'priceListItem', 'children'])

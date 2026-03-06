@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { stockMovementsApi } from '@/lib/api/stock-movements';
 import { warehousesApi } from '@/lib/api/warehouses';
 import { productsApi } from '@/lib/api/products';
+import { suppliersApi } from '@/lib/api/suppliers';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -44,6 +45,7 @@ interface FormData {
   from_warehouse_id?: number;
   to_warehouse_id?: number;
   product_id: number;
+  supplier_id?: number;
   quantity: number;
   unit_cost?: number;
   reason?: string;
@@ -78,6 +80,7 @@ export function CreateStockMovementDialog({
   const movementType = watch('type');
   const selectedWarehouseId = watch('warehouse_id');
   const selectedProductId = watch('product_id');
+  const selectedSupplierId = watch('supplier_id');
 
   // Fetch warehouses
   const { data: warehousesData } = useQuery({
@@ -95,6 +98,68 @@ export function CreateStockMovementDialog({
 
   const products = productsData?.data ?? [];
 
+  // Fetch suppliers (solo per intake)
+  const { data: suppliersData } = useQuery({
+    queryKey: ['suppliers', { is_active: true, per_page: 200 }],
+    queryFn: () => suppliersApi.getAll({ is_active: true, per_page: 200 }),
+    enabled: movementType === 'intake',
+  });
+
+  const suppliers = suppliersData?.data ?? [];
+
+  // Fetch supplier prices per il prodotto selezionato (solo per intake)
+  const { data: supplierPrices, isLoading: isLoadingSupplierPrices } = useQuery({
+    queryKey: ['product-supplier-prices', selectedProductId],
+    queryFn: () => productsApi.getSupplierPrices(selectedProductId),
+    enabled: movementType === 'intake' && !!selectedProductId,
+  });
+
+  // Pre-popola unit_cost quando cambia prodotto
+  useEffect(() => {
+    if (movementType !== 'intake') return;
+    if (!selectedProductId) return;
+
+    const product = products.find((p: App.Data.ProductData) => p.id === selectedProductId);
+
+    if (selectedSupplierId && supplierPrices) {
+      // Se c'è fornitore selezionato, usa il prezzo del fornitore
+      const supplierPrice = supplierPrices.find(
+        (sp) => sp.supplier_id === selectedSupplierId,
+      );
+      if (supplierPrice) {
+        setValue('unit_cost', supplierPrice.final_price ?? supplierPrice.purchase_price);
+        return;
+      }
+    }
+
+    // Fallback al costo standard del prodotto
+    if (product?.standard_cost != null) {
+      setValue('unit_cost', product.standard_cost);
+    }
+  }, [selectedProductId, supplierPrices]);
+
+  // Aggiorna unit_cost quando cambia il fornitore (se c'è già un prodotto)
+  useEffect(() => {
+    if (movementType !== 'intake') return;
+    if (!selectedProductId || !supplierPrices) return;
+
+    if (selectedSupplierId) {
+      const supplierPrice = supplierPrices.find(
+        (sp) => sp.supplier_id === selectedSupplierId,
+      );
+      if (supplierPrice) {
+        setValue('unit_cost', supplierPrice.final_price ?? supplierPrice.purchase_price);
+        return;
+      }
+    }
+
+    // Se il fornitore è stato rimosso, torna al costo standard
+    const product = products.find((p: App.Data.ProductData) => p.id === selectedProductId);
+    if (product?.standard_cost != null) {
+      setValue('unit_cost', product.standard_cost);
+    }
+  }, [selectedSupplierId]);
+
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
       switch (data.type) {
@@ -104,6 +169,7 @@ export function CreateStockMovementDialog({
             product_id: data.product_id,
             quantity: data.quantity,
             unit_cost: data.unit_cost,
+            supplier_id: data.supplier_id,
             reference: data.reference,
             notes: data.notes,
           });
@@ -191,6 +257,46 @@ export function CreateStockMovementDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Fornitore — solo per intake, in cima */}
+          {movementType === 'intake' && (
+            <div className="space-y-2">
+              <Label>Fornitore <span className="text-muted-foreground text-xs">(opzionale)</span></Label>
+              <Select
+                value={selectedSupplierId != null ? selectedSupplierId.toString() : '__none__'}
+                onValueChange={(value) =>
+                  setValue('supplier_id', value !== '__none__' ? parseInt(value) : undefined)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona fornitore" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nessun fornitore</SelectItem>
+                  {suppliers
+                    .filter((s: App.Data.SupplierData) => s.id != null)
+                    .map((s: App.Data.SupplierData) => (
+                      <SelectItem key={s.id} value={s.id!.toString()}>
+                        {s.company_name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {selectedProductId && selectedSupplierId && supplierPrices && (() => {
+                const sp = supplierPrices.find((p) => p.supplier_id === selectedSupplierId);
+                return sp ? (
+                  <p className="text-xs text-muted-foreground">
+                    Prezzo fornitore: € {(sp.final_price ?? sp.purchase_price).toFixed(2)}
+                    {sp.supplier_product_code && ` — cod. ${sp.supplier_product_code}`}
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Nessun prezzo configurato per questo fornitore
+                  </p>
+                );
+              })()}
+            </div>
+          )}
 
           {/* Magazzino/i */}
           {movementType !== 'transfer' ? (
@@ -288,19 +394,30 @@ export function CreateStockMovementDialog({
             )}
           </div>
 
-          {/* Campi specifici per tipo */}
+          {/* Campi specifici per tipo intake */}
           {movementType === 'intake' && (
             <>
+              {/* Costo Unitario */}
               <div className="space-y-2">
                 <Label>Costo Unitario</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  {...register('unit_cost', { valueAsNumber: true })}
-                />
+                <div className="relative">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    disabled={isLoadingSupplierPrices}
+                    {...register('unit_cost', { valueAsNumber: true })}
+                  />
+                  {isLoadingSupplierPrices && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Riferimento */}
               <div className="space-y-2">
                 <Label>Riferimento (es. DDT fornitore)</Label>
                 <Input

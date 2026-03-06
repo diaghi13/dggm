@@ -34,7 +34,7 @@ class ConfirmDdtAction
             // Dispatch event - GenerateStockMovementsListener will create movements
             DdtConfirmed::dispatch($ddt->fresh(['items.product', 'fromWarehouse', 'toWarehouse']), auth()->id());
 
-            return $ddt->fresh(['items.product', 'stockMovements.product', 'fromWarehouse', 'toWarehouse', 'supplier', 'customer', 'site']);
+            return $ddt->fresh(['items.product', 'stockMovements.product', 'fromWarehouse', 'toWarehouse', 'supplier', 'customer', 'project']);
         });
     }
 

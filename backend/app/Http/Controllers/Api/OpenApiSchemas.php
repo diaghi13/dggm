@@ -35,7 +35,7 @@ namespace App\Http\Controllers\Api;
  *     @OA\Property(property="price_list_id", type="integer", nullable=true, example=1, description="Price list ID"),
  *     @OA\Property(property="payment_term_id", type="integer", nullable=true, example=1, description="Payment term ID"),
  *     @OA\Property(property="template_id", type="integer", nullable=true, example=1, description="Quote template ID"),
- *     @OA\Property(property="site_id", type="integer", nullable=true, example=null, description="Site ID if converted"),
+ *     @OA\Property(property="project_id", type="integer", nullable=true, example=null, description="Project ID if converted"),
  *     @OA\Property(property="warranty_type_id", type="integer", nullable=true, example=1, description="Warranty type ID"),
  *     @OA\Property(property="work_start_description", type="string", nullable=true, example="Inizio lavori previsto per marzo 2026", description="Work start description"),
  *     @OA\Property(property="work_start_date", type="string", format="date", nullable=true, example="2026-03-15", description="Planned work start date"),

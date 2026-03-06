@@ -37,15 +37,15 @@ class MaterialRequestApproved extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $material = $this->materialRequest->material;
-        $site = $this->materialRequest->site;
+        $project = $this->materialRequest->project;
         $approvedBy = $this->materialRequest->approvedByUser;
 
         $message = (new MailMessage)
-            ->subject("Richiesta Materiale Approvata - {$site->name}")
+            ->subject("Richiesta Materiale Approvata - {$project->name}")
             ->greeting("Ciao {$notifiable->name},")
             ->line('La tua richiesta di materiale è stata **approvata**!')
             ->line('')
-            ->line("**Cantiere:** {$site->name}")
+            ->line("**Progetto:** {$project->name}")
             ->line("**Materiale:** {$material->name}")
             ->line("**Quantità richiesta:** {$this->materialRequest->quantity_requested} {$this->materialRequest->unit_of_measure}")
             ->line("**Quantità approvata:** {$this->materialRequest->quantity_approved} {$this->materialRequest->unit_of_measure}")
@@ -57,7 +57,7 @@ class MaterialRequestApproved extends Notification implements ShouldQueue
                 ->line($this->materialRequest->response_notes);
         }
 
-        $message->action('Visualizza Dettagli', url("/dashboard/sites/{$site->id}"))
+        $message->action('Visualizza Dettagli', url("/dashboard/projects/{$project->id}"))
             ->line('Il materiale sarà presto disponibile in cantiere.');
 
         return $message;
@@ -73,8 +73,8 @@ class MaterialRequestApproved extends Notification implements ShouldQueue
         return [
             'type' => 'material_request_approved',
             'material_request_id' => $this->materialRequest->id,
-            'site_id' => $this->materialRequest->site_id,
-            'site_name' => $this->materialRequest->site->name,
+            'project_id' => $this->materialRequest->project_id,
+            'project_name' => $this->materialRequest->project->name,
             'material_name' => $this->materialRequest->material->name,
             'quantity_approved' => $this->materialRequest->quantity_approved,
             'approved_by' => $this->materialRequest->approvedByUser->name,

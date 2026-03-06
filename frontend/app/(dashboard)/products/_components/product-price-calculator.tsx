@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productsApi } from '@/lib/api/products';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calculator, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
+import { Calculator, TrendingUp, AlertCircle, RefreshCw, Save } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 import type { Product, ProductRelation } from '@/lib/types';
 
 interface ProductPriceCalculatorProps {
@@ -31,16 +32,48 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
   const [manualPrice, setManualPrice] = useState<string>(product.standard_cost?.toString() || '');
   const [useManualPrice, setUseManualPrice] = useState<boolean>(false);
 
-  // Fetch relations and calculate price
-  const { data: priceData, isLoading, refetch } = useQuery({
+  const queryClient = useQueryClient();
+
+  // Fetch relations and calculate price client-side
+  const { data: priceData, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['product-price-calculation', product.id, baseQuantity],
     queryFn: () => calculatePriceBreakdown(product.id!, baseQuantity),
     enabled: !!product.id,
   });
 
-  const calculatedPrice = priceData?.totalCost || 0;
+  const calculatedPrice = priceData?.totalCost ?? 0;
   const finalPrice = useManualPrice ? parseFloat(manualPrice) || 0 : calculatedPrice;
-  const hasRelations = priceData && priceData.breakdown.length > 0;
+  const hasRelations = priceData !== undefined && priceData.breakdown.length > 0;
+
+  // Determine if there is a valid price to apply
+  const canApplyPrice = useManualPrice
+    ? (parseFloat(manualPrice) || 0) > 0
+    : hasRelations;
+
+  // Mutation to persist the price via PATCH /products/{id}
+  // The backend ProductData DTO requires code, name and product_type even for partial updates,
+  // so we merge the existing product fields with the updated standard_cost.
+  const applyPriceMutation = useMutation({
+    mutationFn: () =>
+      productsApi.update(product.id!, {
+        code: product.code,
+        name: product.name,
+        product_type: product.product_type,
+        standard_cost: finalPrice,
+      }),
+    onSuccess: () => {
+      toast.success('Prezzo aggiornato', {
+        description: `Costo standard aggiornato a € ${finalPrice.toFixed(2)}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['product', product.id] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product-pricing', product.id] });
+      queryClient.invalidateQueries({ queryKey: ['composite-breakdown', product.id] });
+    },
+    onError: () => {
+      toast.error('Errore nel salvataggio del prezzo');
+    },
+  });
 
   return (
     <Card>
@@ -55,8 +88,13 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
               Prezzo calcolato automaticamente dalle relazioni del prodotto
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
             Ricalcola
           </Button>
         </div>
@@ -233,13 +271,11 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
               <Button
-                onClick={() => {
-                  // TODO: Implement save functionality
-                  console.log('Save price:', finalPrice);
-                }}
-                disabled={!useManualPrice && !hasRelations}
+                onClick={() => applyPriceMutation.mutate()}
+                disabled={!canApplyPrice || applyPriceMutation.isPending}
               >
-                Applica Prezzo Calcolato
+                <Save className={`h-4 w-4 mr-2 ${applyPriceMutation.isPending ? 'animate-spin' : ''}`} />
+                {applyPriceMutation.isPending ? 'Salvataggio...' : 'Applica Prezzo Calcolato'}
               </Button>
               <Button
                 variant="outline"
@@ -247,6 +283,7 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
                   setUseManualPrice(false);
                   setManualPrice(product.standard_cost?.toString() || '');
                 }}
+                disabled={applyPriceMutation.isPending}
               >
                 Reset
               </Button>

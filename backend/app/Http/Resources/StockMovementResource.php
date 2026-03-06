@@ -23,7 +23,7 @@ class StockMovementResource extends JsonResource
             'movement_date' => $this->movement_date?->toISOString(),
             'from_warehouse_id' => $this->from_warehouse_id,
             'to_warehouse_id' => $this->to_warehouse_id,
-            'site_id' => $this->site_id,
+            'project_id' => $this->project_id,
             'supplier_id' => $this->supplier_id,
             'supplier_document' => $this->supplier_document,
             'user_id' => $this->user_id,
@@ -57,10 +57,10 @@ class StockMovementResource extends JsonResource
                 'name' => $this->toWarehouse->name,
             ] : null),
 
-            'site' => $this->whenLoaded('site', fn () => $this->site ? [
-                'id' => $this->site->id,
-                'code' => $this->site->code,
-                'name' => $this->site->name,
+            'project' => $this->whenLoaded('project', fn () => $this->project ? [
+                'id' => $this->project->id,
+                'code' => $this->project->code,
+                'name' => $this->project->name,
             ] : null),
 
             'supplier' => $this->whenLoaded('supplier', fn () => $this->supplier ? [

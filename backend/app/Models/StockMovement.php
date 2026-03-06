@@ -22,7 +22,7 @@ class StockMovement extends Model
         'movement_date',
         'from_warehouse_id',
         'to_warehouse_id',
-        'site_id',
+        'project_id',
         'supplier_id',
         'supplier_document',
         'user_id',
@@ -61,9 +61,9 @@ class StockMovement extends Model
         return $this->belongsTo(Warehouse::class, 'to_warehouse_id');
     }
 
-    public function site(): BelongsTo
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(Site::class);
+        return $this->belongsTo(Project::class);
     }
 
     public function supplier(): BelongsTo
@@ -87,9 +87,9 @@ class StockMovement extends Model
         return $query->where('type', $type);
     }
 
-    public function scopeForSite($query, int $siteId)
+    public function scopeForProject($query, int $projectId)
     {
-        return $query->where('site_id', $siteId);
+        return $query->where('project_id', $projectId);
     }
 
     public function scopeInPeriod($query, $startDate, $endDate)

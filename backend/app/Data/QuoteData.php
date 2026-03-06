@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use App\Enums\QuoteType;
 use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\Max;
@@ -50,6 +51,11 @@ class QuoteData extends Data
         // Status & Date (with defaults)
         public string $status = 'draft',
 
+        public QuoteType $quote_type = QuoteType::Sale,
+
+        /** Giorni fatturabili (usage period). null = calcolato da work_end - work_start. */
+        public ?int $event_days = null,
+
         #[WithTransformer(DateTimeInterfaceTransformer::class, format: 'Y-m-d')]
         public ?\Carbon\Carbon $issue_date = null,
 
@@ -74,8 +80,8 @@ class QuoteData extends Data
 
         public ?int $template_id = null,
 
-        #[Exists('sites', 'id')]
-        public ?int $site_id = null,
+        #[Exists('projects', 'id')]
+        public ?int $project_id = null,
 
         #[Exists('warranty_types', 'id')]
         public ?int $warranty_type_id = null,
@@ -144,7 +150,7 @@ class QuoteData extends Data
 
         public WarrantyTypeData|Lazy|Optional $warrantyType = new Optional,
 
-        public SiteData|Lazy|Optional $site = new Optional,
+        public ProjectData|Lazy|Optional $project = new Optional,
 
         /** @var DataCollection<QuoteItemData>|Lazy|Optional */
         public DataCollection|Lazy|Optional $items = new Optional,
@@ -169,6 +175,8 @@ class QuoteData extends Data
             'province' => ['nullable', 'string', 'max:2'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'status' => ['string', 'in:draft,sent,approved,rejected,expired,converted'],
+            'quote_type' => ['nullable', 'string', Rule::in(array_column(QuoteType::cases(), 'value'))],
+            'event_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
             'issue_date' => ['nullable', 'date'],
             'expiry_date' => ['nullable', 'date', 'after_or_equal:issue_date'],
             'sent_date' => ['nullable', 'date'],
@@ -177,7 +185,7 @@ class QuoteData extends Data
             'payment_term_id' => ['nullable', 'exists:payment_terms,id'],
             'financial_resource_id' => ['nullable', 'exists:financial_resources,id'],
             'template_id' => ['nullable', 'exists:quote_templates,id'],
-            'site_id' => ['nullable', 'exists:sites,id'],
+            'project_id' => ['nullable', 'exists:projects,id'],
             'warranty_type_id' => ['nullable', 'exists:warranty_types,id'],
             'subtotal' => ['nullable', 'numeric', 'min:0'],
             'discount_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],

@@ -87,6 +87,8 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
       queryClient.invalidateQueries({
         queryKey: ["product-relations", product.id],
       });
+      queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+      queryClient.invalidateQueries({ queryKey: ["composite-breakdown", product.id] });
       setIsAddDialogOpen(false);
       resetForm();
       toast.success("Componente aggiunto", {
@@ -114,6 +116,8 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
       queryClient.invalidateQueries({
         queryKey: ["product-relations", product.id],
       });
+      queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+      queryClient.invalidateQueries({ queryKey: ["composite-breakdown", product.id] });
       setEditingComponent(null);
       resetForm();
       toast.success("Componente aggiornato");
@@ -132,6 +136,8 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
       queryClient.invalidateQueries({
         queryKey: ["product-relations", product.id],
       });
+      queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+      queryClient.invalidateQueries({ queryKey: ["composite-breakdown", product.id] });
       toast.success("Componente rimosso");
     },
     onError: (error: Error) => {

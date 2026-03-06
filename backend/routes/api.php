@@ -21,15 +21,19 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductPricingController;
 use App\Http\Controllers\Api\V1\ProductRelationController;
 use App\Http\Controllers\Api\V1\ProductRelationTypeController;
+use App\Http\Controllers\Api\V1\ProductSubrentalSupplierController;
 use App\Http\Controllers\Api\V1\ProductUnitTypeController;
+use App\Http\Controllers\Api\V1\ProjectController;
+use App\Http\Controllers\Api\V1\ProjectDdtController;
+use App\Http\Controllers\Api\V1\ProjectLaborCostController;
+use App\Http\Controllers\Api\V1\ProjectMaterialController;
+use App\Http\Controllers\Api\V1\ProjectRoleController;
+use App\Http\Controllers\Api\V1\ProjectWorkerController;
 use App\Http\Controllers\Api\V1\QuoteController;
+use App\Http\Controllers\Api\V1\RentalAnalyticsController;
+use App\Http\Controllers\Api\V1\RentalProfileController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SettingController;
-use App\Http\Controllers\Api\V1\SiteController;
-use App\Http\Controllers\Api\V1\SiteDdtController;
-use App\Http\Controllers\Api\V1\SiteMaterialController;
-use App\Http\Controllers\Api\V1\SiteRoleController;
-use App\Http\Controllers\Api\V1\SiteWorkerController;
 use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\WarehouseController;
@@ -40,15 +44,9 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
 */
 
 // Password reset web route (for email links)
-// This redirects to frontend with token
 Route::get('/password-reset/{token}', function ($token) {
     $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
     $email = request()->query('email');
@@ -61,6 +59,7 @@ Route::prefix('v1')->group(function () {
     // Public routes (no authentication)
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/logout', [AuthController::class, 'logout']); // public: must clear cookie even with invalid token
         Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     });
@@ -73,7 +72,6 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         // Auth routes
         Route::prefix('auth')->group(function () {
-            Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/me', [AuthController::class, 'me']);
             Route::post('/change-password', [AuthController::class, 'changePassword']);
 
@@ -99,10 +97,7 @@ Route::prefix('v1')->group(function () {
 
         // Settings (key-value system)
         Route::prefix('settings')->group(function () {
-            // Get all available setting types
             Route::get('types', [SettingController::class, 'types']);
-
-            // Get settings grouped by category
             Route::get('grouped', [SettingController::class, 'grouped']);
 
             // Feature Flags
@@ -135,8 +130,8 @@ Route::prefix('v1')->group(function () {
         // Customers
         Route::apiResource('customers', CustomerController::class);
 
-        // Sites
-        Route::apiResource('sites', SiteController::class);
+        // Projects (replaces Sites)
+        Route::apiResource('projects', ProjectController::class);
 
         // Suppliers
         Route::apiResource('suppliers', SupplierController::class);
@@ -154,7 +149,7 @@ Route::prefix('v1')->group(function () {
         Route::post('quotes/{quote}/send', [QuoteController::class, 'send']);
 
         // Quote Actions
-        Route::post('quotes/{quote}/convert-to-site', [QuoteController::class, 'convertToSite']);
+        Route::post('quotes/{quote}/convert-to-project', [QuoteController::class, 'convertToProject']);
         Route::post('quotes/{quote}/save-pdf', [QuoteController::class, 'savePdf']);
 
         // Quote PDF
@@ -173,6 +168,9 @@ Route::prefix('v1')->group(function () {
         Route::get('products/{product}/composite-breakdown', [ProductController::class, 'compositeBreakdown']);
         Route::get('products/categories/list', [ProductController::class, 'categories']);
         Route::post('products/{product}/calculate-price', [ProductController::class, 'calculatePrice']);
+
+        // Product Suppliers (pivot pricing data)
+        Route::get('products/{product}/suppliers', [ProductController::class, 'suppliers']);
 
         // Product Media
         Route::get('products/{product}/media', [\App\Http\Controllers\Api\V1\ProductMediaController::class, 'index']);
@@ -201,6 +199,14 @@ Route::prefix('v1')->group(function () {
         // Product Relation Types (configurable relation types)
         Route::apiResource('product-relation-types', ProductRelationTypeController::class);
 
+        // Subrental Suppliers
+        Route::prefix('products/{product}/subrental-suppliers')->group(function () {
+            Route::get('/', [ProductSubrentalSupplierController::class, 'index']);
+            Route::post('/', [ProductSubrentalSupplierController::class, 'store']);
+            Route::put('/{subrentalSupplier}', [ProductSubrentalSupplierController::class, 'update']);
+            Route::delete('/{subrentalSupplier}', [ProductSubrentalSupplierController::class, 'destroy']);
+        });
+
         // Product Categories (NEW - replaces material-categories)
         Route::apiResource('product-categories', ProductCategoryController::class);
 
@@ -223,6 +229,13 @@ Route::prefix('v1')->group(function () {
         // Warranty Types
         Route::get('warranty-types/default', [\App\Http\Controllers\Api\V1\WarrantyTypeController::class, 'getDefault']);
         Route::apiResource('warranty-types', \App\Http\Controllers\Api\V1\WarrantyTypeController::class);
+
+        // Rental Profiles (sector presets for RentalEngineService)
+        Route::apiResource('rental-profiles', RentalProfileController::class);
+        Route::post('rental-profiles/{rentalProfile}/recalculate', [RentalProfileController::class, 'recalculate']);
+
+        // Rental Analytics (KPIs: break-even, buy-vs-rent, ROI, underperformers, scarcity)
+        Route::get('rental-analytics', [RentalAnalyticsController::class, 'index']);
 
         // Price Lists
         Route::prefix('price-lists')->group(function () {
@@ -277,43 +290,52 @@ Route::prefix('v1')->group(function () {
         Route::post('stock-movements/transfer', [StockMovementController::class, 'transfer']);
         Route::post('stock-movements/rental-out', [StockMovementController::class, 'rentalOut']);
         Route::post('stock-movements/rental-return', [StockMovementController::class, 'rentalReturn']);
-        Route::post('stock-movements/deliver-to-site', [StockMovementController::class, 'deliverToSite']);
-        Route::post('stock-movements/return-from-site', [StockMovementController::class, 'returnFromSite']);
+        Route::post('stock-movements/deliver-to-project', [StockMovementController::class, 'deliverToProject']);
+        Route::post('stock-movements/return-from-project', [StockMovementController::class, 'returnFromProject']);
 
-        // Site Materials
-        Route::get('sites/{site}/materials', [SiteMaterialController::class, 'index']);
-        Route::get('sites/{site}/materials/extras', [SiteMaterialController::class, 'extras']);
-        Route::post('sites/{site}/materials', [SiteMaterialController::class, 'store']);
-        Route::patch('sites/{site}/materials/{material}', [SiteMaterialController::class, 'update']);
-        Route::delete('sites/{site}/materials/{material}', [SiteMaterialController::class, 'destroy']);
-        Route::post('sites/{site}/materials/{material}/log-usage', [SiteMaterialController::class, 'logUsage']);
+        // Project Materials
+        Route::get('projects/{project}/materials', [ProjectMaterialController::class, 'index']);
+        Route::get('projects/{project}/materials/extras', [ProjectMaterialController::class, 'extras']);
+        Route::post('projects/{project}/materials', [ProjectMaterialController::class, 'store']);
+        Route::patch('projects/{project}/materials/{projectMaterial}', [ProjectMaterialController::class, 'update']);
+        Route::delete('projects/{project}/materials/{projectMaterial}', [ProjectMaterialController::class, 'destroy']);
+        Route::post('projects/{project}/materials/{projectMaterial}/log-usage', [ProjectMaterialController::class, 'logUsage']);
+        Route::post('projects/{project}/materials/{projectMaterial}/reserve', [ProjectMaterialController::class, 'reserve']);
+        Route::post('projects/{project}/materials/{projectMaterial}/deliver', [ProjectMaterialController::class, 'deliver']);
+        Route::post('projects/{project}/materials/{projectMaterial}/return', [ProjectMaterialController::class, 'returnMaterial']);
+        Route::post('projects/{project}/materials/{projectMaterial}/transfer', [ProjectMaterialController::class, 'transferToProject']);
 
-        // Site DDTs
-        Route::get('sites/{site}/ddts', [SiteDdtController::class, 'index']);
-        Route::post('sites/{site}/ddts/{ddt}/confirm', [SiteDdtController::class, 'confirm']);
-        Route::post('sites/{site}/ddts/confirm-multiple', [SiteDdtController::class, 'confirmMultiple']);
-        Route::post('sites/{site}/materials/{material}/reserve', [SiteMaterialController::class, 'reserve']);
-        Route::post('sites/{site}/materials/{material}/deliver', [SiteMaterialController::class, 'deliver']);
-        Route::post('sites/{site}/materials/{material}/return', [SiteMaterialController::class, 'returnMaterial']);
-        Route::post('sites/{site}/materials/{material}/transfer', [SiteMaterialController::class, 'transferToSite']);
+        // Project DDTs
+        Route::get('projects/{project}/ddts', [ProjectDdtController::class, 'index']);
+        Route::post('projects/{project}/ddts/{ddt}/confirm', [ProjectDdtController::class, 'confirm']);
+        Route::post('projects/{project}/ddts/confirm-multiple', [ProjectDdtController::class, 'confirmMultiple']);
 
-        // Site Workers (Team Management)
-        Route::get('sites/{site}/workers', [SiteWorkerController::class, 'indexBySite']);
-        Route::post('sites/{site}/workers', [SiteWorkerController::class, 'store']);
-        Route::get('workers/{worker}/sites', [SiteWorkerController::class, 'indexByWorker']);
-        Route::get('site-workers/{site_worker}', [SiteWorkerController::class, 'show']);
-        Route::put('site-workers/{site_worker}', [SiteWorkerController::class, 'update']);
-        Route::delete('site-workers/{site_worker}', [SiteWorkerController::class, 'destroy']);
-        Route::post('site-workers/{site_worker}/accept', [SiteWorkerController::class, 'accept']);
-        Route::post('site-workers/{site_worker}/reject', [SiteWorkerController::class, 'reject']);
-        Route::post('site-workers/{site_worker}/change-status', [SiteWorkerController::class, 'changeStatus']);
-        Route::post('site-workers/{site_worker}/cancel', [SiteWorkerController::class, 'cancel']);
-        Route::post('site-workers/{site_worker}/complete', [SiteWorkerController::class, 'complete']);
-        Route::get('site-workers/{site_worker}/conflicts', [SiteWorkerController::class, 'checkConflicts']);
-        Route::get('site-workers/{site_worker}/effective-rate', [SiteWorkerController::class, 'getEffectiveRate']);
+        // Project Workers (Team Management)
+        Route::get('projects/{project}/workers', [ProjectWorkerController::class, 'indexByProject']);
+        Route::post('projects/{project}/workers', [ProjectWorkerController::class, 'store']);
+        Route::get('workers/{worker}/projects', [ProjectWorkerController::class, 'indexByWorker']);
+        Route::get('project-workers/{project_worker}', [ProjectWorkerController::class, 'show']);
+        Route::put('project-workers/{project_worker}', [ProjectWorkerController::class, 'update']);
+        Route::delete('project-workers/{project_worker}', [ProjectWorkerController::class, 'destroy']);
+        Route::post('project-workers/{project_worker}/accept', [ProjectWorkerController::class, 'accept']);
+        Route::post('project-workers/{project_worker}/reject', [ProjectWorkerController::class, 'reject']);
+        Route::post('project-workers/{project_worker}/change-status', [ProjectWorkerController::class, 'changeStatus']);
+        Route::post('project-workers/{project_worker}/cancel', [ProjectWorkerController::class, 'cancel']);
+        Route::post('project-workers/{project_worker}/complete', [ProjectWorkerController::class, 'complete']);
+        Route::get('project-workers/{project_worker}/conflicts', [ProjectWorkerController::class, 'checkConflicts']);
+        Route::get('project-workers/{project_worker}/effective-rate', [ProjectWorkerController::class, 'getEffectiveRate']);
 
-        // Site Roles (Ruoli Cantiere)
-        Route::apiResource('site-roles', SiteRoleController::class);
+        // Project Roles
+        Route::apiResource('project-roles', ProjectRoleController::class);
+
+        // Project Labor Costs
+        Route::get('projects/{project}/labor-costs', [ProjectLaborCostController::class, 'index']);
+        Route::post('projects/{project}/labor-costs', [ProjectLaborCostController::class, 'store']);
+        Route::put('projects/{project}/labor-costs/{laborCost}', [ProjectLaborCostController::class, 'update']);
+        Route::delete('projects/{project}/labor-costs/{laborCost}', [ProjectLaborCostController::class, 'destroy']);
+        Route::get('projects/{project}/labor-costs/breakdown', [ProjectLaborCostController::class, 'breakdown']);
+        Route::get('projects/{project}/labor-costs/monthly', [ProjectLaborCostController::class, 'monthly']);
+        Route::get('projects/{project}/labor-costs/by-worker', [ProjectLaborCostController::class, 'byWorker']);
 
         // DDT (Documento Di Trasporto)
         Route::get('ddts/next-number', [DdtController::class, 'getNextNumber']);
@@ -346,9 +368,9 @@ Route::prefix('v1')->group(function () {
         Route::delete('invitations/{invitation}', [InvitationController::class, 'destroy']);
 
         // Material Requests
-        Route::get('sites/{site}/material-requests', [MaterialRequestController::class, 'indexBySite']);
-        Route::get('sites/{site}/material-requests/pending-count', [MaterialRequestController::class, 'pendingCount']);
-        Route::get('sites/{site}/material-requests/stats', [MaterialRequestController::class, 'stats']);
+        Route::get('projects/{project}/material-requests', [MaterialRequestController::class, 'indexByProject']);
+        Route::get('projects/{project}/material-requests/pending-count', [MaterialRequestController::class, 'pendingCount']);
+        Route::get('projects/{project}/material-requests/stats', [MaterialRequestController::class, 'stats']);
         Route::get('my-material-requests', [MaterialRequestController::class, 'myRequests']);
         Route::post('material-requests', [MaterialRequestController::class, 'store']);
         Route::get('material-requests/{material_request}', [MaterialRequestController::class, 'show']);
@@ -366,11 +388,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
         Route::delete('notifications/read/all', [NotificationController::class, 'deleteAllRead']);
 
-        // Worker Sites
-        Route::get('workers/{worker}/sites', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'index']);
-        Route::post('workers/{worker}/sites', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'store']);
-        Route::delete('workers/{worker}/sites/{site}', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'destroy']);
-        Route::get('workers/{worker}/sites/{site}/statistics', [\App\Http\Controllers\Api\V1\WorkerSiteController::class, 'statistics']);
+        // Worker Projects
+        Route::get('workers/{worker}/projects', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'index']);
+        Route::post('workers/{worker}/projects', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'store']);
+        Route::delete('workers/{worker}/projects/{project}', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'destroy']);
+        Route::get('workers/{worker}/projects/{project}/statistics', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'statistics']);
 
         // Contractors (Cooperative/Ditte Esterne)
         Route::apiResource('contractors', ContractorController::class);
@@ -382,14 +404,5 @@ Route::prefix('v1')->group(function () {
         Route::get('contractors/{contractor}/rates/current', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'current']);
         Route::post('contractors/{contractor}/rates', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'store']);
         Route::get('contractors/{contractor}/rates/history', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'history']);
-
-        // Site Labor Costs
-        Route::get('sites/{site}/labor-costs', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'index']);
-        Route::post('sites/{site}/labor-costs', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'store']);
-        Route::put('sites/{site}/labor-costs/{laborCost}', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'update']);
-        Route::delete('sites/{site}/labor-costs/{laborCost}', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'destroy']);
-        Route::get('sites/{site}/labor-costs/breakdown', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'breakdown']);
-        Route::get('sites/{site}/labor-costs/monthly', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'monthly']);
-        Route::get('sites/{site}/labor-costs/by-worker', [\App\Http\Controllers\Api\V1\SiteLaborCostController::class, 'byWorker']);
     });
 });

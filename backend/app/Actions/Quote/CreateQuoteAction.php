@@ -13,7 +13,7 @@ class CreateQuoteAction
     public function execute(QuoteData $data): Quote
     {
         return DB::transaction(function () use ($data) {
-            $quoteArray = $data->except('id', 'items', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType', 'site', 'full_address')->toArray();
+            $quoteArray = $data->except('id', 'items', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType', 'project', 'full_address')->toArray();
             $quoteArray = $this->applySettingDefaults($quoteArray);
             $quote = Quote::create($quoteArray);
 
@@ -78,14 +78,14 @@ class CreateQuoteAction
             }
         }
 
-        // Apply valid_until from default_validity_days if not set
-        if (empty($data['valid_until']) && ! empty($data['issue_date'])) {
+        // Apply expiry_date from default_validity_days if not set
+        if (empty($data['expiry_date']) && ! empty($data['issue_date'])) {
             $days = (int) (Setting::get('quotes.default_validity_days', 30) ?: 30);
             if ($days > 0) {
                 $issueDate = is_string($data['issue_date'])
                     ? \Carbon\Carbon::parse($data['issue_date'])
                     : $data['issue_date'];
-                $data['valid_until'] = $issueDate->addDays($days)->format('Y-m-d');
+                $data['expiry_date'] = $issueDate->addDays($days)->format('Y-m-d');
             }
         }
 

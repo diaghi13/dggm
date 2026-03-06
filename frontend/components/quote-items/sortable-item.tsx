@@ -2,6 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -29,6 +30,9 @@ interface SortableItemProps {
   level?: number;
   isDragOverSection?: boolean;
   isDragOverRootItem?: boolean;
+  selectionMode?: boolean;
+  selectedItems?: Set<number>;
+  onToggleSelect?: (id: number) => void;
 }
 
 export function SortableItem({
@@ -41,6 +45,9 @@ export function SortableItem({
   level = 0,
   isDragOverSection = false,
   isDragOverRootItem = false,
+  selectionMode = false,
+  selectedItems,
+  onToggleSelect,
 }: SortableItemProps) {
   const {
     attributes,
@@ -67,6 +74,7 @@ export function SortableItem({
   const hasChildren = item.children && item.children.length > 0;
   // show_subtotal non esiste nel tipo QuoteItemData
   const sectionTotal = isSection ? calculateSectionTotal(item) : null;
+  const isSelected = selectionMode && !isSection && selectedItems?.has(item.id!) === true;
 
   return (
     <div
@@ -82,13 +90,29 @@ export function SortableItem({
           ${isSection ? "bg-slate-50 border-slate-300" : "border-slate-200 dark:border-slate-800"}
           ${isDragOverSection && isSection ? "border-blue-500 border-2 border-dashed bg-blue-50/50 shadow-lg" : ""}
           ${isDragOverRootItem && !isSection ? "border-green-500 border-2 border-dashed bg-green-50/50 shadow-lg" : ""}
+          ${isSelected ? "ring-2 ring-blue-500 bg-blue-50/30 dark:bg-blue-900/20 border-blue-300" : ""}
         `}
       >
+        {/* Checkbox (selection mode, non-section only) */}
+        {selectionMode && !isSection && (
+          <div className="mt-1 flex items-center">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelect?.(item.id!)}
+              className="h-5 w-5"
+            />
+          </div>
+        )}
+
         {/* Drag Handle */}
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing mt-1 text-slate-400 hover:text-slate-600"
+          className={`mt-1 text-slate-400 hover:text-slate-600 ${
+            selectionMode
+              ? "opacity-20 pointer-events-none cursor-default"
+              : "cursor-grab active:cursor-grabbing"
+          }`}
         >
           <GripVertical className="w-5 h-5" />
         </div>
@@ -252,6 +276,9 @@ export function SortableItem({
                 isExpanded={false}
                 showUnitPrices={showUnitPrices}
                 level={level + 1}
+                selectionMode={selectionMode}
+                selectedItems={selectedItems}
+                onToggleSelect={onToggleSelect}
               />
             ))}
           </SortableContext>

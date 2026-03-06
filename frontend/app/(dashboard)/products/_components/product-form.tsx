@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { suppliersApi } from "@/lib/api/suppliers";
 import { productsApi } from "@/lib/api/products";
@@ -27,7 +27,8 @@ import { ComboboxSelect } from "@/components/combobox-select";
 import { ProductCategoryCombobox } from "./product-category-combobox";
 import { ProductBrandCombobox } from "./product-brand-combobox";
 import { BarcodeScanner } from "@/components/barcode-scanner";
-import { Scan } from "lucide-react";
+import { AlertTriangle, Scan, Package2, Wrench, Layers, Pencil, RotateCcw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { ProductBrand } from "@/lib/types";
 import type { ProductType, ProductFormData } from "@/lib/types";
 
@@ -35,96 +36,83 @@ import type { ProductType, ProductFormData } from "@/lib/types";
  * Generate internal code from product name and brand
  * Format: [BRAND] [ALPHANUMERIC_FROM_NAME] or just [ALPHANUMERIC_FROM_NAME] if no brand
  * Brand is uppercase and max 3 letters
- * Examples:
- * - "pulsante illuminabile" + BTI → "BTI PUSILLU"
- * - "interruttore bipolare" + BTI → "BTI INTBIPO"
- * - "kit trapano" without brand → "KITTRA"
  */
 function generateInternalCode(name: string, brandCode?: string): string {
   if (!name?.trim()) return "";
 
-  // Normalize and uppercase name
   const normalizedName = name.trim().toUpperCase();
 
-  // Italian stop words to remove
   const stopWords = [
-    "IL",
-    "LO",
-    "LA",
-    "I",
-    "GLI",
-    "LE",
-    "UN",
-    "UNO",
-    "UNA",
-    "CON",
-    "PER",
-    "DI",
-    "DA",
-    "IN",
-    "SU",
-    "A",
-    "E",
-    "O",
+    "IL","LO","LA","I","GLI","LE","UN","UNO","UNA",
+    "CON","PER","DI","DA","IN","SU","A","E","O",
   ];
 
-  // Split into words by spaces AND separators, but keep track of separators
   const parts = normalizedName.split(/([\s\/\-|_]+)/);
-
-  // Build code keeping separators
   let nameCode = "";
   for (const part of parts) {
-    // Check if it's a separator
     if (/^[\s\/\-|_]+$/.test(part)) {
-      // Keep only the first separator character (not spaces)
       const sep = part.replace(/\s/g, "").charAt(0);
-      if (sep && nameCode.length > 0) {
-        nameCode += sep;
-      }
+      if (sep && nameCode.length > 0) nameCode += sep;
     } else if (part && !stopWords.includes(part)) {
-      // It's a word - take alphanumeric characters
       const chars = part.replace(/[^A-Z0-9]/g, "");
-      // Take first 2-3 characters from each word
       nameCode += chars.substring(0, Math.min(3, chars.length));
     }
-
-    // Stop at max 12 characters
     if (nameCode.length >= 12) break;
   }
 
-  // Fallback if name is empty or too short
   if (nameCode.length < 3) {
     nameCode = normalizedName.replace(/[^A-Z0-9\/\-|_]/g, "").substring(0, 12);
   }
-
-  // Limit to 12 characters
   nameCode = nameCode.substring(0, 12);
 
-  // Brand: uppercase and max 3 letters (optional)
   if (brandCode?.trim()) {
     const brand = brandCode.toUpperCase().substring(0, 3);
     return `${brand} ${nameCode}`;
   }
-
-  // No brand: return just the name code
   return nameCode;
 }
 
-/**
- * Product code generator (same as internal_code)
- * Format: [BRAND] [ALPHANUMERIC_FROM_NAME] or just [ALPHANUMERIC_FROM_NAME]
- * Brand is uppercase and max 3 letters, optional
- */
 function generateProductCode(name: string, brandCode?: string): string {
-  // Use same logic as internal_code
   return generateInternalCode(name, brandCode);
 }
 
-// Form data locale per il form (estende ProductFormData con campi opzionali)
+/**
+ * Returns which fields/sections are visible for a given product type.
+ * Single source of truth for field visibility logic.
+ */
+function getFieldVisibility(type: ProductType) {
+  const isArticle = type === "article";
+  const isComposite = type === "composite";
+  const isService = type === "service";
+  const isPhysical = isArticle || isComposite;
+
+  return {
+    showEan: isPhysical,
+    showEtimCode: isArticle,
+    showBarcode: isPhysical,
+    showQrCode: isPhysical,
+    showBrand: isPhysical,
+    showPackage: isArticle,
+    showRental: isPhysical,
+    showManufacturerPrices: isArticle,
+    showMarkup: isPhysical,
+    showSupplier: isArticle,
+    showInventory: isArticle,
+    showLeadTime: isPhysical,
+    showLocation: isPhysical,
+    isArticle,
+    isComposite,
+    isService,
+    isPhysical,
+  };
+}
+
 type ProductFormDataLocal = Partial<ProductFormData> & {
   name: string;
   code: string;
   product_type: ProductType;
+  // Read-only from API, used to compute auto standard_cost for composite
+  composite_total_cost?: number | null;
 };
 
 interface ProductFormProps {
@@ -146,6 +134,14 @@ const unitOptions = [
   { value: "cad", label: "Cadauno (cad)" },
 ];
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+      {children}
+    </h3>
+  );
+}
+
 export function ProductForm({
   initialData,
   onSubmit,
@@ -160,25 +156,35 @@ export function ProductForm({
     useState(mode === "create" && !initialData?.internal_code);
   const [scannerOpen, setScannerOpen] = useState(false);
 
-  // Query brands per ottenere il brand code
+  // Standard cost override state: true = manual input, false = auto-calculated
+  const [overrideStandardCost, setOverrideStandardCost] = useState<boolean>(() => {
+    if (!initialData) return false;
+    const savedCost = initialData.standard_cost ?? 0;
+    if (!savedCost || savedCost <= 0) return false;
+    const type = initialData.product_type ?? "article";
+    if (type === "composite") {
+      const compositeAuto = initialData.composite_total_cost ?? 0;
+      return savedCost !== compositeAuto;
+    }
+    if (type === "article") {
+      return savedCost !== (initialData.manufacturer_cost_price ?? 0);
+    }
+    return false;
+  });
+
   const { data: brandsData } = useQuery({
     queryKey: ["product-brands"],
     queryFn: () => productsApi.getBrands(),
   });
   const brands = brandsData ?? [];
 
-  // Funzione per cercare il brand dal barcode
   const searchBrandFromBarcode = async (barcode: string) => {
     try {
-      // Cerca prodotti esistenti con lo stesso barcode
       const result = await productsApi.getAll({ barcode });
       if (result?.data && result.data.length > 0) {
         const existingProduct = result.data[0];
         if (existingProduct.brand_id) {
-          setFormData((prev) => ({
-            ...prev,
-            brand_id: existingProduct.brand_id,
-          }));
+          setFormData((prev) => ({ ...prev, brand_id: existingProduct.brand_id }));
         }
       }
     } catch (error) {
@@ -196,13 +202,19 @@ export function ProductForm({
     category_id: initialData?.category_id ?? null,
     brand_id: initialData?.brand_id ?? null,
     product_type: initialData?.product_type || "article",
-    is_kit: initialData?.is_kit ?? false,
     is_package: initialData?.is_package ?? false,
     package_weight: initialData?.package_weight ?? null,
     package_volume: initialData?.package_volume ?? null,
     package_dimensions: initialData?.package_dimensions ?? null,
     is_rentable: initialData?.is_rentable ?? false,
+    ownership_type: initialData?.ownership_type ?? "owned",
+    is_premium: initialData?.is_premium ?? false,
+    subrental_markup: initialData?.subrental_markup ?? null,
+    rental_price_estimated: initialData?.rental_price_estimated ?? false,
+    estimated_base_day: initialData?.estimated_base_day ?? null,
     unit: initialData?.unit ?? "pz",
+    standard_cost: initialData?.standard_cost ?? null,
+    composite_total_cost: initialData?.composite_total_cost ?? null,
     manufacturer_cost_price: initialData?.manufacturer_cost_price ?? null,
     manufacturer_retail_price: initialData?.manufacturer_retail_price ?? null,
     sale_markup_percent: initialData?.sale_markup_percent ?? null,
@@ -219,7 +231,6 @@ export function ProductForm({
 
   const [supplierSearch, setSupplierSearch] = useState("");
 
-  // Load suppliers - always show initial list, then filter by search
   const { data: suppliersData, isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ["suppliers", { is_active: true, search: supplierSearch }],
     queryFn: () =>
@@ -228,25 +239,41 @@ export function ProductForm({
         search: supplierSearch || undefined,
         per_page: 50,
       }),
-    // Always fetch - even without search, to show initial list
   });
 
   const suppliers = suppliersData?.data ?? [];
 
-  // Determina quali sezioni mostrare in base al tipo di prodotto
-  const isService = formData.product_type === "service";
-  const isComposite = formData.product_type === "composite";
-  const isArticle = formData.product_type === "article";
+  // Field visibility derived from current product type (recomputed on each render)
+  const vis = getFieldVisibility(formData.product_type);
 
-  // I servizi non hanno scorte, package, o noleggio
-  const showInventoryManagement = isArticle || isComposite;
-  const showPackageOptions = isArticle;
-  const showRentalOptions = isArticle;
+  // Auto-calculated standard_cost value based on product type
+  const autoStandardCost: number = vis.isService
+    ? 0
+    : vis.isComposite
+    ? formData.composite_total_cost ?? 0
+    : formData.manufacturer_cost_price ?? 0; // article
+
+  // Keep standard_cost in sync with auto value when override is disabled
+  useEffect(() => {
+    if (!overrideStandardCost && !vis.isService) {
+      setFormData((prev) => ({ ...prev, standard_cost: autoStandardCost }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStandardCost, overrideStandardCost, vis.isService]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Converti al formato ProductFormData per il backend
+    // Determine final standard_cost to submit
+    let finalStandardCost: number | null = null;
+    if (vis.isService) {
+      finalStandardCost = formData.standard_cost ?? null;
+    } else if (overrideStandardCost) {
+      finalStandardCost = formData.standard_cost ?? null;
+    } else {
+      finalStandardCost = autoStandardCost > 0 ? autoStandardCost : null;
+    }
+
     const submitData: ProductFormData = {
       code: formData.code,
       internal_code: formData.internal_code ?? null,
@@ -257,13 +284,16 @@ export function ProductForm({
       category_id: formData.category_id ?? null,
       brand_id: formData.brand_id ?? null,
       product_type: formData.product_type,
-      is_kit: formData.is_kit ?? false,
       is_package: formData.is_package ?? false,
       package_weight: formData.package_weight ?? null,
       package_volume: formData.package_volume ?? null,
       package_dimensions: formData.package_dimensions ?? null,
       is_rentable: formData.is_rentable ?? false,
+      ownership_type: formData.ownership_type ?? "owned",
+      is_premium: formData.is_premium ?? false,
+      subrental_markup: formData.subrental_markup ?? null,
       unit: formData.unit ?? "pz",
+      standard_cost: finalStandardCost,
       manufacturer_cost_price: formData.manufacturer_cost_price ?? null,
       manufacturer_retail_price: formData.manufacturer_retail_price ?? null,
       sale_markup_percent: formData.sale_markup_percent ?? null,
@@ -283,13 +313,104 @@ export function ProductForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Informazioni di Base */}
+
+      {/* ─────────────────────────────────────────────────
+          1. TIPO PRODOTTO — sempre in cima
+         ───────────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Tipo Prodotto</CardTitle>
+          <CardDescription>
+            Seleziona il tipo per adattare il form alle proprietà disponibili
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-3">
+            {(
+              [
+                {
+                  value: "article" as const,
+                  label: "Articolo",
+                  description: "Prodotto fisico singolo",
+                  Icon: Package2,
+                  borderColor: "border-blue-300 dark:border-blue-700",
+                  bgColor: "bg-blue-50 dark:bg-blue-950/30",
+                  ringColor: "ring-blue-500",
+                  textColor: "text-blue-900 dark:text-blue-100",
+                  descColor: "text-blue-700 dark:text-blue-300",
+                },
+                {
+                  value: "composite" as const,
+                  label: "Composto",
+                  description: "Prodotto con relazioni/componenti",
+                  Icon: Layers,
+                  borderColor: "border-purple-300 dark:border-purple-700",
+                  bgColor: "bg-purple-50 dark:bg-purple-950/30",
+                  ringColor: "ring-purple-500",
+                  textColor: "text-purple-900 dark:text-purple-100",
+                  descColor: "text-purple-700 dark:text-purple-300",
+                },
+                {
+                  value: "service" as const,
+                  label: "Servizio",
+                  description: "Prestazione lavorativa",
+                  Icon: Wrench,
+                  borderColor: "border-emerald-300 dark:border-emerald-700",
+                  bgColor: "bg-emerald-50 dark:bg-emerald-950/30",
+                  ringColor: "ring-emerald-500",
+                  textColor: "text-emerald-900 dark:text-emerald-100",
+                  descColor: "text-emerald-700 dark:text-emerald-300",
+                },
+              ]
+            ).map(({ value, label, description, Icon, borderColor, bgColor, ringColor, textColor, descColor }) => {
+              const isSelected = formData.product_type === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, product_type: value })}
+                  className={[
+                    "flex items-start gap-3 p-4 rounded-lg border-2 text-left transition-all cursor-pointer",
+                    borderColor,
+                    bgColor,
+                    isSelected ? `ring-2 ${ringColor} border-opacity-100` : "opacity-70 hover:opacity-100",
+                  ].join(" ")}
+                >
+                  <Icon className={`h-5 w-5 mt-0.5 shrink-0 ${textColor}`} />
+                  <div>
+                    <p className={`font-semibold text-sm ${textColor}`}>{label}</p>
+                    <p className={`text-xs mt-0.5 ${descColor}`}>{description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {vis.isService && (
+            <p className="mt-3 text-xs text-emerald-700 dark:text-emerald-400 italic">
+              I servizi non hanno gestione magazzino, package o noleggio
+            </p>
+          )}
+          {vis.isComposite && (
+            <p className="mt-3 text-xs text-purple-700 dark:text-purple-400 italic">
+              I compositi sono composti da altri prodotti — le relazioni si gestiscono dalla pagina di dettaglio
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─────────────────────────────────────────────────
+          2. INFORMAZIONI DI BASE
+         ───────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
           <CardTitle>Informazioni di Base</CardTitle>
-          <CardDescription>Nome, categoria e tipo di prodotto</CardDescription>
+          <CardDescription>
+            Nome, codici principali, categoria e unità di misura
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Nome + Codice Prodotto */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name" className="required">
@@ -300,33 +421,14 @@ export function ProductForm({
                 value={formData.name}
                 onChange={(e) => {
                   const newName = e.target.value;
-
-                  // Auto-generate codes in create mode
                   if (mode === "create" && newName) {
-                    // Get brand code if available (optional)
                     const selectedBrand = formData.brand_id
-                      ? brands.find(
-                          (b: ProductBrand) => b.id === formData.brand_id,
-                        )
+                      ? brands.find((b: ProductBrand) => b.id === formData.brand_id)
                       : null;
                     const brandCode = selectedBrand?.code;
-
-                    const updates: Partial<ProductFormDataLocal> = {
-                      name: newName,
-                    };
-
-                    // Generate both codes (with or without brand)
-                    if (isCodeAutoGenerated) {
-                      updates.code = generateProductCode(newName, brandCode);
-                    }
-
-                    if (isInternalCodeAutoGenerated) {
-                      updates.internal_code = generateInternalCode(
-                        newName,
-                        brandCode,
-                      );
-                    }
-
+                    const updates: Partial<ProductFormDataLocal> = { name: newName };
+                    if (isCodeAutoGenerated) updates.code = generateProductCode(newName, brandCode);
+                    if (isInternalCodeAutoGenerated) updates.internal_code = generateInternalCode(newName, brandCode);
                     setFormData((prev) => ({ ...prev, ...updates }));
                   } else {
                     setFormData({ ...formData, name: newName });
@@ -347,12 +449,7 @@ export function ProductForm({
                 value={formData.code}
                 onChange={(e) => {
                   const newCode = e.target.value;
-                  // Update both code and internal_code
-                  setFormData({
-                    ...formData,
-                    code: newCode,
-                    internal_code: newCode, // Sync internal_code with code
-                  });
+                  setFormData({ ...formData, code: newCode, internal_code: newCode });
                   if (mode === "create") {
                     setIsCodeAutoGenerated(false);
                     setIsInternalCodeAutoGenerated(false);
@@ -364,34 +461,57 @@ export function ProductForm({
               />
               {mode === "create" && isCodeAutoGenerated && (
                 <p className="text-xs text-slate-500">
-                  Si genera automaticamente dal nome
-                  {formData.brand_id && " con prefisso brand"}
+                  Si genera automaticamente dal nome{formData.brand_id && " con prefisso brand"}
                 </p>
               )}
             </div>
           </div>
 
+          {/* Codice Interno */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="internal_code">
+                Codice Interno {mode === "create" && "(autogenerato)"}
+              </Label>
+              <Input
+                id="internal_code"
+                value={formData.internal_code || ""}
+                onChange={(e) => {
+                  setFormData({ ...formData, internal_code: e.target.value || null });
+                  if (mode === "create") setIsInternalCodeAutoGenerated(false);
+                }}
+                placeholder="BTI INTBIPO"
+                className="h-11"
+              />
+              {mode === "create" && isInternalCodeAutoGenerated && (
+                <p className="text-xs text-slate-500">
+                  Si genera automaticamente dal nome{formData.brand_id && " con prefisso brand"}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Descrizione */}
           <div className="space-y-2">
             <Label htmlFor="description">Descrizione</Label>
             <Textarea
               id="description"
               value={formData.description || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Descrizione dettagliata del prodotto..."
               rows={3}
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          {/* Categoria + Brand (condizionale) + Unità */}
+          <div className={`grid gap-4 ${vis.showBrand ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
             <div className="space-y-2">
               <Label htmlFor="category">Categoria *</Label>
               <ProductCategoryCombobox
                 value={formData.category_id}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, category_id: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, category_id: value })}
                 required
               />
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -399,107 +519,35 @@ export function ProductForm({
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="brand">Brand</Label>
-              <ProductBrandCombobox
-                value={formData.brand_id}
-                onValueChange={(value) => {
-                  // If we're in create mode with name, regenerate both codes
-                  if (mode === "create" && formData.name) {
-                    const selectedBrand = value
-                      ? brands.find((b: ProductBrand) => b.id === value)
-                      : null;
-                    const brandCode = selectedBrand?.code;
-
-                    const updates: Partial<ProductFormDataLocal> = {
-                      brand_id: value,
-                    };
-
-                    // Regenerate codes with new brand (or without if deselected)
-                    if (isCodeAutoGenerated) {
-                      updates.code = generateProductCode(
-                        formData.name,
-                        brandCode,
-                      );
+            {vis.showBrand && (
+              <div className="space-y-2">
+                <Label htmlFor="brand">Brand</Label>
+                <ProductBrandCombobox
+                  value={formData.brand_id}
+                  onValueChange={(value) => {
+                    if (mode === "create" && formData.name) {
+                      const selectedBrand = value ? brands.find((b: ProductBrand) => b.id === value) : null;
+                      const brandCode = selectedBrand?.code;
+                      const updates: Partial<ProductFormDataLocal> = { brand_id: value };
+                      if (isCodeAutoGenerated) updates.code = generateProductCode(formData.name, brandCode);
+                      if (isInternalCodeAutoGenerated) updates.internal_code = generateInternalCode(formData.name, brandCode);
+                      setFormData((prev) => ({ ...prev, ...updates }));
+                    } else {
+                      setFormData({ ...formData, brand_id: value });
                     }
-
-                    if (isInternalCodeAutoGenerated) {
-                      updates.internal_code = generateInternalCode(
-                        formData.name,
-                        brandCode,
-                      );
-                    }
-
-                    setFormData((prev) => ({ ...prev, ...updates }));
-                  } else {
-                    setFormData({ ...formData, brand_id: value });
-                  }
-                }}
-              />
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Seleziona o crea un nuovo brand
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="product_type">Tipo Prodotto *</Label>
-              <Select
-                value={formData.product_type}
-                onValueChange={(value: ProductType) =>
-                  setFormData({ ...formData, product_type: value })
-                }
-              >
-                <SelectTrigger id="product_type" className="h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="article">
-                    <div className="flex flex-col">
-                      <span className="font-medium">Articolo</span>
-                      <span className="text-xs text-muted-foreground">
-                        Prodotto fisico singolo
-                      </span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="service">
-                    <div className="flex flex-col">
-                      <span className="font-medium">Servizio</span>
-                      <span className="text-xs text-muted-foreground">
-                        Prestazione lavorativa
-                      </span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="composite">
-                    <div className="flex flex-col">
-                      <span className="font-medium">Composto</span>
-                      <span className="text-xs text-muted-foreground">
-                        Prodotto con relazioni/componenti
-                      </span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {isService && (
-                <p className="text-xs text-blue-600 dark:text-blue-400 italic mt-1">
-                  ℹ️ I servizi non hanno gestione magazzino, package o noleggio
+                  }}
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Seleziona o crea un nuovo brand
                 </p>
-              )}
-              {isComposite && (
-                <p className="text-xs text-purple-600 dark:text-purple-400 italic mt-1">
-                  🧩 I compositi sono composti da altri prodotti
-                </p>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
 
-          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="unit">Unità di Misura</Label>
               <Select
                 value={formData.unit || "pz"}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, unit: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, unit: value })}
               >
                 <SelectTrigger id="unit" className="h-11">
                   <SelectValue />
@@ -513,497 +561,673 @@ export function ProductForm({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* ─────────────────────────────────────────────────
+          3. CODICI AGGIUNTIVI (condizionali per tipo)
+         ───────────────────────────────────────────────── */}
+      {(vis.showBarcode || vis.showQrCode || vis.showEan || vis.showEtimCode) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Codici di Identificazione</CardTitle>
+            <CardDescription>Barcode, EAN, codici interni e standard</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(vis.showBarcode || vis.showQrCode) && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {vis.showBarcode && (
+                  <div className="space-y-2">
+                    <Label htmlFor="barcode">Barcode / EAN Prodotto</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="barcode"
+                        value={formData.barcode || ""}
+                        onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                        placeholder="Scansiona o inserisci"
+                        className="h-11 flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-11 w-11 shrink-0"
+                        onClick={() => setScannerOpen(true)}
+                        title="Scansiona barcode"
+                      >
+                        <Scan className="h-5 w-5" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Scansiona per auto-compilare il brand se esistente
+                    </p>
+                  </div>
+                )}
+
+                {vis.showQrCode && (
+                  <div className="space-y-2">
+                    <Label htmlFor="qr_code">QR Code</Label>
+                    <Input
+                      id="qr_code"
+                      value={formData.qr_code || ""}
+                      onChange={(e) => setFormData({ ...formData, qr_code: e.target.value })}
+                      placeholder="Codice QR personalizzato"
+                      className="h-11"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(vis.showEan || vis.showEtimCode) && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {vis.showEan && (
+                  <div className="space-y-2">
+                    <Label htmlFor="ean">EAN / GTIN</Label>
+                    <Input
+                      id="ean"
+                      value={formData.ean || ""}
+                      onChange={(e) => setFormData({ ...formData, ean: e.target.value || null })}
+                      placeholder="Codice a barre internazionale"
+                      className="h-11"
+                    />
+                  </div>
+                )}
+
+                {vis.showEtimCode && (
+                  <div className="space-y-2">
+                    <Label htmlFor="etim_code">Codice ETIM</Label>
+                    <Input
+                      id="etim_code"
+                      value={formData.etim_code || ""}
+                      onChange={(e) => setFormData({ ...formData, etim_code: e.target.value || null })}
+                      placeholder="Classificazione ETIM"
+                      className="h-11"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─────────────────────────────────────────────────
+          4. PACKAGING (solo article)
+         ───────────────────────────────────────────────── */}
+      {vis.showPackage && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Packaging</CardTitle>
+            <CardDescription>Opzioni di imballaggio e contenitore fisico</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+              <input
+                type="checkbox"
+                id="is_package"
+                checked={formData.is_package || false}
+                onChange={(e) => setFormData({ ...formData, is_package: e.target.checked })}
+                className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div className="flex-1">
+                <Label
+                  htmlFor="is_package"
+                  className="text-sm font-medium cursor-pointer text-blue-900 dark:text-blue-100"
+                >
+                  Questo è un contenitore/package (Box, Baule, Flight Case)
+                </Label>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  I package vengono tracciati per DDT e logistica ma NON appaiono nella lista materiali del preventivo
+                </p>
+              </div>
+            </div>
+
+            {formData.is_package && (
+              <div className="space-y-3">
+                <SectionHeading>Dettagli Imballaggio</SectionHeading>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="package_weight">Peso (kg)</Label>
+                    <Input
+                      id="package_weight"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.package_weight ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({ ...formData, package_weight: val === "" ? null : parseFloat(val) });
+                      }}
+                      placeholder="Es: 15.5"
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="package_volume">Volume (m³)</Label>
+                    <Input
+                      id="package_volume"
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={formData.package_volume ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({ ...formData, package_volume: val === "" ? null : parseFloat(val) });
+                      }}
+                      placeholder="Es: 0.5"
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="package_dimensions">Dimensioni (LxWxH cm)</Label>
+                    <Input
+                      id="package_dimensions"
+                      value={formData.package_dimensions || ""}
+                      onChange={(e) => setFormData({ ...formData, package_dimensions: e.target.value })}
+                      placeholder="Es: 120x80x60"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─────────────────────────────────────────────────
+          5. PREZZI & COSTI
+         ───────────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Prezzi e Costi</CardTitle>
+          <CardDescription>
+            {vis.isService ? "Costo standard del servizio" : "Prezzi di acquisto, vendita e margini"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {vis.showManufacturerPrices && (
+            <>
+              <SectionHeading>Prezzi Produttore</SectionHeading>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="manufacturer_cost_price">Prezzo Costo Produttore (€)</Label>
+                  <Input
+                    id="manufacturer_cost_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.manufacturer_cost_price ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData({ ...formData, manufacturer_cost_price: val === "" ? null : parseFloat(val) });
+                    }}
+                    className="h-11"
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-slate-500">Prezzo di costo consigliato dal costruttore</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="manufacturer_retail_price">Prezzo Retail (€)</Label>
+                  <Input
+                    id="manufacturer_retail_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.manufacturer_retail_price ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData({ ...formData, manufacturer_retail_price: val === "" ? null : parseFloat(val) });
+                    }}
+                    className="h-11"
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-slate-500">Prezzo al dettaglio suggerito</p>
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* standard_cost — service: always editable; article/composite: auto + manual override */}
+          <div className={`grid gap-4 ${vis.showMarkup ? "md:grid-cols-2" : "md:grid-cols-1 max-w-sm"}`}>
             <div className="space-y-2">
+              {/* Label row with optional "manuale" badge */}
+              <div className="flex items-center justify-between">
+                <Label htmlFor="standard_cost">
+                  {vis.isService ? "Costo del servizio (€)" : "Costo Standard (€)"}
+                  {vis.isService && <span className="ml-1 text-destructive">*</span>}
+                </Label>
+                {!vis.isService && overrideStandardCost && (
+                  <Badge variant="secondary" className="text-xs px-2 py-0 h-5">
+                    manuale
+                  </Badge>
+                )}
+              </div>
+
+              {vis.isService ? (
+                /* SERVICE: always editable */
+                <>
+                  <Input
+                    id="standard_cost"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.standard_cost ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData({ ...formData, standard_cost: val === "" ? null : parseFloat(val) });
+                    }}
+                    className="h-11"
+                    placeholder="0.00"
+                    required
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Costo della prestazione</p>
+                </>
+              ) : !overrideStandardCost ? (
+                /* AUTO mode: show read-only value + "Modifica" button */
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className="h-11 flex-1 flex items-center px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-sm text-slate-700 dark:text-slate-300">
+                      €{" "}
+                      {autoStandardCost.toLocaleString("it-IT", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-11 shrink-0 gap-1.5"
+                      onClick={() => {
+                        setOverrideStandardCost(true);
+                        setFormData((prev) => ({ ...prev, standard_cost: autoStandardCost }));
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Modifica
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {vis.isComposite
+                      ? "Calcolato dalla somma dei componenti"
+                      : "Derivato dal prezzo di acquisto"}
+                  </p>
+                </>
+              ) : (
+                /* MANUAL OVERRIDE mode: editable input + reset link */
+                <>
+                  <Input
+                    id="standard_cost"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.standard_cost ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData({ ...formData, standard_cost: val === "" ? null : parseFloat(val) });
+                    }}
+                    className="h-11"
+                    placeholder="0.00"
+                  />
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors w-fit"
+                    onClick={() => {
+                      setOverrideStandardCost(false);
+                      setFormData((prev) => ({ ...prev, standard_cost: autoStandardCost }));
+                    }}
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Usa valore automatico (€{" "}
+                    {autoStandardCost.toLocaleString("it-IT", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                    )
+                  </button>
+                </>
+              )}
+            </div>
+
+            {vis.showMarkup && (
+              <div className="space-y-2">
+                <Label htmlFor="sale_markup_percent">Margine Vendita (%)</Label>
+                <Input
+                  id="sale_markup_percent"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.sale_markup_percent ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({ ...formData, sale_markup_percent: val === "" ? null : parseFloat(val) });
+                  }}
+                  className="h-11"
+                  placeholder="0.00"
+                />
+                <p className="text-xs text-slate-500">Ricarico percentuale sulla vendita</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ─────────────────────────────────────────────────
+          6. FORNITORI & INVENTARIO (solo article)
+             lead_time anche per composite
+         ───────────────────────────────────────────────── */}
+      {(vis.showSupplier || vis.showInventory || vis.showLeadTime) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Fornitori e Scorte</CardTitle>
+            <CardDescription>
+              Fornitore predefinito, livelli di riordino e tempi di consegna
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {vis.showSupplier && (
+              <div className="space-y-2">
+                <Label htmlFor="default_supplier_id">Fornitore Predefinito</Label>
+                <ComboboxSelect
+                  value={formData.default_supplier_id?.toString() || ""}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, default_supplier_id: value ? parseInt(value) : null })
+                  }
+                  onSearchChange={setSupplierSearch}
+                  options={suppliers.map((supplier) => ({
+                    value: supplier.id!.toString(),
+                    label: supplier.company_name,
+                  }))}
+                  placeholder="Seleziona fornitore..."
+                  emptyText="Nessun fornitore trovato"
+                  loading={isLoadingSuppliers}
+                />
+              </div>
+            )}
+
+            <div
+              className={`grid gap-4 ${
+                vis.showInventory && vis.showLeadTime
+                  ? "md:grid-cols-3"
+                  : vis.showLeadTime && !vis.showInventory
+                  ? "md:grid-cols-1 max-w-xs"
+                  : "md:grid-cols-2"
+              }`}
+            >
+              {vis.showInventory && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="reorder_level">Scorta Minima</Label>
+                    <Input
+                      id="reorder_level"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.reorder_level ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({ ...formData, reorder_level: val === "" ? null : parseFloat(val) });
+                      }}
+                      className="h-11"
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-slate-500">Livello di riordino automatico</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reorder_quantity">Quantità Riordino</Label>
+                    <Input
+                      id="reorder_quantity"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.reorder_quantity ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({ ...formData, reorder_quantity: val === "" ? null : parseFloat(val) });
+                      }}
+                      className="h-11"
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-slate-500">Quantità da ordinare</p>
+                  </div>
+                </>
+              )}
+
+              {vis.showLeadTime && (
+                <div className="space-y-2">
+                  <Label htmlFor="lead_time_days">Tempo Consegna (giorni)</Label>
+                  <Input
+                    id="lead_time_days"
+                    type="number"
+                    min="0"
+                    value={formData.lead_time_days || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, lead_time_days: parseInt(e.target.value) || null })
+                    }
+                    className="h-11"
+                    placeholder="7"
+                  />
+                  <p className="text-xs text-slate-500">Lead time del fornitore</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─────────────────────────────────────────────────
+          7. NOLEGGIO (article + composite)
+         ───────────────────────────────────────────────── */}
+      {vis.showRental && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Noleggio</CardTitle>
+            <CardDescription>Configurazione per il noleggio del prodotto</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+              <input
+                type="checkbox"
+                id="is_rentable"
+                checked={formData.is_rentable || false}
+                onChange={(e) => setFormData({ ...formData, is_rentable: e.target.checked })}
+                className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+              />
+              <div className="flex-1">
+                <Label
+                  htmlFor="is_rentable"
+                  className="text-sm font-medium cursor-pointer text-purple-900 dark:text-purple-100"
+                >
+                  Noleggiabile
+                </Label>
+                <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+                  Questo prodotto può essere noleggiato ai clienti
+                </p>
+              </div>
+            </div>
+
+            {formData.is_rentable && (
+              <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800 space-y-4">
+                {/* Ownership Type */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="ownership_type"
+                    className="text-sm font-medium text-purple-900 dark:text-purple-100"
+                  >
+                    Tipo di proprietà
+                  </Label>
+                  <Select
+                    value={formData.ownership_type ?? "owned"}
+                    onValueChange={(value: "owned" | "subrental" | "mixed") =>
+                      setFormData({ ...formData, ownership_type: value })
+                    }
+                  >
+                    <SelectTrigger
+                      id="ownership_type"
+                      className="h-11 border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="owned">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                          <span className="font-medium text-green-800 dark:text-green-300">Di proprietà</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="subrental">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-orange-500" />
+                          <span className="font-medium text-orange-800 dark:text-orange-300">Sub-noleggio</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="mixed">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
+                          <span className="font-medium text-blue-800 dark:text-blue-300">Misto</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* is_premium */}
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="is_premium"
+                    checked={formData.is_premium || false}
+                    onChange={(e) => setFormData({ ...formData, is_premium: e.target.checked })}
+                    className="mt-0.5 w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <div className="flex-1">
+                    <Label
+                      htmlFor="is_premium"
+                      className="text-sm font-medium cursor-pointer text-purple-900 dark:text-purple-100"
+                    >
+                      Prodotto Premium
+                    </Label>
+                    <p className="text-xs text-purple-700 dark:text-purple-300 mt-0.5">
+                      Applica moltiplicatore premium al prezzo noleggio
+                    </p>
+                  </div>
+                </div>
+
+                {/* Subrental Markup — visible only for subrental or mixed */}
+                {(formData.ownership_type === "subrental" || formData.ownership_type === "mixed") && (
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="subrental_markup"
+                      className="text-sm font-medium text-purple-900 dark:text-purple-100"
+                    >
+                      Markup Sub-noleggio (%)
+                    </Label>
+                    <Input
+                      id="subrental_markup"
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="100"
+                      value={formData.subrental_markup ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({ ...formData, subrental_markup: val === "" ? null : parseFloat(val) });
+                      }}
+                      placeholder="Lascia vuoto per usare il default globale"
+                      className="h-11 border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900"
+                    />
+                  </div>
+                )}
+
+                {/* Estimated base day — read-only info */}
+                {formData.rental_price_estimated &&
+                  formData.estimated_base_day !== null &&
+                  formData.estimated_base_day !== undefined && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                      <p className="text-sm text-amber-800 dark:text-amber-300">
+                        Prezzo noleggio stimato da preventivo:{" "}
+                        <span className="font-semibold">
+                          €{Number(formData.estimated_base_day).toLocaleString("it-IT", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}/giorno
+                        </span>{" "}
+                        — da verificare
+                      </p>
+                    </div>
+                  )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─────────────────────────────────────────────────
+          8. UBICAZIONE (article + composite)
+         ───────────────────────────────────────────────── */}
+      {vis.showLocation && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ubicazione</CardTitle>
+            <CardDescription>Posizione fisica nel magazzino</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-w-sm">
               <Label htmlFor="location">Ubicazione Magazzino</Label>
               <Input
                 id="location"
                 value={formData.location || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 placeholder="Es: Scaffale A3, Zona 2"
                 className="h-11"
               />
             </div>
-          </div>
-
-          <Separator className="my-4" />
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
-              <input
-                type="checkbox"
-                id="is_active"
-                checked={formData.is_active}
-                onChange={(e) =>
-                  setFormData({ ...formData, is_active: e.target.checked })
-                }
-                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-              />
-              <Label htmlFor="is_active" className="text-sm cursor-pointer">
-                Prodotto attivo e disponibile per l&#39;uso
-              </Label>
-            </div>
-
-            {showPackageOptions && (
-              <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                <input
-                  type="checkbox"
-                  id="is_package"
-                  checked={formData.is_package || false}
-                  onChange={(e) =>
-                    setFormData({ ...formData, is_package: e.target.checked })
-                  }
-                  className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-                />
-                <div className="flex-1">
-                  <Label
-                    htmlFor="is_package"
-                    className="text-sm font-medium cursor-pointer text-blue-900 dark:text-blue-100"
-                  >
-                    Questo è un contenitore/package (Box, Baule, Flight Case)
-                  </Label>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                    I package vengono tracciati per DDT e logistica ma NON
-                    appaiono nella lista materiali del preventivo
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {showRentalOptions && (
-              <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
-                <input
-                  type="checkbox"
-                  id="is_rentable"
-                  checked={formData.is_rentable || false}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      is_rentable: e.target.checked,
-                    })
-                  }
-                  className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                />
-                <div className="flex-1">
-                  <Label
-                    htmlFor="is_rentable"
-                    className="text-sm font-medium cursor-pointer text-purple-900 dark:text-purple-100"
-                  >
-                    Noleggiabile
-                  </Label>
-                  <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
-                    Questo prodotto può essere noleggiato (vedi sezione prezzi
-                    noleggio)
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Codici di Identificazione */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Codici di Identificazione</CardTitle>
-          <CardDescription>
-            Barcode, EAN, codici interni e standard
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="barcode">Barcode / EAN Prodotto</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="barcode"
-                  value={formData.barcode || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, barcode: e.target.value })
-                  }
-                  placeholder="Scansiona o inserisci"
-                  className="h-11 flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-11 w-11 shrink-0"
-                  onClick={() => setScannerOpen(true)}
-                  title="Scansiona barcode"
-                >
-                  <Scan className="h-5 w-5" />
-                </Button>
-              </div>
-              <p className="text-xs text-slate-500">
-                Scansiona per auto-compilare il brand se esistente
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="qr_code">QR Code</Label>
-              <Input
-                id="qr_code"
-                value={formData.qr_code || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, qr_code: e.target.value })
-                }
-                placeholder="Codice QR personalizzato"
-                className="h-11"
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="internal_code">
-                Codice Interno {mode === "create" && "(autogenerato)"}
-              </Label>
-              <Input
-                id="internal_code"
-                value={formData.internal_code || ""}
-                onChange={(e) => {
-                  const newCode = e.target.value;
-                  setFormData({
-                    ...formData,
-                    internal_code: newCode || null,
-                  });
-                  if (mode === "create") {
-                    setIsInternalCodeAutoGenerated(false);
-                  }
-                }}
-                placeholder="BTI INTBIPO"
-                className="h-11"
-              />
-              {mode === "create" && isInternalCodeAutoGenerated && (
-                <p className="text-xs text-slate-500">
-                  Si genera automaticamente dal nome
-                  {formData.brand_id && " con prefisso brand"}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ean">EAN / GTIN</Label>
-              <Input
-                id="ean"
-                value={formData.ean || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, ean: e.target.value || null })
-                }
-                placeholder="Codice a barre internazionale"
-                className="h-11"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="etim_code">Codice ETIM</Label>
-              <Input
-                id="etim_code"
-                value={formData.etim_code || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    etim_code: e.target.value || null,
-                  })
-                }
-                placeholder="Classificazione ETIM"
-                className="h-11"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Package Details - mostra solo se is_package è true */}
-      {formData.is_package && (
-        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/20">
-          <CardHeader>
-            <CardTitle className="text-blue-900 dark:text-blue-100">
-              Dettagli Imballaggio
-            </CardTitle>
-            <CardDescription>
-              Informazioni per calcolo pesi e volumi
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="package_weight">Peso (kg)</Label>
-                <Input
-                  id="package_weight"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.package_weight ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFormData({
-                      ...formData,
-                      package_weight: val === "" ? null : parseFloat(val),
-                    });
-                  }}
-                  placeholder="Es: 15.5"
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="package_volume">Volume (m³)</Label>
-                <Input
-                  id="package_volume"
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  value={formData.package_volume ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFormData({
-                      ...formData,
-                      package_volume: val === "" ? null : parseFloat(val),
-                    });
-                  }}
-                  placeholder="Es: 0.5"
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="package_dimensions">
-                  Dimensioni (LxWxH cm)
-                </Label>
-                <Input
-                  id="package_dimensions"
-                  value={formData.package_dimensions || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      package_dimensions: e.target.value,
-                    })
-                  }
-                  placeholder="Es: 120x80x60"
-                  className="h-11"
-                />
-              </div>
-            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Prezzi */}
+      {/* ─────────────────────────────────────────────────
+          9. NOTE & STATO
+         ───────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
-          <CardTitle>Prezzi e Margini</CardTitle>
-          <CardDescription>
-            Prezzi di acquisto, vendita e margini
-          </CardDescription>
+          <CardTitle>Note e Stato</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="manufacturer_cost_price">
-                Prezzo Costo Produttore (€)
-              </Label>
-              <Input
-                id="manufacturer_cost_price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.manufacturer_cost_price ?? ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFormData({
-                    ...formData,
-                    manufacturer_cost_price:
-                      val === "" ? null : parseFloat(val),
-                  });
-                }}
-                className="h-11"
-                placeholder="0.00"
-              />
-              <p className="text-xs text-slate-500">
-                Prezzo di costo consigliato dal costruttore
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="manufacturer_retail_price">
-                Prezzo Retail (€)
-              </Label>
-              <Input
-                id="manufacturer_retail_price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.manufacturer_retail_price ?? ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFormData({
-                    ...formData,
-                    manufacturer_retail_price:
-                      val === "" ? null : parseFloat(val),
-                  });
-                }}
-                className="h-11"
-                placeholder="0.00"
-              />
-              <p className="text-xs text-slate-500">
-                Prezzo al dettaglio suggerito
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sale_markup_percent">Margine (%)</Label>
-              <Input
-                id="sale_markup_percent"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.sale_markup_percent ?? ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFormData({
-                    ...formData,
-                    sale_markup_percent: val === "" ? null : parseFloat(val),
-                  });
-                }}
-                className="h-11"
-                placeholder="0.00"
-              />
-              <p className="text-xs text-slate-500">Ricarico sulla vendita</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Gestione Scorte - solo per articoli e compositi */}
-      {showInventoryManagement && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Gestione Scorte</CardTitle>
-            <CardDescription>
-              Fornitore, livelli di riordino e tempi di consegna
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="default_supplier_id">Fornitore Predefinito</Label>
-              <ComboboxSelect
-                value={formData.default_supplier_id?.toString() || ""}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    default_supplier_id: value ? parseInt(value) : null,
-                  })
-                }
-                onSearchChange={setSupplierSearch}
-                options={suppliers.map((supplier) => ({
-                  value: supplier.id!.toString(),
-                  label: supplier.company_name,
-                }))}
-                placeholder="Seleziona fornitore..."
-                emptyText="Nessun fornitore trovato"
-                loading={isLoadingSuppliers}
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="reorder_level">Scorta Minima</Label>
-                <Input
-                  id="reorder_level"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.reorder_level ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFormData({
-                      ...formData,
-                      reorder_level: val === "" ? null : parseFloat(val),
-                    });
-                  }}
-                  className="h-11"
-                  placeholder="0"
-                />
-                <p className="text-xs text-slate-500">
-                  Livello di riordino automatico
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="reorder_quantity">Quantità Riordino</Label>
-                <Input
-                  id="reorder_quantity"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.reorder_quantity ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFormData({
-                      ...formData,
-                      reorder_quantity: val === "" ? null : parseFloat(val),
-                    });
-                  }}
-                  className="h-11"
-                  placeholder="0"
-                />
-                <p className="text-xs text-slate-500">Quantità da ordinare</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="lead_time_days">Tempo Consegna (giorni)</Label>
-                <Input
-                  id="lead_time_days"
-                  type="number"
-                  min="0"
-                  value={formData.lead_time_days || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      lead_time_days: parseInt(e.target.value) || null,
-                    })
-                  }
-                  className="h-11"
-                  placeholder="7"
-                />
-                <p className="text-xs text-slate-500">
-                  Lead time del fornitore
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Note */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Note</CardTitle>
-        </CardHeader>
-        <CardContent>
           <Textarea
             value={formData.notes || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, notes: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             placeholder="Note interne, istruzioni di utilizzo, avvertenze..."
             rows={4}
           />
+
+          <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
+            <input
+              type="checkbox"
+              id="is_active"
+              checked={formData.is_active}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <Label htmlFor="is_active" className="text-sm cursor-pointer">
+              Prodotto attivo e disponibile per l&#39;uso
+            </Label>
+          </div>
         </CardContent>
       </Card>
 
       {/* Form Actions */}
       <div className="flex items-center justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Annulla
         </Button>
         <Button
@@ -1031,7 +1255,6 @@ export function ProductForm({
         onOpenChange={setScannerOpen}
         onScan={async (barcode) => {
           setFormData({ ...formData, barcode });
-          // Auto-select brand se il barcode esiste già nel database
           await searchBrandFromBarcode(barcode);
         }}
         title="Scansiona Barcode Prodotto"

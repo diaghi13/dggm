@@ -2,7 +2,9 @@
 
 namespace App\Data;
 
+use App\Enums\QuoteItemBillingUnit;
 use App\Enums\QuoteItemType;
+use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Min;
@@ -45,6 +47,10 @@ class QuoteItemData extends Data
         // Pricing
         #[Max(50)]
         public ?string $unit = null,
+
+        public QuoteItemBillingUnit $billing_unit = QuoteItemBillingUnit::Unit,
+
+        public ?float $duration = null,
 
         #[Min(0)]
         public ?float $quantity = null,
@@ -102,6 +108,8 @@ class QuoteItemData extends Data
             'notes' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'unit' => ['nullable', 'string', 'max:50'],
+            'billing_unit' => ['nullable', 'string', Rule::in(array_column(QuoteItemBillingUnit::cases(), 'value'))],
+            'duration' => ['nullable', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'numeric', 'min:0'],
             'unit_price' => ['nullable', 'numeric', 'min:0'],
             'discount_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -116,5 +124,38 @@ class QuoteItemData extends Data
             'included_media_ids' => ['nullable', 'array'],
             'included_media_ids.*' => ['integer'],
         ];
+    }
+
+    public static function fromModel(\App\Models\QuoteItem $quoteItem): self
+    {
+        return new self(
+            type: $quoteItem->type,
+            description: $quoteItem->description,
+            id: $quoteItem->id,
+            quote_id: $quoteItem->quote_id,
+            parent_id: $quoteItem->parent_id,
+            product_id: $quoteItem->product_id,
+            price_list_item_id: $quoteItem->price_list_item_id,
+            code: $quoteItem->code,
+            notes: $quoteItem->notes,
+            sort_order: $quoteItem->sort_order,
+            unit: $quoteItem->unit,
+            billing_unit: $quoteItem->billing_unit ?? QuoteItemBillingUnit::Unit,
+            duration: $quoteItem->duration,
+            quantity: $quoteItem->quantity,
+            unit_price: $quoteItem->unit_price,
+            discount_percentage: $quoteItem->discount_percentage,
+            subtotal: $quoteItem->subtotal,
+            discount_amount: $quoteItem->discount_amount,
+            total: $quoteItem->total,
+            vat_rate: $quoteItem->vat_rate,
+            vat_amount: $quoteItem->vat_amount,
+            total_with_vat: $quoteItem->total_with_vat,
+            hide_unit_price: $quoteItem->hide_unit_price,
+            include_image: $quoteItem->include_image,
+            children: $quoteItem->relationLoaded('children') && $quoteItem->children->isNotEmpty()
+                ? self::collect($quoteItem->children, DataCollection::class)
+                : new Optional,
+        );
     }
 }

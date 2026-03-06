@@ -70,36 +70,31 @@
 <div class="w-full max-w-4xl mx-auto pl-8 pr-8 pb-8 relative min-h-screen flex flex-col">
 
     <!-- Header -->
-    <header class="flex justify-between items-start border-b-2 border-slate-900 pb-8 mb-8">
+    <header class="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-5">
         <div class="w-1/2">
             @if($company['logo'])
                 <img src="{{ $company['logo'] }}" alt="Logo" class="h-16 w-auto object-contain mb-4">
             @else
-                <div class="h-16 w-48 bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-4">LOGO
-                </div>
+                <div class="h-16 w-40 bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-4">LOGO</div>
             @endif
-            <div class="text-4xl font-bold text-slate-900 tracking-tight">PREVENTIVO</div>
-            <div class="text-primary font-medium text-lg">Nr. {{ $quote->code }}</div>
-            <div class="text-slate-500 mt-1">Data: {{ $quote->issue_date->format('d F Y') }}</div>
+            <div class="text-2xl font-bold text-slate-900 tracking-tight">PREVENTIVO</div>
+            <div class="text-primary font-medium text-sm mt-0.5">Nr. {{ $quote->code }}</div>
+            <div class="text-slate-500 text-xs mt-0.5">Data: {{ $quote->issue_date->translatedFormat('d F Y') }}</div>
             @if($quote->valid_until)
-                <div class="text-xs text-slate-400 mt-1">Valido fino
-                    al: {{ $quote->valid_until->format('d F Y') }}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">Valido fino al: {{ $quote->valid_until->translatedFormat('d F Y') }}</div>
             @endif
         </div>
         <div class="w-1/2 text-right">
-            <h2 class="text-xl font-bold text-slate-900">{{ $company['name'] }}</h2>
-            <div class="text-slate-500 leading-relaxed mt-2 text-xs">
+            <h2 class="text-base font-bold text-slate-900">{{ $company['name'] }}</h2>
+            <div class="text-slate-500 leading-snug mt-1 text-xs">
                 @if($company['address'])
                     {{ $company['address'] }}<br>
                 @endif
                 @if($company['postal_code'] || $company['city'] || $company['province'])
-                    {{ implode(' ', array_filter([$company['postal_code'], $company['city'], $company['province'] ? '('.$company['province'].')' : null])) }}
-                    <br>
+                    {{ implode(' ', array_filter([$company['postal_code'], $company['city'], $company['province'] ? '('.$company['province'].')' : null])) }}<br>
                 @endif
                 @if($company['vat'])
-                    P.IVA: {{ $company['vat'] }}@if($company['fiscal_code'])
-                        | C.F.: {{ $company['fiscal_code'] }}
-                    @endif<br>
+                    P.IVA: {{ $company['vat'] }}@if($company['fiscal_code']) | C.F.: {{ $company['fiscal_code'] }}@endif<br>
                 @elseif($company['fiscal_code'])
                     C.F.: {{ $company['fiscal_code'] }}<br>
                 @endif
@@ -114,13 +109,11 @@
     </header>
 
     <!-- Clients Info -->
-    <div class="flex justify-between gap-10 mb-10">
+    <div class="flex justify-between gap-8 mb-6">
         <div class="flex-1">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-primary mb-3 border-b border-slate-100 pb-1">
-                Spett.le Cliente</h3>
-            <div
-                class="text-slate-900 font-semibold text-lg">{{ $quote->customer->business_name ?? $quote->customer->display_name }}</div>
-            <div class="text-slate-600 mt-1 text-sm">
+            <h3 class="text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5 border-b border-slate-100 pb-0.5">Spett.le Cliente</h3>
+            <div class="text-slate-900 font-semibold text-sm">{{ $quote->customer->business_name ?? $quote->customer->display_name }}</div>
+            <div class="text-slate-600 mt-0.5 text-xs leading-snug">
                 @if($quote->customer->contact_person)
                     <div class="font-medium">{{ $quote->customer->contact_person }}</div>
                 @endif
@@ -140,33 +133,31 @@
             </div>
         </div>
         <div class="flex-1">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-primary mb-3 border-b border-slate-100 pb-1">
-                Dettagli</h3>
+            <h3 class="text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5 border-b border-slate-100 pb-0.5">Dettagli</h3>
             @if($quote->title)
-                <div class="mb-3">
-                    <span class="block text-xs text-slate-400">Oggetto</span>
-                    <span class="font-medium text-slate-900 text-sm">{{ $quote->title }}</span>
+                <div class="mb-1.5">
+                    <span class="block text-[10px] text-slate-400">Oggetto</span>
+                    <span class="font-medium text-slate-900 text-xs">{{ $quote->title }}</span>
                 </div>
             @endif
             @if($quote->description)
-                <div>
-                    <span class="block text-xs text-slate-400">Descrizione</span>
-                    <span
-                        class="font-medium text-slate-900 text-sm">{{ \Illuminate\Support\Str::limit($quote->description, 100) }}</span>
+                <div class="mb-1.5">
+                    <span class="block text-[10px] text-slate-400">Descrizione</span>
+                    <span class="font-medium text-slate-900 text-xs">{{ \Illuminate\Support\Str::limit($quote->description, 100) }}</span>
                 </div>
             @endif
             @if($quote->address && $quote->city)
                 <div>
-                    <span class="block text-xs text-slate-400">Destinazione</span>
-                    <span class="font-medium text-slate-900 text-sm">{{ $quote->full_address }}</span>
+                    <span class="block text-[10px] text-slate-400">Destinazione</span>
+                    <span class="font-medium text-slate-900 text-xs">{{ $quote->full_address }}</span>
                 </div>
             @endif
         </div>
     </div>
 
     <!-- Table -->
-    <div class="mb-8">
-        <table class="w-full text-left border-collapse">
+    <div class="mb-6">
+        <table class="w-full text-left border-collapse" style="font-size: 11px;">
             @php
                 // Controlla se il primo item è una sezione
                 $firstItem = $quote->items->whereNull('parent_id')->first();
@@ -174,116 +165,115 @@
             @endphp
             @if(!$firstIsSection)
                 <thead>
-                <tr class="border-b-2 border-slate-800 text-slate-900 text-xs uppercase tracking-wide">
+                <tr class="border-b-2 border-slate-800 text-slate-900 text-[10px] uppercase tracking-wide">
                     @if($quote->show_product_codes)
-                        <th class="py-2 font-bold w-20">Codice</th>
+                        <th class="py-1 font-bold w-20">Codice</th>
                     @endif
-                    <th class="py-2 font-bold">Descrizione</th>
-                    <th class="py-2 font-bold w-12 text-center">U.M.</th>
-                    <th class="py-2 font-bold w-12 text-center">Q.tà</th>
+                    <th class="py-1 font-bold">Descrizione</th>
+                    <th class="py-1 font-bold w-10 text-center">U.M.</th>
+                    <th class="py-1 font-bold w-10 text-center">Q.tà</th>
                     @if($quote->show_unit_prices)
-                        <th class="py-2 font-bold w-24 text-right">Prezzo</th>
+                        <th class="py-1 font-bold w-24 text-right">Prezzo</th>
                     @endif
-                    <th class="py-2 font-bold w-16 text-center">Sc.%</th>
                     @if($quote->show_vat || $quote->tax_included)
-                        <th class="py-2 font-bold w-12 text-center">IVA</th>
+                        <th class="py-1 font-bold w-10 text-center">IVA</th>
                     @endif
                     @if($quote->show_unit_prices)
-                        <th class="py-2 font-bold w-24 text-right">
+                        <th class="py-1 font-bold w-24 text-right">
                             Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
                     @endif
                 </tr>
                 </thead>
             @endif
-            <tbody class="text-slate-600 text-sm">
+            <tbody class="text-slate-600">
             @foreach($quote->items->whereNull('parent_id') as $item)
                 @if($item->type === \App\Enums\QuoteItemType::Section)
-                    <!-- SECTION - Solo nome, descrizione e totale opzionale -->
+                    <!-- SECTION -->
                     @php
-                        // Calcola numero totale colonne della tabella
-                        $totalTableColumns = 5; // Descrizione, U.M., Q.tà, Sc.%, Totale (sempre visibili)
-                        if($quote->show_product_codes) $totalTableColumns++; // Codice
-                        if($quote->show_unit_prices) $totalTableColumns++; // Prezzo
-                        if($quote->show_vat || $quote->tax_included) $totalTableColumns++; // IVA
-                        if ($quote->show_unit_prices) $totalTableColumns++; // Totale colonna se i prezzi unitari sono mostrati (altrimenti non ha senso mostrare totale se non si vedono i prezzi)
+                        $totalTableColumns = 3;
+                        if($quote->show_product_codes) $totalTableColumns++;
+                        if($quote->show_unit_prices) $totalTableColumns++;
+                        if($quote->show_vat || $quote->tax_included) $totalTableColumns++;
+                        if ($quote->show_unit_prices) $totalTableColumns++;
                     @endphp
-                    <tr class="bg-gray-100 border-b border-slate-200">
+                    <tr class="bg-gray-300 border-b border-slate-400">
                         @if($quote->show_section_totals)
-                            <!-- Sezione con totale: colspan = tutte le colonne -1 -->
-                            <td colspan="{{ $totalTableColumns - 1 }}" class="py-2 pl-3 align-middle">
-                                <div class="font-bold text-slate-900 uppercase text-xs">{{ $item->description }}</div>
+                            <td colspan="{{ $totalTableColumns - 1 }}" class="py-1 pl-3 align-middle">
+                                <div class="font-bold text-slate-900 uppercase text-[10px]">{{ $item->description }}</div>
                                 @if($item->notes)
-                                    <div class="text-[10px] text-slate-500 italic">{{ $item->notes }}</div>
+                                    <div class="text-[9px] text-slate-500 italic leading-tight">{{ $item->notes }}</div>
                                 @endif
                             </td>
-                            <td class="py-2 text-right font-bold text-slate-900 text-xs align-middle">
-                                {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }}
-                                €
+                            <td class="py-1 text-right font-bold text-slate-900 text-[10px] align-middle" style="white-space: nowrap; min-width: 7rem;">
+                                € {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }}
                             </td>
                         @else
-                            <!-- Sezione senza totale: colspan = tutte le colonne -->
-                            <td colspan="{{ $totalTableColumns }}" class="py-2 pl-3 align-middle">
-                                <div class="font-bold text-slate-900 uppercase text-xs">{{ $item->description }}</div>
+                            <td colspan="{{ $totalTableColumns }}" class="py-1 pl-3 align-middle">
+                                <div class="font-bold text-slate-900 uppercase text-[10px]">{{ $item->description }}</div>
                                 @if($item->notes)
-                                    <div class="text-[10px] text-slate-500 italic">{{ $item->notes }}</div>
+                                    <div class="text-[9px] text-slate-500 italic leading-tight">{{ $item->notes }}</div>
                                 @endif
                             </td>
                         @endif
                     </tr>
-                    <!-- Header ripetuto sotto la sezione (stesso stile header principale) -->
-                    <tr class="border-b-2 border-slate-800 text-slate-900 text-xs uppercase tracking-wide">
+                    <!-- Header ripetuto sotto la sezione -->
+                    <tr class="border-b-2 border-slate-800 text-slate-900 text-[10px] uppercase tracking-wide">
                         @if($quote->show_product_codes)
-                            <th class="py-2 font-bold w-20">Codice</th>
+                            <th class="py-1 font-bold w-20">Codice</th>
                         @endif
-                        <th class="py-2 font-bold">Descrizione</th>
-                        <th class="py-2 font-bold w-12 text-center">U.M.</th>
-                        <th class="py-2 font-bold w-12 text-center">Q.tà</th>
+                        <th class="py-1 font-bold">Descrizione</th>
+                        <th class="py-1 font-bold w-10 text-center">U.M.</th>
+                        <th class="py-1 font-bold w-10 text-center">Q.tà</th>
                         @if($quote->show_unit_prices)
-                            <th class="py-2 font-bold w-24 text-right">Prezzo</th>
+                            <th class="py-1 font-bold w-24 text-right">Prezzo</th>
                         @endif
-                        <th class="py-2 font-bold w-16 text-center">Sc.%</th>
                         @if($quote->show_vat || $quote->tax_included)
-                            <th class="py-2 font-bold w-12 text-center">IVA</th>
+                            <th class="py-1 font-bold w-10 text-center">IVA</th>
                         @endif
                         @if($quote->show_unit_prices)
-                            <th class="py-2 font-bold w-24 text-right">
+                            <th class="py-1 font-bold w-24 text-right">
                                 Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
                         @endif
                     </tr>
                     @foreach($item->children as $child)
-                        <!-- Item -->
-                        <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                        <tr class="border-b border-slate-100 last:border-0">
                             @if($quote->show_product_codes)
-                                <td class="py-3 font-mono text-xs text-slate-500 align-top">{{ $child->code ?? ($child->product ? $child->product->code : '') }}</td>
+                                <td class="py-1.5 font-mono text-[10px] text-slate-500 align-top">{{ $child->code ?? ($child->product ? $child->product->code : '') }}</td>
                             @endif
-                            <td class="py-3 align-top">
-                                <div class="font-bold text-slate-800">{{ $child->description }}</div>
+                            <td class="py-1.5 align-top">
+                                <div class="font-medium text-slate-800 leading-snug">{{ $child->description }}</div>
                                 @if($child->notes)
-                                    <div
-                                        class="text-xs mt-1 text-slate-500 whitespace-pre-line">{{ $child->notes }}</div>
+                                    <div class="text-[9px] mt-0.5 text-slate-500 whitespace-pre-line leading-tight">{{ $child->notes }}</div>
+                                @endif
+                                @if($child->billing_unit && !in_array($child->billing_unit->value, ['unit', 'flat']))
+                                    @php
+                                        $unitLabels = ['hour' => 'ora', 'day' => 'gg', 'week' => 'sett', 'month' => 'mese'];
+                                        $unitLabel = $unitLabels[$child->billing_unit->value] ?? $child->billing_unit->value;
+                                        $dur = $child->duration ?? ($quote->effective_event_days ?? null);
+                                    @endphp
+                                    <div style="font-size: 9px; color: #6b7280; margin-top: 1px;">
+                                        {{ $child->quantity }} × {{ number_format($child->unit_price, 2, ',', '.') }} €/{{ $unitLabel }}
+                                        @if($dur) × curva({{ $dur }} {{ $unitLabel }}) @endif
+                                    </div>
                                 @endif
                             </td>
-                            <td class="py-3 text-center align-top text-xs">{{ $child->unit ?? 'pz' }}</td>
-                            <td class="py-3 text-center align-top">{{ number_format($child->quantity, 0) }}</td>
+                            <td class="py-1.5 text-center align-top text-[10px]">{{ $child->unit ?? 'pz' }}</td>
+                            <td class="py-1.5 text-center align-top">{{ number_format($child->quantity, 0) }}</td>
                             @if($quote->show_unit_prices)
-                                <td class="py-3 text-right align-top">
+                                <td class="py-1.5 text-right align-top" style="white-space: nowrap;">
                                     @if(!$child->hide_unit_price)
-                                        <div>{{ number_format($child->unit_price, 2, ',', '.') }} €</div>
+                                        {{ number_format($child->unit_price, 2, ',', '.') }} €
                                     @else
                                         <span class="text-slate-300">-</span>
                                     @endif
                                 </td>
                             @endif
-                            <td class="py-3 text-center align-top text-xs">{{ $child->discount_percentage > 0 ? '-' . number_format($child->discount_percentage, 0) . '%' : '-' }}</td>
                             @if($quote->show_vat || $quote->tax_included)
-                                <td class="py-3 text-center align-top text-xs">{{ number_format($child->vat_rate ?? 0, 0) }}
-                                    %
-                                </td>
+                                <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($child->vat_rate ?? 0, 0) }}%</td>
                             @endif
                             @if($quote->show_unit_prices)
-                                <td class="py-3 text-right font-bold text-slate-900 align-top">
-                                    {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }}
-                                    €
+                                <td class="py-1.5 text-right font-semibold text-slate-900 align-top" style="white-space: nowrap;">
+                                    € {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }}
                                 </td>
                             @endif
                         </tr>
@@ -292,35 +282,42 @@
                     <!-- Non-section item -->
                     <tr class="border-b border-slate-100">
                         @if($quote->show_product_codes)
-                            <td class="py-3 font-mono text-xs text-slate-500 align-top">{{ $item->code ?? ($item->product ? $item->product->code : '') }}</td>
+                            <td class="py-1.5 font-mono text-[10px] text-slate-500 align-top">{{ $item->code ?? ($item->product ? $item->product->code : '') }}</td>
                         @endif
-                        <td class="py-3 align-top">
-                            <div class="font-bold text-slate-900">{{ $item->description }}</div>
+                        <td class="py-1.5 align-top">
+                            <div class="font-medium text-slate-900 leading-snug">{{ $item->description }}</div>
                             @if($item->notes)
-                                <div class="text-xs mt-1 text-slate-500 whitespace-pre-line">{{ $item->notes }}</div>
+                                <div class="text-[9px] mt-0.5 text-slate-500 whitespace-pre-line leading-tight">{{ $item->notes }}</div>
+                            @endif
+                            @if($item->billing_unit && !in_array($item->billing_unit->value, ['unit', 'flat']))
+                                @php
+                                    $unitLabels = ['hour' => 'ora', 'day' => 'gg', 'week' => 'sett', 'month' => 'mese'];
+                                    $unitLabel = $unitLabels[$item->billing_unit->value] ?? $item->billing_unit->value;
+                                    $dur = $item->duration ?? ($quote->effective_event_days ?? null);
+                                @endphp
+                                <div style="font-size: 9px; color: #6b7280; margin-top: 1px;">
+                                    {{ $item->quantity }} × {{ number_format($item->unit_price, 2, ',', '.') }} €/{{ $unitLabel }}
+                                    @if($dur) × curva({{ $dur }} {{ $unitLabel }}) @endif
+                                </div>
                             @endif
                         </td>
-                        <td class="py-3 text-center align-top text-xs">{{ $item->unit ?? 'pz' }}</td>
-                        <td class="py-3 text-center align-top">{{ number_format($item->quantity, 0) }}</td>
+                        <td class="py-1.5 text-center align-top text-[10px]">{{ $item->unit ?? 'pz' }}</td>
+                        <td class="py-1.5 text-center align-top">{{ number_format($item->quantity, 0) }}</td>
                         @if($quote->show_unit_prices)
-                            <td class="py-3 text-right align-top">
+                            <td class="py-1.5 text-right align-top" style="white-space: nowrap;">
                                 @if(!$item->hide_unit_price)
-                                    <div>{{ number_format($item->unit_price, 2, ',', '.') }} €</div>
+                                    {{ number_format($item->unit_price, 2, ',', '.') }} €
                                 @else
                                     <span class="text-slate-300">-</span>
                                 @endif
                             </td>
                         @endif
-                        <td class="py-3 text-center align-top text-xs">{{ $item->discount_percentage > 0 ? '-' . number_format($item->discount_percentage, 0) . '%' : '-' }}</td>
                         @if($quote->show_vat || $quote->tax_included)
-                            <td class="py-3 text-center align-top text-xs">{{ number_format($item->vat_rate ?? 0, 0) }}
-                                %
-                            </td>
+                            <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($item->vat_rate ?? 0, 0) }}%</td>
                         @endif
                         @if($quote->show_unit_prices)
-                            <td class="py-3 text-right font-bold text-slate-900 align-top">
-                                {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }}
-                                €
+                            <td class="py-1.5 text-right font-semibold text-slate-900 align-top" style="white-space: nowrap;">
+                                € {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }}
                             </td>
                         @endif
                     </tr>
@@ -358,7 +355,7 @@
             @else
                 {{-- IVA NON INCLUSA nei prezzi --}}
                 <div class="flex justify-between py-2 border-b border-slate-100">
-                    <span class="text-slate-500">Imponibile</span>
+                    <span class="text-slate-500">Subtotale</span>
                     <span class="font-medium">{{ number_format($quote->subtotal, 2, ',', '.') }} €</span>
                 </div>
                 @if($quote->discount_amount > 0)
@@ -375,16 +372,17 @@
                         </div>
                     @endforeach
                     <div class="flex justify-between py-3 border-b-2 border-slate-800 mt-2">
-                        <span class="font-bold text-lg text-primary">TOTALE + IVA</span>
+                        <span class="font-bold text-lg text-primary">TOTALE IVA INCLUSA</span>
                         <span class="font-bold text-lg text-primary">{{ number_format($quote->total_amount, 2, ',', '.') }} €</span>
                     </div>
                 @else
                     {{-- IVA non mostrata: solo totale imponibile --}}
                     <div class="flex justify-between py-3 border-b-2 border-slate-800 mt-2">
                         <span class="font-bold text-lg text-primary">TOTALE
-                            <span class="text-sm">(esc. IVA)</span>
+{{--                            <span class="text-sm">(esc. IVA)</span>--}}
+                            <span class="text-sm">IMPONIBILE</span>
                         </span>
-                        <span class="font-bold text-lg text-primary">{{ number_format($quote->subtotal, 2, ',', '.') }} €</span>
+                        <span class="font-bold text-lg text-primary">{{ number_format($quote->subtotal - $quote->discount_amount, 2, ',', '.') }} €</span>
                     </div>
                 @endif
             @endif

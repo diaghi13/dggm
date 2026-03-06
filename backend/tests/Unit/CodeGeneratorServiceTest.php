@@ -3,8 +3,8 @@
 use App\Models\Contractor;
 use App\Models\Ddt;
 use App\Models\Product;
+use App\Models\Project;
 use App\Models\Quote;
-use App\Models\Site;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Worker;
@@ -240,20 +240,20 @@ test('generates movement code with sequential numbers per day', function () {
     expect($code)->toBe('MOV-'.$date->format('Ymd').'-003');
 });
 
-// Site Tests
-test('generates site code with default prefix', function () {
-    $code = $this->service->generate('site');
+// Project Tests
+test('generates project code with default prefix', function () {
+    $code = $this->service->generate('project');
 
-    expect($code)->toMatch('/^CANT-\d{4}$/');
-    expect($code)->toBe('CANT-0001');
+    expect($code)->toMatch('/^PROG-\d{4}$/');
+    expect($code)->toBe('PROG-0001');
 });
 
-test('generates site code with sequential numbers', function () {
-    Site::factory()->count(3)->create();
+test('generates project code with sequential numbers', function () {
+    Project::factory()->count(3)->create();
 
-    $code = $this->service->generate('site');
+    $code = $this->service->generate('project');
 
-    expect($code)->toBe('CANT-0004');
+    expect($code)->toBe('PROG-0004');
 });
 
 // Edge Cases
@@ -314,8 +314,9 @@ test('handles date context correctly for date-based codes', function () {
     $code2 = $this->service->generate('movement', ['date' => $date2->format('Ymd')]);
 
     // Verify that codes include the date and proper numbering
-    expect($code1)->toBe('MOV-'.$date1->format('Ymd').'-002');
-    expect($code2)->toBe('MOV-'.$date2->format('Ymd').'-002');
+    // Counter resets yearly (not per-date), so with 2 existing movements the next is 003
+    expect($code1)->toBe('MOV-'.$date1->format('Ymd').'-003');
+    expect($code2)->toBe('MOV-'.$date2->format('Ymd').'-003');
 });
 
 // Format Customization Tests
@@ -340,19 +341,19 @@ test('respects custom format from settings', function () {
 
 test('handles different padding in format', function () {
     DB::table('settings')->updateOrInsert(
-        ['key' => 'sites.code_format', 'user_id' => null],
+        ['key' => 'projects.code_format', 'user_id' => null],
         [
             'value' => '{prefix}-{number:6}',
             'type' => 'string',
-            'group' => 'sites',
+            'group' => 'projects',
             'created_at' => now(),
             'updated_at' => now(),
         ]
     );
 
-    cache()->forget('setting:global:sites.code_format');
+    cache()->forget('setting:global:projects.code_format');
 
-    $code = $this->service->generate('site');
+    $code = $this->service->generate('project');
 
-    expect($code)->toBe('CANT-000001');
+    expect($code)->toBe('PROG-000001');
 });

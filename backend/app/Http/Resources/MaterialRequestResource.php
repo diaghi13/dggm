@@ -16,11 +16,11 @@ class MaterialRequestResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'site_id' => $this->site_id,
-            'site' => $this->whenLoaded('site', fn () => [
-                'id' => $this->site->id,
-                'name' => $this->site->name,
-                'code' => $this->site->code,
+            'project_id' => $this->project_id,
+            'project' => $this->whenLoaded('project', fn () => [
+                'id' => $this->project->id,
+                'name' => $this->project->name,
+                'code' => $this->project->code,
             ]),
             'material_id' => $this->material_id,
             'material' => $this->whenLoaded('material', fn () => [

@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Enums\LaborCostType;
 use App\Models\Contractor;
-use App\Models\Site;
-use App\Models\SiteLaborCost;
+use App\Models\Project;
+use App\Models\ProjectLaborCost;
 use App\Models\Worker;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -17,15 +17,15 @@ class CostAllocationService
     ) {}
 
     /**
-     * Allocate worker hours to site (creates SiteLaborCost record)
+     * Allocate worker hours to project (creates ProjectLaborCost record)
      */
     public function allocateWorkerHours(
-        Site $site,
+        Project $project,
         Worker $worker,
         float $hours,
         \DateTime $workDate,
         array $options = []
-    ): SiteLaborCost {
+    ): ProjectLaborCost {
         $isOvertime = $options['is_overtime'] ?? false;
         $isHoliday = $options['is_holiday'] ?? false;
         $description = $options['description'] ?? null;
@@ -37,12 +37,12 @@ class CostAllocationService
             $hours,
             $isOvertime,
             $isHoliday,
-            $site->id,
+            $project->id,
             $workDate
         );
 
         // Create labor cost record
-        $laborCost = $site->laborCosts()->create([
+        $laborCost = $project->laborCosts()->create([
             'cost_type' => LaborCostType::InternalLabor,
             'worker_id' => $worker->id,
             'description' => $description,
@@ -55,8 +55,8 @@ class CostAllocationService
             'cost_category' => $costCategory,
         ]);
 
-        // Update site actual cost
-        $this->updateSiteActualCost($site);
+        // Update project actual cost
+        $this->updateProjectActualCost($project);
 
         return $laborCost;
     }
@@ -65,13 +65,13 @@ class CostAllocationService
      * Allocate contractor cost (from invoice)
      */
     public function allocateContractorCost(
-        Site $site,
+        Project $project,
         Contractor $contractor,
         array $data
-    ): SiteLaborCost {
-        return DB::transaction(function () use ($site, $contractor, $data) {
+    ): ProjectLaborCost {
+        return DB::transaction(function () use ($project, $contractor, $data) {
             // Create labor cost record
-            $laborCost = $site->laborCosts()->create([
+            $laborCost = $project->laborCosts()->create([
                 'cost_type' => $data['cost_type'] ?? LaborCostType::Contractor,
                 'contractor_id' => $contractor->id,
                 'worker_id' => $data['worker_id'] ?? null, // Optional specific worker
@@ -88,31 +88,31 @@ class CostAllocationService
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            // Update site actual cost
-            $this->updateSiteActualCost($site);
+            // Update project actual cost
+            $this->updateProjectActualCost($project);
 
             return $laborCost;
         });
     }
 
     /**
-     * Update site actual_cost from all labor costs
+     * Update project actual_cost from all labor costs
      */
-    public function updateSiteActualCost(Site $site): void
+    public function updateProjectActualCost(Project $project): void
     {
-        $site->updateActualCost();
+        $project->updateActualCost();
     }
 
     /**
-     * Get labor cost breakdown for site
+     * Get labor cost breakdown for project
      */
-    public function getLaborCostBreakdown(Site $site): array
+    public function getLaborCostBreakdown(Project $project): array
     {
-        $totalLabor = $site->total_labor_cost;
-        $internalLabor = $site->internal_labor_cost;
-        $contractorCost = $site->contractor_cost;
+        $totalLabor = $project->total_labor_cost;
+        $internalLabor = $project->internal_labor_cost;
+        $contractorCost = $project->contractor_cost;
 
-        $byWorker = $site->laborCosts()
+        $byWorker = $project->laborCosts()
             ->internalLabor()
             ->with('worker')
             ->get()
@@ -131,7 +131,7 @@ class CostAllocationService
             })
             ->values();
 
-        $byContractor = $site->laborCosts()
+        $byContractor = $project->laborCosts()
             ->contractorLabor()
             ->with('contractor')
             ->get()
@@ -150,7 +150,7 @@ class CostAllocationService
             })
             ->values();
 
-        $byCategory = $site->laborCosts()
+        $byCategory = $project->laborCosts()
             ->whereNotNull('cost_category')
             ->get()
             ->groupBy('cost_category')
@@ -179,11 +179,11 @@ class CostAllocationService
      * Get labor costs for period
      */
     public function getLaborCostsInPeriod(
-        Site $site,
+        Project $project,
         \DateTime $startDate,
         \DateTime $endDate
     ): Collection {
-        return $site->laborCosts()
+        return $project->laborCosts()
             ->with(['worker', 'contractor'])
             ->whereBetween('work_date', [$startDate, $endDate])
             ->orderBy('work_date')
@@ -193,9 +193,9 @@ class CostAllocationService
     /**
      * Get monthly labor cost summary
      */
-    public function getMonthlySummary(Site $site, int $year, int $month): array
+    public function getMonthlySummary(Project $project, int $year, int $month): array
     {
-        $costs = $site->laborCosts()
+        $costs = $project->laborCosts()
             ->with(['worker', 'contractor'])
             ->whereYear('work_date', $year)
             ->whereMonth('work_date', $month)
@@ -223,11 +223,11 @@ class CostAllocationService
     }
 
     /**
-     * Get worker performance on site
+     * Get worker performance on project
      */
-    public function getWorkerPerformance(Site $site, Worker $worker): array
+    public function getWorkerPerformance(Project $project, Worker $worker): array
     {
-        $costs = $site->laborCosts()
+        $costs = $project->laborCosts()
             ->where('worker_id', $worker->id)
             ->get();
 
@@ -249,16 +249,16 @@ class CostAllocationService
     }
 
     /**
-     * Delete labor cost and update site actual cost
+     * Delete labor cost and update project actual cost
      */
-    public function deleteLaborCost(SiteLaborCost $laborCost): bool
+    public function deleteLaborCost(ProjectLaborCost $laborCost): bool
     {
         return DB::transaction(function () use ($laborCost) {
-            $site = $laborCost->site;
+            $project = $laborCost->project;
             $deleted = $laborCost->delete();
 
             if ($deleted) {
-                $this->updateSiteActualCost($site);
+                $this->updateProjectActualCost($project);
             }
 
             return $deleted;
@@ -273,7 +273,7 @@ class CostAllocationService
         string $invoiceNumber,
         \DateTime $invoiceDate
     ): int {
-        return SiteLaborCost::whereIn('id', $laborCostIds)
+        return ProjectLaborCost::whereIn('id', $laborCostIds)
             ->contractorLabor()
             ->update([
                 'is_invoiced' => true,

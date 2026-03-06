@@ -15,7 +15,7 @@ readonly class GetDdtByIdQuery
         return Ddt::with([
             'supplier',
             'customer',
-            'site',
+            'project',
             'fromWarehouse',
             'toWarehouse',
             'items.product.category',

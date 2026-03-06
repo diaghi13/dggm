@@ -104,7 +104,6 @@ class ImportController extends Controller
             'created_at',
             'updated_at',
             'deleted_at',
-            'description_embedding', // Auto-generated field
         ];
 
         return in_array($fieldName, $skipFields);
@@ -317,8 +316,8 @@ class ImportController extends Controller
 
         $importAction = new \App\Actions\SupplierProduct\ImportSupplierCatalogAction(
             new \App\Actions\SupplierProduct\UpsertSupplierProductAction,
-            new \App\Actions\Product\CreateProductAction,
-            new \App\Actions\Product\UpdateProductAction
+            app(\App\Actions\Product\CreateProductAction::class),
+            app(\App\Actions\Product\UpdateProductAction::class)
         );
 
         $imported = 0;

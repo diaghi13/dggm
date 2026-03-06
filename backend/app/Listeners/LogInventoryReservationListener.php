@@ -28,7 +28,7 @@ class LogInventoryReservationListener implements ShouldQueue
             'product_id' => $event->inventory->product_id,
             'warehouse_id' => $event->inventory->warehouse_id,
             'quantity' => $event->quantity,
-            'site_id' => $event->siteId,
+            'project_id' => $event->projectId,
             'user_id' => $event->userId,
         ]);
     }

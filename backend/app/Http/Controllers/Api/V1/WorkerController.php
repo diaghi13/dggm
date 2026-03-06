@@ -32,7 +32,7 @@ class WorkerController extends Controller
             'supplier_id',
             'has_safety_training',
             'specialization',
-            'site_id',
+            'project_id',
         ]);
 
         $perPage = $request->input('per_page', 20);

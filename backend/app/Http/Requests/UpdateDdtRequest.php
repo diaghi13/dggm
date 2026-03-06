@@ -23,7 +23,7 @@ class UpdateDdtRequest extends FormRequest
             'type' => ['sometimes', 'required', Rule::enum(DdtType::class)],
             'supplier_id' => 'nullable|exists:suppliers,id',
             'customer_id' => 'nullable|exists:customers,id',
-            'site_id' => 'nullable|exists:sites,id',
+            'project_id' => 'nullable|exists:projects,id',
             'from_warehouse_id' => 'sometimes|required|exists:warehouses,id',
             'to_warehouse_id' => 'nullable|exists:warehouses,id',
             'ddt_number' => 'sometimes|required|string|max:100',

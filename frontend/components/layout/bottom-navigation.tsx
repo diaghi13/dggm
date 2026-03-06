@@ -33,7 +33,7 @@ const navItems: NavItem[] = [
     matchPaths: [
       "/customers",
       "/suppliers",
-      "/sites",
+      "/projects",
       "/workers",
       "/invitations",
     ],

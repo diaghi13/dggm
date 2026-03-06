@@ -71,6 +71,12 @@ class ProductData extends Data
         // Rental
         public bool|Optional $is_rentable,
 
+        public string|Optional $ownership_type,
+        public bool|Optional $is_premium,
+        public ?float $subrental_markup,
+        public bool|Optional $rental_price_estimated,
+        public ?float $estimated_base_day,
+
         #[Min(0)]
         public int|Optional $quantity_out_on_rental,
 
@@ -166,6 +172,11 @@ class ProductData extends Data
             package_volume: $product->package_volume,
             package_dimensions: $product->package_dimensions,
             is_rentable: $product->is_rentable,
+            ownership_type: $product->ownership_type ?? 'owned',
+            is_premium: (bool) $product->is_premium,
+            subrental_markup: $product->subrental_markup !== null ? (float) $product->subrental_markup : null,
+            rental_price_estimated: (bool) $product->rental_price_estimated,
+            estimated_base_day: $product->estimated_base_day !== null ? (float) $product->estimated_base_day : null,
             quantity_out_on_rental: $product->quantity_out_on_rental,
             unit: $product->unit,
             standard_cost: $product->standard_cost,
@@ -258,6 +269,11 @@ class ProductData extends Data
         return [
             'code' => [Rule::unique('products', 'code')->ignore($productId)],
             'barcode' => [Rule::unique('products', 'barcode')->ignore($productId)],
+            'ownership_type' => ['nullable', 'string', 'in:owned,subrental,mixed'],
+            'is_premium' => ['nullable', 'boolean'],
+            'subrental_markup' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'rental_price_estimated' => ['nullable', 'boolean'],
+            'estimated_base_day' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

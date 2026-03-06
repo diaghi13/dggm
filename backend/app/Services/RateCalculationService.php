@@ -30,16 +30,16 @@ class RateCalculationService
         float $hours,
         bool $isOvertime = false,
         bool $isHoliday = false,
-        ?int $siteId = null,
+        ?int $projectId = null,
         ?\DateTime $date = null
     ): array {
         $date = $date ?? now();
 
-        // Check for site-specific rate override
+        // Check for project-specific rate override
         $unitRate = null;
-        if ($siteId) {
-            $siteAssignment = $worker->siteAssignments()
-                ->where('site_id', $siteId)
+        if ($projectId) {
+            $siteAssignment = $worker->projectAssignments()
+                ->where('project_id', $projectId)
                 ->where('is_active', true)
                 ->first();
 

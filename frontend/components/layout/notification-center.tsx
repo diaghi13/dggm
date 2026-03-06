@@ -87,9 +87,9 @@ export function NotificationCenter() {
     if (data.type === "worker_assigned" && data.site_worker_id) {
       router.push("/dashboard/worker");
     } else if (data.type === "assignment_responded" && data.site_id) {
-      router.push(`/dashboard/sites/${data.site_id}?tab=squadra`);
+      router.push(`/projects/${data.site_id}?tab=squadra`);
     } else if (data.type === "material_requested" && data.site_id) {
-      router.push(`/dashboard/sites/${data.site_id}?tab=richieste`);
+      router.push(`/projects/${data.site_id}?tab=richieste`);
     } else if (data.type === "material_request_approved" && data.site_id) {
       router.push("/dashboard/worker");
     } else if (data.type === "material_request_rejected" && data.site_id) {

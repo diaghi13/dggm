@@ -21,7 +21,7 @@ class StoreDdtRequest extends FormRequest
             'type' => ['required', Rule::enum(DdtType::class)],
             'supplier_id' => 'nullable|exists:suppliers,id',
             'customer_id' => 'nullable|exists:customers,id',
-            'site_id' => 'nullable|exists:sites,id',
+            'project_id' => 'nullable|exists:projects,id',
             'from_warehouse_id' => 'required|exists:warehouses,id',
             'to_warehouse_id' => 'nullable|exists:warehouses,id',
             'ddt_number' => 'required|string|max:100',

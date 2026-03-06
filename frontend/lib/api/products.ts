@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { ProductFormData } from "@/lib/types";
+import type { ProductFormData, ProductSupplierPrice } from "@/lib/types";
 
 export const productsApi = {
   getAll: async (params?: {
@@ -147,6 +147,7 @@ export const productsApi = {
     icon?: string;
     color?: string;
     sort_order?: number;
+    rental_profile_id?: number | null;
   }) => {
     const response = await apiClient.post("/product-categories", data);
     return response.data.data;
@@ -162,6 +163,7 @@ export const productsApi = {
       color?: string;
       sort_order?: number;
       is_active?: boolean;
+      rental_profile_id?: number | null;
     },
   ) => {
     const response = await apiClient.patch(`/product-categories/${id}`, data);
@@ -256,5 +258,11 @@ export const productsApi = {
   importFromExcel: async (data: { products: Array<Record<string, any>> }) => {
     const response = await apiClient.post("/products/import", data);
     return response.data;
+  },
+
+  // Supplier Prices
+  getSupplierPrices: async (productId: number): Promise<ProductSupplierPrice[]> => {
+    const response = await apiClient.get(`/products/${productId}/suppliers`);
+    return response.data.data;
   },
 };

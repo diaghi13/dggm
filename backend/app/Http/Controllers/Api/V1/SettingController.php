@@ -8,6 +8,7 @@ use App\Actions\Setting\UpdateSettingAction;
 use App\Data\SettingData;
 use App\Enums\SettingType;
 use App\Http\Controllers\Controller;
+use App\Jobs\RecalculateRentalPricesJob;
 use App\Models\Setting;
 use App\Queries\Setting\GetAllSettingsQuery;
 use App\Services\FeatureFlagService;
@@ -93,6 +94,10 @@ class SettingController extends Controller
             $setting,
             SettingData::from($request)
         );
+
+        if (str_starts_with($setting->key, 'rental.')) {
+            RecalculateRentalPricesJob::dispatch();
+        }
 
         return response()->json([
             'success' => true,
@@ -270,6 +275,10 @@ class SettingController extends Controller
             $group,
             $isPublic
         );
+
+        if (str_starts_with($key, 'rental.')) {
+            RecalculateRentalPricesJob::dispatch();
+        }
 
         return response()->json([
             'success' => true,

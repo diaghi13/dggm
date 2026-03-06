@@ -41,8 +41,8 @@ class DdtData extends Data
         #[Exists('customers', 'id')]
         public ?int $customer_id,
 
-        #[Exists('sites', 'id')]
-        public ?int $site_id,
+        #[Exists('projects', 'id')]
+        public ?int $project_id,
 
         // Warehouses
         #[Required, Exists('warehouses', 'id')]
@@ -100,7 +100,7 @@ class DdtData extends Data
         // Lazy relationships
         public Lazy|SupplierData|null $supplier = null,
         public Lazy|CustomerData|null $customer = null, // CustomerData when created
-        public Lazy|SiteDate|null $site = null, // SiteData when created
+        public Lazy|ProjectData|null $project = null, // ProjectData when created
         public Lazy|WarehouseData|null $from_warehouse = null,
         public Lazy|WarehouseData|null $to_warehouse = null,
         public Lazy|UserData|null $created_by_user = null,
@@ -141,7 +141,7 @@ class DdtData extends Data
             type: $ddt->type,
             supplier_id: $ddt->supplier_id,
             customer_id: $ddt->customer_id,
-            site_id: $ddt->site_id,
+            project_id: $ddt->project_id,
             from_warehouse_id: $ddt->from_warehouse_id,
             to_warehouse_id: $ddt->to_warehouse_id,
             ddt_number: $ddt->ddt_number,
@@ -164,7 +164,7 @@ class DdtData extends Data
             deleted_at: $ddt->deleted_at?->toISOString(),
             supplier: Lazy::whenLoaded('supplier', $ddt, fn () => SupplierData::from($ddt->supplier)),
             customer: Lazy::whenLoaded('customer', $ddt, fn () => CustomerData::from($ddt->customer)),
-            site: Lazy::whenLoaded('site', $ddt, fn () => SiteData::from($ddt->site)),
+            project: Lazy::whenLoaded('project', $ddt, fn () => ProjectData::from($ddt->project)),
             from_warehouse: Lazy::whenLoaded('fromWarehouse', $ddt, fn () => WarehouseData::from($ddt->fromWarehouse)),
             to_warehouse: Lazy::whenLoaded('toWarehouse', $ddt, fn () => WarehouseData::from($ddt->toWarehouse)),
             created_by_user: Lazy::whenLoaded('createdBy', $ddt, fn () => UserData::from($ddt->createdBy)),
@@ -218,7 +218,7 @@ class DdtData extends Data
             'ddt_date.required' => 'La data DDT è obbligatoria.',
             'supplier_id.exists' => 'Il fornitore selezionato non esiste.',
             'customer_id.exists' => 'Il cliente selezionato non esiste.',
-            'site_id.exists' => 'Il cantiere selezionato non esiste.',
+            'project_id.exists' => 'Il progetto selezionato non esiste.',
             'carrier_name.max' => 'Il nome del trasportatore non può superare i 255 caratteri.',
             'tracking_number.max' => 'Il numero di tracciamento non può superare i 100 caratteri.',
             'parent_ddt_id.exists' => 'Il DDT di riferimento selezionato non esiste.',

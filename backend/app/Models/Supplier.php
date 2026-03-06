@@ -71,7 +71,7 @@ class Supplier extends Model
 
     public function laborCosts(): HasMany
     {
-        return $this->hasMany(SiteLaborCost::class, 'contractor_id');
+        return $this->hasMany(ProjectLaborCost::class, 'contractor_id');
     }
 
     public function products()
@@ -106,6 +106,11 @@ class Supplier extends Model
     public function discountFamilies(): HasMany
     {
         return $this->hasMany(DiscountFamily::class);
+    }
+
+    public function subrentalProducts(): HasMany
+    {
+        return $this->hasMany(ProductSubrentalSupplier::class);
     }
 
     // ==================== SCOPES ====================

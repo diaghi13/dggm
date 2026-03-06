@@ -7,7 +7,7 @@ import { ddtsApi } from "@/lib/api/ddts";
 import { warehousesApi } from "@/lib/api/warehouses";
 import { suppliersApi } from "@/lib/api/suppliers";
 import { customersApi } from "@/lib/api/customers";
-import { sitesApi } from "@/lib/api/sites";
+import { projectsApi } from "@/lib/api/projects";
 import { productsApi } from "@/lib/api/products";
 import type { DdtType, DdtFormData, ReturnReason } from "@/lib/types";
 import {
@@ -109,8 +109,8 @@ export default function NewDdtPage() {
   });
 
   const { data: sitesData } = useQuery({
-    queryKey: ["sites", { status: "in_progress" }],
-    queryFn: () => sitesApi.getAll({ status: "in_progress", per_page: 100 }),
+    queryKey: ["projects", { status: "in_progress" }],
+    queryFn: () => projectsApi.getAll({ status: "in_progress", per_page: 100 }),
     enabled: formData.type === "outgoing",
   });
 
@@ -138,7 +138,7 @@ export default function NewDdtPage() {
         ...data,
         supplier_id: data.supplier_id || undefined,
         customer_id: data.customer_id || undefined,
-        site_id: data.site_id || undefined,
+        project_id: data.project_id || undefined,
         to_warehouse_id: data.to_warehouse_id || undefined,
         transport_date: data.transport_date || undefined,
         carrier_name: data.carrier_name || undefined,
@@ -173,20 +173,37 @@ export default function NewDdtPage() {
     },
   });
 
-  const handleAddItem = (material: any) => {
-    setFormData({
-      ...formData,
+  const handleAddItem = async (material: any) => {
+    let unitCost: number = material.standard_cost || 0;
+
+    // Se c'è un fornitore selezionato nel form DDT, cerca il prezzo specifico
+    if (formData.supplier_id) {
+      try {
+        const supplierPrices = await productsApi.getSupplierPrices(material.id);
+        const supplierPrice = supplierPrices.find(
+          (sp) => sp.supplier_id === formData.supplier_id,
+        );
+        if (supplierPrice) {
+          unitCost = supplierPrice.final_price ?? supplierPrice.purchase_price;
+        }
+      } catch {
+        // In caso di errore usa il costo standard come fallback
+      }
+    }
+
+    setFormData((prev) => ({
+      ...prev,
       items: [
-        ...formData.items,
+        ...prev.items,
         {
           product_id: material.id,
           quantity: 1,
           unit: material.unit || "",
-          unit_cost: material.standard_cost || 0,
+          unit_cost: unitCost,
           notes: null,
         },
       ],
-    });
+    }));
     setSearchMaterial("");
   };
 
@@ -284,7 +301,7 @@ export default function NewDdtPage() {
                 type: value,
                 supplier_id: null,
                 customer_id: null,
-                site_id: null,
+                project_id: null,
                 to_warehouse_id: null,
               })
             }
@@ -555,23 +572,23 @@ export default function NewDdtPage() {
             {/* Site (if needed) */}
             {requiresSite && (
               <div className="space-y-2">
-                <Label htmlFor="site_id">Cantiere (opzionale)</Label>
+                <Label htmlFor="project_id">Progetto (opzionale)</Label>
                 <Select
-                  value={formData.site_id?.toString() || undefined}
+                  value={formData.project_id?.toString() || undefined}
                   onValueChange={(value) =>
                     setFormData({
                       ...formData,
-                      site_id: value ? parseInt(value) : null,
+                      project_id: value ? parseInt(value) : null,
                     })
                   }
                 >
                   <SelectTrigger className="min-w-[200px]">
-                    <SelectValue placeholder="Seleziona cantiere" />
+                    <SelectValue placeholder="Seleziona progetto" />
                   </SelectTrigger>
                   <SelectContent>
                     {sites.length === 0 ? (
                       <div className="p-2 text-sm text-slate-500">
-                        Nessun cantiere disponibile
+                        Nessun progetto disponibile
                       </div>
                     ) : (
                       sites.map((site: any) => (

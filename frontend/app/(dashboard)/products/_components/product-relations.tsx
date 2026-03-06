@@ -94,6 +94,7 @@ export function ProductRelations({ product }: ProductRelationsProps) {
     }) => productsApi.addRelation(product.id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', product.id] });
+      queryClient.invalidateQueries({ queryKey: ['composite-breakdown', product.id] });
       setIsAddDialogOpen(false);
       resetForm();
       toast.success('Relazione aggiunta', {
@@ -131,6 +132,7 @@ export function ProductRelations({ product }: ProductRelationsProps) {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', product.id] });
+      queryClient.invalidateQueries({ queryKey: ['composite-breakdown', product.id] });
       setIsAddDialogOpen(false);
       setEditingRelation(null);
       resetForm();
@@ -147,6 +149,7 @@ export function ProductRelations({ product }: ProductRelationsProps) {
     mutationFn: (relationId: number) => productsApi.deleteRelation(product.id!, relationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', product.id] });
+      queryClient.invalidateQueries({ queryKey: ['composite-breakdown', product.id] });
       toast.success('Relazione rimossa');
     },
     onError: (error: Error) => {

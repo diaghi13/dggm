@@ -40,6 +40,7 @@ class PriceList extends Model
         'adjustment_value',
         'applies_to',
         'category_id',
+        'rental_profile_id',
         'department_filter',
         'valid_from',
         'valid_to',
@@ -70,6 +71,14 @@ class PriceList extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class);
+    }
+
+    /**
+     * Optional rental profile (sector preset for Power-Decay curve parameters)
+     */
+    public function rentalProfile(): BelongsTo
+    {
+        return $this->belongsTo(RentalProfile::class);
     }
 
     /**

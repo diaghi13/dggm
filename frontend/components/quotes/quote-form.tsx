@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -48,6 +49,13 @@ import {
   Hash,
   Pencil,
   Check,
+  Calendar,
+  Send,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ShoppingCart,
+  CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 import { QuoteFormData, QuoteItem } from "@/lib/types";
@@ -132,27 +140,33 @@ export function QuoteForm({
     return parts.progressive;
   });
 
-  const codeParts = getCodeParts(formData.code);
+  const [codePrefix, setCodePrefix] = useState(() => {
+    const parts = getCodeParts(formData.code);
+    return parts.prefix;
+  });
 
-  // Update progressive when code changes (e.g., loaded from API)
+  // Update progressive and prefix when code changes from external source (e.g., loaded from API)
   useEffect(() => {
     const parts = getCodeParts(formData.code);
-    if (parts.progressive && parts.progressive !== progressive) {
-      // Use setTimeout to avoid synchronous setState in effect
-      setTimeout(() => setProgressive(parts.progressive), 0);
+    if (parts.prefix && parts.prefix !== codePrefix) {
+      // Prefix changed (e.g., year changed or new quote loaded)
+      setCodePrefix(parts.prefix);
+      setProgressive(parts.progressive);
+    } else if (!progressive && parts.progressive) {
+      // Initial load
+      setProgressive(parts.progressive);
     }
-  }, [formData.code, getCodeParts, progressive]);
+  }, [formData.code, getCodeParts, codePrefix, progressive]);
 
   // Update full code when progressive changes (manual editing)
   useEffect(() => {
-    if (progressive && formData.code) {
-      const parts = getCodeParts(formData.code);
-      const newCode = `${parts.prefix}${progressive}`;
+    if (progressive && codePrefix) {
+      const newCode = `${codePrefix}${progressive}`;
       if (formData.code !== newCode) {
         onChange("code", newCode);
       }
     }
-  }, [progressive, formData.code, onChange, getCodeParts]);
+  }, [progressive, codePrefix, onChange]); // Removed formData.code to avoid loop
 
   // Effect per generare la data di scadenza se non esiste
   useEffect(() => {
@@ -200,11 +214,11 @@ export function QuoteForm({
         ((formData.discount_amount || 0) / itemsTotal) * 100;
       if (
         Math.abs((formData.discount_percentage || 0) - calculatedPercentage) >
-        0.01
+        0.0001
       ) {
         onChange(
           "discount_percentage",
-          parseFloat(calculatedPercentage.toFixed(2)),
+          parseFloat(calculatedPercentage.toFixed(4)),
         );
         // Use setTimeout to avoid synchronous setState in effect
         setTimeout(() => setLastDiscountFieldChanged(null), 0);
@@ -305,149 +319,451 @@ export function QuoteForm({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Colonna principale - 2/3 */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Informazioni Essenziali */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
+            {/* Due card affiancate: Info Base + Cliente/Team/Listino */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Card 1: Informazioni Base */}
+              <Card>
+                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
-                    Informazioni Principali
+                    Informazioni Base
                   </CardTitle>
-                  {/* Stato a destra */}
-                  <div className="flex items-center gap-2">
-                    <Label
-                      htmlFor="status"
-                      className="text-sm font-normal text-slate-600 dark:text-slate-400"
-                    >
-                      Stato:
-                    </Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) => onChange("status", value)}
-                    >
-                      <SelectTrigger className="w-37.5">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Bozza</SelectItem>
-                        <SelectItem value="sent">Inviato</SelectItem>
-                        <SelectItem value="approved">Approvato</SelectItem>
-                        <SelectItem value="rejected">Rifiutato</SelectItem>
-                        <SelectItem value="expired">Scaduto</SelectItem>
-                      </SelectContent>
-                    </Select>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Tipologia Preventivo — non modificabile dopo la creazione */}
+                  <div className="space-y-2">
+                    <Label>Tipologia</Label>
+                    {(() => {
+                      const type = formData.quote_type ?? "sale";
+                      const config = {
+                        sale: {
+                          icon: ShoppingCart,
+                          label: "Vendita",
+                          className:
+                            "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700",
+                        },
+                        rental: {
+                          icon: Package,
+                          label: "Noleggio",
+                          className:
+                            "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700",
+                        },
+                        event: {
+                          icon: CalendarDays,
+                          label: "Evento",
+                          className:
+                            "bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700",
+                        },
+                      } as const;
+                      const { icon: Icon, label, className } =
+                        config[type as keyof typeof config] ?? config.sale;
+                      return (
+                        <Badge
+                          variant="outline"
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border ${className}`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {label}
+                        </Badge>
+                      );
+                    })()}
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      La tipologia non può essere modificata dopo la creazione
+                    </p>
                   </div>
-                </div>
+
+                  {/* Codice Preventivo */}
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="progressive"
+                      className="flex items-center gap-2"
+                    >
+                      <Hash className="h-4 w-4" />
+                      Codice Preventivo
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      {/* Prefisso completo (readonly) */}
+                      <div className="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 font-mono text-sm text-slate-600 dark:text-slate-400">
+                        {codePrefix || "..."}
+                      </div>
+                      {/* Progressivo (editabile) */}
+                      <Input
+                        id="progressive"
+                        value={progressive}
+                        onChange={(e) => setProgressive(e.target.value)}
+                        placeholder="0001"
+                        className="font-mono text-sm w-32 flex-1"
+                        maxLength={20}
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Solo il progressivo è editabile
+                    </p>
+                  </div>
+
+                  {/* Oggetto (ex Titolo) */}
+                  <div className="space-y-2">
+                    <Label htmlFor="title">
+                      Oggetto <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => onChange("title", e.target.value)}
+                      placeholder="es. Ristrutturazione Appartamento"
+                      className="text-base font-medium"
+                    />
+                  </div>
+
+                  {/* Descrizione */}
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Descrizione</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description || ""}
+                      onChange={(e) => onChange("description", e.target.value)}
+                      placeholder="Descrizione dettagliata del preventivo"
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Date */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="issue_date">
+                        Data Emissione <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="issue_date"
+                        type="date"
+                        value={formatDateForInput(formData.issue_date)}
+                        onChange={(e) => onChange("issue_date", e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="expiry_date">Data Scadenza</Label>
+                      <Input
+                        id="expiry_date"
+                        type="date"
+                        value={formatDateForInput(formData.expiry_date)}
+                        onChange={(e) =>
+                          onChange("expiry_date", e.target.value)
+                        }
+                      />
+                      {defaultValidityDays && (
+                        <p className="text-xs text-slate-500">
+                          Calcolata automaticamente (+{defaultValidityDays}gg)
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Card 2: Cliente, Team e Listino */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Cliente e Team
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="customer_id">
+                        Cliente <span className="text-red-500">*</span>
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsCreateCustomerDialogOpen(true)}
+                        className="h-7 gap-1 text-xs"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Nuovo
+                      </Button>
+                    </div>
+                    <ComboboxSelect
+                      options={
+                        customersData?.data.map((customer) => ({
+                          value: customer.id.toString(),
+                          label: customer.display_name,
+                          description:
+                            customer.type === "company"
+                              ? customer.vat_number || undefined
+                              : customer.email || undefined,
+                        })) || []
+                      }
+                      value={formData.customer_id?.toString()}
+                      onValueChange={(value) =>
+                        onChange("customer_id", value ? parseInt(value) : null)
+                      }
+                      onSearchChange={setCustomerSearch}
+                      placeholder="Seleziona cliente"
+                      searchPlaceholder="Cerca cliente..."
+                      emptyText="Nessun cliente trovato"
+                      loading={isLoadingCustomers}
+                    />
+                  </div>
+
+                  {/* Dettagli Cliente Selezionato */}
+                  {formData.customer_id &&
+                    customersData?.data &&
+                    (() => {
+                      const selectedCustomer = customersData.data.find(
+                        (c) => c.id === formData.customer_id,
+                      );
+                      if (!selectedCustomer) return null;
+
+                      return (
+                        <div className="rounded-lg border bg-muted/50 p-3 space-y-2 text-sm">
+                          <div className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                            Dettagli Cliente
+                          </div>
+                          <div className="grid gap-2">
+                            {selectedCustomer.type === "company" &&
+                              selectedCustomer.vat_number && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">
+                                    P.IVA:
+                                  </span>
+                                  <span className="font-medium">
+                                    {selectedCustomer.vat_number}
+                                  </span>
+                                </div>
+                              )}
+                            {selectedCustomer.tax_code && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Cod. Fiscale:
+                                </span>
+                                <span className="font-medium">
+                                  {selectedCustomer.tax_code}
+                                </span>
+                              </div>
+                            )}
+                            {selectedCustomer.email && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Email:
+                                </span>
+                                <span className="font-medium text-xs">
+                                  {selectedCustomer.email}
+                                </span>
+                              </div>
+                            )}
+                            {selectedCustomer.phone && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Tel:
+                                </span>
+                                <span className="font-medium">
+                                  {selectedCustomer.phone}
+                                </span>
+                              </div>
+                            )}
+                            {selectedCustomer.address && (
+                              <div className="flex flex-col gap-1">
+                                <span className="text-muted-foreground">
+                                  Indirizzo:
+                                </span>
+                                <span className="font-medium">
+                                  {selectedCustomer.address}
+                                  {selectedCustomer.city &&
+                                    `, ${selectedCustomer.city}`}
+                                  {selectedCustomer.province &&
+                                    ` (${selectedCustomer.province})`}
+                                  {selectedCustomer.postal_code &&
+                                    ` - ${selectedCustomer.postal_code}`}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="project_manager_id">Project Manager</Label>
+                    <ComboboxSelect
+                      options={
+                        usersData?.data.map((user: App.Data.UserData) => ({
+                          value: user.id?.toString() || "",
+                          label: user.name || "",
+                          description: user.email,
+                        })) || []
+                      }
+                      value={formData.project_manager_id?.toString()}
+                      onValueChange={(value) =>
+                        onChange(
+                          "project_manager_id",
+                          value ? parseInt(value) : null,
+                        )
+                      }
+                      onSearchChange={setUserSearch}
+                      placeholder="Seleziona PM"
+                      searchPlaceholder="Cerca utente..."
+                      emptyText="Nessun utente trovato"
+                      loading={isLoadingUsers}
+                    />
+                  </div>
+
+                  {/* Listino Prezzi */}
+                  <div className="space-y-2">
+                    <Label htmlFor="price_list_id">Listino Prezzi</Label>
+                    <ComboboxSelect
+                      options={
+                        priceListsData?.data.map((priceList) => ({
+                          value: priceList.id!.toString(),
+                          label: priceList.name || "",
+                          description: priceList.description || undefined,
+                        })) || []
+                      }
+                      value={formData.price_list_id?.toString()}
+                      onValueChange={(value) =>
+                        onChange(
+                          "price_list_id",
+                          value ? parseInt(value) : null,
+                        )
+                      }
+                      onSearchChange={setPriceListSearch}
+                      placeholder="Seleziona listino"
+                      searchPlaceholder="Cerca listino..."
+                      emptyText="Nessun listino trovato"
+                      loading={isLoadingPriceLists}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Giorni Utilizzo (solo per noleggio/evento) */}
+            {(formData.quote_type === "rental" ||
+              formData.quote_type === "event") && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Giorni Utilizzo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    // Auto-calcola da date lavori se impostate
+                    const autoCalcDays =
+                      formData.work_start_date && formData.work_end_date
+                        ? Math.max(
+                            1,
+                            Math.round(
+                              (new Date(formData.work_end_date).getTime() -
+                                new Date(formData.work_start_date).getTime()) /
+                                (1000 * 60 * 60 * 24),
+                            ),
+                          )
+                        : null;
+
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="event_days"
+                            type="number"
+                            min="1"
+                            max="3650"
+                            value={formData.event_days ?? ""}
+                            onChange={(e) =>
+                              onChange(
+                                "event_days",
+                                e.target.value
+                                  ? parseInt(e.target.value)
+                                  : null,
+                              )
+                            }
+                            placeholder={
+                              autoCalcDays
+                                ? `${autoCalcDays} (da date lavori)`
+                                : "es. 3"
+                            }
+                            className="max-w-40"
+                          />
+                          {formData.event_days && (
+                            <button
+                              type="button"
+                              onClick={() => onChange("event_days", null)}
+                              className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+                            >
+                              Reset (auto)
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {formData.event_days
+                            ? "Override manuale — le voci senza durata esplicita useranno questo valore"
+                            : autoCalcDays
+                              ? `Auto: ${autoCalcDays}gg (da date lavori) — le voci senza durata esplicita useranno questo valore`
+                              : "Se non impostato, le voci useranno la durata specificata singolarmente"}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Indirizzo Cantiere */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Indirizzo Cantiere
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Codice Preventivo */}
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="progressive"
-                    className="flex items-center gap-2"
-                  >
-                    <Hash className="h-4 w-4" />
-                    Codice Preventivo
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    {/* Prefisso completo (readonly) */}
-                    <div className="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 font-mono text-sm text-slate-600 dark:text-slate-400">
-                      {codeParts.prefix || "..."}
-                    </div>
-                    {/* Progressivo (editabile) */}
-                    <Input
-                      id="progressive"
-                      value={progressive}
-                      onChange={(e) => setProgressive(e.target.value)}
-                      placeholder="0001"
-                      className="font-mono text-sm w-32 flex-1"
-                      maxLength={20}
-                    />
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Solo il progressivo è editabile
-                  </p>
-                </div>
-
-                {/* Titolo */}
-                <div className="space-y-2">
-                  <Label htmlFor="title">
-                    Titolo Preventivo <span className="text-red-500">*</span>
-                  </Label>
+                  <Label htmlFor="address">Indirizzo</Label>
                   <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => onChange("title", e.target.value)}
-                    placeholder="es. Ristrutturazione Appartamento"
-                    className="text-lg font-medium"
+                    id="address"
+                    value={formData.address || ""}
+                    onChange={(e) => onChange("address", e.target.value)}
+                    placeholder="Via/Piazza"
                   />
                 </div>
 
-                {/* Descrizione */}
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrizione</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description || ""}
-                    onChange={(e) => onChange("description", e.target.value)}
-                    placeholder="Descrizione dettagliata del preventivo"
-                    rows={4}
-                  />
-                </div>
-
-                {/* Date */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="issue_date">
-                      Data Emissione <span className="text-red-500">*</span>
-                    </Label>
+                <div className="grid grid-cols-12 gap-4">
+                  <div className="col-span-6 space-y-2">
+                    <Label htmlFor="city">Città</Label>
                     <Input
-                      id="issue_date"
-                      type="date"
-                      value={formatDateForInput(formData.issue_date)}
-                      onChange={(e) => onChange("issue_date", e.target.value)}
+                      id="city"
+                      value={formData.city || ""}
+                      onChange={(e) => onChange("city", e.target.value)}
+                      placeholder="Città"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="expiry_date">
-                      Data Scadenza
-                      {defaultValidityDays && (
-                        <span className="text-xs text-slate-500 ml-1">
-                          (+{defaultValidityDays}gg)
-                        </span>
-                      )}
-                    </Label>
+                  <div className="col-span-3 space-y-2">
+                    <Label htmlFor="postal_code">CAP</Label>
                     <Input
-                      id="expiry_date"
-                      type="date"
-                      value={formatDateForInput(formData.expiry_date)}
-                      onChange={(e) => onChange("expiry_date", e.target.value)}
+                      id="postal_code"
+                      value={formData.postal_code || ""}
+                      onChange={(e) => onChange("postal_code", e.target.value)}
+                      placeholder="00000"
                     />
                   </div>
-                </div>
 
-                {/* Listino Prezzi */}
-                <div className="space-y-2">
-                  <Label htmlFor="price_list_id">Listino Prezzi</Label>
-                  <ComboboxSelect
-                    options={
-                      priceListsData?.data.map((priceList) => ({
-                        value: priceList.id!.toString(),
-                        label: priceList.name || "",
-                        description: priceList.description || undefined,
-                      })) || []
-                    }
-                    value={formData.price_list_id?.toString()}
-                    onValueChange={(value) =>
-                      onChange("price_list_id", value ? parseInt(value) : null)
-                    }
-                    onSearchChange={setPriceListSearch}
-                    placeholder="Seleziona listino"
-                    searchPlaceholder="Cerca listino..."
-                    emptyText="Nessun listino trovato"
-                    loading={isLoadingPriceLists}
-                  />
+                  <div className="col-span-3 space-y-2">
+                    <Label htmlFor="province">Provincia</Label>
+                    <Input
+                      id="province"
+                      value={formData.province || ""}
+                      onChange={(e) => onChange("province", e.target.value)}
+                      placeholder="PR"
+                      maxLength={2}
+                      className="uppercase"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -482,63 +798,21 @@ export function QuoteForm({
                   items={(formData.items as QuoteItem[]) || []}
                   onChange={onItemsChange as (items: QuoteItem[]) => void}
                   priceListId={formData.price_list_id}
+                  quoteType={formData.quote_type}
+                  effectiveEventDays={
+                    formData.event_days ??
+                    (formData.work_start_date && formData.work_end_date
+                      ? Math.max(
+                          1,
+                          Math.round(
+                            (new Date(formData.work_end_date).getTime() -
+                              new Date(formData.work_start_date).getTime()) /
+                              (1000 * 60 * 60 * 24),
+                          ),
+                        )
+                      : null)
+                  }
                 />
-              </CardContent>
-            </Card>
-
-            {/* Indirizzo Cantiere */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Indirizzo Cantiere
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="address">Indirizzo</Label>
-                  <Input
-                    id="address"
-                    value={formData.address || ""}
-                    onChange={(e) => onChange("address", e.target.value)}
-                    placeholder="Via/Piazza"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2 space-y-2">
-                    <Label htmlFor="city">Città</Label>
-                    <Input
-                      id="city"
-                      value={formData.city || ""}
-                      onChange={(e) => onChange("city", e.target.value)}
-                      placeholder="Città"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="province">Provincia</Label>
-                    <Input
-                      id="province"
-                      value={formData.province || ""}
-                      onChange={(e) => onChange("province", e.target.value)}
-                      placeholder="PR"
-                      maxLength={2}
-                      className="uppercase"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="postal_code">CAP</Label>
-                  <Input
-                    id="postal_code"
-                    value={formData.postal_code || ""}
-                    onChange={(e) => onChange("postal_code", e.target.value)}
-                    placeholder="00000"
-                    className="max-w-37.5"
-                  />
-                </div>
               </CardContent>
             </Card>
 
@@ -550,196 +824,201 @@ export function QuoteForm({
                   Condizioni Commerciali
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="payment_term_id">Termine di Pagamento</Label>
-                  <ComboboxSelect
-                    options={
-                      paymentTermsData?.data.map((term) => ({
-                        value: term.id!.toString(),
-                        label: term.name || "",
-                        description: term.description || undefined,
-                      })) || []
-                    }
-                    value={formData.payment_term_id?.toString()}
-                    onValueChange={(value) =>
-                      onChange(
-                        "payment_term_id",
-                        value ? parseInt(value) : null,
-                      )
-                    }
-                    onSearchChange={setPaymentTermSearch}
-                    placeholder="Seleziona termine"
-                    searchPlaceholder="Cerca termine..."
-                    emptyText="Nessun termine trovato"
-                    loading={isLoadingPaymentTerms}
-                  />
-                  {formData.payment_term_id &&
-                    (() => {
-                      const selectedTerm = paymentTermsData?.data.find(
-                        (term) => term.id === formData.payment_term_id,
-                      );
-                      if (selectedTerm) {
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="payment_term_id">
+                      Termine di Pagamento
+                    </Label>
+                    <ComboboxSelect
+                      options={
+                        paymentTermsData?.data.map((term) => ({
+                          value: term.id!.toString(),
+                          label: term.name || "",
+                          description: term.description || undefined,
+                        })) || []
+                      }
+                      value={formData.payment_term_id?.toString()}
+                      onValueChange={(value) =>
+                        onChange(
+                          "payment_term_id",
+                          value ? parseInt(value) : null,
+                        )
+                      }
+                      onSearchChange={setPaymentTermSearch}
+                      placeholder="Seleziona termine"
+                      searchPlaceholder="Cerca termine..."
+                      emptyText="Nessun termine trovato"
+                      loading={isLoadingPaymentTerms}
+                    />
+                    {formData.payment_term_id &&
+                      (() => {
+                        const selectedTerm = paymentTermsData?.data.find(
+                          (term) => term.id === formData.payment_term_id,
+                        );
+                        if (selectedTerm) {
+                          return (
+                            <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                              <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-1">
+                                {selectedTerm.name}
+                              </p>
+                              {selectedTerm.description && (
+                                <p className="text-xs text-blue-700 dark:text-blue-300">
+                                  {selectedTerm.description}
+                                </p>
+                              )}
+                              {selectedTerm.days && (
+                                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                  📅 {selectedTerm.days} giorni
+                                </p>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="financial_resource_id">
+                      Risorsa Finanziaria
+                    </Label>
+                    <ComboboxSelect
+                      value={formData.financial_resource_id?.toString() || ""}
+                      options={
+                        financialResourcesData?.map((pm) => {
+                          const details = pm.details as Record<
+                            string,
+                            unknown
+                          > | null;
+                          return {
+                            value: pm.id?.toString() || "",
+                            label: pm.name,
+                            description:
+                              pm.type === "bank_account"
+                                ? `🏦 ${(details?.bank_name as string) || "Banca"}`
+                                : pm.type === "cash"
+                                  ? `💰 ${(details?.location as string) || "Cassa"}`
+                                  : `💳 ${(details?.provider as string) || "Carta"}`,
+                          };
+                        }) || []
+                      }
+                      onValueChange={(value) =>
+                        onChange(
+                          "financial_resource_id",
+                          value ? parseInt(value) : null,
+                        )
+                      }
+                      placeholder="Seleziona risorsa"
+                      searchPlaceholder="Cerca risorsa..."
+                      emptyText="Nessuna risorsa trovata"
+                      loading={isLoadingFinancialResources}
+                    />
+
+                    {/* Dettagli Risorsa Finanziaria Selezionata */}
+                    {formData.financial_resource_id &&
+                      (() => {
+                        const selectedMethod = financialResourcesData?.find(
+                          (pm) => pm.id === formData.financial_resource_id,
+                        );
+                        if (!selectedMethod) return null;
+
                         return (
-                          <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                            <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-1">
-                              {selectedTerm.name}
-                            </p>
-                            {selectedTerm.description && (
-                              <p className="text-xs text-blue-700 dark:text-blue-300">
-                                {selectedTerm.description}
-                              </p>
-                            )}
-                            {selectedTerm.days && (
-                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                📅 {selectedTerm.days} giorni
-                              </p>
-                            )}
+                          <div className="rounded-lg bg-blue-50 dark:bg-blue-950 p-3 space-y-1.5 text-sm border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-center gap-2 font-medium text-blue-900 dark:text-blue-100">
+                              {selectedMethod.type === "bank_account" && "🏦"}
+                              {selectedMethod.type === "cash" && "💰"}
+                              {selectedMethod.type === "card" && "💳"}
+                              <span>{selectedMethod.name}</span>
+                              {selectedMethod.is_default && (
+                                <span className="text-xs bg-blue-200 dark:bg-blue-900 px-1.5 py-0.5 rounded">
+                                  Predefinito
+                                </span>
+                              )}
+                            </div>
+
+                            {selectedMethod.type === "bank_account" &&
+                              selectedMethod.details && (
+                                <div className="text-blue-700 dark:text-blue-300 space-y-0.5">
+                                  {(() => {
+                                    const details =
+                                      selectedMethod.details as unknown as Record<
+                                        string,
+                                        unknown
+                                      >;
+                                    return (
+                                      <>
+                                        {details.bank_name && (
+                                          <div>
+                                            Banca: {String(details.bank_name)}
+                                          </div>
+                                        )}
+                                        {details.iban && (
+                                          <div className="font-mono text-xs">
+                                            IBAN: {String(details.iban)}
+                                          </div>
+                                        )}
+                                        {details.account_holder && (
+                                          <div>
+                                            Intestatario:{" "}
+                                            {String(details.account_holder)}
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+
+                            {selectedMethod.type === "cash" &&
+                              selectedMethod.details && (
+                                <div className="text-blue-700 dark:text-blue-300">
+                                  {(() => {
+                                    const details =
+                                      selectedMethod.details as unknown as Record<
+                                        string,
+                                        unknown
+                                      >;
+                                    return details.location ? (
+                                      <>Presso: {String(details.location)}</>
+                                    ) : null;
+                                  })()}
+                                </div>
+                              )}
+
+                            {selectedMethod.type === "card" &&
+                              selectedMethod.details && (
+                                <div className="text-blue-700 dark:text-blue-300">
+                                  {(() => {
+                                    const details =
+                                      selectedMethod.details as unknown as Record<
+                                        string,
+                                        unknown
+                                      >;
+                                    return (
+                                      <>
+                                        {details.card_type &&
+                                          details.provider && (
+                                            <div>
+                                              {String(details.card_type)} -{" "}
+                                              {String(details.provider)}
+                                            </div>
+                                          )}
+                                        {details.last_digits && (
+                                          <div className="font-mono text-xs">
+                                            **** {String(details.last_digits)}
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
                           </div>
                         );
-                      }
-                      return null;
-                    })()}
+                      })()}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="financial_resource_id">
-                    Risorsa Finanziaria
-                  </Label>
-                  <ComboboxSelect
-                    value={formData.financial_resource_id?.toString() || ""}
-                    options={
-                      financialResourcesData?.map((pm) => {
-                        const details = pm.details as Record<
-                          string,
-                          unknown
-                        > | null;
-                        return {
-                          value: pm.id?.toString() || "",
-                          label: pm.name,
-                          description:
-                            pm.type === "bank_account"
-                              ? `🏦 ${(details?.bank_name as string) || "Banca"}`
-                              : pm.type === "cash"
-                                ? `💰 ${(details?.location as string) || "Cassa"}`
-                                : `💳 ${(details?.provider as string) || "Carta"}`,
-                        };
-                      }) || []
-                    }
-                    onValueChange={(value) =>
-                      onChange(
-                        "financial_resource_id",
-                        value ? parseInt(value) : null,
-                      )
-                    }
-                    placeholder="Seleziona risorsa"
-                    searchPlaceholder="Cerca risorsa..."
-                    emptyText="Nessuna risorsa trovata"
-                    loading={isLoadingFinancialResources}
-                  />
-                </div>
-
-                {/* Dettagli Risorsa Finanziaria Selezionata */}
-                {formData.financial_resource_id &&
-                  (() => {
-                    const selectedMethod = financialResourcesData?.find(
-                      (pm) => pm.id === formData.financial_resource_id,
-                    );
-                    if (!selectedMethod) return null;
-
-                    return (
-                      <div className="rounded-lg bg-blue-50 dark:bg-blue-950 p-3 space-y-1.5 text-sm border border-blue-200 dark:border-blue-800">
-                        <div className="flex items-center gap-2 font-medium text-blue-900 dark:text-blue-100">
-                          {selectedMethod.type === "bank_account" && "🏦"}
-                          {selectedMethod.type === "cash" && "💰"}
-                          {selectedMethod.type === "card" && "💳"}
-                          <span>{selectedMethod.name}</span>
-                          {selectedMethod.is_default && (
-                            <span className="text-xs bg-blue-200 dark:bg-blue-900 px-1.5 py-0.5 rounded">
-                              Predefinito
-                            </span>
-                          )}
-                        </div>
-
-                        {selectedMethod.type === "bank_account" &&
-                          selectedMethod.details && (
-                            <div className="text-blue-700 dark:text-blue-300 space-y-0.5">
-                              {(() => {
-                                const details =
-                                  selectedMethod.details as unknown as Record<
-                                    string,
-                                    unknown
-                                  >;
-                                return (
-                                  <>
-                                    {details.bank_name && (
-                                      <div>
-                                        Banca: {String(details.bank_name)}
-                                      </div>
-                                    )}
-                                    {details.iban && (
-                                      <div className="font-mono text-xs">
-                                        IBAN: {String(details.iban)}
-                                      </div>
-                                    )}
-                                    {details.account_holder && (
-                                      <div>
-                                        Intestatario:{" "}
-                                        {String(details.account_holder)}
-                                      </div>
-                                    )}
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          )}
-
-                        {selectedMethod.type === "cash" &&
-                          selectedMethod.details && (
-                            <div className="text-blue-700 dark:text-blue-300">
-                              {(() => {
-                                const details =
-                                  selectedMethod.details as unknown as Record<
-                                    string,
-                                    unknown
-                                  >;
-                                return details.location ? (
-                                  <>Presso: {String(details.location)}</>
-                                ) : null;
-                              })()}
-                            </div>
-                          )}
-
-                        {selectedMethod.type === "card" &&
-                          selectedMethod.details && (
-                            <div className="text-blue-700 dark:text-blue-300">
-                              {(() => {
-                                const details =
-                                  selectedMethod.details as unknown as Record<
-                                    string,
-                                    unknown
-                                  >;
-                                return (
-                                  <>
-                                    {details.card_type && details.provider && (
-                                      <div>
-                                        {String(details.card_type)} -{" "}
-                                        {String(details.provider)}
-                                      </div>
-                                    )}
-                                    {details.last_digits && (
-                                      <div className="font-mono text-xs">
-                                        **** {String(details.last_digits)}
-                                      </div>
-                                    )}
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          )}
-                      </div>
-                    );
-                  })()}
 
                 <div className="space-y-2">
                   <Label htmlFor="warranty_type_id">Garanzia</Label>
@@ -799,158 +1078,6 @@ export function QuoteForm({
 
           {/* Colonna laterale - 1/3 */}
           <div className="space-y-6">
-            {/* Cliente e Gestione */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Cliente e Team
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="customer_id">
-                      Cliente <span className="text-red-500">*</span>
-                    </Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsCreateCustomerDialogOpen(true)}
-                      className="h-7 gap-1 text-xs"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Nuovo
-                    </Button>
-                  </div>
-                  <ComboboxSelect
-                    options={
-                      customersData?.data.map((customer) => ({
-                        value: customer.id.toString(),
-                        label: customer.display_name,
-                        description:
-                          customer.type === "company"
-                            ? customer.vat_number || undefined
-                            : customer.email || undefined,
-                      })) || []
-                    }
-                    value={formData.customer_id?.toString()}
-                    onValueChange={(value) =>
-                      onChange("customer_id", value ? parseInt(value) : null)
-                    }
-                    onSearchChange={setCustomerSearch}
-                    placeholder="Seleziona cliente"
-                    searchPlaceholder="Cerca cliente..."
-                    emptyText="Nessun cliente trovato"
-                    loading={isLoadingCustomers}
-                  />
-                </div>
-
-                {/* Dettagli Cliente Selezionato */}
-                {formData.customer_id &&
-                  customersData?.data &&
-                  (() => {
-                    const selectedCustomer = customersData.data.find(
-                      (c) => c.id === formData.customer_id,
-                    );
-                    if (!selectedCustomer) return null;
-
-                    return (
-                      <div className="rounded-lg border bg-muted/50 p-3 space-y-2 text-sm">
-                        <div className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                          Dettagli Cliente
-                        </div>
-                        <div className="grid gap-2">
-                          {selectedCustomer.type === "company" &&
-                            selectedCustomer.vat_number && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">
-                                  P.IVA:
-                                </span>
-                                <span className="font-medium">
-                                  {selectedCustomer.vat_number}
-                                </span>
-                              </div>
-                            )}
-                          {selectedCustomer.tax_code && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">
-                                Cod. Fiscale:
-                              </span>
-                              <span className="font-medium">
-                                {selectedCustomer.tax_code}
-                              </span>
-                            </div>
-                          )}
-                          {selectedCustomer.email && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">
-                                Email:
-                              </span>
-                              <span className="font-medium">
-                                {selectedCustomer.email}
-                              </span>
-                            </div>
-                          )}
-                          {selectedCustomer.phone && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">
-                                Tel:
-                              </span>
-                              <span className="font-medium">
-                                {selectedCustomer.phone}
-                              </span>
-                            </div>
-                          )}
-                          {selectedCustomer.address && (
-                            <div className="flex flex-col gap-1">
-                              <span className="text-muted-foreground">
-                                Indirizzo:
-                              </span>
-                              <span className="font-medium">
-                                {selectedCustomer.address}
-                                {selectedCustomer.city &&
-                                  `, ${selectedCustomer.city}`}
-                                {selectedCustomer.province &&
-                                  ` (${selectedCustomer.province})`}
-                                {selectedCustomer.postal_code &&
-                                  ` - ${selectedCustomer.postal_code}`}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                <div className="space-y-2">
-                  <Label htmlFor="project_manager_id">Project Manager</Label>
-                  <ComboboxSelect
-                    options={
-                      usersData?.data.map((user: App.Data.UserData) => ({
-                        value: user.id?.toString() || "",
-                        label: user.name || "",
-                        description: user.email,
-                      })) || []
-                    }
-                    value={formData.project_manager_id?.toString()}
-                    onValueChange={(value) =>
-                      onChange(
-                        "project_manager_id",
-                        value ? parseInt(value) : null,
-                      )
-                    }
-                    onSearchChange={setUserSearch}
-                    placeholder="Seleziona PM"
-                    searchPlaceholder="Cerca utente..."
-                    emptyText="Nessun utente trovato"
-                    loading={isLoadingUsers}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Riepilogo Totali */}
             <Card className="bg-white dark:bg-slate-800 border-2">
               <CardHeader>
@@ -1136,6 +1263,87 @@ export function QuoteForm({
                     </div>
                   );
                 })()}
+              </CardContent>
+            </Card>
+
+            {/* Stato Preventivo */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Settings className="h-4 w-4" />
+                  Stato Preventivo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Label htmlFor="status" className="text-sm">
+                    Seleziona stato:
+                  </Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => onChange("status", value)}
+                  >
+                    <SelectTrigger id="status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Bozza</SelectItem>
+                      <SelectItem value="sent">Inviato</SelectItem>
+                      <SelectItem value="approved">Approvato</SelectItem>
+                      <SelectItem value="rejected">Rifiutato</SelectItem>
+                      <SelectItem value="expired">Scaduto</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Badge descrittivo stato corrente */}
+                  <div className="mt-4">
+                    {formData.status === "draft" && (
+                      <Badge
+                        variant="secondary"
+                        className="w-full justify-center py-2 text-sm font-medium"
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Bozza - In lavorazione
+                      </Badge>
+                    )}
+                    {formData.status === "sent" && (
+                      <Badge
+                        variant="default"
+                        className="w-full justify-center py-2 text-sm font-medium bg-blue-500 hover:bg-blue-600"
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        Inviato - In attesa di risposta
+                      </Badge>
+                    )}
+                    {formData.status === "approved" && (
+                      <Badge
+                        variant="default"
+                        className="w-full justify-center py-2 text-sm font-medium bg-green-500 hover:bg-green-600"
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Approvato - Confermato
+                      </Badge>
+                    )}
+                    {formData.status === "rejected" && (
+                      <Badge
+                        variant="destructive"
+                        className="w-full justify-center py-2 text-sm font-medium"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Rifiutato - Annullato
+                      </Badge>
+                    )}
+                    {formData.status === "expired" && (
+                      <Badge
+                        variant="secondary"
+                        className="w-full justify-center py-2 text-sm font-medium bg-orange-100 dark:bg-orange-900 text-orange-900 dark:text-orange-100"
+                      >
+                        <Clock className="h-4 w-4 mr-2" />
+                        Scaduto - Oltre i termini
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -1469,7 +1677,9 @@ export function QuoteForm({
                   quoteId={quoteId}
                   attachments={formData.attachments ?? []}
                   onAttachmentsChange={() =>
-                    queryClient.invalidateQueries({ queryKey: ["quote", quoteId] })
+                    queryClient.invalidateQueries({
+                      queryKey: ["quote", quoteId],
+                    })
                   }
                 />
               </CardContent>

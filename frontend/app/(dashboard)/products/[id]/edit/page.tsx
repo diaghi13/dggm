@@ -27,6 +27,8 @@ export default function ProductEditPage() {
     onSuccess: (updatedProduct) => {
       queryClient.invalidateQueries({ queryKey: ['product', productId] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['composite-breakdown', productId] });
+      queryClient.invalidateQueries({ queryKey: ['product-pricing', productId] });
       toast.success('Prodotto aggiornato', {
         description: `Il prodotto "${updatedProduct.name}" è stato aggiornato con successo`,
       });

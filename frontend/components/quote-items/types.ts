@@ -12,4 +12,6 @@ export interface QuoteItemsBuilderProps {
   onChange: (items: QuoteItem[]) => void;
   priceListId?: number | null;
   showUnitPrices?: boolean;
+  quoteType?: string | null;
+  effectiveEventDays?: number | null;
 }

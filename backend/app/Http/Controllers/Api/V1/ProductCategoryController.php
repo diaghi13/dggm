@@ -24,7 +24,7 @@ class ProductCategoryController extends Controller
             $query->active();
         }
 
-        $categories = $query->ordered()->get();
+        $categories = $query->with('rentalProfile')->ordered()->get();
 
         return response()->json([
             'success' => true,
@@ -39,7 +39,8 @@ class ProductCategoryController extends Controller
     {
         $this->authorize('create', ProductCategory::class);
 
-        $category = ProductCategory::create($data->except('id')->toArray());
+        $category = ProductCategory::create($data->except('id', 'rentalProfile')->toArray());
+        $category->load('rentalProfile');
 
         return response()->json([
             'success' => true,
@@ -55,6 +56,8 @@ class ProductCategoryController extends Controller
     {
         $this->authorize('view', $productCategory);
 
+        $productCategory->load('rentalProfile');
+
         return response()->json([
             'success' => true,
             'data' => ProductCategoryData::from($productCategory),
@@ -68,12 +71,12 @@ class ProductCategoryController extends Controller
     {
         $this->authorize('update', $productCategory);
 
-        $productCategory->update($data->except('id')->toArray());
+        $productCategory->update($data->except('id', 'rentalProfile')->toArray());
 
         return response()->json([
             'success' => true,
             'message' => 'Product category updated successfully',
-            'data' => ProductCategoryData::from($productCategory->fresh()),
+            'data' => ProductCategoryData::from($productCategory->fresh()->load('rentalProfile')),
         ]);
     }
 

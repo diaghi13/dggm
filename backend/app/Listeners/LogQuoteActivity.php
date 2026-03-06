@@ -3,7 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\QuoteApproved;
-use App\Events\QuoteConvertedToSite;
+use App\Events\QuoteConvertedToProject;
 use App\Events\QuoteCreated;
 use App\Events\QuoteDeleted;
 use App\Events\QuoteRejected;
@@ -25,7 +25,7 @@ class LogQuoteActivity implements ShouldQueue
     public int $timeout = 30;
 
     public function handle(
-        QuoteCreated|QuoteUpdated|QuoteSent|QuoteApproved|QuoteRejected|QuoteDeleted|QuoteConvertedToSite $event
+        QuoteCreated|QuoteUpdated|QuoteSent|QuoteApproved|QuoteRejected|QuoteDeleted|QuoteConvertedToProject $event
     ): void {
         $action = match (true) {
             $event instanceof QuoteCreated => 'created',
@@ -34,7 +34,7 @@ class LogQuoteActivity implements ShouldQueue
             $event instanceof QuoteApproved => 'approved',
             $event instanceof QuoteRejected => 'rejected',
             $event instanceof QuoteDeleted => 'deleted',
-            $event instanceof QuoteConvertedToSite => 'converted_to_site',
+            $event instanceof QuoteConvertedToProject => 'converted_to_project',
         };
 
         $data = match (true) {
@@ -73,10 +73,10 @@ class LogQuoteActivity implements ShouldQueue
                 'code' => $event->quote->code,
                 'deleted_by' => $event->metadata['user_id'] ?? null,
             ],
-            $event instanceof QuoteConvertedToSite => [
+            $event instanceof QuoteConvertedToProject => [
                 'quote_id' => $event->quote->id,
                 'code' => $event->quote->code,
-                'site_id' => $event->metadata['site_id'] ?? null,
+                'project_id' => $event->metadata['project_id'] ?? null,
                 'converted_by' => $event->metadata['user_id'] ?? null,
             ],
         };

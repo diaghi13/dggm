@@ -24,10 +24,10 @@ class DeliverDdtAction
                 'delivered_at' => $deliveredAt,
             ]);
 
-            // Dispatch event - UpdateSiteMaterialsListener will update site_materials if needed
-            DdtDelivered::dispatch($ddt->fresh(['items.product', 'site']), $deliveredAt->toISOString(), auth()->id());
+            // Dispatch event - UpdateProjectMaterialQuantitiesListener will update project_materials if needed
+            DdtDelivered::dispatch($ddt->fresh(['items.product', 'project']), $deliveredAt->toISOString(), auth()->id());
 
-            return $ddt->fresh(['items.product', 'stockMovements.product', 'fromWarehouse', 'toWarehouse', 'supplier', 'customer', 'site']);
+            return $ddt->fresh(['items.product', 'stockMovements.product', 'fromWarehouse', 'toWarehouse', 'supplier', 'customer', 'project']);
         });
     }
 }

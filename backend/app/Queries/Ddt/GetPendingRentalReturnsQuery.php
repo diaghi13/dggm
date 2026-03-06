@@ -21,7 +21,7 @@ readonly class GetPendingRentalReturnsQuery
                 $q->whereNull('rental_actual_return_date')
                     ->orWhere('rental_actual_return_date', '>', now());
             })
-            ->with(['items.product', 'site', 'fromWarehouse']);
+            ->with(['items.product', 'project', 'fromWarehouse']);
 
         if ($this->warehouseId) {
             $query->where('from_warehouse_id', $this->warehouseId);

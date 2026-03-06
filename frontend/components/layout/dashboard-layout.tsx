@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useThemeSettings } from "@/hooks/use-settings";
@@ -42,9 +41,11 @@ import {
   Mail,
   User,
   DollarSign,
+  TrendingDown,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { storage } from "@/lib/storage";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -69,6 +70,12 @@ const navigationConfig: NavigationItem[] = [
     permissions: [], // Dashboard is visible to all authenticated users
   },
   {
+    name: "Dashboard Noleggio",
+    href: "/dashboard/rental",
+    icon: BarChart3,
+    permissions: ["materials.view"],
+  },
+  {
     name: "Anagrafica",
     icon: Users,
     children: [
@@ -85,10 +92,10 @@ const navigationConfig: NavigationItem[] = [
         permissions: ["suppliers.view"],
       },
       {
-        name: "Cantieri",
-        href: "/sites",
+        name: "Progetti",
+        href: "/projects",
         icon: MapPin,
-        permissions: ["sites.view", "sites.view-own"],
+        permissions: ["projects.view", "projects.view-own"],
       },
       {
         name: "Collaboratori",
@@ -228,6 +235,18 @@ const navigationConfig: NavigationItem[] = [
         icon: Settings,
         permissions: ["settings.view"],
       },
+      {
+        name: "Motore Noleggio",
+        href: "/settings/rental-engine",
+        icon: Zap,
+        permissions: ["settings.view"],
+      },
+      {
+        name: "Profili Noleggio",
+        href: "/settings/rental-profiles",
+        icon: TrendingDown,
+        permissions: ["settings.view"],
+      },
     ],
   },
 ];
@@ -235,7 +254,7 @@ const navigationConfig: NavigationItem[] = [
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated, hasHydrated, logout } = useAuthStore();
+  const { user, logout, isAuthChecked } = useAuthStore();
   const { primaryColor } = useThemeSettings();
   const { hasAnyPermission, isAdmin, hasRole } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -322,26 +341,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // Redirect to login if not authenticated (only after hydration)
-  useEffect(() => {
-    if (hasHydrated && (!isAuthenticated || !user)) {
-      router.push("/login");
-    }
-  }, [hasHydrated, isAuthenticated, user, router]);
-
   const handleLogout = async () => {
     await logout();
-    router.push("/login");
+    router.replace("/login");
   };
 
-  // Show loading screen while hydrating
-  if (!hasHydrated) {
-    return <LoadingScreen message="Verifica autenticazione..." />;
-  }
+  // If not authenticated, redirect to login.
+  // Wait for isAuthChecked: only redirect after AuthInitProvider has finished verifying the token.
+  useEffect(() => {
+    if (isAuthChecked && !user) {
+      router.replace("/login");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthChecked, user]);
 
-  // Redirect to login if not authenticated after hydration
-  if (!isAuthenticated || !user) {
-    return <LoadingScreen message="Reindirizzamento..." />;
+  if (!user) {
+    return null;
   }
 
   const userInitials = user.name

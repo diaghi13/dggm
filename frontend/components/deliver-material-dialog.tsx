@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { siteMaterialsApi } from '@/lib/api/site-materials';
+import { projectMaterialsApi } from '@/lib/api/project-materials';
 import { warehousesApi } from '@/lib/api/warehouses';
 import {
   Dialog,
@@ -28,15 +28,15 @@ import { Loader2, TruckIcon, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface DeliverMaterialDialogProps {
-  siteId: number;
+  projectId: number;
   material: {
     id: number;
-    material_id: number;
-    material: {
-      name: string;
-      code: string;
-      unit: string;
-    };
+    product_id?: number | null;
+    product?: {
+      name?: string | null;
+      code?: string | null;
+      unit?: string | null;
+    } | null;
     planned_quantity: number;
     delivered_quantity: number;
     returned_quantity: number;
@@ -46,7 +46,7 @@ interface DeliverMaterialDialogProps {
 }
 
 export function DeliverMaterialDialog({
-  siteId,
+  projectId,
   material,
   open,
   onOpenChange,
@@ -75,13 +75,13 @@ export function DeliverMaterialDialog({
       quantity: number;
       delivery_date?: string;
       notes?: string;
-    }) => siteMaterialsApi.deliver(siteId, material!.id, data),
+    }) => projectMaterialsApi.deliver(projectId, material!.id, data),
     onSuccess: () => {
       toast.success('Materiale consegnato', {
         description:
-          'Il materiale è stato consegnato al cantiere e scaricato dal magazzino.',
+          'Il materiale è stato consegnato al progetto e scaricato dal magazzino.',
       });
-      queryClient.invalidateQueries({ queryKey: ['site-materials', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['project-materials', projectId] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       handleClose();
     },
@@ -135,7 +135,7 @@ export function DeliverMaterialDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TruckIcon className="h-5 w-5 text-green-600" />
-            Consegna Materiale a Cantiere
+            Consegna Materiale a Progetto
           </DialogTitle>
           <DialogDescription>
             Il materiale verrà automaticamente scaricato dal magazzino e
@@ -151,7 +151,7 @@ export function DeliverMaterialDialog({
                 <div>
                   <p className="text-muted-foreground">Materiale</p>
                   <p className="font-semibold">
-                    {material.material.code} - {material.material.name}
+                    {material.product?.code} - {material.product?.name}
                   </p>
                 </div>
                 <div>
@@ -160,14 +160,14 @@ export function DeliverMaterialDialog({
                   </p>
                   <p className="font-semibold">
                     {material.planned_quantity} / {material.delivered_quantity}{' '}
-                    {material.material.unit}
+                    {material.product?.unit}
                   </p>
                 </div>
                 {remainingToDeliver > 0 && (
                   <div className="col-span-2">
                     <p className="text-sm text-amber-600 font-medium">
                       Rimanente da consegnare: {remainingToDeliver.toFixed(2)}{' '}
-                      {material.material.unit}
+                      {material.product?.unit}
                     </p>
                   </div>
                 )}
@@ -230,7 +230,7 @@ export function DeliverMaterialDialog({
                   required
                 />
                 <span className="flex items-center text-sm text-muted-foreground px-3 border rounded-md bg-slate-50">
-                  {material.material.unit}
+                  {material.product?.unit}
                 </span>
               </div>
               {suggestedQuantity > 0 && (
@@ -242,7 +242,7 @@ export function DeliverMaterialDialog({
                   className="mt-2"
                 >
                   Usa rimanente: {suggestedQuantity.toFixed(2)}{' '}
-                  {material.material.unit}
+                  {material.product?.unit}
                 </Button>
               )}
             </div>

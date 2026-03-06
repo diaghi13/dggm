@@ -33,11 +33,11 @@ class DdtResource extends JsonResource
                 'name' => $this->customer->name,
                 'code' => $this->customer->code,
             ]),
-            'site_id' => $this->site_id,
-            'site' => $this->whenLoaded('site', fn () => [
-                'id' => $this->site->id,
-                'code' => $this->site->code,
-                'name' => $this->site->name,
+            'project_id' => $this->project_id,
+            'project' => $this->whenLoaded('project', fn () => [
+                'id' => $this->project->id,
+                'code' => $this->project->code,
+                'name' => $this->project->name,
             ]),
             'from_warehouse_id' => $this->from_warehouse_id,
             'from_warehouse' => $this->whenLoaded('fromWarehouse', fn () => [

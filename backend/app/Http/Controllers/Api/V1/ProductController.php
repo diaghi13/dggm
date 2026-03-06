@@ -6,11 +6,13 @@ use App\Actions\Product\CreateProductAction;
 use App\Actions\Product\DeleteProductAction;
 use App\Actions\Product\UpdateProductAction;
 use App\Data\ProductData;
+use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportProductPostRequest;
 use App\Models\Product;
 use App\Queries\Product\GetProductsQuery;
 use App\Services\ImportFieldTransformer;
+use App\Services\ProductPricingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\PaginatedDataCollection;
@@ -20,7 +22,8 @@ class ProductController extends Controller
     public function __construct(
         private readonly CreateProductAction $createAction,
         private readonly UpdateProductAction $updateAction,
-        private readonly DeleteProductAction $deleteAction
+        private readonly DeleteProductAction $deleteAction,
+        private readonly ProductPricingService $pricingService
     ) {}
 
     /**
@@ -162,6 +165,74 @@ class ProductController extends Controller
     }
 
     /**
+     * Get detailed composite product breakdown with per-component pricing.
+     * Shows the price contribution of each component.
+     */
+    public function compositeBreakdown(Product $product): JsonResponse
+    {
+        $this->authorize('view', $product);
+
+        if ($product->product_type !== ProductType::COMPOSITE) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product is not a composite.',
+            ], 422);
+        }
+
+        $componentRelations = $product->components()
+            ->with(['relatedProduct.priceListItems' => function ($q) {
+                $q->where('is_active', true)
+                    ->whereHas('priceList', fn ($pq) => $pq->where('is_active', true)->where('is_default', true));
+            }, 'relationType'])
+            ->get();
+
+        $aggregated = $this->pricingService->calculateCompositePrices($product);
+
+        $breakdown = $componentRelations->map(function ($relation) {
+            $component = $relation->relatedProduct;
+
+            if (! $component) {
+                return null;
+            }
+
+            $qty = $relation->calculateQuantity(1);
+            $priceListItem = $component->priceListItems->first();
+            $unitSalePrice = $priceListItem
+                ? (float) $priceListItem->sale_price
+                : app(\App\Services\PriceCalculatorService::class)->calculateProductSalePrice($component);
+
+            return [
+                'relation_id' => $relation->id,
+                'component_product_id' => $component->id,
+                'component_code' => $component->code,
+                'component_name' => $component->name,
+                'component_unit' => $component->unit ?? 'pz',
+                'quantity' => $qty,
+                'quantity_type' => $relation->quantity_type,
+                'quantity_value' => $relation->quantity_value,
+                'unit_standard_cost' => (float) ($component->standard_cost ?? 0),
+                'unit_sale_price' => $unitSalePrice,
+                'unit_rental_daily' => $priceListItem ? (float) ($priceListItem->rental_daily ?? 0) : 0.0,
+                'unit_estimated_base_day' => (float) ($component->estimated_base_day ?? 0),
+                'line_standard_cost' => round((float) ($component->standard_cost ?? 0) * $qty, 2),
+                'line_sale_price' => round($unitSalePrice * $qty, 2),
+                'price_source' => $priceListItem ? 'price_list' : 'calculated',
+            ];
+        })->filter()->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'product_id' => $product->id,
+                'product_code' => $product->code,
+                'product_name' => $product->name,
+                'components' => $breakdown,
+                'totals' => $aggregated,
+            ],
+        ]);
+    }
+
+    /**
      * Calculate price for composite product
      * Uses Model methods - follows AI_ARCHITECTURE_RULES.md
      */
@@ -180,6 +251,46 @@ class ProductController extends Controller
                 'margin' => $salePrice - $cost,
                 'margin_percentage' => $cost > 0 ? (($salePrice - $cost) / $cost) * 100 : 0,
             ],
+        ]);
+    }
+
+    /**
+     * Get suppliers for a product with pivot pricing data
+     * Simple pivot query - stays in controller per architecture rules
+     */
+    public function suppliers(Product $product): JsonResponse
+    {
+        $this->authorize('view', $product);
+
+        $suppliers = $product->suppliers()
+            ->orderByPivot('is_preferred_supplier', 'desc')
+            ->get();
+
+        $data = $suppliers->map(fn ($supplier) => [
+            'supplier_id' => $supplier->id,
+            'supplier_name' => $supplier->company_name,
+            'supplier_product_code' => $supplier->pivot->supplier_product_code,
+            'supplier_ean' => $supplier->pivot->supplier_ean,
+            'purchase_price' => (float) $supplier->pivot->purchase_price,
+            'wholesale_price' => $supplier->pivot->wholesale_price !== null ? (float) $supplier->pivot->wholesale_price : null,
+            'retail_price' => $supplier->pivot->retail_price !== null ? (float) $supplier->pivot->retail_price : null,
+            'manual_discount_1' => $supplier->pivot->manual_discount_1 !== null ? (float) $supplier->pivot->manual_discount_1 : null,
+            'manual_discount_2' => $supplier->pivot->manual_discount_2 !== null ? (float) $supplier->pivot->manual_discount_2 : null,
+            'manual_discount_3' => $supplier->pivot->manual_discount_3 !== null ? (float) $supplier->pivot->manual_discount_3 : null,
+            'package_quantity' => $supplier->pivot->package_quantity,
+            'minimum_order_quantity' => $supplier->pivot->minimum_order_quantity,
+            'lead_time_days' => $supplier->pivot->lead_time_days,
+            'price_multiplier' => $supplier->pivot->price_multiplier !== null ? (float) $supplier->pivot->price_multiplier : null,
+            'currency' => $supplier->pivot->currency,
+            'last_price_update' => $supplier->pivot->last_price_update,
+            'is_preferred_supplier' => (bool) $supplier->pivot->is_preferred_supplier,
+            'is_active' => (bool) $supplier->pivot->is_active,
+            'notes' => $supplier->pivot->notes,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
         ]);
     }
 

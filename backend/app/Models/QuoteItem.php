@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\QuoteItemBillingUnit;
 use App\Enums\QuoteItemType;
+use App\Services\RentalEngineService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +25,8 @@ class QuoteItem extends Model
         'notes',
         'sort_order',
         'unit',
+        'billing_unit',
+        'duration',
         'quantity',
         'unit_price',
         'discount_percentage',
@@ -41,6 +45,8 @@ class QuoteItem extends Model
     {
         return [
             'type' => QuoteItemType::class,
+            'billing_unit' => QuoteItemBillingUnit::class,
+            'duration' => 'decimal:2',
             'quantity' => 'decimal:2',
             'unit_price' => 'decimal:2',
             'discount_percentage' => 'decimal:2',
@@ -102,22 +108,39 @@ class QuoteItem extends Model
                 $unitPrice = $unitPrice / (1 + $vatRate / 100);
             }
 
-            // Subtotale
-            $this->subtotal = ($this->quantity ?? 0) * $unitPrice;
+            // Subtotale — tiene conto di billing_unit e duration
+            $billingUnit = $this->billing_unit ?? QuoteItemBillingUnit::Unit;
+            $qty = (float) ($this->quantity ?? 0);
+
+            // Duration: usa valore riga se impostato, altrimenti eredita da quote.event_days
+            $duration = $this->duration !== null
+                ? (float) $this->duration
+                : (float) ($this->quote?->effective_event_days ?? 1);
+
+            $this->subtotal = match ($billingUnit) {
+                QuoteItemBillingUnit::Flat => $unitPrice,
+                QuoteItemBillingUnit::Unit => $qty * $unitPrice,
+                QuoteItemBillingUnit::Day => $qty * $unitPrice * $this->calculateDurationMultiplier($duration),
+                default => $qty * $unitPrice * $duration, // hour, week, month — lineare
+            };
 
             // Sconto riga
             $this->discount_amount = ($this->subtotal * ($this->discount_percentage ?? 0)) / 100;
             $this->total = $this->subtotal - $this->discount_amount;
 
-            // Applica sconto documento sul totale imponibile prima di IVA
-            $imponibile = $this->total;
-            if ($this->quote && $this->quote->discount_percentage > 0) {
-                $imponibile = $imponibile * (1 - ($this->quote->discount_percentage / 100));
-            }
-
-            $this->vat_amount = ($imponibile * $vatRate) / 100;
-            $this->total_with_vat = $imponibile + $this->vat_amount;
+            // IVA calcolata sul totale riga (lo sconto documento viene applicato a livello preventivo)
+            $this->vat_amount = ($this->total * $vatRate) / 100;
+            $this->total_with_vat = $this->total + $this->vat_amount;
         }
+    }
+
+    /**
+     * Moltiplicatore durata delegato a RentalEngineService (Power-Decay Curve).
+     * 7gg≈3.39×, 30gg≈7.78×, 90gg≈14.49× — configurabile via settings rental.*
+     */
+    private function calculateDurationMultiplier(float $days): float
+    {
+        return app(RentalEngineService::class)->calculateDurationMultiplier($days);
     }
 
     public function isSection(): bool

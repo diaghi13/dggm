@@ -63,7 +63,7 @@ const statusActionConfig: Record<string, { label: string; description: string; i
   },
   approved: {
     label: 'Approva e Converti',
-    description: 'Il preventivo verrà approvato e automaticamente convertito in cantiere',
+    description: 'Il preventivo verrà approvato e automaticamente convertito in progetto',
     icon: CheckCircle2,
   },
   rejected: {
@@ -150,7 +150,7 @@ export function QuoteStatusDropdown({
               {selectedConfig?.description}
               {selectedStatus === 'approved' && (
                 <span className="block mt-2 font-medium text-emerald-600 dark:text-emerald-400">
-                  Questa azione creerà automaticamente un nuovo cantiere.
+                  Questa azione creerà automaticamente un nuovo progetto.
                 </span>
               )}
             </AlertDialogDescription>

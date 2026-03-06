@@ -2,8 +2,10 @@
 
 namespace App\Listeners;
 
+use App\Enums\StockMovementType;
 use App\Events\DdtCancelled;
 use App\Models\Inventory;
+use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -76,5 +78,17 @@ class ReverseStockMovementsListener
         }
 
         $inventory->save();
+
+        // Reverse quantity_out_on_rental tracking
+        $product = Product::find($movement->product_id);
+        if ($product) {
+            if ($movement->type === StockMovementType::RENTAL_OUT) {
+                // Was rented out, now undo — decrement
+                $product->decrement('quantity_out_on_rental', $movement->quantity);
+            } elseif ($movement->type === StockMovementType::RENTAL_RETURN) {
+                // Was returned, now undo — increment back
+                $product->increment('quantity_out_on_rental', $movement->quantity);
+            }
+        }
     }
 }

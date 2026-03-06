@@ -112,8 +112,8 @@ export default function WorkerDetailPage() {
   });
 
   const { data: sitesData } = useQuery({
-    queryKey: ["worker-sites", workerId],
-    queryFn: () => workersApi.getSites(workerId),
+    queryKey: ["worker-projects", workerId],
+    queryFn: () => workersApi.getProjects(workerId),
     enabled: !!workerId,
   });
 
@@ -816,7 +816,7 @@ export default function WorkerDetailPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/sites/${site.id}`}>Visualizza</Link>
+                            <Link href={`/projects/${site.id}`}>Visualizza</Link>
                           </Button>
                         </TableCell>
                       </TableRow>

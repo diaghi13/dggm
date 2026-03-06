@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\ProductType;
 use App\Models\Product;
-use App\Models\Setting;
 use App\ValueObjects\Money;
+use Illuminate\Support\Facades\Log;
 
 /**
  * PriceCalculatorService
@@ -284,12 +285,37 @@ class PriceCalculatorService
     }
 
     /**
-     * Calculate sale price with markup
+     * Calculate sale price with markup.
+     *
+     * For SERVICE products markup is only applied to manufacturer_cost_price (a cost basis).
+     * standard_cost for services is already the final selling price and is returned as-is.
+     * Priority: manufacturer_cost_price + markup → standard_cost (direct) → 0.0 + warning.
+     *
+     * For ARTICLE/COMPOSITE products the purchase price comes from active supplier prices
+     * (or manufacturer_cost_price when no suppliers exist), then markup is applied.
      *
      * @return float Sale price (net, VAT excluded)
      */
     public function calculateProductSalePrice(Product $product): float
     {
+        if ($product->product_type === ProductType::SERVICE) {
+            // manufacturer_cost_price = cost basis → apply markup to derive the selling price
+            if (($product->manufacturer_cost_price ?? 0) > 0) {
+                $markup = $product->effective_markup_percent ?? 0;
+
+                return round($product->manufacturer_cost_price * (1 + ($markup / 100)), 2);
+            }
+
+            // standard_cost for services = already the final selling price → no markup
+            if (($product->standard_cost ?? 0) > 0) {
+                return (float) $product->standard_cost;
+            }
+
+            Log::warning("SERVICE product #{$product->id} ({$product->code}) has no cost basis for automatic pricing. Set standard_cost or enter price manually.");
+
+            return 0.0;
+        }
+
         $purchasePrice = $this->calculateProductPurchasePrice($product);
         $markup = $product->effective_markup_percent;
 
@@ -297,25 +323,15 @@ class PriceCalculatorService
     }
 
     /**
-     * Calculate rental prices from sale price
-     * Uses system settings for divisor and multipliers
+     * Calculate rental prices from purchase cost
+     * Uses the break-even formula in RentalEngineService::calculateEstimatedBaseDay()
      *
-     * @param  float  $salePrice  Base sale price (net, VAT excluded)
-     * @return array ['daily' => float, 'weekly' => float, 'monthly' => float]
+     * @param  float  $purchaseCost  Purchase cost (net, VAT excluded)
+     * @return array ['hourly' => float, 'half_day' => float, 'daily' => float, 'weekly' => float, 'monthly' => float, 'seasonal' => float]
      */
-    public function calculateRentalPrices(float $salePrice): array
+    public function calculateRentalPrices(float $purchaseCost): array
     {
-        $dailyDivisor = (float) Setting::get('rental.daily_rate_percent', 15);
-        $weeklyMultiplier = (float) Setting::get('rental.weekly_multiplier', sqrt(7));
-        $monthlyMultiplier = (float) Setting::get('rental.monthly_multiplier', sqrt(30));
-
-        $daily = $salePrice / $dailyDivisor;
-
-        return [
-            'daily' => round($daily, 2),
-            'weekly' => round($daily * $weeklyMultiplier, 2),
-            'monthly' => round($daily * $monthlyMultiplier, 2),
-        ];
+        return app(RentalEngineService::class)->calculateRentalPrices($purchaseCost);
     }
 
     /**
@@ -338,6 +354,7 @@ class PriceCalculatorService
         return match ($adjustmentType) {
             'percentage' => round($basePrice * (1 + ($adjustmentValue / 100)), 2),
             'fixed' => round($basePrice + $adjustmentValue, 2),
+            'multiplier' => round($basePrice * $adjustmentValue, 2),
             default => $basePrice,
         };
     }
@@ -349,7 +366,7 @@ class PriceCalculatorService
      * @param  \Illuminate\Support\Collection  $suppliers
      * @return float Weighted average price
      */
-    private function calculateWeightedAverageSupplierPrice($suppliers): float
+    public function calculateWeightedAverageSupplierPrice($suppliers): float
     {
         $totalValue = 0;
         $totalWeight = 0;

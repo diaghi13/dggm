@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { siteMaterialsApi } from '@/lib/api/site-materials';
-import { sitesApi } from '@/lib/api/sites';
+import { projectMaterialsApi } from '@/lib/api/project-materials';
+import { projectsApi } from '@/lib/api/projects';
 import {
   Dialog,
   DialogContent,
@@ -28,15 +28,15 @@ import { Loader2, ArrowRightLeft, FileText } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface TransferMaterialDialogProps {
-  siteId: number;
+  projectId: number;
   material: {
     id: number;
-    material_id: number;
-    material: {
-      name: string;
-      code: string;
-      unit: string;
-    };
+    product_id?: number | null;
+    product?: {
+      name?: string | null;
+      code?: string | null;
+      unit?: string | null;
+    } | null;
     planned_quantity: number;
     delivered_quantity: number;
     returned_quantity: number;
@@ -46,44 +46,44 @@ interface TransferMaterialDialogProps {
 }
 
 export function TransferMaterialDialog({
-  siteId,
+  projectId,
   material,
   open,
   onOpenChange,
 }: TransferMaterialDialogProps) {
   const queryClient = useQueryClient();
 
-  const [toSiteId, setToSiteId] = useState<string>('');
+  const [toProjectId, setToProjectId] = useState<string>('');
   const [quantity, setQuantity] = useState('');
   const [ddtNumber, setDdtNumber] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Fetch sites (exclude current site)
-  const { data: sites = [], isLoading: loadingSites } = useQuery({
-    queryKey: ['sites', 'active'],
+  // Fetch projects (exclude current project)
+  const { data: projects = [], isLoading: loadingProjects } = useQuery({
+    queryKey: ['projects', 'active'],
     queryFn: async () => {
-      const response = await sitesApi.getAll({ is_active: true });
-      return response.data.filter((site: any) => site.id !== siteId);
+      const response = await projectsApi.getAll({ is_active: true });
+      return response.data.filter((project: any) => project.id !== projectId);
     },
   });
 
   // Transfer mutation
   const transferMutation = useMutation({
     mutationFn: (data: {
-      to_site_id: number;
+      to_project_id: number;
       quantity: number;
       ddt_number?: string;
       notes?: string;
-    }) => siteMaterialsApi.transferToSite(siteId, material!.id, data),
+    }) => projectMaterialsApi.transferToProject(projectId, material!.id, data),
     onSuccess: () => {
       toast.success('Materiale trasferito', {
         description:
-          'Il materiale è stato trasferito al cantiere di destinazione con DDT.',
+          'Il materiale è stato trasferito al progetto di destinazione con DDT.',
       });
-      queryClient.invalidateQueries({ queryKey: ['site-materials', siteId] });
-      if (toSiteId) {
+      queryClient.invalidateQueries({ queryKey: ['project-materials', projectId] });
+      if (toProjectId) {
         queryClient.invalidateQueries({
-          queryKey: ['site-materials', parseInt(toSiteId)],
+          queryKey: ['project-materials', parseInt(toProjectId)],
         });
       }
       handleClose();
@@ -100,8 +100,8 @@ export function TransferMaterialDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!toSiteId) {
-      toast.error('Seleziona un cantiere di destinazione');
+    if (!toProjectId) {
+      toast.error('Seleziona un progetto di destinazione');
       return;
     }
 
@@ -111,7 +111,7 @@ export function TransferMaterialDialog({
     }
 
     transferMutation.mutate({
-      to_site_id: parseInt(toSiteId),
+      to_project_id: parseInt(toProjectId),
       quantity: parseFloat(quantity),
       ddt_number: ddtNumber || undefined,
       notes: notes || undefined,
@@ -119,7 +119,7 @@ export function TransferMaterialDialog({
   };
 
   const handleClose = () => {
-    setToSiteId('');
+    setToProjectId('');
     setQuantity('');
     setDdtNumber('');
     setNotes('');
@@ -137,10 +137,10 @@ export function TransferMaterialDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowRightLeft className="h-5 w-5 text-purple-600" />
-            Trasferimento Materiale tra Cantieri
+            Trasferimento Materiale tra Progetti
           </DialogTitle>
           <DialogDescription>
-            Trasferisci materiale da questo cantiere a un altro. Il magazzino
+            Trasferisci materiale da questo progetto a un altro. Il magazzino
             NON verrà toccato.
           </DialogDescription>
         </DialogHeader>
@@ -153,7 +153,7 @@ export function TransferMaterialDialog({
                 <div>
                   <p className="text-muted-foreground">Materiale</p>
                   <p className="font-semibold">
-                    {material.material.code} - {material.material.name}
+                    {material.product?.code} - {material.product?.name}
                   </p>
                 </div>
                 <div>
@@ -162,13 +162,13 @@ export function TransferMaterialDialog({
                   </p>
                   <p className="font-semibold">
                     {material.delivered_quantity} / {material.returned_quantity}{' '}
-                    {material.material.unit}
+                    {material.product?.unit}
                   </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-purple-600 font-medium">
                     Disponibile per trasferimento:{' '}
-                    {availableToTransfer.toFixed(2)} {material.material.unit}
+                    {availableToTransfer.toFixed(2)} {material.product?.unit}
                   </p>
                 </div>
               </div>
@@ -184,29 +184,29 @@ export function TransferMaterialDialog({
               </AlertDescription>
             </Alert>
 
-            {/* Site Select */}
+            {/* Project Select */}
             <div className="space-y-2">
-              <Label htmlFor="to_site">
-                Cantiere di destinazione{' '}
+              <Label htmlFor="to_project">
+                Progetto di destinazione{' '}
                 <span className="text-red-500">*</span>
               </Label>
-              <Select value={toSiteId} onValueChange={setToSiteId}>
-                <SelectTrigger id="to_site">
-                  <SelectValue placeholder="Seleziona cantiere" />
+              <Select value={toProjectId} onValueChange={setToProjectId}>
+                <SelectTrigger id="to_project">
+                  <SelectValue placeholder="Seleziona progetto" />
                 </SelectTrigger>
                 <SelectContent>
-                  {loadingSites ? (
+                  {loadingProjects ? (
                     <div className="flex items-center justify-center p-4">
                       <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
-                  ) : sites.length === 0 ? (
+                  ) : projects.length === 0 ? (
                     <div className="p-4 text-sm text-muted-foreground">
-                      Nessun cantiere attivo disponibile
+                      Nessun progetto attivo disponibile
                     </div>
                   ) : (
-                    sites.map((site: any) => (
-                      <SelectItem key={site.id} value={site.id.toString()}>
-                        {site.code} - {site.name}
+                    projects.map((project: any) => (
+                      <SelectItem key={project.id} value={project.id.toString()}>
+                        {project.code} - {project.name}
                       </SelectItem>
                     ))
                   )}
@@ -232,7 +232,7 @@ export function TransferMaterialDialog({
                   required
                 />
                 <span className="flex items-center text-sm text-muted-foreground px-3 border rounded-md bg-slate-50">
-                  {material.material.unit}
+                  {material.product?.unit}
                 </span>
               </div>
               {availableToTransfer > 0 && (
@@ -244,7 +244,7 @@ export function TransferMaterialDialog({
                   className="mt-2"
                 >
                   Trasferisci tutto: {availableToTransfer.toFixed(2)}{' '}
-                  {material.material.unit}
+                  {material.product?.unit}
                 </Button>
               )}
             </div>

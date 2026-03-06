@@ -109,15 +109,15 @@ export interface ApiError {
   errors?: Record<string, string[]>;
 }
 
-// Site Types
-export type SiteStatus =
+// Project Types
+export type ProjectStatus =
   | "draft"
   | "planned"
   | "in_progress"
   | "on_hold"
   | "completed"
   | "cancelled";
-export type SitePriority = "low" | "medium" | "high" | "urgent";
+export type ProjectPriority = "low" | "medium" | "high" | "urgent";
 
 export interface Media {
   id: number;
@@ -133,7 +133,7 @@ export interface Media {
   created_at: string;
 }
 
-export interface Site {
+export interface Project {
   id: number;
   code: string;
   name: string;
@@ -165,8 +165,8 @@ export interface Site {
     total_amount: string;
     status: string;
   };
-  status: SiteStatus;
-  priority?: SitePriority;
+  status: ProjectStatus;
+  priority?: ProjectPriority;
   start_date: string | null;
   estimated_end_date: string | null;
   actual_end_date: string | null;
@@ -184,7 +184,7 @@ export interface Site {
   updated_at: string;
 }
 
-export interface SiteFormData {
+export interface ProjectFormData {
   code?: string;
   name: string;
   customer_id: number;
@@ -198,8 +198,8 @@ export interface SiteFormData {
   gps_radius?: number;
   project_manager_id?: number;
   quote_id?: number;
-  status?: SiteStatus;
-  priority?: SitePriority;
+  status?: ProjectStatus;
+  priority?: ProjectPriority;
   start_date?: string;
   estimated_end_date?: string;
   actual_end_date?: string;
@@ -294,7 +294,7 @@ export type QuoteFormData = Partial<
     | "priceList"
     | "paymentTerm"
     | "warrantyType"
-    | "site"
+    | "project"
     | "items"
     | "full_address"
   >
@@ -370,8 +370,8 @@ export interface Ddt {
     name: string;
     code: string;
   };
-  site_id: number | null;
-  site?: {
+  project_id: number | null;
+  project?: {
     id: number;
     code: string;
     name: string;
@@ -439,7 +439,7 @@ export interface DdtFormData {
   type: DdtType;
   supplier_id?: number | null;
   customer_id?: number | null;
-  site_id?: number | null;
+  project_id?: number | null;
   from_warehouse_id: number;
   to_warehouse_id?: number | null;
   ddt_number: string;
@@ -522,7 +522,6 @@ export interface Material {
   description: string | null;
   category: string;
   product_type: MaterialType;
-  is_kit: boolean;
   is_rentable: boolean;
   quantity_out_on_rental: number;
   unit: string;
@@ -568,7 +567,6 @@ export interface MaterialFormData {
   description?: string | null;
   category?: string;
   product_type?: MaterialType;
-  is_kit?: boolean;
   is_rentable?: boolean;
   unit?: string;
   standard_cost?: number;
@@ -643,8 +641,8 @@ export interface StockMovement {
     id: number;
     company_name: string;
   };
-  site_id?: number;
-  site?: {
+  project_id?: number;
+  project?: {
     id: number;
     code: string;
     name: string;
@@ -671,7 +669,7 @@ export interface StockMovementFormData {
   quantity: number;
   unit_cost?: number;
   supplier_id?: number;
-  site_id?: number;
+  project_id?: number;
   supplier_document?: string;
   movement_date: string;
   notes?: string;
@@ -859,9 +857,9 @@ export interface ContractorRate {
   updated_at: string;
 }
 
-export interface SiteLaborCost {
+export interface ProjectLaborCost {
   id: number;
-  site_id: number;
+  project_id: number;
   cost_type: LaborCostType;
   worker_id?: number | null;
   contractor_id?: number | null;
@@ -881,13 +879,13 @@ export interface SiteLaborCost {
   notes?: string | null;
   worker?: Worker;
   contractor?: Supplier;
-  site?: Site;
+  project?: Project;
   created_at: string;
   updated_at: string;
 }
 
-// Site Worker Types
-export type SiteWorkerStatus =
+// Project Worker Types
+export type ProjectWorkerStatus =
   | "pending"
   | "accepted"
   | "rejected"
@@ -895,7 +893,7 @@ export type SiteWorkerStatus =
   | "completed"
   | "cancelled";
 
-export interface SiteRole {
+export interface ProjectRole {
   id: number;
   name: string;
   slug: string;
@@ -907,11 +905,11 @@ export interface SiteRole {
   updated_at: string;
 }
 
-export interface SiteWorker {
+export interface ProjectWorker {
   id: number;
-  site_id: number;
+  project_id: number;
   worker_id: number;
-  status: SiteWorkerStatus;
+  status: ProjectWorkerStatus;
   status_label: string;
   assigned_from: string;
   assigned_to?: string | null;
@@ -933,13 +931,13 @@ export interface SiteWorker {
   is_pending: boolean;
   can_respond: boolean;
   worker?: Worker;
-  site?: Site;
-  roles?: SiteRole[];
+  project?: Project;
+  roles?: ProjectRole[];
   created_at: string;
   updated_at: string;
 }
 
-export interface SiteWorkerFormData {
+export interface ProjectWorkerFormData {
   worker_id: number;
   assigned_from: string;
   assigned_to?: string | null;
@@ -952,23 +950,10 @@ export interface SiteWorkerFormData {
   notes?: string | null;
 }
 
-export interface SiteWorkerConflict {
+export interface ProjectWorkerConflict {
   has_conflicts: boolean;
   conflict_count: number;
-  conflicts: SiteWorker[];
-}
-
-// Legacy - manteniamo per compatibilità
-export interface SiteWorkerAssignment {
-  site_id: number;
-  worker_id: number;
-  site_role?: string | null;
-  assigned_from: string;
-  assigned_to?: string | null;
-  hourly_rate_override?: number | null;
-  estimated_hours?: number | null;
-  is_active: boolean;
-  notes?: string | null;
+  conflicts: ProjectWorker[];
 }
 
 // Worker Invitation Types
@@ -1030,8 +1015,8 @@ export type MaterialRequestPriority = "low" | "medium" | "high" | "urgent";
 
 export interface MaterialRequest {
   id: number;
-  site_id: number;
-  site?: {
+  project_id: number;
+  project?: {
     id: number;
     name: string;
     code: string;
@@ -1097,7 +1082,7 @@ export interface MaterialRequest {
 }
 
 export interface MaterialRequestFormData {
-  site_id: number;
+  project_id: number;
   product_id: number;
   quantity_requested: number;
   unit_of_measure?: string | null;
@@ -1154,7 +1139,15 @@ export interface NotificationMeta {
 // ============================================
 
 // Type aliases for convenience (actual types are in generated.d.ts)
-export type Product = App.Data.ProductData;
+// ProductDetail extends the base generated type with subrental/ownership fields
+// that will be added to the backend API response in Phase 3 of the Rental Engine.
+export type Product = App.Data.ProductData & {
+  ownership_type?: 'owned' | 'subrental' | 'mixed';
+  is_premium?: boolean;
+  subrental_markup?: number | null;
+  rental_price_estimated?: boolean;
+  estimated_base_day?: number | null;
+};
 export type ProductRelation = App.Data.ProductRelationData;
 export type ProductRelationType = App.Data.ProductRelationTypeData;
 export type ProductCategory = App.Data.ProductCategoryData;
@@ -1177,13 +1170,13 @@ export interface ProductFormData {
   category_id?: number | null;
   brand_id?: number | null;
   product_type: App.Enums.ProductType;
-  is_kit?: boolean;
   is_package?: boolean;
   package_weight?: number | null;
   package_volume?: number | null;
   package_dimensions?: string | null;
   is_rentable?: boolean;
   unit?: string | null;
+  standard_cost?: number | null;
   manufacturer_cost_price?: number | null;
   manufacturer_retail_price?: number | null;
   sale_markup_percent?: number | null;
@@ -1196,6 +1189,11 @@ export interface ProductFormData {
   location?: string | null;
   notes?: string | null;
   is_active?: boolean;
+  ownership_type?: 'owned' | 'subrental' | 'mixed';
+  is_premium?: boolean;
+  subrental_markup?: number | null;
+  rental_price_estimated?: boolean;
+  estimated_base_day?: number | null;
 }
 
 export interface ProductRelationFormData {
@@ -1242,6 +1240,7 @@ export interface PriceListFormData {
   is_default?: boolean;
   priority?: number;
   generate_items?: boolean;
+  rental_profile_id?: number | null;
 }
 
 export interface PriceListWithItems extends PriceList {
@@ -1254,3 +1253,67 @@ export interface PriceListWithItems extends PriceList {
 
 export type PaymentTermData = App.Data.PaymentTermData;
 export type WarrantyTypeData = App.Data.WarrantyTypeData;
+
+// ============================================
+// SUBRENTAL SUPPLIER TYPES
+// ============================================
+
+export interface ProductSubrentalSupplier {
+  id: number;
+  product_id: number;
+  supplier_id: number;
+  supplier?: Supplier;
+  day_rate: number;
+  reliability_score: number;
+  is_preferred: boolean;
+  last_updated?: string | null;
+  notes?: string | null;
+  computed_score?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SubrentalCostHistory {
+  id: number;
+  product_id: number;
+  supplier_id: number;
+  quote_id?: number | null;
+  actual_cost: number;
+  duration_days: number;
+  margin_generated?: number | null;
+  date: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ============================================
+// PRODUCT SUPPLIER PRICE TYPES
+// ============================================
+
+export interface ProductSupplierPrice {
+  supplier_id: number;
+  supplier_name: string;
+  purchase_price: number;
+  final_price: number | null;
+  is_preferred_supplier: boolean | null;
+  supplier_product_code: string | null;
+}
+
+// ============================================
+// RENTAL PROFILE TYPES
+// ============================================
+
+export interface RentalProfile {
+  id: number;
+  name: string;
+  sector: string;
+  exponent_curve: number;
+  decay_strength: number;
+  max_duration_reference: number;
+  duration_offset: number;
+  max_period_cap_days: number;
+  is_default: boolean;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { stockMovementsApi } from "@/lib/api/stock-movements";
 import { warehousesApi } from "@/lib/api/warehouses";
+import { suppliersApi } from "@/lib/api/suppliers";
+import { productsApi } from "@/lib/api/products";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -64,6 +66,7 @@ export function BulkIntakeDialog({
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<
     number | undefined
   >(warehouseId);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | undefined>(undefined);
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<ProductItem[]>([]);
@@ -82,8 +85,16 @@ export function BulkIntakeDialog({
 
   const warehouses = warehousesData?.data ?? [];
 
+  // Fetch suppliers
+  const { data: suppliersData } = useQuery({
+    queryKey: ["suppliers", { is_active: true, per_page: 200 }],
+    queryFn: () => suppliersApi.getAll({ is_active: true, per_page: 200 }),
+  });
+
+  const suppliers = suppliersData?.data ?? [];
+
   // Add item to list
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!selectedProduct || !quantity) {
       toast.error("Seleziona un prodotto e inserisci la quantità");
       return;
@@ -97,12 +108,31 @@ export function BulkIntakeDialog({
       return;
     }
 
+    // If a supplier is selected and no manual unit cost was entered, try to fetch supplier price
+    let resolvedUnitCost = unitCost ? parseFloat(unitCost) : undefined;
+    if (selectedSupplierId && !unitCost && selectedProduct.id) {
+      try {
+        const supplierPrices = await productsApi.getSupplierPrices(selectedProduct.id);
+        const sp = supplierPrices.find((p) => p.supplier_id === selectedSupplierId);
+        if (sp) {
+          resolvedUnitCost = sp.final_price ?? sp.purchase_price;
+        }
+      } catch {
+        // If fetch fails, fall through to standard_cost fallback
+      }
+    }
+
+    // Fallback to standard_cost if still no cost
+    if (resolvedUnitCost === undefined && selectedProduct.standard_cost != null) {
+      resolvedUnitCost = selectedProduct.standard_cost;
+    }
+
     const newItem: ProductItem = {
       id: Math.random().toString(),
       product_id: selectedProduct.id!,
       product: selectedProduct,
       quantity: parseFloat(quantity),
-      unit_cost: unitCost ? parseFloat(unitCost) : undefined,
+      unit_cost: resolvedUnitCost,
     };
 
     setItems((prev) => [...prev, newItem]);
@@ -144,6 +174,7 @@ export function BulkIntakeDialog({
           product_id: item.product_id,
           quantity: item.quantity,
           unit_cost: item.unit_cost,
+          supplier_id: selectedSupplierId,
           reference: reference || undefined,
           notes: notes || undefined,
         }),
@@ -175,6 +206,7 @@ export function BulkIntakeDialog({
     setOpen(false);
     setItems([]);
     setSelectedWarehouseId(warehouseId);
+    setSelectedSupplierId(undefined);
     setReference("");
     setNotes("");
     setSelectedProduct(null);
@@ -203,7 +235,7 @@ export function BulkIntakeDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Carico Iniziale / Bulk</DialogTitle>
           <DialogDescription>
@@ -213,7 +245,40 @@ export function BulkIntakeDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Magazzino e Riferimento */}
+          {/* Riga 1: Fornitore (full width) */}
+          <div className="space-y-2">
+            <Label>
+              Fornitore{" "}
+              <span className="text-muted-foreground text-xs">(opzionale)</span>
+            </Label>
+            <Select
+              value={selectedSupplierId != null ? selectedSupplierId.toString() : "__none__"}
+              onValueChange={(value) =>
+                setSelectedSupplierId(value !== "__none__" ? parseInt(value) : undefined)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona fornitore..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Nessun fornitore</SelectItem>
+                {suppliers
+                  .filter((s: App.Data.SupplierData) => s.id != null)
+                  .map((s: App.Data.SupplierData) => (
+                    <SelectItem key={s.id} value={s.id!.toString()}>
+                      {s.company_name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            {selectedSupplierId != null && (
+              <p className="text-xs text-muted-foreground">
+                I prezzi fornitore verranno pre-compilati all&apos;aggiunta di ogni prodotto
+              </p>
+            )}
+          </div>
+
+          {/* Riga 2: Magazzino e Riferimento */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Magazzino Destinazione *</Label>

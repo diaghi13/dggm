@@ -3,7 +3,7 @@
 namespace App\Policies;
 
 use App\Models\MaterialRequest;
-use App\Models\Site;
+use App\Models\Project;
 use App\Models\User;
 
 class MaterialRequestPolicy
@@ -11,16 +11,16 @@ class MaterialRequestPolicy
     /**
      * Determine whether the user can view any material requests for a site.
      */
-    public function viewAny(User $user, Site $site): bool
+    public function viewAny(User $user, Project $project): bool
     {
         // Managers can view all requests
         if ($user->hasAnyRole(['SuperAdmin', 'Admin', 'ProjectManager', 'WarehouseManager'])) {
             return true;
         }
 
-        // Workers can only view requests for sites they're assigned to
+        // Workers can only view requests for projects they're assigned to
         if ($user->hasRole('Worker') && $user->worker) {
-            return $site->workers()
+            return $project->projectWorkers()
                 ->where('worker_id', $user->worker->id)
                 ->whereIn('status', ['accepted', 'active'])
                 ->exists();

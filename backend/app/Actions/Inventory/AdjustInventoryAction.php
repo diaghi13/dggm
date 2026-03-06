@@ -5,6 +5,7 @@ namespace App\Actions\Inventory;
 use App\Enums\StockMovementType;
 use App\Events\InventoryAdjusted;
 use App\Events\InventoryLowStock;
+use App\Events\StockMovementCreated;
 use App\Models\Inventory;
 use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
@@ -18,8 +19,9 @@ class AdjustInventoryAction
         ?float $unitCost = null,
         ?string $notes = null,
         ?string $referenceDocument = null,
+        StockMovementType $type = StockMovementType::ADJUSTMENT,
     ): StockMovement {
-        return DB::transaction(function () use ($productId, $warehouseId, $adjustment, $unitCost, $notes, $referenceDocument) {
+        return DB::transaction(function () use ($productId, $warehouseId, $adjustment, $unitCost, $notes, $referenceDocument, $type) {
             // Get or create inventory
             $inventory = Inventory::firstOrCreate([
                 'product_id' => $productId,
@@ -42,7 +44,7 @@ class AdjustInventoryAction
                 'code' => StockMovement::generateCode(),
                 'product_id' => $productId,
                 'warehouse_id' => $warehouseId,
-                'type' => StockMovementType::ADJUSTMENT,
+                'type' => $type,
                 'quantity' => abs($adjustment),
                 'unit_cost' => $unitCost ?? 0,
                 'movement_date' => now(),
@@ -50,6 +52,9 @@ class AdjustInventoryAction
                 'notes' => $notes,
                 'reference_document' => $referenceDocument,
             ]);
+
+            // Dispatch stock movement event (triggers UpdateProductStandardCostListener etc.)
+            StockMovementCreated::dispatch($movement);
 
             // Dispatch events (listeners will handle side effects)
             InventoryAdjusted::dispatch(

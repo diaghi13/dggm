@@ -11,7 +11,7 @@ readonly class GetStockMovementsQuery
     public function __construct(
         private ?int $productId = null,
         private ?int $warehouseId = null,
-        private ?int $siteId = null,
+        private ?int $projectId = null,
         private ?StockMovementType $type = null,
         private ?string $dateFrom = null,
         private ?string $dateTo = null,
@@ -27,7 +27,7 @@ readonly class GetStockMovementsQuery
                 'warehouse',
                 'fromWarehouse',
                 'toWarehouse',
-                'site',
+                'project',
                 'supplier',
                 'user',
                 'ddt',
@@ -45,8 +45,8 @@ readonly class GetStockMovementsQuery
             });
         }
 
-        if ($this->siteId) {
-            $query->where('site_id', $this->siteId);
+        if ($this->projectId) {
+            $query->where('project_id', $this->projectId);
         }
 
         if ($this->type) {

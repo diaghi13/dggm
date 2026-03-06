@@ -45,7 +45,7 @@ class QuoteFactory extends Factory
             'payment_method' => null,
             'payment_terms' => null,
             'template_id' => null,
-            'site_id' => null,
+            'project_id' => null,
             'notes' => fake()->optional()->paragraph(),
             'terms_and_conditions' => fake()->optional()->paragraph(),
             'footer_text' => null,

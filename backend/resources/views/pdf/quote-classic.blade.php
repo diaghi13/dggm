@@ -203,6 +203,17 @@
                                 @if($child->notes)
                                     <div class="text-xs text-slate-500 italic">{{ $child->notes }}</div>
                                 @endif
+                                @if($child->billing_unit && !in_array($child->billing_unit->value, ['unit', 'flat']))
+                                    @php
+                                        $unitLabels = ['hour' => 'ora', 'day' => 'gg', 'week' => 'sett', 'month' => 'mese'];
+                                        $unitLabel = $unitLabels[$child->billing_unit->value] ?? $child->billing_unit->value;
+                                        $dur = $child->duration ?? ($quote->effective_event_days ?? null);
+                                    @endphp
+                                    <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">
+                                        {{ $child->quantity }} × {{ number_format($child->unit_price, 2, ',', '.') }} €/{{ $unitLabel }}
+                                        @if($dur) × curva({{ $dur }} {{ $unitLabel }}) @endif
+                                    </div>
+                                @endif
                             </td>
                             <td class="py-2 px-2 border-r border-slate-300 text-center text-xs">{{ $child->unit ?? 'pz' }}</td>
                             <td class="py-2 px-2 border-r border-slate-300 text-center">{{ number_format($child->quantity, 0) }}</td>
@@ -238,6 +249,17 @@
                             <div class="font-semibold">{{ $item->description }}</div>
                             @if($item->notes)
                                 <div class="text-xs text-slate-500 italic">{{ $item->notes }}</div>
+                            @endif
+                            @if($item->billing_unit && !in_array($item->billing_unit->value, ['unit', 'flat']))
+                                @php
+                                    $unitLabels = ['hour' => 'ora', 'day' => 'gg', 'week' => 'sett', 'month' => 'mese'];
+                                    $unitLabel = $unitLabels[$item->billing_unit->value] ?? $item->billing_unit->value;
+                                    $dur = $item->duration ?? ($quote->effective_event_days ?? null);
+                                @endphp
+                                <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">
+                                    {{ $item->quantity }} × {{ number_format($item->unit_price, 2, ',', '.') }} €/{{ $unitLabel }}
+                                    @if($dur) × curva({{ $dur }} {{ $unitLabel }}) @endif
+                                </div>
                             @endif
                         </td>
                         <td class="py-2 px-2 border-r border-slate-300 text-center text-xs">{{ $item->unit ?? 'pz' }}</td>

@@ -2725,3 +2725,83 @@ Prima di iniziare l'implementazione:
 4. **Timeline serrata?** Posso ridurre scope iniziale se urgente
 
 **Dimmi come vuoi procedere e partiamo!** 💪
+
+---
+
+## 📋 ANALISI CAMPI PER TIPO PRODOTTO (Febbraio 2026)
+
+> Analisi concordata per ristrutturazione pagina prodotti frontend.
+> **Principio guida**: automatizzare il più possibile, ridurre input manuale utente.
+
+### Legenda
+- `✅` campo usato normalmente
+- `⚠️` opzionale / dipende dal caso
+- `❌` non applicabile (non mostrare nel form)
+
+### Mapping finale concordato
+
+| Campo | ARTICLE | COMPOSITE | SERVICE | Note |
+|---|---|---|---|---|
+| `code` | ✅ | ✅ | ✅ | |
+| `internal_code` | ✅ | ✅ | ✅ | Auto-generato se vuoto |
+| `ean` | ✅ | ⚠️ generabile | ❌ | |
+| `etim_code` | ✅ | ❌ | ❌ | Standard classificazione elettrico |
+| `barcode` | ✅ generabile | ✅ generabile | ❌ | |
+| `qr_code` | ✅ generabile | ✅ generabile | ❌ | |
+| `name` | ✅ | ✅ | ✅ | |
+| `description` | ✅ | ✅ | ✅ | |
+| `category_id` | ✅ | ✅ | ✅ | |
+| `brand_id` | ✅ | ⚠️ | ❌ | I servizi non hanno brand |
+| `product_type` | ✅ | ✅ | ✅ | |
+| `unit` | ✅ | ✅ | ✅ | Articoli: pz/kg/m; Servizi: ore/gg/m² |
+| `notes` | ✅ | ✅ | ✅ | |
+| `is_active` | ✅ | ✅ | ✅ | |
+| `is_package` | ✅ | ❌ | ❌ | |
+| `package_weight` | ✅ | ❌ | ❌ | |
+| `package_volume` | ✅ | ❌ | ❌ | |
+| `package_dimensions` | ✅ | ❌ | ❌ | |
+| `is_rentable` | ✅ | ✅ | ❌ | |
+| `ownership_type` | ✅ | ✅ | ❌ | owned / subrental / mixed |
+| `is_premium` | ✅ | ✅ | ❌ | |
+| `subrental_markup` | ✅ | ✅ | ❌ | |
+| `rental_price_estimated` | ✅ | ✅ | ❌ | Flag "prezzo stimato, non calcolato dal motore" |
+| `estimated_base_day` | ✅ | ✅ | ❌ | Override manuale tariffa giornaliera base |
+| `quantity_out_on_rental` | ✅ | ✅ tracciato | ❌ | Readonly, aggiornato dal sistema |
+| `manufacturer_cost_price` | ✅ | ❌ | ❌ | Prezzo listino produttore |
+| `manufacturer_retail_price` | ✅ | ❌ | ❌ | Prezzo consigliato (MSRP) |
+| `sale_markup_percent` | ✅ | ✅ | ❌ | Markup % su standard_cost |
+| `standard_cost` | ✅ auto+override | ✅ auto+override | ✅ manuale | Vedi logica sotto |
+| `default_supplier_id` | ✅ | ❌ | ❌ | Subnoleggio esterno → product_subrental_suppliers |
+| `reorder_level` | ✅ | ❌ | ❌ | |
+| `reorder_quantity` | ✅ | ❌ | ❌ | |
+| `lead_time_days` | ✅ | ✅ | ❌ | |
+| `location` | ✅ | ✅ | ❌ | Posizione fisica in magazzino |
+
+### Logica `standard_cost` (da implementare nel form)
+
+```
+ARTICLE   → auto = max(prezzi_acquisto_fornitori) oppure manufacturer_cost_price
+COMPOSITE → auto = sum(component.standard_cost × quantity)  [campo composite_total_cost]
+SERVICE   → solo manuale (nessun calcolo automatico)
+```
+
+**UX concordata**: mostrare il valore auto-calcolato in grigio/readonly. Toggle
+"Usa valore personalizzato" per override manuale. Il valore calcolato si aggiorna
+in tempo reale (COMPOSITE: quando cambiano i componenti; ARTICLE: quando cambia
+il fornitore/prezzo acquisto).
+
+### Campi rimossi / spostati dal DB
+
+| Campo | Operazione | Motivo |
+|---|---|---|
+| `is_kit` | **Rimosso** | Ridondante con `product_type = composite` |
+| `description_embedding` | **Spostato in `product_embeddings`** | Campo pesante (~10KB), lazy-loadable |
+
+### Todo nel form prodotti (prossima sessione)
+
+1. **Mostrare/nascondere sezioni in base a `product_type`** — non mostrare campi ❌
+2. **`standard_cost`** — valore auto-calcolato readonly + toggle override manuale
+3. **Rimuovere `is_kit`** dal form (`product-form.tsx` righe 199, 265)
+4. **Rimuovere `is_kit`** dai tipi (`lib/types/index.ts` righe 525, 571, 1175)
+5. **`quantity_out_on_rental`** — readonly nel form, non editabile dall'utente
+6. **`rental_price_estimated`** — badge/warning nella sezione rental quando true

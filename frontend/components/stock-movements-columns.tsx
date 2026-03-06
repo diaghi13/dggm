@@ -140,14 +140,14 @@ export const createStockMovementsColumns = (): ColumnDef<StockMovement>[] => [
         );
       }
 
-      if (movement.site) {
+      if (movement.project) {
         return (
           <Link
-            href={`/sites/${movement.site.id}`}
+            href={`/projects/${movement.project.id}`}
             className="flex items-center gap-1 hover:underline text-blue-600 dark:text-blue-400"
           >
             <Building2 className="h-3 w-3" />
-            <span className="text-sm">{movement.site.code}</span>
+            <span className="text-sm">{movement.project.code}</span>
           </Link>
         );
       }

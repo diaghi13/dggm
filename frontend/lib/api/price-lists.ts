@@ -112,9 +112,12 @@ export const priceListsApi = {
     data: {
       sale_price?: number | null;
       is_manual_price?: boolean | null;
+      rental_hourly?: number | null;
+      rental_half_day?: number | null;
       rental_daily?: number | null;
       rental_weekly?: number | null;
       rental_monthly?: number | null;
+      rental_seasonal?: number | null;
       is_manual_rental?: boolean | null;
       is_active?: boolean;
       notes?: string | null;
@@ -137,9 +140,12 @@ export const priceListsApi = {
       product_id: number;
       sale_price?: number | null;
       is_manual_price?: boolean | null;
+      rental_hourly?: number | null;
+      rental_half_day?: number | null;
       rental_daily?: number | null;
       rental_weekly?: number | null;
       rental_monthly?: number | null;
+      rental_seasonal?: number | null;
       is_manual_rental?: boolean | null;
       is_active?: boolean;
       notes?: string | null;

@@ -13,7 +13,7 @@ readonly class GetDdtsQuery
         private ?DdtType $type = null,
         private ?DdtStatus $status = null,
         private ?int $warehouseId = null,
-        private ?int $siteId = null,
+        private ?int $projectId = null,
         private ?int $supplierId = null,
         private ?int $customerId = null,
         private ?string $search = null,
@@ -28,7 +28,7 @@ readonly class GetDdtsQuery
             ->with([
                 'supplier',
                 'customer',
-                'site',
+                'project',
                 'fromWarehouse',
                 'toWarehouse',
                 'items.product',
@@ -50,8 +50,8 @@ readonly class GetDdtsQuery
             });
         }
 
-        if ($this->siteId) {
-            $query->where('site_id', $this->siteId);
+        if ($this->projectId) {
+            $query->where('project_id', $this->projectId);
         }
 
         if ($this->supplierId) {

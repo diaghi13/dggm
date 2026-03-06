@@ -10,12 +10,12 @@ use Illuminate\Database\Eloquent\Collection;
 readonly class GetActiveDdtsBySiteQuery
 {
     public function __construct(
-        private int $siteId
+        private int $projectId
     ) {}
 
     public function execute(): Collection
     {
-        return Ddt::where('site_id', $this->siteId)
+        return Ddt::where('project_id', $this->projectId)
             ->whereIn('status', [DdtStatus::Issued, DdtStatus::InTransit])
             ->where('type', DdtType::Outgoing)
             ->with(['items.product', 'fromWarehouse'])

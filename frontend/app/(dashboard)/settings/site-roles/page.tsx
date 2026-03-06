@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { siteWorkersApi } from '@/lib/api/site-workers';
+import { projectWorkersApi } from '@/lib/api/project-workers';
 import apiClient from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,11 +30,11 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Edit2, Trash2, Users, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { SiteRoleBadge } from '@/app/(dashboard)/sites/_components/site-role-badge';
-import type { SiteRole, ApiResponse } from '@/lib/types';
+import { ProjectRoleBadge } from '@/app/(dashboard)/projects/_components/project-role-badge';
+import type { ProjectRole, ApiResponse } from '@/lib/types';
 
 // API functions for CRUD operations
-const siteRolesApi = {
+const projectRolesApi = {
   create: async (data: {
     name: string;
     slug: string;
@@ -42,8 +42,8 @@ const siteRolesApi = {
     color?: string;
     sort_order?: number;
     is_active?: boolean;
-  }): Promise<SiteRole> => {
-    const response = await apiClient.post<ApiResponse<SiteRole>>('/site-roles', data);
+  }): Promise<ProjectRole> => {
+    const response = await apiClient.post<ApiResponse<ProjectRole>>('/project-roles', data);
     return response.data.data;
   },
 
@@ -56,13 +56,13 @@ const siteRolesApi = {
       sort_order?: number;
       is_active?: boolean;
     }
-  ): Promise<SiteRole> => {
-    const response = await apiClient.patch<ApiResponse<SiteRole>>(`/site-roles/${id}`, data);
+  ): Promise<ProjectRole> => {
+    const response = await apiClient.patch<ApiResponse<ProjectRole>>(`/project-roles/${id}`, data);
     return response.data.data;
   },
 
   delete: async (id: number): Promise<void> => {
-    await apiClient.delete(`/site-roles/${id}`);
+    await apiClient.delete(`/project-roles/${id}`);
   },
 };
 
@@ -70,7 +70,7 @@ export default function SiteRolesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<SiteRole | null>(null);
+  const [editingRole, setEditingRole] = useState<ProjectRole | null>(null);
   const [roleName, setRoleName] = useState('');
   const [roleSlug, setRoleSlug] = useState('');
   const [roleDescription, setRoleDescription] = useState('');
@@ -80,18 +80,18 @@ export default function SiteRolesPage() {
 
   // Fetch roles
   const { data: roles = [], isLoading } = useQuery({
-    queryKey: ['site-roles'],
-    queryFn: () => siteWorkersApi.getRoles(),
+    queryKey: ['project-roles'],
+    queryFn: () => projectWorkersApi.getRoles(),
   });
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: siteRolesApi.create,
+    mutationFn: projectRolesApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['project-roles'] });
       setIsDialogOpen(false);
       resetForm();
-      toast.success('Ruolo cantiere creato con successo');
+      toast.success('Ruolo progetto creato con successo');
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Errore durante la creazione');
@@ -100,12 +100,12 @@ export default function SiteRolesPage() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => siteRolesApi.update(id, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => projectRolesApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['project-roles'] });
       setIsDialogOpen(false);
       resetForm();
-      toast.success('Ruolo cantiere aggiornato con successo');
+      toast.success('Ruolo progetto aggiornato con successo');
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Errore durante l\'aggiornamento');
@@ -114,10 +114,10 @@ export default function SiteRolesPage() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: siteRolesApi.delete,
+    mutationFn: projectRolesApi.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site-roles'] });
-      toast.success('Ruolo cantiere eliminato');
+      queryClient.invalidateQueries({ queryKey: ['project-roles'] });
+      toast.success('Ruolo progetto eliminato');
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Errore durante l\'eliminazione');
@@ -157,7 +157,7 @@ export default function SiteRolesPage() {
     }
   };
 
-  const handleEdit = (role: SiteRole) => {
+  const handleEdit = (role: ProjectRole) => {
     setEditingRole(role);
     setRoleName(role.name);
     setRoleSlug(role.slug);
@@ -196,10 +196,10 @@ export default function SiteRolesPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Users className="h-7 w-7" />
-              Ruoli Cantiere
+              Ruoli Progetto
             </h1>
             <p className="text-slate-600 dark:text-slate-400 mt-1">
-              Gestisci i ruoli che i lavoratori possono avere nei cantieri
+              Gestisci i ruoli che i lavoratori possono avere nei progetti
             </p>
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function SiteRolesPage() {
         <CardHeader>
           <CardTitle>Ruoli Disponibili</CardTitle>
           <CardDescription>
-            Ruoli che possono essere assegnati ai lavoratori nei cantieri (es: Operaio, Caposquadra,
+            Ruoli che possono essere assegnati ai lavoratori nei progetti (es: Operaio, Caposquadra,
             Supervisore, Tecnico, Autista)
           </CardDescription>
         </CardHeader>
@@ -224,7 +224,7 @@ export default function SiteRolesPage() {
           ) : roles.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nessun ruolo cantiere definito</p>
+              <p>Nessun ruolo progetto definito</p>
               <p className="text-sm mt-1">Clicca su "Nuovo Ruolo" per iniziare</p>
             </div>
           ) : (
@@ -244,7 +244,7 @@ export default function SiteRolesPage() {
                 {roles.map((role) => (
                   <TableRow key={role.id}>
                     <TableCell>
-                      <SiteRoleBadge role={role} />
+                      <ProjectRoleBadge role={role} />
                     </TableCell>
                     <TableCell className="font-medium">{role.name}</TableCell>
                     <TableCell className="font-mono text-sm text-slate-600 dark:text-slate-400">
@@ -306,11 +306,11 @@ export default function SiteRolesPage() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingRole ? 'Modifica Ruolo' : 'Nuovo Ruolo Cantiere'}</DialogTitle>
+            <DialogTitle>{editingRole ? 'Modifica Ruolo' : 'Nuovo Ruolo Progetto'}</DialogTitle>
             <DialogDescription>
               {editingRole
                 ? 'Modifica le informazioni del ruolo'
-                : 'Crea un nuovo ruolo per i lavoratori nei cantieri'}
+                : 'Crea un nuovo ruolo per i lavoratori nei progetti'}
             </DialogDescription>
           </DialogHeader>
 

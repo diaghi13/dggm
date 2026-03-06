@@ -63,11 +63,11 @@ import {
 import type { MaterialRequest, MaterialRequestStatus, MaterialRequestPriority } from '@/lib/types';
 
 interface MaterialRequestsTabProps {
-  siteId: number;
-  siteName?: string;
+  projectId: number;
+  projectName?: string;
 }
 
-export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsTabProps) {
+export function MaterialRequestsTab({ projectId, projectName = '' }: MaterialRequestsTabProps) {
   const queryClient = useQueryClient();
   const [selectedRequest, setSelectedRequest] = useState<MaterialRequest | null>(null);
   const [respondDialog, setRespondDialog] = useState<'approve' | 'reject' | null>(null);
@@ -87,8 +87,8 @@ export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsT
   const [priorityFilter, setPriorityFilter] = useState<MaterialRequestPriority | 'all'>('all');
 
   const { data: requests, isLoading } = useQuery({
-    queryKey: ['material-requests', siteId],
-    queryFn: () => materialRequestsApi.getRequestsBySite(siteId),
+    queryKey: ['material-requests', projectId],
+    queryFn: () => materialRequestsApi.getRequestsByProject(projectId),
   });
 
   // Filtered requests
@@ -128,7 +128,7 @@ export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsT
       materialRequestsApi.approve(requestId, data),
     onSuccess: () => {
       toast.success('Richiesta approvata');
-      queryClient.invalidateQueries({ queryKey: ['material-requests', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['material-requests', projectId] });
       setRespondDialog(null);
       setSelectedRequest(null);
       setResponseData({ quantity_approved: '', response_notes: '', rejection_reason: '', quantity_delivered: '' });
@@ -143,7 +143,7 @@ export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsT
       materialRequestsApi.reject(requestId, reason),
     onSuccess: () => {
       toast.success('Richiesta rifiutata');
-      queryClient.invalidateQueries({ queryKey: ['material-requests', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['material-requests', projectId] });
       setRespondDialog(null);
       setSelectedRequest(null);
       setResponseData({ quantity_approved: '', response_notes: '', rejection_reason: '', quantity_delivered: '' });
@@ -158,7 +158,7 @@ export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsT
       materialRequestsApi.markDelivered(requestId, quantity),
     onSuccess: () => {
       toast.success('Richiesta contrassegnata come consegnata');
-      queryClient.invalidateQueries({ queryKey: ['material-requests', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['material-requests', projectId] });
     },
     onError: () => {
       toast.error('Errore durante l\'aggiornamento');
@@ -573,8 +573,8 @@ export function MaterialRequestsTab({ siteId, siteName = '' }: MaterialRequestsT
 
       {/* Material Request Dialog (Create or Edit) */}
       <MaterialRequestDialog
-        siteId={siteId}
-        siteName={siteName}
+        projectId={projectId}
+        projectName={projectName}
         request={editRequest}
         open={requestDialogOpen}
         onOpenChange={(open) => {

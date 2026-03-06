@@ -9,7 +9,7 @@ export type CreateDdtInput = {
   to_warehouse_id?: number;
   supplier_id?: number;
   customer_id?: number;
-  site_id?: number;
+  project_id?: number;
   transport_date?: string;
   carrier_name?: string;
   tracking_number?: string;
@@ -37,7 +37,7 @@ export const ddtsApi = {
     type?: string;
     status?: string;
     warehouse_id?: number;
-    site_id?: number;
+    project_id?: number;
     supplier_id?: number;
     customer_id?: number;
     search?: string;
@@ -91,9 +91,9 @@ export const ddtsApi = {
     return response.data.data;
   },
 
-  // GET /api/v1/ddts/site/{siteId}/active
-  getActiveBySite: async (siteId: number) => {
-    const response = await apiClient.get(`/ddts/site/${siteId}/active`);
+  // GET /api/v1/ddts/project/{projectId}/active
+  getActiveByProject: async (projectId: number) => {
+    const response = await apiClient.get(`/ddts/project/${projectId}/active`);
     return response.data.data;
   },
 

@@ -111,7 +111,7 @@ describe('Quote Store', function () {
             'status' => 'draft',
         ]);
 
-        expect($response->json('data.code'))->toStartWith('Q-'.now()->format('Y'));
+        expect($response->json('data.code'))->toStartWith('PREV-'.now()->format('Y'));
     });
 
     it('can create quote with items', function () {
@@ -426,28 +426,28 @@ describe('Quote Reject', function () {
     });
 });
 
-describe('Quote Convert to Site', function () {
-    it('can convert approved quote to site', function () {
+describe('Quote Convert to Project', function () {
+    it('can convert approved quote to project', function () {
         $quote = Quote::factory()->approved()->create();
 
-        expect($quote->site_id)->toBeNull();
+        expect($quote->project_id)->toBeNull();
 
-        $response = $this->postJson("/api/v1/quotes/{$quote->id}/convert-to-site");
+        $response = $this->postJson("/api/v1/quotes/{$quote->id}/convert-to-project");
 
         $response->assertOk()
             ->assertJson([
                 'success' => true,
-                'message' => 'Preventivo convertito in cantiere con successo',
+                'message' => 'Preventivo convertito in progetto con successo',
             ])
             ->assertJsonStructure([
-                'data' => ['quote', 'site_id'],
+                'data' => ['quote', 'project_id'],
             ]);
 
         $quote->refresh();
-        expect($quote->site_id)->not->toBeNull();
+        expect($quote->project_id)->not->toBeNull();
 
-        assertDatabaseHas('sites', [
-            'id' => $quote->site_id,
+        assertDatabaseHas('projects', [
+            'id' => $quote->project_id,
             'quote_id' => $quote->id,
             'customer_id' => $quote->customer_id,
         ]);
@@ -456,16 +456,16 @@ describe('Quote Convert to Site', function () {
     it('cannot convert non-approved quote', function () {
         $quote = Quote::factory()->sent()->create();
 
-        $response = $this->postJson("/api/v1/quotes/{$quote->id}/convert-to-site");
+        $response = $this->postJson("/api/v1/quotes/{$quote->id}/convert-to-project");
 
         $response->assertForbidden();
     });
 
     it('cannot convert already converted quote', function () {
         $quote = Quote::factory()->approved()->create();
-        $quote->convertToSite();
+        $quote->convertToProject();
 
-        $response = $this->postJson("/api/v1/quotes/{$quote->id}/convert-to-site");
+        $response = $this->postJson("/api/v1/quotes/{$quote->id}/convert-to-project");
 
         $response->assertForbidden();
     });
@@ -476,7 +476,7 @@ describe('Quote Convert to Site', function () {
         Sanctum::actingAs($user);
 
         $quote = Quote::factory()->approved()->create();
-        $response = $this->postJson("/api/v1/quotes/{$quote->id}/convert-to-site");
+        $response = $this->postJson("/api/v1/quotes/{$quote->id}/convert-to-project");
 
         $response->assertForbidden();
     });

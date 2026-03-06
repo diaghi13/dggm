@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { siteWorkersApi } from '@/lib/api/site-workers';
+import { projectWorkersApi as siteWorkersApi } from '@/lib/api/project-workers';
 import { materialRequestsApi } from '@/lib/api/material-requests';
 import { useAuthStore } from '@/stores/auth-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,8 +35,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { SiteWorkerStatusBadge } from '@/app/(dashboard)/sites/_components/site-worker-status-badge';
-import { SiteRoleBadges } from '@/app/(dashboard)/sites/_components/site-role-badge';
+import { ProjectWorkerStatusBadge as SiteWorkerStatusBadge } from '@/app/(dashboard)/projects/_components/project-worker-status-badge';
+import { ProjectRoleBadges as SiteRoleBadges } from '@/app/(dashboard)/projects/_components/project-role-badge';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -51,7 +51,7 @@ import {
   Clock,
   Plus,
 } from 'lucide-react';
-import type { SiteWorker, MaterialRequest } from '@/lib/types';
+import type { ProjectWorker as SiteWorker, MaterialRequest } from '@/lib/types';
 import {MaterialRequestPriorityBadge} from "@/app/(dashboard)/products/_components/material-request-priority-badge";
 import {MaterialRequestStatusBadge} from "@/app/(dashboard)/products/_components/material-request-status-badge";
 import {MaterialRequestDialog} from "@/app/(dashboard)/products/_components/material-request-dialog";
@@ -71,12 +71,12 @@ export default function WorkerDashboardPage() {
   const [notes, setNotes] = useState('');
   const [materialRequestDialog, setMaterialRequestDialog] = useState<{
     open: boolean;
-    siteId: number | null;
-    siteName: string;
+    projectId: number | null;
+    projectName: string;
   }>({
     open: false,
-    siteId: null,
-    siteName: '',
+    projectId: null,
+    projectName: '',
   });
 
   // Debug: Log user data to see if worker is included
@@ -104,7 +104,7 @@ export default function WorkerDashboardPage() {
         return [];
       }
       console.log('✅ Fetching assignments for worker ID:', user.worker.id);
-      return siteWorkersApi.getSitesByWorker(user.worker.id);
+      return siteWorkersApi.getProjectsByWorker(user.worker.id);
     },
     enabled: !!user?.worker?.id,
   });
@@ -206,7 +206,7 @@ export default function WorkerDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeAssignments.length}</div>
-            <p className="text-xs text-slate-500 mt-1">Cantieri in corso</p>
+            <p className="text-xs text-slate-500 mt-1">Progetti in corso</p>
           </CardContent>
         </Card>
 
@@ -259,14 +259,14 @@ export default function WorkerDashboardPage() {
                   <Building2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>Nessuna assegnazione</p>
                   <p className="text-sm mt-1">
-                    Quando verrai assegnato a un cantiere lo vedrai qui
+                    Quando verrai assegnato a un progetto lo vedrai qui
                   </p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Cantiere</TableHead>
+                      <TableHead>Progetto</TableHead>
                       <TableHead>Ruoli</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Periodo</TableHead>
@@ -278,8 +278,8 @@ export default function WorkerDashboardPage() {
                       <TableRow key={assignment.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{assignment.site?.name}</div>
-                            <div className="text-sm text-slate-500">{assignment.site?.code}</div>
+                            <div className="font-medium">{assignment.project?.name}</div>
+                            <div className="text-sm text-slate-500">{assignment.project?.code}</div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -335,8 +335,8 @@ export default function WorkerDashboardPage() {
                               onClick={() =>
                                 setMaterialRequestDialog({
                                   open: true,
-                                  siteId: assignment.site_id,
-                                  siteName: assignment.site?.name || '',
+                                  projectId: assignment.project_id,
+                                  projectName: assignment.project?.name || '',
                                 })
                               }
                             >
@@ -368,7 +368,7 @@ export default function WorkerDashboardPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Seleziona Cantiere</DropdownMenuLabel>
+                    <DropdownMenuLabel>Seleziona Progetto</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {activeAssignments.map((assignment) => (
                       <DropdownMenuItem
@@ -376,15 +376,15 @@ export default function WorkerDashboardPage() {
                         onClick={() =>
                           setMaterialRequestDialog({
                             open: true,
-                            siteId: assignment.site_id,
-                            siteName: assignment.site?.name || '',
+                            projectId: assignment.project_id,
+                            projectName: assignment.project?.name || '',
                           })
                         }
                       >
                         <Building2 className="h-4 w-4 mr-2" />
                         <div>
-                          <div className="font-medium">{assignment.site?.name}</div>
-                          <div className="text-xs text-slate-500">{assignment.site?.code}</div>
+                          <div className="font-medium">{assignment.project?.name}</div>
+                          <div className="text-xs text-slate-500">{assignment.project?.code}</div>
                         </div>
                       </DropdownMenuItem>
                     ))}
@@ -402,14 +402,14 @@ export default function WorkerDashboardPage() {
                   <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>Nessuna richiesta materiale</p>
                   <p className="text-sm mt-1">
-                    Puoi richiedere materiale dai cantieri in cui sei attivo
+                    Puoi richiedere materiale dai progetti in cui sei attivo
                   </p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Cantiere</TableHead>
+                      <TableHead>Progetto</TableHead>
                       <TableHead>Materiale</TableHead>
                       <TableHead>Quantità</TableHead>
                       <TableHead>Priorità</TableHead>
@@ -421,7 +421,7 @@ export default function WorkerDashboardPage() {
                     {materialRequests.map((request) => (
                       <TableRow key={request.id}>
                         <TableCell>
-                          <div className="font-medium">{request.site?.name}</div>
+                          <div className="font-medium">{request.project?.name}</div>
                         </TableCell>
                         <TableCell>
                           <div>
@@ -476,7 +476,7 @@ export default function WorkerDashboardPage() {
               {respondDialog.action === 'accept' ? 'Accetta' : 'Rifiuta'} Assegnazione
             </DialogTitle>
             <DialogDescription>
-              Cantiere: <strong>{respondDialog.assignment?.site?.name}</strong>
+              Progetto: <strong>{respondDialog.assignment?.project?.name}</strong>
             </DialogDescription>
           </DialogHeader>
 
@@ -516,10 +516,10 @@ export default function WorkerDashboardPage() {
       </Dialog>
 
       {/* Material Request Dialog */}
-      {materialRequestDialog.siteId && (
+      {materialRequestDialog.projectId && (
         <MaterialRequestDialog
-          siteId={materialRequestDialog.siteId}
-          siteName={materialRequestDialog.siteName}
+          projectId={materialRequestDialog.projectId}
+          projectName={materialRequestDialog.projectName}
           open={materialRequestDialog.open}
           onOpenChange={(open) =>
             setMaterialRequestDialog({ ...materialRequestDialog, open })

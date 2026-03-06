@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enums\WorkerType;
-use App\Models\Site;
+use App\Models\Project;
 use App\Models\Worker;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -121,8 +121,8 @@ class WorkerService
             'termination_date' => $terminationDate ?? now(),
         ]);
 
-        // Deactivate all active site assignments
-        $worker->siteAssignments()
+        // Deactivate all active project assignments
+        $worker->projectAssignments()
             ->where('is_active', true)
             ->whereNull('assigned_to')
             ->update([
@@ -147,36 +147,36 @@ class WorkerService
     }
 
     /**
-     * Assign worker to site
+     * Assign worker to project
      */
-    public function assignToSite(Worker $worker, int $siteId, array $data): void
+    public function assignToProject(Worker $worker, int $projectId, array $data): void
     {
-        $site = Site::findOrFail($siteId);
+        Project::findOrFail($projectId);
 
         // Check if already assigned
-        $existing = $worker->siteAssignments()
-            ->where('site_id', $siteId)
+        $existing = $worker->projectAssignments()
+            ->where('project_id', $projectId)
             ->where('is_active', true)
             ->whereNull('assigned_to')
             ->first();
 
         if ($existing) {
-            throw new \Exception('Worker is already assigned to this site.');
+            throw new \Exception('Worker is already assigned to this project.');
         }
 
-        $worker->sites()->attach($siteId, array_merge($data, [
+        $worker->projects()->attach($projectId, array_merge($data, [
             'is_active' => true,
             'assigned_from' => $data['assigned_from'] ?? now(),
         ]));
     }
 
     /**
-     * Remove worker from site
+     * Remove worker from project
      */
-    public function removeFromSite(Worker $worker, int $siteId, ?\DateTime $endDate = null): void
+    public function removeFromProject(Worker $worker, int $projectId, ?\DateTime $endDate = null): void
     {
-        $assignment = $worker->siteAssignments()
-            ->where('site_id', $siteId)
+        $assignment = $worker->projectAssignments()
+            ->where('project_id', $projectId)
             ->where('is_active', true)
             ->firstOrFail();
 
@@ -201,18 +201,18 @@ class WorkerService
     }
 
     /**
-     * Get workers assigned to a specific site
+     * Get workers assigned to a specific project
      */
-    public function getWorkersBySite(int $siteId, bool $onlyActive = true): Collection
+    public function getWorkersByProject(int $projectId, bool $onlyActive = true): Collection
     {
         $query = Worker::query()
-            ->with(['user', 'contractorCompany', 'siteAssignments' => function ($q) use ($siteId) {
-                $q->where('site_id', $siteId);
+            ->with(['user', 'contractorCompany', 'projectAssignments' => function ($q) use ($projectId) {
+                $q->where('project_id', $projectId);
             }])
-            ->whereHas('sites', function ($q) use ($siteId, $onlyActive) {
-                $q->where('sites.id', $siteId);
+            ->whereHas('projects', function ($q) use ($projectId, $onlyActive) {
+                $q->where('projects.id', $projectId);
                 if ($onlyActive) {
-                    $q->where('site_workers.is_active', true);
+                    $q->where('project_workers.is_active', true);
                 }
             });
 
@@ -225,8 +225,8 @@ class WorkerService
     public function getStatistics(Worker $worker): array
     {
         return [
-            'total_sites_assigned' => $worker->sites()->count(),
-            'active_sites' => $worker->getActiveSites()->count(),
+            'total_projects_assigned' => $worker->projects()->count(),
+            'active_projects' => $worker->getActiveProjects()->count(),
             'total_hours_worked' => $worker->laborCosts()->sum('hours_worked') ?? 0,
             'total_cost_generated' => $worker->laborCosts()->sum('total_cost') ?? 0,
             'average_hourly_rate' => $this->calculateAverageHourlyRate($worker),
@@ -294,9 +294,9 @@ class WorkerService
             $query->whereJsonContains('specializations', $filters['specialization']);
         }
 
-        if (isset($filters['site_id'])) {
-            $query->whereHas('sites', function ($q) use ($filters) {
-                $q->where('sites.id', $filters['site_id']);
+        if (isset($filters['project_id'])) {
+            $query->whereHas('projects', function ($q) use ($filters) {
+                $q->where('projects.id', $filters['project_id']);
             });
         }
     }

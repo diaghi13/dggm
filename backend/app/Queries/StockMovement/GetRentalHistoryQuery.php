@@ -10,7 +10,7 @@ readonly class GetRentalHistoryQuery
 {
     public function __construct(
         private ?int $productId = null,
-        private ?int $siteId = null,
+        private ?int $projectId = null,
         private bool $activeOnly = false
     ) {}
 
@@ -21,14 +21,14 @@ readonly class GetRentalHistoryQuery
                 StockMovementType::RENTAL_OUT,
                 StockMovementType::RENTAL_RETURN,
             ])
-            ->with(['product', 'site', 'ddt']);
+            ->with(['product', 'project', 'ddt']);
 
         if ($this->productId) {
             $query->where('product_id', $this->productId);
         }
 
-        if ($this->siteId) {
-            $query->where('site_id', $this->siteId);
+        if ($this->projectId) {
+            $query->where('project_id', $this->projectId);
         }
 
         if ($this->activeOnly) {

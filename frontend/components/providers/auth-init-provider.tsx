@@ -5,44 +5,34 @@ import { useAuthStore } from "@/stores/auth-store";
 import { LoadingScreen } from "@/components/loading-screen";
 
 /**
- * Provider che inizializza lo stato auth al mount dell'app
- * Chiama refreshUser() per ottenere i dati aggiornati da auth/me
+ * Verifica il token una sola volta al mount dell'app.
+ * Non gestisce redirect — ogni pagina/layout decide cosa fare.
  */
 export function AuthInitProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, refreshUser, hasHydrated } = useAuthStore();
-  const hasInitialized = useRef(false);
-  const [isInitializing, setIsInitializing] = useState(false);
+  const { refreshUser, hasHydrated, setAuthChecked } = useAuthStore();
+  const done = useRef(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Aspetta che Zustand abbia completato l'hydration dal localStorage
-    if (!hasHydrated) {
-      return;
-    }
+    if (!hasHydrated) return;
+    if (done.current) return;
+    done.current = true;
 
-    // Evita chiamate duplicate
-    if (hasInitialized.current) {
-      return;
-    }
+    // Verifica sempre con il backend: il vero stato auth è nel cookie httpOnly,
+    // non nel localStorage. Se il token è scaduto/invalido (es. dopo DB reset)
+    // refreshUser() chiama clearAuth() + logout per pulire il cookie httpOnly.
+    refreshUser()
+      .catch(() => { /* clearAuth() già chiamato dentro refreshUser() */ })
+      .finally(() => {
+        setAuthChecked(); // segnala a DashboardLayout che la verifica è completa
+        setChecking(false);
+      });
 
-    // Se l'utente è autenticato, aggiorna i dati da auth/me
-    if (isAuthenticated) {
-      hasInitialized.current = true;
-      setIsInitializing(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasHydrated]);
 
-      refreshUser()
-        .catch(() => {
-          // Se fallisce, clearAuth è già stato chiamato in refreshUser()
-          // Il DashboardLayout vedrà isAuthenticated: false e reindirizzerà
-        })
-        .finally(() => {
-          setIsInitializing(false);
-        });
-    }
-  }, [isAuthenticated, refreshUser, hasHydrated]);
-
-  // Mostra loading mentre verifica l'autenticazione
-  if (isInitializing) {
-    return <LoadingScreen message="Verifica autenticazione..." />;
+  if (checking) {
+    return <LoadingScreen message="Caricamento..." />;
   }
 
   return <>{children}</>;

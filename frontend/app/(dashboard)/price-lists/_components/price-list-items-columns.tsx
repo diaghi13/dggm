@@ -12,6 +12,7 @@ export const createPriceListItemsColumns = (
   onDelete: (item: PriceListItem) => void,
   onRecalculate: (item: PriceListItem) => void,
   appliesTo: "sale" | "rental" | "both",
+  showAdvancedRentalColumns: boolean = false,
 ): ColumnDef<PriceListItem>[] => {
   const columns: ColumnDef<PriceListItem>[] = [
     {
@@ -62,7 +63,7 @@ export const createPriceListItemsColumns = (
     },
   ];
 
-  // Aggiungi colonne prezzi vendita se applicabile
+  // Colonne prezzi vendita
   if (appliesTo === "sale" || appliesTo === "both") {
     columns.push({
       accessorKey: "final_sale_price",
@@ -85,17 +86,51 @@ export const createPriceListItemsColumns = (
     });
   }
 
-  // Aggiungi colonne prezzi noleggio se applicabile
+  // Colonne noleggio base (sempre visibili se applies_to include rental)
   if (appliesTo === "rental" || appliesTo === "both") {
+    // Colonne avanzate (opzionali): orario e mezza giornata — prima del giornaliero
+    if (showAdvancedRentalColumns) {
+      columns.push(
+        {
+          accessorKey: "final_rental_hourly",
+          header: "Orario",
+          cell: ({ row }) => {
+            const price =
+              row.original.final_rental_hourly || row.original.rental_hourly;
+            return (
+              <div className="text-right text-slate-700 dark:text-slate-300">
+                {price ? `€ ${price.toFixed(2)}` : "-"}
+              </div>
+            );
+          },
+        },
+        {
+          accessorKey: "final_rental_half_day",
+          header: "½ Giorno",
+          cell: ({ row }) => {
+            const price =
+              row.original.final_rental_half_day ||
+              row.original.rental_half_day;
+            return (
+              <div className="text-right text-slate-700 dark:text-slate-300">
+                {price ? `€ ${price.toFixed(2)}` : "-"}
+              </div>
+            );
+          },
+        },
+      );
+    }
+
+    // Colonne base sempre visibili: giornaliero e settimanale
     columns.push(
       {
         accessorKey: "final_rental_daily",
-        header: "Noleggio Giorn.",
+        header: "Giornaliero",
         cell: ({ row }) => {
           const price =
             row.original.final_rental_daily || row.original.rental_daily;
           return (
-            <div className="text-right">
+            <div className="text-right font-medium">
               {price ? `€ ${price.toFixed(2)}` : "-"}
             </div>
           );
@@ -103,25 +138,12 @@ export const createPriceListItemsColumns = (
       },
       {
         accessorKey: "final_rental_weekly",
-        header: "Noleggio Sett.",
+        header: "Settimanale",
         cell: ({ row }) => {
           const price =
             row.original.final_rental_weekly || row.original.rental_weekly;
           return (
-            <div className="text-right">
-              {price ? `€ ${price.toFixed(2)}` : "-"}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "final_rental_monthly",
-        header: "Noleggio Mens.",
-        cell: ({ row }) => {
-          const price =
-            row.original.final_rental_monthly || row.original.rental_monthly;
-          return (
-            <div className="text-right">
+            <div className="text-right text-slate-700 dark:text-slate-300">
               {price ? `€ ${price.toFixed(2)}` : "-"}
             </div>
           );
@@ -129,19 +151,50 @@ export const createPriceListItemsColumns = (
       },
     );
 
-    // Badge per prezzi noleggio manuali
-    if (appliesTo === "rental") {
-      columns.push({
-        id: "rental_type",
-        header: "Tipo",
-        cell: ({ row }) =>
-          row.original.is_manual_rental ? (
-            <Badge variant="outline">Manuale</Badge>
-          ) : (
-            <Badge variant="secondary">Auto</Badge>
-          ),
-      });
+    // Colonne avanzate (opzionali): mensile e stagionale — dopo il settimanale
+    if (showAdvancedRentalColumns) {
+      columns.push(
+        {
+          accessorKey: "final_rental_monthly",
+          header: "Mensile",
+          cell: ({ row }) => {
+            const price =
+              row.original.final_rental_monthly || row.original.rental_monthly;
+            return (
+              <div className="text-right text-slate-700 dark:text-slate-300">
+                {price ? `€ ${price.toFixed(2)}` : "-"}
+              </div>
+            );
+          },
+        },
+        {
+          accessorKey: "final_rental_seasonal",
+          header: "Stagionale",
+          cell: ({ row }) => {
+            const price =
+              row.original.final_rental_seasonal ||
+              row.original.rental_seasonal;
+            return (
+              <div className="text-right text-slate-700 dark:text-slate-300">
+                {price ? `€ ${price.toFixed(2)}` : "-"}
+              </div>
+            );
+          },
+        },
+      );
     }
+
+    // Badge Manuale/Auto per rental — visibile sia per "rental" che per "both"
+    columns.push({
+      id: "rental_type",
+      header: "Tipo Noleggio",
+      cell: ({ row }) =>
+        row.original.is_manual_rental ? (
+          <Badge variant="outline">Manuale</Badge>
+        ) : (
+          <Badge variant="secondary">Auto</Badge>
+        ),
+    });
   }
 
   // Colonna stato

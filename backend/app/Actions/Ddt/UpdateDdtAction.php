@@ -39,7 +39,7 @@ class UpdateDdtAction
             // Dispatch event
             DdtUpdated::dispatch($ddt, $changes, auth()->id());
 
-            return $ddt->fresh(['items.product', 'fromWarehouse', 'toWarehouse', 'supplier', 'customer', 'site']);
+            return $ddt->fresh(['items.product', 'fromWarehouse', 'toWarehouse', 'supplier', 'customer', 'project']);
         });
     }
 }

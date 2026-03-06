@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Data\PriceListItemData;
+use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
@@ -86,9 +87,12 @@ class PriceListItemController extends Controller
             'product_id' => 'required|exists:products,id',
             'sale_price' => 'required|numeric|min:0',
             'is_manual_price' => 'nullable|boolean',
+            'rental_hourly' => 'nullable|numeric|min:0',
+            'rental_half_day' => 'nullable|numeric|min:0',
             'rental_daily' => 'nullable|numeric|min:0',
             'rental_weekly' => 'nullable|numeric|min:0',
             'rental_monthly' => 'nullable|numeric|min:0',
+            'rental_seasonal' => 'nullable|numeric|min:0',
             'is_manual_rental' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'notes' => 'nullable|string',
@@ -110,6 +114,18 @@ class PriceListItemController extends Controller
         $validated['is_manual_price'] = $validated['is_manual_price'] ?? false;
         $validated['is_manual_rental'] = $validated['is_manual_rental'] ?? false;
         $validated['is_active'] = $validated['is_active'] ?? true;
+
+        // Services are not rentable — force all rental fields to null
+        $product = Product::findOrFail($validated['product_id']);
+        if ($product->product_type === ProductType::SERVICE) {
+            $validated['rental_hourly'] = null;
+            $validated['rental_half_day'] = null;
+            $validated['rental_daily'] = null;
+            $validated['rental_weekly'] = null;
+            $validated['rental_monthly'] = null;
+            $validated['rental_seasonal'] = null;
+            $validated['is_manual_rental'] = false;
+        }
 
         $item = PriceListItem::create([
             'price_list_id' => $priceList->id,
@@ -141,15 +157,54 @@ class PriceListItemController extends Controller
         $validated = $request->validate([
             'sale_price' => 'required|numeric|min:0',
             'is_manual_price' => 'nullable|boolean',
+            'rental_hourly' => 'nullable|numeric|min:0',
+            'rental_half_day' => 'nullable|numeric|min:0',
             'rental_daily' => 'nullable|numeric|min:0',
             'rental_weekly' => 'nullable|numeric|min:0',
             'rental_monthly' => 'nullable|numeric|min:0',
+            'rental_seasonal' => 'nullable|numeric|min:0',
             'is_manual_rental' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'notes' => 'nullable|string',
         ]);
 
+        // Set defaults for NOT NULL boolean fields to prevent constraint violations
+        $validated['is_manual_price'] = $validated['is_manual_price'] ?? $item->is_manual_price;
+        $validated['is_manual_rental'] = $validated['is_manual_rental'] ?? $item->is_manual_rental;
+        $validated['is_active'] = $validated['is_active'] ?? $item->is_active;
+
+        // Capture is_manual_rental before update (may change in $validated)
+        $wasManualRental = (bool) $validated['is_manual_rental'];
+
         $item->update($validated);
+
+        // Force rental fields to null for SERVICE products regardless of manual flag
+        $item->loadMissing('product');
+        if ($item->product->product_type === ProductType::SERVICE) {
+            $item->update([
+                'rental_hourly' => null,
+                'rental_half_day' => null,
+                'rental_daily' => null,
+                'rental_weekly' => null,
+                'rental_monthly' => null,
+                'rental_seasonal' => null,
+            ]);
+        } elseif (! $wasManualRental && isset($validated['sale_price'])) {
+            // Ricalcola rental se non manuale e sale_price è cambiato
+            $item->loadMissing('priceList');
+            $itemData = $item->priceList->calculation_mode->value === 'automatic'
+                ? $this->pricingService->generateAutomaticPriceListItem($item->product, $item->priceList)
+                : $this->pricingService->generateManualPriceListItem($item->product);
+
+            $item->update([
+                'rental_hourly' => $itemData['rental_hourly'],
+                'rental_half_day' => $itemData['rental_half_day'],
+                'rental_daily' => $itemData['rental_daily'],
+                'rental_weekly' => $itemData['rental_weekly'],
+                'rental_monthly' => $itemData['rental_monthly'],
+                'rental_seasonal' => $itemData['rental_seasonal'],
+            ]);
+        }
 
         return response()->json([
             'success' => true,

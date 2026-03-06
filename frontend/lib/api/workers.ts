@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ApiResponse, PaginatedResponse, Worker, WorkerFormData, WorkerRate, SiteWorkerAssignment } from '../types';
+import type { ApiResponse, PaginatedResponse, Worker, WorkerFormData, WorkerRate } from '../types';
 
 export const workersApi = {
   getAll: async (params?: {
@@ -53,7 +53,7 @@ export const workersApi = {
 
   getAvailable: async (params?: {
     date?: string;
-    site_id?: number;
+    project_id?: number;
   }): Promise<Worker[]> => {
     const response = await apiClient.get('/workers/available/list', { params });
     return response.data.data;
@@ -110,21 +110,21 @@ export const workersApi = {
     hours: number;
     is_overtime?: boolean;
     is_holiday?: boolean;
-    site_id?: number;
+    project_id?: number;
     date?: string;
   }): Promise<any> => {
     const response = await apiClient.post(`/workers/${workerId}/rates/calculate`, params);
     return response.data.data;
   },
 
-  // Sites
-  getSites: async (workerId: number): Promise<any[]> => {
-    const response = await apiClient.get(`/workers/${workerId}/sites`);
+  // Projects
+  getProjects: async (workerId: number): Promise<any[]> => {
+    const response = await apiClient.get(`/workers/${workerId}/projects`);
     return response.data.data;
   },
 
-  assignToSite: async (workerId: number, data: {
-    site_id: number;
+  assignToProject: async (workerId: number, data: {
+    project_id: number;
     site_role?: string;
     assigned_from: string;
     assigned_to?: string;
@@ -132,17 +132,17 @@ export const workersApi = {
     estimated_hours?: number;
     notes?: string;
   }): Promise<ApiResponse<null>> => {
-    const response = await apiClient.post(`/workers/${workerId}/sites`, data);
+    const response = await apiClient.post(`/workers/${workerId}/projects`, data);
     return response.data;
   },
 
-  removeFromSite: async (workerId: number, siteId: number): Promise<ApiResponse<null>> => {
-    const response = await apiClient.delete(`/workers/${workerId}/sites/${siteId}`);
+  removeFromProject: async (workerId: number, projectId: number): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete(`/workers/${workerId}/projects/${projectId}`);
     return response.data;
   },
 
-  getSiteStatistics: async (workerId: number, siteId: number): Promise<any> => {
-    const response = await apiClient.get(`/workers/${workerId}/sites/${siteId}/statistics`);
+  getProjectStatistics: async (workerId: number, projectId: number): Promise<any> => {
+    const response = await apiClient.get(`/workers/${workerId}/projects/${projectId}/statistics`);
     return response.data.data;
   },
 };

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { siteMaterialsApi } from '@/lib/api/site-materials';
+import { projectMaterialsApi } from '@/lib/api/project-materials';
 import {
   Dialog,
   DialogContent,
@@ -19,24 +19,25 @@ import { toast } from 'sonner';
 import { Loader2, Package } from 'lucide-react';
 
 interface LogMaterialUsageDialogProps {
-  siteId: number;
+  projectId: number;
   material: {
     id: number;
-    material: {
-      code: string;
-      name: string;
-      unit: string;
-    };
+    product?: {
+      code?: string | null;
+      name?: string | null;
+      unit?: string | null;
+    } | null;
     planned_quantity: number;
     used_quantity: number;
     remaining_quantity?: number;
+    planned_unit_cost?: number | null;
   } | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export function LogMaterialUsageDialog({
-  siteId,
+  projectId,
   material,
   open,
   onOpenChange,
@@ -49,9 +50,9 @@ export function LogMaterialUsageDialog({
   });
 
   const logUsageMutation = useMutation({
-    mutationFn: (data: any) => siteMaterialsApi.logUsage(siteId, material!.id, data),
+    mutationFn: (data: any) => projectMaterialsApi.logUsage(projectId, material!.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site-materials', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['project-materials', projectId] });
       toast.success('Utilizzo registrato', {
         description: 'L\'utilizzo del materiale è stato registrato con successo',
       });
@@ -86,7 +87,7 @@ export function LogMaterialUsageDialog({
 
     if (quantityUsed > remaining) {
       toast.error('Quantità eccessiva', {
-        description: `La quantità utilizzata supera quella rimanente (${remaining.toFixed(2)} ${material!.material.unit})`,
+        description: `La quantità utilizzata supera quella rimanente (${remaining.toFixed(2)} ${material!.product?.unit ?? ''})`,
       });
       return;
     }
@@ -119,20 +120,20 @@ export function LogMaterialUsageDialog({
               <div className="flex items-start gap-3">
                 <Package className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div className="flex-1">
-                  <div className="font-medium text-sm">{material.material.name}</div>
-                  <div className="text-xs text-muted-foreground">{material.material.code}</div>
+                  <div className="font-medium text-sm">{material.product?.name}</div>
+                  <div className="text-xs text-muted-foreground">{material.product?.code}</div>
                   <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                     <div>
                       <div className="text-muted-foreground">Pianificato</div>
-                      <div className="font-medium">{material.planned_quantity} {material.material.unit}</div>
+                      <div className="font-medium">{material.planned_quantity} {material.product?.unit}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Utilizzato</div>
-                      <div className="font-medium">{material.used_quantity} {material.material.unit}</div>
+                      <div className="font-medium">{material.used_quantity} {material.product?.unit}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Rimanente</div>
-                      <div className="font-medium text-blue-600">{remaining.toFixed(2)} {material.material.unit}</div>
+                      <div className="font-medium text-blue-600">{remaining.toFixed(2)} {material.product?.unit}</div>
                     </div>
                   </div>
                 </div>
@@ -158,11 +159,11 @@ export function LogMaterialUsageDialog({
                   className="flex-1"
                 />
                 <div className="flex items-center px-3 border rounded-md bg-muted text-sm text-muted-foreground">
-                  {material.material.unit}
+                  {material.product?.unit}
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Max disponibile: {remaining.toFixed(2)} {material.material.unit}
+                Max disponibile: {remaining.toFixed(2)} {material.product?.unit}
               </p>
             </div>
 
@@ -182,6 +183,9 @@ export function LogMaterialUsageDialog({
               />
               <p className="text-xs text-muted-foreground">
                 Lascia vuoto per usare il costo pianificato
+                {material.planned_unit_cost != null
+                  ? ` (€${material.planned_unit_cost.toFixed(2)})`
+                  : ' (—)'}
               </p>
             </div>
 

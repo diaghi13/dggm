@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\QuoteItemType;
+use App\Enums\QuoteType;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,8 @@ class Quote extends Model implements HasMedia
 
     protected $fillable = [
         'code',
+        'quote_type',
+        'event_days',
         'title',
         'customer_id',
         'project_manager_id',
@@ -43,7 +46,7 @@ class Quote extends Model implements HasMedia
         'payment_method',
         'payment_terms',
         'template_id',
-        'site_id',
+        'project_id',
         'notes',
         'terms_and_conditions',
         'footer_text',
@@ -70,6 +73,8 @@ class Quote extends Model implements HasMedia
     protected function casts(): array
     {
         return [
+            'quote_type' => QuoteType::class,
+            'event_days' => 'integer',
             'issue_date' => 'date:Y-m-d',
             'expiry_date' => 'date:Y-m-d',
             'valid_until' => 'date:Y-m-d',
@@ -95,6 +100,25 @@ class Quote extends Model implements HasMedia
         ];
     }
 
+    /**
+     * Giorni fatturabili effettivi: usa event_days se impostato,
+     * altrimenti calcola la differenza tra work_start_date e work_end_date.
+     */
+    public function getEffectiveEventDaysAttribute(): int
+    {
+        if ($this->event_days !== null) {
+            return $this->event_days;
+        }
+
+        if ($this->work_start_date && $this->work_end_date) {
+            $diff = (int) $this->work_start_date->diffInDays($this->work_end_date);
+
+            return max(1, $diff);
+        }
+
+        return 1;
+    }
+
     // Relationships
     public function customer(): BelongsTo
     {
@@ -116,9 +140,9 @@ class Quote extends Model implements HasMedia
         return $this->belongsTo(QuoteTemplate::class, 'template_id');
     }
 
-    public function site(): BelongsTo
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(Site::class);
+        return $this->belongsTo(Project::class);
     }
 
     public function priceList(): BelongsTo
@@ -167,7 +191,7 @@ class Quote extends Model implements HasMedia
     // Methods
     public function calculateTotals(): void
     {
-        // First, update parent items with totals from their children
+        // Load parent items with children in one query
         $parentItems = $this->items()->whereNull('parent_id')->with('children')->get();
 
         foreach ($parentItems as $parentItem) {
@@ -182,16 +206,28 @@ class Quote extends Model implements HasMedia
             }
         }
 
-        // Now calculate quote totals from parent items
-        // Reload items to get updated totals
-        $items = $this->items()->whereNull('parent_id')->get();
+        // Reuse already-loaded collection (avoid second DB query)
+        $items = $parentItems;
 
         $this->subtotal = $items->sum('subtotal');
-        $this->discount_amount = ($this->subtotal * $this->discount_percentage) / 100;
+
+        // Use discount_amount as source of truth (set by frontend from user input).
+        // Rederive discount_percentage from it to avoid precision loss caused by
+        // the percentage round-trip (e.g. 4000 / 78000 → 5.13% → 4001.40).
+        if ($this->subtotal > 0 && $this->discount_amount > 0) {
+            $this->discount_percentage = round(($this->discount_amount / $this->subtotal) * 100, 4);
+        } else {
+            // Fallback: derive amount from percentage (e.g. when only % was entered)
+            $this->discount_amount = round(($this->subtotal * $this->discount_percentage) / 100, 2);
+        }
+
         $totalImponibile = $this->subtotal - $this->discount_amount;
 
-        // IVA sommata dalle righe (già calcolata con sconto applicato)
-        $this->tax_amount = $items->sum('vat_amount');
+        // IVA: somma vat_amount delle righe scalata per lo sconto documento
+        // (ogni riga calcola IVA sul proprio totale; lo sconto documento riduce proporzionalmente)
+        $rawVat = $items->sum('vat_amount');
+        $discountFactor = $this->subtotal > 0 ? ($totalImponibile / $this->subtotal) : 1;
+        $this->tax_amount = round($rawVat * $discountFactor, 2);
         $this->total_amount = $totalImponibile + $this->tax_amount;
 
         // Calcola acconto se percentuale presente
@@ -233,14 +269,14 @@ class Quote extends Model implements HasMedia
         ]);
     }
 
-    public function convertToSite(): ?Site
+    public function convertToProject(): ?Project
     {
         if ($this->status !== 'approved') {
             return null;
         }
 
-        $site = Site::create([
-            'code' => app(\App\Services\CodeGeneratorService::class)->generate('site'),
+        $project = Project::create([
+            'code' => app(\App\Services\CodeGeneratorService::class)->generate('project'),
             'name' => $this->title,
             'customer_id' => $this->customer_id,
             'project_manager_id' => $this->project_manager_id,
@@ -255,51 +291,45 @@ class Quote extends Model implements HasMedia
             'is_active' => true,
         ]);
 
-        // Create site materials from quote items (type: material)
-        $this->createSiteMaterials($site);
+        $this->createProjectProducts($project);
 
-        // Save site_id reference instead of changing status to 'converted'
-        $this->update(['site_id' => $site->id]);
+        $this->update([
+            'project_id' => $project->id,
+            'status' => 'converted',
+        ]);
 
-        return $site;
+        return $project;
     }
 
-    /**
-     * Create site materials from quote items
-     */
-    protected function createSiteMaterials(Site $site): void
+    protected function createProjectProducts(Project $project): void
     {
-        // Load quote items - include items, materials, and labor (exclude sections)
-        $materialItems = $this->items()
-            ->whereIn('type', [
-                QuoteItemType::Item->value,
-                QuoteItemType::Material->value,
-                QuoteItemType::Labor->value,
-            ])
-            ->where(function ($query) {
-                $query->whereNotNull('material_id')
-                    ->orWhereNotNull('quantity'); // Include items with quantity even without material_id
-            })
+        $productItems = $this->items()
+            ->whereIn('type', [QuoteItemType::Item->value])
+            ->whereNotNull('product_id')
+            ->where('quantity', '>', 0)
             ->get();
 
-        foreach ($materialItems as $item) {
-            // Skip if no quantity defined
-            if (! $item->quantity || $item->quantity <= 0) {
-                continue;
+        foreach ($productItems as $item) {
+
+            $unitPrice = (float) ($item->unit_price ?? 0);
+
+            // If quote uses VAT-inclusive prices, strip VAT to get the net cost
+            if ($this->vat_included_in_prices && $item->vat_rate > 0) {
+                $unitPrice = $unitPrice / (1 + ($item->vat_rate / 100));
             }
 
-            \App\Models\SiteMaterial::create([
-                'site_id' => $site->id,
-                'material_id' => $item->material_id, // Can be null for custom items
+            ProjectMaterial::create([
+                'project_id' => $project->id,
+                'product_id' => $item->product_id,
                 'quote_item_id' => $item->id,
-                'is_extra' => false, // From quote, not extra
+                'is_extra' => false,
                 'planned_quantity' => $item->quantity,
                 'allocated_quantity' => 0,
                 'delivered_quantity' => 0,
                 'used_quantity' => 0,
                 'returned_quantity' => 0,
-                'planned_unit_cost' => $item->unit_price ?? 0,
-                'actual_unit_cost' => $item->unit_price ?? 0,
+                'planned_unit_cost' => round($unitPrice, 4),
+                'actual_unit_cost' => round($unitPrice, 4),
                 'status' => 'planned',
                 'notes' => $item->notes,
             ]);

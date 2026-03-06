@@ -3,12 +3,19 @@
 namespace App\Actions\Product;
 
 use App\Data\ProductData;
+use App\Enums\ProductType;
+use App\Jobs\RecalculatePriceListItemsForProductJob;
 use App\Models\Product;
+use App\Services\ProductPricingService;
 use Illuminate\Support\Facades\DB;
 use Spatie\LaravelData\Lazy;
 
 class CreateProductAction
 {
+    public function __construct(
+        private readonly ProductPricingService $pricingService
+    ) {}
+
     /**
      * Create a new product with optional relations
      */
@@ -45,6 +52,26 @@ class CreateProductAction
             // Attach relations if provided
             if (! empty($relations)) {
                 $this->attachRelations($product, $relations);
+            }
+
+            // For composite products created with components: derive standard_cost and
+            // estimated_base_day from the components synchronously before returning.
+            if ($product->product_type === ProductType::COMPOSITE && ! empty($relations)) {
+                $product->refresh();
+                $prices = $this->pricingService->calculateCompositePrices($product);
+
+                if ($prices['components_count'] > 0) {
+                    $updates = ['standard_cost' => $prices['standard_cost']];
+
+                    if (! $product->rental_price_estimated && $prices['estimated_base_day'] > 0) {
+                        $updates['estimated_base_day'] = $prices['estimated_base_day'];
+                    }
+
+                    $product->update($updates);
+
+                    // Dispatch queued job to also update price list items
+                    RecalculatePriceListItemsForProductJob::dispatch($product->id);
+                }
             }
 
             // Reload with relationships

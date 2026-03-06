@@ -32,6 +32,8 @@ import {
   Wallet,
   Receipt,
   Layout,
+  TrendingDown,
+  Zap,
 } from "lucide-react";
 
 export default function SettingsIndexPage() {
@@ -178,15 +180,55 @@ export default function SettingsIndexPage() {
       ],
     },
     {
-      title: "Ruoli Cantiere",
+      title: "Ruoli Progetto",
       description:
-        "Gestisci i ruoli che i lavoratori possono avere nei cantieri",
+        "Gestisci i ruoli che i lavoratori possono avere nei progetti",
       icon: Briefcase,
       href: "/settings/site-roles",
       color: "text-green-600 dark:text-green-400",
       bgColor: "bg-green-100 dark:bg-green-900/20",
       prefix: null, // Non ha settings
-      keywords: ["ruoli", "cantiere", "site", "roles"],
+      keywords: ["ruoli", "progetto", "project", "roles"],
+    },
+    {
+      title: "Motore di Noleggio",
+      description:
+        "Breakeven, margine, curva temporale e moltiplicatori del calcolo automatico tariffe",
+      icon: Zap,
+      href: "/settings/rental-engine",
+      color: "text-amber-600 dark:text-amber-400",
+      bgColor: "bg-amber-100 dark:bg-amber-900/20",
+      prefix: "rental",
+      keywords: [
+        "noleggio",
+        "rental",
+        "breakeven",
+        "break_even",
+        "margine",
+        "formula",
+        "tariffa",
+        "giornaliero",
+        "moltiplicatore",
+      ],
+    },
+    {
+      title: "Profili Noleggio",
+      description:
+        "Configura i parametri della curva di prezzo per settore",
+      icon: TrendingDown,
+      href: "/settings/rental-profiles",
+      color: "text-blue-600 dark:text-blue-400",
+      bgColor: "bg-blue-100 dark:bg-blue-900/20",
+      prefix: null, // Non ha settings
+      keywords: [
+        "noleggio",
+        "rental",
+        "profilo",
+        "curva",
+        "prezzo",
+        "esponente",
+        "settore",
+      ],
     },
     {
       title: "Utenti & Permessi",
@@ -240,7 +282,9 @@ export default function SettingsIndexPage() {
           "Prezzi & Noleggio",
           "Preventivi",
           "Risorse Finanziarie",
-          "Ruoli Cantiere",
+          "Ruoli Progetto",
+          "Motore di Noleggio",
+          "Profili Noleggio",
         ].includes(s.title),
       ),
     },

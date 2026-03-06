@@ -5,6 +5,7 @@ namespace App\Actions\Quote;
 use App\Data\QuoteData;
 use App\Events\QuoteUpdated;
 use App\Models\Quote;
+use App\Models\QuoteItem;
 use Illuminate\Support\Facades\DB;
 
 class UpdateQuoteAction
@@ -12,7 +13,7 @@ class UpdateQuoteAction
     public function execute(Quote $quote, QuoteData $data): Quote
     {
         return DB::transaction(function () use ($quote, $data) {
-            $quote->update($data->except('id', 'items', 'code', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'financialResource', 'warrantyType', 'site', 'full_address')->toArray());
+            $quote->update($data->except('id', 'items', 'code', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'financialResource', 'warrantyType', 'project', 'full_address')->toArray());
 
             // Update items if provided (with hierarchy support)
             if ($data->items instanceof \Spatie\LaravelData\DataCollection) {
@@ -22,9 +23,12 @@ class UpdateQuoteAction
                 // Delete removed items
                 $quote->items()->whereNotIn('id', $allItemIds)->delete();
 
+                // Pre-load all existing items into memory to avoid N+1 (one SELECT per item)
+                $existingItemsMap = $quote->items()->get()->keyBy('id');
+
                 // Update/create items with hierarchy
                 foreach ($data->items as $itemData) {
-                    $this->updateOrCreateItemWithChildren($quote, $itemData);
+                    $this->updateOrCreateItemWithChildren($quote, $itemData, null, $existingItemsMap);
                 }
             }
 
@@ -61,9 +65,16 @@ class UpdateQuoteAction
     }
 
     /**
-     * Recursively update or create item with children
+     * Recursively update or create item with children.
+     *
+     * Uses $existingItemsMap (keyed by id) to avoid one SELECT per item.
+     * Uses saveQuietly() to skip model events (updating/saved) which would otherwise
+     * trigger calculateTotals() on the quote for every single item — 145× with a large quote.
+     * calculateTotal() (per-item totals) is called manually with the quote relation pre-set
+     * to avoid the lazy load in the `updating` event.
+     * The quote's calculateTotals() is called once explicitly at the end of execute().
      */
-    private function updateOrCreateItemWithChildren(Quote $quote, $itemData, ?int $parentId = null): void
+    private function updateOrCreateItemWithChildren(Quote $quote, $itemData, ?int $parentId, \Illuminate\Support\Collection $existingItemsMap): void
     {
         $itemArray = $itemData->except('id', 'product', 'priceListItem', 'parent', 'children')->toArray();
 
@@ -71,25 +82,29 @@ class UpdateQuoteAction
         // This fixes the bug where items were moved out of sections incorrectly
         $itemArray['parent_id'] = $parentId ?? ($itemArray['parent_id'] ?? null);
 
-        // Check if ID is valid and exists in database
-        $existingItem = null;
-        if (! ($itemData->id instanceof \Spatie\LaravelData\Optional) && $itemData->id) {
-            $existingItem = $quote->items()->find($itemData->id);
-        }
+        $itemId = (! ($itemData->id instanceof \Spatie\LaravelData\Optional)) ? $itemData->id : null;
+        $existingItem = $itemId ? $existingItemsMap->get($itemId) : null;
 
         if ($existingItem) {
-            // Update existing item
-            $existingItem->update($itemArray);
+            $existingItem->fill($itemArray);
+            // Pre-set relation to avoid lazy load triggered by calculateTotal()
+            $existingItem->setRelation('quote', $quote);
+            $existingItem->calculateTotal();
+            $existingItem->saveQuietly(); // skips updating/saved events → no cascading calculateTotals()
             $item = $existingItem;
         } else {
-            // Create new item (either no ID or ID doesn't exist - temporary ID from frontend)
-            $item = $quote->items()->create($itemArray);
+            $newItem = new QuoteItem(array_merge(['quote_id' => $quote->id], $itemArray));
+            $newItem->discount_percentage = $newItem->discount_percentage ?? 0;
+            $newItem->setRelation('quote', $quote);
+            $newItem->calculateTotal();
+            $newItem->saveQuietly();
+            $item = $newItem;
         }
 
         // Update/create children recursively
         if (isset($itemData->children) && $itemData->children instanceof \Spatie\LaravelData\DataCollection) {
             foreach ($itemData->children as $childData) {
-                $this->updateOrCreateItemWithChildren($quote, $childData, $item->id);
+                $this->updateOrCreateItemWithChildren($quote, $childData, $item->id, $existingItemsMap);
             }
         }
     }

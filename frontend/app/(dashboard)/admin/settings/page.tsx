@@ -533,6 +533,30 @@ export default function AdminSettingsPage() {
     bulkUpdateMutation.mutate(settingsToUpdate);
   };
 
+  const PRICING_CUSTOM_KEYS = [
+    "pricing.auto_recalculate_price_list_on_purchase",
+    "pricing.purchase_price_strategy",
+  ] as const;
+
+  const handleSavePricingTab = () => {
+    const settingsToUpdate = Object.entries(changedSettings)
+      .filter(([key]) => {
+        if (
+          (PRICING_CUSTOM_KEYS as readonly string[]).includes(key)
+        )
+          return true;
+        const setting = allSettings.find((s: Setting) => s.key === key);
+        return setting?.group === "pricing";
+      })
+      .map(([key, value]) => ({ key, value }));
+
+    if (settingsToUpdate.length === 0) {
+      toast.info("Nessuna modifica da salvare");
+      return;
+    }
+    bulkUpdateMutation.mutate(settingsToUpdate);
+  };
+
   const getSettingsByGroup = (group: string): Setting[] => {
     return allSettings.filter((s: Setting) => s.group === group);
   };
@@ -2698,6 +2722,153 @@ export default function AdminSettingsPage() {
               </div>
             </TabsContent>
 
+            {/* Pricing Tab - Custom section for purchase & price list settings */}
+            <TabsContent value="pricing" className="space-y-6 mt-0">
+              {/* 1. Aggiornamento listini all'acquisto */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <DollarSign className="h-5 w-5" />
+                    Prezzi & Acquisti
+                  </CardTitle>
+                  <CardDescription>
+                    Gestisci come i prezzi dei prodotti vengono aggiornati
+                    quando si registrano carichi di magazzino
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Toggle: auto_recalculate_price_list_on_purchase */}
+                  <div className="flex items-start gap-3 p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/30">
+                    <Switch
+                      id="pricing.auto_recalculate_price_list_on_purchase"
+                      checked={
+                        getSettingValue(
+                          "pricing.auto_recalculate_price_list_on_purchase",
+                        ) === "true" ||
+                        getSettingValue(
+                          "pricing.auto_recalculate_price_list_on_purchase",
+                        ) === "1"
+                      }
+                      onCheckedChange={(checked) =>
+                        handleSettingChange(
+                          "pricing.auto_recalculate_price_list_on_purchase",
+                          checked ? "1" : "0",
+                        )
+                      }
+                      className="mt-0.5 shrink-0"
+                    />
+                    <label
+                      htmlFor="pricing.auto_recalculate_price_list_on_purchase"
+                      className="cursor-pointer select-none"
+                    >
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        Ricalcolo automatico listini all&apos;acquisto
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Quando si registra un carico di magazzino, aggiorna
+                        automaticamente i prezzi nei listini di vendita in base
+                        al nuovo costo.
+                      </p>
+                    </label>
+                  </div>
+
+                  {/* Select: purchase_price_strategy */}
+                  <div className="space-y-2">
+                    <Label htmlFor="pricing.purchase_price_strategy">
+                      Strategia prezzo d&apos;acquisto
+                    </Label>
+                    <Select
+                      value={
+                        getSettingValue("pricing.purchase_price_strategy") ||
+                        "highest"
+                      }
+                      onValueChange={(value) =>
+                        handleSettingChange(
+                          "pricing.purchase_price_strategy",
+                          value,
+                        )
+                      }
+                    >
+                      <SelectTrigger id="pricing.purchase_price_strategy">
+                        <SelectValue placeholder="Seleziona strategia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="highest">
+                          Più alto (conservativo)
+                        </SelectItem>
+                        <SelectItem value="lowest">
+                          Più basso (ottimistico)
+                        </SelectItem>
+                        <SelectItem value="weighted_average">
+                          Media ponderata
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Come calcolare il costo standard del prodotto quando ha
+                      più fornitori attivi.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 2. Altri setting del gruppo pricing (dinamici) */}
+              {(() => {
+                const pricingSettings = getSettingsByGroup("pricing").filter(
+                  (s) =>
+                    s.key !== "pricing.auto_recalculate_price_list_on_purchase" &&
+                    s.key !== "pricing.purchase_price_strategy",
+                );
+                if (pricingSettings.length === 0) return null;
+                return (
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="flex items-center gap-2 text-base">
+                            <DollarSign className="h-5 w-5" />
+                            Altre impostazioni prezzi
+                          </CardTitle>
+                          <CardDescription>
+                            Configurazione IVA, margini e parametri aggiuntivi
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-6 md:grid-cols-2">
+                        {pricingSettings.map((setting: Setting) => (
+                          <div key={setting.key}>
+                            {renderSettingInput(setting)}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* Save */}
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSavePricingTab}
+                  disabled={bulkUpdateMutation.isPending || !hasChanges}
+                >
+                  {bulkUpdateMutation.isPending ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Salvataggio...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Salva Modifiche
+                    </>
+                  )}
+                </Button>
+              </div>
+            </TabsContent>
+
             {/* Other Settings Tabs - Generated dynamically */}
             {[
               "general",
@@ -2707,7 +2878,6 @@ export default function AdminSettingsPage() {
               "email",
               "notifications",
               "files",
-              "pricing",
             ].map((groupKey) => {
               const group = Object.values(SETTING_GROUPS).find(
                 (g) => g.key === groupKey,

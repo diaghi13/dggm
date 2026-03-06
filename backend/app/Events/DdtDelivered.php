@@ -14,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
  * CRITICAL: For outgoing DDTs to sites, must update site_materials table.
  *
  * Listeners:
- * - UpdateSiteMaterialsListener (CRITICAL) - Updates site_materials table for outgoing DDTs to sites
+ * - UpdateProjectMaterialQuantitiesListener (CRITICAL) - Updates project_materials table for outgoing DDTs to projects
  * - NotifyRecipientListener - Sends delivery notification
  * - LogDdtActivityListener - Audit trail
  */

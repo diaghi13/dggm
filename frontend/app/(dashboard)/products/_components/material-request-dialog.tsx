@@ -42,7 +42,7 @@ import { Badge } from '@/components/ui/badge';
 import type { MaterialRequestPriority, Material, MaterialRequest } from '@/lib/types';
 
 const materialRequestSchema = z.object({
-  site_id: z.number({ message: 'Il cantiere è obbligatorio' }),
+  project_id: z.number({ message: 'Il progetto è obbligatorio' }),
   product_id: z.number({ message: 'Seleziona un materiale' }),
   quantity_requested: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
     message: 'La quantità deve essere maggiore di zero',
@@ -57,8 +57,8 @@ const materialRequestSchema = z.object({
 type MaterialRequestFormData = z.infer<typeof materialRequestSchema>;
 
 interface MaterialRequestDialogProps {
-  siteId: number;
-  siteName: string;
+  projectId: number;
+  projectName: string;
   request?: MaterialRequest | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -91,8 +91,8 @@ const priorityConfig: Record<
 };
 
 export function MaterialRequestDialog({
-  siteId,
-  siteName,
+  projectId,
+  projectName,
   request = null,
   open,
   onOpenChange,
@@ -104,7 +104,7 @@ export function MaterialRequestDialog({
   const form = useForm<MaterialRequestFormData>({
     resolver: zodResolver(materialRequestSchema),
     defaultValues: {
-      site_id: siteId,
+      project_id: projectId,
       priority: 'medium',
       reason: '',
       notes: '',
@@ -131,7 +131,7 @@ export function MaterialRequestDialog({
         return materialRequestsApi.update(request.id, payload);
       } else {
         return materialRequestsApi.create({
-          site_id: data.site_id,
+          project_id: data.project_id,
           product_id: data.product_id,
           ...payload,
           unit_of_measure: data.unit_of_measure || undefined,
@@ -140,7 +140,7 @@ export function MaterialRequestDialog({
     },
     onSuccess: () => {
       toast.success(isEditMode ? 'Richiesta aggiornata con successo' : 'Richiesta materiale inviata con successo');
-      queryClient.invalidateQueries({ queryKey: ['material-requests', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['material-requests', projectId] });
       queryClient.invalidateQueries({ queryKey: ['my-material-requests'] });
       onOpenChange(false);
       form.reset();
@@ -167,7 +167,7 @@ export function MaterialRequestDialog({
     if (open && isEditMode && request) {
       // Populate form with existing request data
       form.reset({
-        site_id: request.site_id,
+        project_id: request.project_id,
         product_id: request.product_id,
         quantity_requested: request.quantity_requested.toString(),
         unit_of_measure: request.unit_of_measure || '',
@@ -180,14 +180,14 @@ export function MaterialRequestDialog({
     } else if (!open) {
       // Reset form when closing
       form.reset({
-        site_id: siteId,
+        project_id: projectId,
         priority: 'medium',
         reason: '',
         notes: '',
       });
       setSelectedPriority('medium');
     }
-  }, [open, isEditMode, request, form, siteId]);
+  }, [open, isEditMode, request, form, projectId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -196,8 +196,8 @@ export function MaterialRequestDialog({
           <DialogTitle>{isEditMode ? 'Modifica Richiesta Materiale' : 'Richiedi Materiale'}</DialogTitle>
           <DialogDescription>
             {isEditMode
-              ? `Modifica la richiesta di ${request?.material?.name} per il cantiere ${request?.site?.name || siteName}`
-              : `Compila il form per richiedere materiale per il cantiere ${siteName}`
+              ? `Modifica la richiesta di ${request?.material?.name} per il progetto ${request?.project?.name || projectName}`
+              : `Compila il form per richiedere materiale per il progetto ${projectName}`
             }
           </DialogDescription>
         </DialogHeader>
@@ -205,7 +205,7 @@ export function MaterialRequestDialog({
         <Alert>
           <Package className="h-4 w-4" />
           <AlertDescription>
-            La tua richiesta sarà inviata al responsabile del cantiere che potrà approvarla o
+            La tua richiesta sarà inviata al responsabile del progetto che potrà approvarla o
             rifiutarla. Riceverai una notifica con l'esito.
           </AlertDescription>
         </Alert>

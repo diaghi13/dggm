@@ -60,30 +60,30 @@ class RoleAndPermissionSeeder extends Seeder
             'suppliers.edit',
             'suppliers.delete',
 
-            // Site (construction site) management
-            'sites.view',
-            'sites.create',
-            'sites.edit',
-            'sites.delete',
-            'sites.view-own', // View only assigned sites
+            // Project management
+            'projects.view',
+            'projects.create',
+            'projects.edit',
+            'projects.delete',
+            'projects.view-own', // View only assigned projects (own)
 
-            // Site Workers (Team Management)
-            'site_workers.view',
-            'site_workers.create',
-            'site_workers.update',
-            'site_workers.delete',
+            // Project Workers (Team Management)
+            'project_workers.view',
+            'project_workers.create',
+            'project_workers.update',
+            'project_workers.delete',
 
-            // Site Roles management
-            'site_roles.view',
-            'site_roles.create',
-            'site_roles.update',
-            'site_roles.delete',
+            // Project Roles management
+            'project_roles.view',
+            'project_roles.create',
+            'project_roles.update',
+            'project_roles.delete',
 
-            // Site Materials
-            'site_materials.view',
-            'site_materials.create',
-            'site_materials.update',
-            'site_materials.delete',
+            // Project Materials
+            'project_materials.view',
+            'project_materials.create',
+            'project_materials.update',
+            'project_materials.delete',
 
             // Material Requests
             'material_requests.view',
@@ -108,7 +108,7 @@ class RoleAndPermissionSeeder extends Seeder
             'quotes.edit',
             'quotes.delete',
             'quotes.approve',
-            'quotes.convert-to-site',
+            'quotes.convert-to-project',
 
             // Time tracking
             'time-trackings.view',
@@ -237,7 +237,7 @@ class RoleAndPermissionSeeder extends Seeder
             // Reports
             'reports.view',
             'reports.financial',
-            'reports.sites',
+            'reports.projects',
             'reports.time-tracking',
 
             // Settings (key-value system)
@@ -265,19 +265,19 @@ class RoleAndPermissionSeeder extends Seeder
             'settings.edit-global', // Only super-admin can edit global settings
         ])->get());
 
-        // Project Manager - manages sites, quotes, teams
+        // Project Manager - manages projects, quotes, teams
         $projectManager = Role::firstOrCreate(['name' => 'project-manager']);
         $projectManager->givePermissionTo([
             'users.view',
             'customers.view', 'customers.create', 'customers.edit',
             'suppliers.view',
-            'sites.view', 'sites.create', 'sites.edit',
-            'site_workers.view', 'site_workers.create', 'site_workers.update', 'site_workers.delete',
-            'site_roles.view', 'site_roles.create', 'site_roles.update', 'site_roles.delete',
-            'site_materials.view', 'site_materials.create', 'site_materials.update', 'site_materials.delete',
+            'projects.view', 'projects.create', 'projects.edit',
+            'project_workers.view', 'project_workers.create', 'project_workers.update', 'project_workers.delete',
+            'project_roles.view', 'project_roles.create', 'project_roles.update', 'project_roles.delete',
+            'project_materials.view', 'project_materials.create', 'project_materials.update', 'project_materials.delete',
             'material_requests.view', 'material_requests.approve', 'material_requests.reject', 'material_requests.deliver', 'material_requests.delete',
             'ddts.view', 'ddts.create', 'ddts.update', 'ddts.delete', 'ddts.confirm', 'ddts.cancel',
-            'quotes.view', 'quotes.create', 'quotes.edit', 'quotes.delete', 'quotes.approve', 'quotes.convert-to-site',
+            'quotes.view', 'quotes.create', 'quotes.edit', 'quotes.delete', 'quotes.approve', 'quotes.convert-to-project',
             'time-trackings.view', 'time-trackings.approve',
             'warehouse.view',
             'materials.view', 'materials.create', 'materials.edit',
@@ -296,28 +296,28 @@ class RoleAndPermissionSeeder extends Seeder
             'workers.view', 'workers.create', 'workers.edit', 'workers.view-rates', 'workers.manage-rates',
             'contractors.view', 'contractors.create', 'contractors.edit',
             'labor-costs.view', 'labor-costs.create', 'labor-costs.edit', 'labor-costs.delete',
-            'reports.view', 'reports.sites', 'reports.time-tracking',
+            'reports.view', 'reports.projects', 'reports.time-tracking',
         ]);
 
-        // Team Leader (Caposquadra) - manages assigned sites and team
+        // Team Leader (Caposquadra) - manages assigned projects and team
         $teamLeader = Role::firstOrCreate(['name' => 'team-leader']);
         $teamLeader->givePermissionTo([
-            'sites.view-own',
-            'site_workers.view',
-            'site_materials.view',
+            'projects.view-own',
+            'project_workers.view',
+            'project_materials.view',
             'material_requests.view', 'material_requests.create', 'material_requests.update', 'material_requests.delete',
             'time-trackings.view', 'time-trackings.create', 'time-trackings.edit',
             'warehouse.view',
             'vehicles.view',
-            'workers.view', // Can see workers on their sites
+            'workers.view', // Can see workers on their projects
         ]);
 
         // Worker (Operaio) - time tracking and material requests
         $worker = Role::firstOrCreate(['name' => 'worker']);
         $worker->givePermissionTo([
-            'sites.view-own',
-            'site_workers.view',
-            'site_materials.view',
+            'projects.view-own',
+            'project_workers.view',
+            'project_materials.view',
             'material_requests.view', 'material_requests.create', 'material_requests.update', 'material_requests.delete',
             'time-trackings.view-own', 'time-trackings.create',
         ]);
@@ -339,8 +339,8 @@ class RoleAndPermissionSeeder extends Seeder
         $warehousekeeper = Role::firstOrCreate(['name' => 'warehousekeeper']);
         $warehousekeeper->givePermissionTo([
             'suppliers.view',
-            'sites.view',
-            'site_materials.view',
+            'projects.view',
+            'project_materials.view',
             'material_requests.view', 'material_requests.approve', 'material_requests.reject', 'material_requests.deliver',
             'ddts.view', 'ddts.create', 'ddts.update', 'ddts.delete', 'ddts.confirm', 'ddts.cancel',
             'warehouse.view', 'warehouse.create', 'warehouse.edit', 'warehouse.inventory',

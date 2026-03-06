@@ -39,6 +39,11 @@ class ProductCategoryData extends Data
 
         #[BooleanType]
         public bool|Optional $is_active,
+
+        #[Nullable]
+        public ?int $rental_profile_id,
+
+        public ?RentalProfileData $rentalProfile,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -61,6 +66,10 @@ class ProductCategoryData extends Data
             color: $category->color,
             sort_order: $category->sort_order ?? 0,
             is_active: $category->is_active ?? true,
+            rental_profile_id: $category->rental_profile_id,
+            rentalProfile: $category->relationLoaded('rentalProfile') && $category->rentalProfile
+                ? RentalProfileData::from($category->rentalProfile)
+                : null,
         );
     }
 }

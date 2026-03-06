@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductCategory extends Model
@@ -18,6 +19,7 @@ class ProductCategory extends Model
         'color',
         'sort_order',
         'is_active',
+        'rental_profile_id',
     ];
 
     protected function casts(): array
@@ -31,6 +33,11 @@ class ProductCategory extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'category_id');
+    }
+
+    public function rentalProfile(): BelongsTo
+    {
+        return $this->belongsTo(RentalProfile::class);
     }
 
     public function scopeActive($query)

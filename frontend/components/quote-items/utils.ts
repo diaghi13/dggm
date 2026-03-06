@@ -1,4 +1,5 @@
 import { QuoteItem, ItemFormData } from "./types";
+import { calculateDurationMultiplier } from "./utils";
 
 /**
  * Appiattisce gli items in un array piatto (per il drag and drop)
@@ -41,6 +42,8 @@ export const removeItem = (items: QuoteItem[], id: number): QuoteItem[] => {
   }, [] as QuoteItem[]);
 };
 
+export { calculateDurationMultiplier } from "@/lib/utils/rental-engine";
+
 /**
  * Calcola i totali per un item del form
  */
@@ -58,8 +61,21 @@ export const calculateTotals = (item: ItemFormData) => {
   const unitPrice = Number(item.unit_price) || 0;
   const discountPercentage = Number(item.discount_percentage) || 0;
   const vatRate = Number(item.vat_rate) || 0;
+  const billingUnit = item.billing_unit ?? "unit";
+  const duration = Number(item.duration) || 1;
 
-  const subtotal = quantity * unitPrice;
+  let subtotal: number;
+  if (billingUnit === "flat") {
+    subtotal = unitPrice;
+  } else if (billingUnit === "unit") {
+    subtotal = quantity * unitPrice;
+  } else if (billingUnit === "day") {
+    subtotal = quantity * unitPrice * calculateDurationMultiplier(duration);
+  } else {
+    // hour, week, month — lineare
+    subtotal = quantity * unitPrice * duration;
+  }
+
   const discount_amount = (subtotal * discountPercentage) / 100;
   const total = subtotal - discount_amount;
   const vat_amount = (total * vatRate) / 100;
@@ -79,6 +95,38 @@ export const calculateItemTotal = (item: QuoteItem): number => {
     );
   }
   return Number(item.total || 0);
+};
+
+/**
+ * Estrae gli items selezionati dall'albero e li rimuove dalla posizione attuale.
+ * Usato dal bulk move-to-section.
+ */
+export const extractSelectedItems = (
+  items: QuoteItem[],
+  selectedIds: number[],
+  targetParentId: number,
+): { trimmedTree: QuoteItem[]; extractedItems: QuoteItem[] } => {
+  const extracted: QuoteItem[] = [];
+
+  const walk = (nodes: QuoteItem[]): QuoteItem[] => {
+    return nodes.reduce((acc, node) => {
+      // Non selezionare sezioni
+      if (node.type !== "section" && selectedIds.includes(node.id!)) {
+        // Salta se già appartiene alla sezione target
+        if (node.parent_id !== targetParentId) {
+          extracted.push(node);
+        }
+        return acc;
+      }
+      if (node.children) {
+        return [...acc, { ...node, children: walk(node.children) }];
+      }
+      return [...acc, node];
+    }, [] as QuoteItem[]);
+  };
+
+  const trimmedTree = walk(items);
+  return { trimmedTree, extractedItems: extracted };
 };
 
 /**

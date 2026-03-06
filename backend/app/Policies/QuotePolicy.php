@@ -97,9 +97,9 @@ class QuotePolicy
     }
 
     /**
-     * Determine whether the user can convert the quote to a site.
+     * Determine whether the user can convert the quote to a project.
      */
-    public function convertToSite(User $user, Quote $quote): bool
+    public function convertToProject(User $user, Quote $quote): bool
     {
         // Can only convert approved quotes
         if ($quote->status !== 'approved') {
@@ -107,11 +107,11 @@ class QuotePolicy
         }
 
         // Quote must not already be converted
-        if ($quote->site_id !== null) {
+        if ($quote->project_id !== null) {
             return false;
         }
 
-        return $user->can('quotes.convert-to-site');
+        return $user->can('quotes.convert-to-project');
     }
 
     /**

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { siteMaterialsApi } from '@/lib/api/site-materials';
+import { projectMaterialsApi } from '@/lib/api/project-materials';
 import { warehousesApi } from '@/lib/api/warehouses';
 import {
   Dialog,
@@ -28,15 +28,15 @@ import { Loader2, PackagePlus, Info } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ReturnMaterialDialogProps {
-  siteId: number;
+  projectId: number;
   material: {
     id: number;
-    material_id: number;
-    material: {
-      name: string;
-      code: string;
-      unit: string;
-    };
+    product_id?: number | null;
+    product?: {
+      name?: string | null;
+      code?: string | null;
+      unit?: string | null;
+    } | null;
     planned_quantity: number;
     delivered_quantity: number;
     returned_quantity: number;
@@ -46,7 +46,7 @@ interface ReturnMaterialDialogProps {
 }
 
 export function ReturnMaterialDialog({
-  siteId,
+  projectId,
   material,
   open,
   onOpenChange,
@@ -71,13 +71,13 @@ export function ReturnMaterialDialog({
       warehouse_id: number;
       quantity: number;
       notes?: string;
-    }) => siteMaterialsApi.returnMaterial(siteId, material!.id, data),
+    }) => projectMaterialsApi.returnMaterial(projectId, material!.id, data),
     onSuccess: () => {
       toast.success('Materiale rientrato', {
         description:
           'Il materiale è stato rientrato in magazzino e lo stock è stato aggiornato.',
       });
-      queryClient.invalidateQueries({ queryKey: ['site-materials', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['project-materials', projectId] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       handleClose();
     },
@@ -131,7 +131,7 @@ export function ReturnMaterialDialog({
             Rientro Materiale Avanzato
           </DialogTitle>
           <DialogDescription>
-            Riporta in magazzino il materiale non utilizzato dal cantiere.
+            Riporta in magazzino il materiale non utilizzato dal progetto.
           </DialogDescription>
         </DialogHeader>
 
@@ -143,7 +143,7 @@ export function ReturnMaterialDialog({
                 <div>
                   <p className="text-muted-foreground">Materiale</p>
                   <p className="font-semibold">
-                    {material.material.code} - {material.material.name}
+                    {material.product?.code} - {material.product?.name}
                   </p>
                 </div>
                 <div>
@@ -152,13 +152,13 @@ export function ReturnMaterialDialog({
                   </p>
                   <p className="font-semibold">
                     {material.delivered_quantity} / {material.returned_quantity}{' '}
-                    {material.material.unit}
+                    {material.product?.unit}
                   </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-blue-600 font-medium">
                     Massimo rientrabile: {maxReturnable.toFixed(2)}{' '}
-                    {material.material.unit}
+                    {material.product?.unit}
                   </p>
                 </div>
               </div>
@@ -221,7 +221,7 @@ export function ReturnMaterialDialog({
                   required
                 />
                 <span className="flex items-center text-sm text-muted-foreground px-3 border rounded-md bg-slate-50">
-                  {material.material.unit}
+                  {material.product?.unit}
                 </span>
               </div>
               {maxReturnable > 0 && (
@@ -233,7 +233,7 @@ export function ReturnMaterialDialog({
                   className="mt-2"
                 >
                   Rientra tutto: {maxReturnable.toFixed(2)}{' '}
-                  {material.material.unit}
+                  {material.product?.unit}
                 </Button>
               )}
             </div>

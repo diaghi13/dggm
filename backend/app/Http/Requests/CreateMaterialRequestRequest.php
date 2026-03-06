@@ -23,7 +23,7 @@ class CreateMaterialRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'site_id' => ['required', 'integer', 'exists:sites,id'],
+            'project_id' => ['required', 'integer', 'exists:projects,id'],
             'material_id' => ['required', 'integer', 'exists:materials,id'],
             'quantity_requested' => ['required', 'numeric', 'min:0.01'],
             'unit_of_measure' => ['nullable', 'string', 'max:50'],
@@ -40,8 +40,8 @@ class CreateMaterialRequestRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'site_id.required' => 'Il cantiere è obbligatorio',
-            'site_id.exists' => 'Il cantiere selezionato non esiste',
+            'project_id.required' => 'Il progetto è obbligatorio',
+            'project_id.exists' => 'Il progetto selezionato non esiste',
             'material_id.required' => 'Il materiale è obbligatorio',
             'material_id.exists' => 'Il materiale selezionato non esiste',
             'quantity_requested.required' => 'La quantità è obbligatoria',

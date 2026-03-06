@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { PriceList, PriceListFormData } from "@/lib/types";
+import { PriceList, PriceListFormData, RentalProfile } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +18,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { FormSection } from "@/components/form-section";
 import { DollarSign, Settings, Calendar, Filter, Percent } from "lucide-react";
+import { rentalProfilesApi } from "@/lib/api/rental-profiles";
 
 const priceListSchema = z
   .object({
@@ -31,7 +33,7 @@ const priceListSchema = z
       ),
     description: z.string().optional().nullable(),
     calculation_mode: z.enum(["automatic", "manual"]),
-    adjustment_type: z.enum(["percentage", "fixed", "none"]),
+    adjustment_type: z.enum(["percentage", "fixed", "none", "multiplier"]),
     adjustment_value: z
       .union([z.number(), z.nan(), z.undefined(), z.null()])
       .optional()
@@ -51,6 +53,10 @@ const priceListSchema = z
       .optional()
       .nullable(),
     generate_items: z.boolean().optional(),
+    rental_profile_id: z
+      .union([z.number(), z.nan(), z.undefined(), z.null()])
+      .optional()
+      .nullable(),
   })
   .refine(
     (data) => {
@@ -67,7 +73,11 @@ const priceListSchema = z
   )
   .refine(
     (data) => {
-      if (data.adjustment_type !== "none") {
+      // Only enforce adjustment_value when automatic mode AND type is not none
+      if (
+        data.calculation_mode === "automatic" &&
+        data.adjustment_type !== "none"
+      ) {
         return (
           data.adjustment_value !== undefined &&
           data.adjustment_value !== null &&
@@ -77,8 +87,7 @@ const priceListSchema = z
       return true;
     },
     {
-      message:
-        "Il valore di aggiustamento è obbligatorio quando il tipo non è 'nessuno'",
+      message: "Il valore di aggiustamento è obbligatorio in modalità automatica",
       path: ["adjustment_value"],
     },
   );
@@ -98,6 +107,15 @@ export function PriceListForm({
   onSubmit,
   isLoading,
 }: PriceListFormProps) {
+  const [rentalProfiles, setRentalProfiles] = useState<RentalProfile[]>([]);
+
+  useEffect(() => {
+    rentalProfilesApi
+      .getAll()
+      .then(setRentalProfiles)
+      .catch(() => setRentalProfiles([]));
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -113,7 +131,7 @@ export function PriceListForm({
           description: priceList.description || undefined,
           calculation_mode: priceList.calculation_mode,
           adjustment_type: priceList.adjustment_type,
-          adjustment_value: priceList.adjustment_value || undefined,
+          adjustment_value: priceList.adjustment_value ?? undefined,
           applies_to: priceList.applies_to,
           category_id: priceList.category_id || undefined,
           department_filter: priceList.department_filter || undefined,
@@ -123,6 +141,9 @@ export function PriceListForm({
           is_default: priceList.is_default ?? false,
           priority: priceList.priority || 0,
           generate_items: false,
+          rental_profile_id:
+            (priceList as PriceList & { rental_profile_id?: number | null })
+              .rental_profile_id ?? null,
         }
       : {
           name: "",
@@ -134,6 +155,7 @@ export function PriceListForm({
           is_default: false,
           priority: 0,
           generate_items: true,
+          rental_profile_id: null,
         },
   });
 
@@ -141,6 +163,7 @@ export function PriceListForm({
   const adjustmentType = watch("adjustment_type");
   const isActive = watch("is_active");
   const isDefault = watch("is_default");
+  const rentalProfileId = watch("rental_profile_id");
 
   const handleFormSubmit = (data: PriceListFormValues) => {
     // Clean adjustment_value
@@ -180,6 +203,12 @@ export function PriceListForm({
       is_default: data.is_default ?? false,
       priority,
       generate_items: data.generate_items ?? true,
+      rental_profile_id:
+        data.rental_profile_id !== undefined &&
+        data.rental_profile_id !== null &&
+        !isNaN(data.rental_profile_id as number)
+          ? (data.rental_profile_id as number)
+          : null,
     };
 
     onSubmit(formData);
@@ -309,6 +338,42 @@ export function PriceListForm({
             </p>
           </div>
 
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="rental_profile_id">Profilo Noleggio</Label>
+            <Select
+              value={
+                rentalProfileId !== undefined && rentalProfileId !== null
+                  ? String(rentalProfileId)
+                  : "__global__"
+              }
+              onValueChange={(value) =>
+                setValue(
+                  "rental_profile_id",
+                  value === "__global__" ? null : Number(value),
+                )
+              }
+              disabled={isLoading}
+            >
+              <SelectTrigger id="rental_profile_id">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__global__">
+                  Globale (impostazioni default)
+                </SelectItem>
+                {rentalProfiles.map((profile) => (
+                  <SelectItem key={profile.id} value={String(profile.id)}>
+                    {profile.name} — {profile.sector}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Il profilo sovrascrive i parametri globali di calcolo per questo
+              listino
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="adjustment_type" className="required">
               Tipo Aggiustamento
@@ -327,20 +392,20 @@ export function PriceListForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="percentage">Percentuale</SelectItem>
-                <SelectItem value="fixed">Valore Fisso</SelectItem>
+                <SelectItem value="percentage">Percentuale (%)</SelectItem>
+                <SelectItem value="fixed">Valore Fisso (€)</SelectItem>
+                <SelectItem value="multiplier">Moltiplicatore (×)</SelectItem>
                 <SelectItem value="none">Nessuno</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              <strong>Percentuale:</strong> Aggiunge una % al costo (es. costo
-              100€ + 20% = prezzo 120€)
+              <strong>Percentuale:</strong> Aggiunge una % al costo (es. 100€ + 20% = 120€)
               <br />
-              <strong>Valore Fisso:</strong> Aggiunge un importo fisso (es.
-              costo 100€ + 15€ = prezzo 115€)
+              <strong>Valore Fisso:</strong> Aggiunge un importo fisso (es. 100€ + 15€ = 115€)
               <br />
-              <strong>Nessuno:</strong> Il prezzo finale corrisponde al costo
-              base del prodotto
+              <strong>Moltiplicatore:</strong> Moltiplica il costo (es. 100€ × 1.3 = 130€)
+              <br />
+              <strong>Nessuno:</strong> Il prezzo corrisponde al costo base
             </p>
           </div>
 

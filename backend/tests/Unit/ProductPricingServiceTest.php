@@ -21,7 +21,8 @@ beforeEach(function () {
 // ==========================================
 
 it('calculates automatic price with percentage adjustment', function () {
-    $product = Product::factory()->create([
+    // Must be article: composites derive price from components (none here → 0)
+    $product = Product::factory()->article()->create([
         'manufacturer_cost_price' => 100,
         'sale_markup_percent' => 50, // Base sale price = 150
     ]);
@@ -42,7 +43,8 @@ it('calculates automatic price with percentage adjustment', function () {
 });
 
 it('calculates automatic price with fixed adjustment', function () {
-    $product = Product::factory()->create([
+    // Must be article: composites derive price from components (none here → 0)
+    $product = Product::factory()->article()->create([
         'manufacturer_cost_price' => 100,
         'sale_markup_percent' => 50, // Base sale price = 150
     ]);
@@ -83,7 +85,8 @@ it('calculates automatic price with no adjustment', function () {
 });
 
 it('calculates automatic price with negative adjustment', function () {
-    $product = Product::factory()->create([
+    // Must be article: composites derive price from components (none here → 0)
+    $product = Product::factory()->article()->create([
         'manufacturer_cost_price' => 100,
         'sale_markup_percent' => 50, // Base sale price = 150
     ]);
@@ -144,7 +147,8 @@ it('generates automatic price list item with all fields', function () {
 });
 
 it('generates rental prices based on sale price', function () {
-    $product = Product::factory()->create([
+    // Must be article: composites derive price from components (none here → 0)
+    $product = Product::factory()->article()->create([
         'manufacturer_cost_price' => 300,
         'sale_markup_percent' => 0,
     ]);
@@ -186,7 +190,8 @@ it('generates manual price list item', function () {
 });
 
 it('manual item uses calculated price as starting point', function () {
-    $product = Product::factory()->create([
+    // Must be article: composites derive price from components (none here → 0)
+    $product = Product::factory()->article()->create([
         'manufacturer_cost_price' => 200,
         'sale_markup_percent' => 25,
     ]);

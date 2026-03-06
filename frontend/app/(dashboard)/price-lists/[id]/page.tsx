@@ -37,6 +37,8 @@ import {
   Info,
   Save,
   Plus,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -62,6 +64,8 @@ export default function PriceListDetailPage() {
   const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PriceListItem | null>(null);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [showAdvancedRentalColumns, setShowAdvancedRentalColumns] =
+    useState(false);
   const [itemsPage, setItemsPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [itemsSearch, setItemsSearch] = useState("");
@@ -298,12 +302,14 @@ export default function PriceListDetailPage() {
         handleDeleteItem,
         handleRecalculateItem,
         priceList?.applies_to || "both",
+        showAdvancedRentalColumns,
       ),
     [
       handleEditItem,
       handleDeleteItem,
       handleRecalculateItem,
       priceList?.applies_to,
+      showAdvancedRentalColumns,
     ],
   );
 
@@ -616,10 +622,31 @@ export default function PriceListDetailPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle>Prodotti nel Listino</CardTitle>
-              <Button onClick={() => setIsAddItemDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Aggiungi Prodotto
-              </Button>
+              <div className="flex items-center gap-2">
+                {priceList?.applies_to !== "sale" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setShowAdvancedRentalColumns((prev) => !prev)
+                    }
+                    className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                  >
+                    {showAdvancedRentalColumns ? (
+                      <EyeOff className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Eye className="mr-2 h-4 w-4" />
+                    )}
+                    {showAdvancedRentalColumns
+                      ? "Nascondi colonne avanzate"
+                      : "Mostra colonne noleggio avanzate"}
+                  </Button>
+                )}
+                <Button onClick={() => setIsAddItemDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Aggiungi Prodotto
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <PriceListItemsFilters

@@ -26,7 +26,7 @@ export const stockMovementKeys = {
 export function useStockMovements(params?: {
   product_id?: number;
   warehouse_id?: number;
-  site_id?: number;
+  project_id?: number;
   type?: string;
   date_from?: string;
   date_to?: string;
@@ -88,7 +88,7 @@ export function useStockMovementsByWarehouse(
  */
 export function useRentalHistory(params?: {
   product_id?: number;
-  site_id?: number;
+  project_id?: number;
   active_only?: boolean;
 }) {
   return useQuery({

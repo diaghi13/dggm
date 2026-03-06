@@ -13,7 +13,7 @@ use App\Enums\DdtStatus;
 use App\Enums\DdtType;
 use App\Http\Controllers\Controller;
 use App\Models\Ddt;
-use App\Queries\Ddt\GetActiveDdtsBySiteQuery;
+use App\Queries\Ddt\GetActiveDdtsByProjectQuery;
 use App\Queries\Ddt\GetDdtByIdQuery;
 use App\Queries\Ddt\GetDdtsQuery;
 use App\Queries\Ddt\GetPendingRentalReturnsQuery;
@@ -37,7 +37,7 @@ class DdtController extends Controller
             type: $type,
             status: $status,
             warehouseId: $request->input('warehouse_id'),
-            siteId: $request->input('site_id'),
+            projectId: $request->input('project_id'),
             supplierId: $request->input('supplier_id'),
             customerId: $request->input('customer_id'),
             search: $request->input('search'),
@@ -75,7 +75,7 @@ class DdtController extends Controller
         //            'to_warehouse_id' => 'nullable|exists:warehouses,id',
         //            'supplier_id' => 'nullable|exists:suppliers,id',
         //            'customer_id' => 'nullable|exists:customers,id',
-        //            'site_id' => 'nullable|exists:sites,id',
+        //            'project_id' => 'nullable|exists:projects,id',
         //            'transport_type' => 'nullable|string',
         //            'carrier' => 'nullable|string|max:255',
         //            'tracking_number' => 'nullable|string|max:255',
@@ -142,7 +142,7 @@ class DdtController extends Controller
             'to_warehouse_id' => 'nullable|exists:warehouses,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
             'customer_id' => 'nullable|exists:customers,id',
-            'site_id' => 'nullable|exists:sites,id',
+            'project_id' => 'nullable|exists:projects,id',
             'transport_type' => 'nullable|string',
             'carrier' => 'nullable|string|max:255',
             'tracking_number' => 'nullable|string|max:255',
@@ -269,13 +269,13 @@ class DdtController extends Controller
     }
 
     /**
-     * Get active DDTs for a specific site
+     * Get active DDTs for a specific project
      */
-    public function activeBySite(int $siteId): JsonResponse
+    public function activeByProject(int $projectId): JsonResponse
     {
         $this->authorize('viewAny', Ddt::class);
 
-        $query = new GetActiveDdtsBySiteQuery($siteId);
+        $query = new GetActiveDdtsByProjectQuery($projectId);
         $ddts = $query->execute();
 
         return response()->json([

@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Enums\MaterialRequestStatus;
 use App\Models\MaterialRequest;
-use App\Models\Site;
+use App\Models\Project;
 use App\Models\User;
 use App\Models\Worker;
 use App\Notifications\MaterialRequestApproved;
@@ -17,20 +17,18 @@ use InvalidArgumentException;
 class MaterialRequestService
 {
     /**
-     * Get all material requests for a site
+     * Get all material requests for a project
      */
-    public function getRequestsBySite(int $siteId, array $filters = []): Collection
+    public function getRequestsByProject(int $projectId, array $filters = []): Collection
     {
         $query = MaterialRequest::with([
-            'material',
             'requestedByWorker.user',
             'requestedByUser',
             'respondedByUser',
             'approvedByUser',
             'deliveredByUser',
-        ])->where('site_id', $siteId);
+        ])->where('project_id', $projectId);
 
-        // Apply filters
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
         }
@@ -52,30 +50,29 @@ class MaterialRequestService
     public function getRequestsByWorker(int $workerId, array $filters = []): Collection
     {
         $query = MaterialRequest::with([
-            'site',
-            'material',
+            'project',
+            'requestedByUser',
             'respondedByUser',
             'approvedByUser',
         ])->where('requested_by_worker_id', $workerId);
 
-        // Apply filters
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (isset($filters['site_id'])) {
-            $query->where('site_id', $filters['site_id']);
+        if (isset($filters['project_id'])) {
+            $query->where('project_id', $filters['project_id']);
         }
 
         return $query->orderBy('created_at', 'desc')->get();
     }
 
     /**
-     * Get pending requests count for a site
+     * Get pending requests count for a project
      */
-    public function getPendingCountBySite(int $siteId): int
+    public function getPendingCountByProject(int $projectId): int
     {
-        return MaterialRequest::where('site_id', $siteId)
+        return MaterialRequest::where('project_id', $projectId)
             ->where('status', MaterialRequestStatus::Pending)
             ->count();
     }
@@ -86,23 +83,22 @@ class MaterialRequestService
     public function createRequest(array $data, int $workerId, int $userId): MaterialRequest
     {
         return DB::transaction(function () use ($data, $workerId, $userId) {
-            // Verify worker is assigned to the site
-            $worker = Worker::findOrFail($workerId);
-            $site = Site::findOrFail($data['site_id']);
+            // Verify worker is assigned to the project
+            Worker::findOrFail($workerId);
+            $project = Project::findOrFail($data['project_id']);
 
-            $siteWorker = $site->workers()
+            $projectWorker = $project->projectWorkers()
                 ->where('worker_id', $workerId)
                 ->whereIn('status', ['accepted', 'active'])
                 ->first();
 
-            if (! $siteWorker) {
-                throw new InvalidArgumentException('Il lavoratore non è assegnato a questo cantiere');
+            if (! $projectWorker) {
+                throw new InvalidArgumentException('Il lavoratore non è assegnato a questo progetto');
             }
 
             // Create request
             $request = MaterialRequest::create([
-                'site_id' => $data['site_id'],
-                'material_id' => $data['material_id'],
+                'project_id' => $data['project_id'],
                 'requested_by_worker_id' => $workerId,
                 'requested_by_user_id' => $userId,
                 'quantity_requested' => $data['quantity_requested'],
@@ -114,12 +110,11 @@ class MaterialRequestService
                 'status' => MaterialRequestStatus::Pending,
             ]);
 
-            // Notify site managers (PM, Admin, Warehouse Manager)
-            $this->notifySiteManagers($request);
+            // Notify project managers
+            $this->notifyProjectManagers($request);
 
             return $request->load([
-                'material',
-                'site',
+                'project',
                 'requestedByWorker.user',
             ]);
         });
@@ -151,7 +146,6 @@ class MaterialRequestService
                 'response_notes' => $responseNotes,
             ]);
 
-            // Notify worker
             if ($request->requestedByUser) {
                 $request->requestedByUser->notify(new MaterialRequestApproved($request));
             }
@@ -182,7 +176,6 @@ class MaterialRequestService
                 'rejection_reason' => $rejectionReason,
             ]);
 
-            // Notify worker
             if ($request->requestedByUser) {
                 $request->requestedByUser->notify(new MaterialRequestRejected($request));
             }
@@ -224,7 +217,6 @@ class MaterialRequestService
     {
         $request = MaterialRequest::findOrFail($requestId);
 
-        // Only the requester can update, and only if pending
         if ($request->requested_by_user_id !== $userId) {
             throw new InvalidArgumentException('Non hai i permessi per modificare questa richiesta');
         }
@@ -251,7 +243,6 @@ class MaterialRequestService
     {
         $request = MaterialRequest::findOrFail($requestId);
 
-        // Only the requester or managers can delete
         if ($request->requested_by_user_id !== $userId) {
             $user = User::findOrFail($userId);
             if (! $user->hasAnyRole(['SuperAdmin', 'Admin', 'ProjectManager', 'WarehouseManager'])) {
@@ -267,18 +258,17 @@ class MaterialRequestService
     }
 
     /**
-     * Notify site managers about new request
+     * Notify project managers about new request
      */
-    protected function notifySiteManagers(MaterialRequest $request): void
+    protected function notifyProjectManagers(MaterialRequest $request): void
     {
-        $site = $request->site;
+        $project = $request->project;
 
-        // Get site manager (Project Manager assigned to site)
         $managers = collect();
 
-        // Add site's project manager if exists
-        if ($site->project_manager_id) {
-            $pm = User::find($site->project_manager_id);
+        // Add project's project manager if exists
+        if ($project->project_manager_id) {
+            $pm = User::find($project->project_manager_id);
             if ($pm) {
                 $managers->push($pm);
             }
@@ -288,18 +278,17 @@ class MaterialRequestService
         $adminUsers = User::role(['SuperAdmin', 'Admin', 'ProjectManager', 'WarehouseManager'])->get();
         $managers = $managers->merge($adminUsers)->unique('id');
 
-        // Send notifications
         foreach ($managers as $manager) {
             $manager->notify(new MaterialRequested($request));
         }
     }
 
     /**
-     * Get statistics for a site
+     * Get statistics for a project
      */
-    public function getStatsBySite(int $siteId): array
+    public function getStatsByProject(int $projectId): array
     {
-        $requests = MaterialRequest::where('site_id', $siteId)->get();
+        $requests = MaterialRequest::where('project_id', $projectId)->get();
 
         return [
             'total' => $requests->count(),

@@ -8,7 +8,7 @@ export const ddtKeys = {
   lists: () => [...ddtKeys.all, 'list'] as const,
   list: (filters?: Record<string, unknown>) => [...ddtKeys.lists(), filters] as const,
   detail: (id: number) => [...ddtKeys.all, 'detail', id] as const,
-  activeBySite: (siteId: number) => [...ddtKeys.all, 'active-site', siteId] as const,
+  activeByProject: (projectId: number) => [...ddtKeys.all, 'active-project', projectId] as const,
   pendingRentals: (warehouseId?: number) => [...ddtKeys.all, 'pending-rentals', warehouseId] as const,
   nextNumber: () => [...ddtKeys.all, 'next-number'] as const,
 };
@@ -24,7 +24,7 @@ export function useDdts(params?: {
   type?: string;
   status?: string;
   warehouse_id?: number;
-  site_id?: number;
+  project_id?: number;
   supplier_id?: number;
   customer_id?: number;
   search?: string;
@@ -51,13 +51,13 @@ export function useDdt(id: number, enabled = true) {
 }
 
 /**
- * Hook per ottenere i DDT attivi per un cantiere
+ * Hook per ottenere i DDT attivi per un progetto
  */
-export function useActiveDdtsBySite(siteId: number, enabled = true) {
+export function useActiveDdtsByProject(projectId: number, enabled = true) {
   return useQuery({
-    queryKey: ddtKeys.activeBySite(siteId),
-    queryFn: () => ddtsApi.getActiveBySite(siteId),
-    enabled: enabled && !!siteId,
+    queryKey: ddtKeys.activeByProject(projectId),
+    queryFn: () => ddtsApi.getActiveByProject(projectId),
+    enabled: enabled && !!projectId,
     staleTime: 30000,
   });
 }
@@ -211,7 +211,7 @@ export function useDeliverDdt() {
     mutationFn: (id: number) => ddtsApi.deliver(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ddtKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['site-materials'] });
+      queryClient.invalidateQueries({ queryKey: ['project-materials'] });
       toast.success('DDT consegnato con successo');
     },
     onError: (error: any) => {

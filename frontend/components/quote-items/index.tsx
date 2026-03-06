@@ -15,7 +15,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus, FileText, CheckSquare, X, AlertTriangle } from "lucide-react";
 import { QuoteItem, ItemFormData, QuoteItemsBuilderProps } from "./types";
 import {
   flattenItems,
@@ -23,24 +24,33 @@ import {
   removeItem,
   calculateTotals,
   calculateItemTotal,
+  extractSelectedItems,
 } from "./utils";
 import { useDragAndDrop } from "./use-drag-and-drop";
 import { SortableItem } from "./sortable-item";
 import { ItemFormDialog } from "./item-form-dialog";
+import { BulkActionBar } from "./bulk-action-bar";
 
 export function QuoteItemsBuilder({
   items,
   onChange,
   priceListId,
   showUnitPrices = true,
+  quoteType,
+  effectiveEventDays,
 }: QuoteItemsBuilderProps) {
   const [localItems, setLocalItems] = useState<QuoteItem[]>(items);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<QuoteItem | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [dismissedTypeChangeBanner, setDismissedTypeChangeBanner] = useState(false);
+  const [showTypeChangeBanner, setShowTypeChangeBanner] = useState(false);
   const isInitialMount = useRef(true);
   const isSyncing = useRef(false);
   const tempIdCounter = useRef(Date.now());
+  const prevQuoteType = useRef(quoteType);
   const [formData, setFormData] = useState<ItemFormData>({
     type: "item",
     parent_id: null,
@@ -51,6 +61,21 @@ export function QuoteItemsBuilder({
     hide_unit_price: false,
     //show_subtotal: true,
   });
+
+  // Shortcut Ctrl/Cmd + Shift + A per aggiungere una nuova voce
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        if (!isDialogOpen) {
+          e.preventDefault();
+          handleAdd();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDialogOpen]);
 
   // Sincronizza localItems quando la prop items cambia (es. caricamento dati)
   useEffect(() => {
@@ -75,8 +100,22 @@ export function QuoteItemsBuilder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localItems]);
 
+  // Mostra banner quando quoteType cambia e ci sono già degli articoli
+  useEffect(() => {
+    if (prevQuoteType.current !== quoteType) {
+      prevQuoteType.current = quoteType;
+      if (localItems.length > 0) {
+        setShowTypeChangeBanner(true);
+        setDismissedTypeChangeBanner(false);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteType]);
+
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: selectionMode ? { distance: Infinity } : undefined,
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -180,6 +219,8 @@ export function QuoteItemsBuilder({
         code: formData.code ?? null,
         quantity: formData.quantity ?? 1,
         unit: formData.unit ?? null,
+        billing_unit: formData.billing_unit ?? "unit",
+        duration: formData.duration ?? null,
         unit_price: formData.unit_price ?? 0,
         product_id: formData.product_id ?? null,
         price_list_item_id: formData.price_list_item_id ?? null,
@@ -232,12 +273,119 @@ export function QuoteItemsBuilder({
     });
   };
 
+  const handleToggleSelectionMode = () => {
+    setSelectionMode((prev) => !prev);
+    setSelectedItems(new Set());
+  };
+
+  const handleToggleItemSelection = (id: number) => {
+    setSelectedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkMoveToSection = (sectionId: number) => {
+    const selectedIds = Array.from(selectedItems);
+    const { trimmedTree, extractedItems } = extractSelectedItems(
+      localItems,
+      selectedIds,
+      sectionId,
+    );
+
+    const updatedItems = trimmedTree.map((item) => {
+      if (item.id === sectionId) {
+        const updatedChildren = [
+          ...(item.children || []),
+          ...extractedItems.map((e) => ({ ...e, parent_id: sectionId })),
+        ];
+        return { ...item, children: updatedChildren };
+      }
+      return item;
+    });
+
+    setLocalItems(updatedItems);
+    setExpandedItems((prev) => new Set([...prev, sectionId]));
+    setSelectionMode(false);
+    setSelectedItems(new Set());
+  };
+
+  const handleBulkCreateSection = (name: string) => {
+    const selectedIds = Array.from(selectedItems);
+    const newSectionId = ++tempIdCounter.current;
+
+    const { trimmedTree, extractedItems } = extractSelectedItems(
+      localItems,
+      selectedIds,
+      newSectionId,
+    );
+
+    const newSection: QuoteItem = {
+      id: newSectionId,
+      quote_id: 0,
+      parent_id: null,
+      sort_order: trimmedTree.length,
+      type: "section",
+      description: name,
+      code: null,
+      quantity: 0,
+      unit: null,
+      billing_unit: "unit",
+      duration: null,
+      unit_price: 0,
+      product_id: null,
+      price_list_item_id: null,
+      discount_percentage: 0,
+      vat_rate: 0,
+      notes: null,
+      hide_unit_price: false,
+      include_image: false,
+      included_media_ids: [],
+      subtotal: 0,
+      discount_amount: 0,
+      total: 0,
+      vat_amount: 0,
+      total_with_vat: 0,
+      children: extractedItems.map((e) => ({ ...e, parent_id: newSectionId })),
+    };
+
+    setLocalItems([...trimmedTree, newSection]);
+    setExpandedItems((prev) => new Set([...prev, newSectionId]));
+    setSelectionMode(false);
+    setSelectedItems(new Set());
+  };
+
   const totalAmount = localItems
     .filter((item) => !item.parent_id)
     .reduce((sum, item) => sum + calculateItemTotal(item), 0);
 
   return (
     <div className="space-y-4">
+      {/* Quote type change warning banner */}
+      {showTypeChangeBanner && !dismissedTypeChangeBanner && (
+        <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 text-amber-900 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertDescription className="flex items-center justify-between gap-2">
+            <span>
+              Il tipo di preventivo è cambiato. Alcuni articoli potrebbero avere prezzi non aggiornati.
+            </span>
+            <button
+              type="button"
+              onClick={() => setDismissedTypeChangeBanner(true)}
+              className="shrink-0 rounded p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors"
+              aria-label="Chiudi avviso"
+            >
+              <X className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            </button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-slate-900">
@@ -247,10 +395,19 @@ export function QuoteItemsBuilder({
             Trascina per riordinare le voci
           </p>
         </div>
-        <Button onClick={handleAdd} className="shadow-md">
-          <Plus className="mr-2 h-4 w-4" />
-          Aggiungi Voce
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={selectionMode ? "default" : "outline"}
+            onClick={handleToggleSelectionMode}
+          >
+            <CheckSquare className="mr-2 h-4 w-4" />
+            {selectionMode ? "Annulla selezione" : "Seleziona"}
+          </Button>
+          <Button onClick={handleAdd} className="shadow-md" title="Aggiungi Voce (⌘↵)">
+            <Plus className="mr-2 h-4 w-4" />
+            Aggiungi Voce
+          </Button>
+        </div>
       </div>
 
       {localItems.length === 0 ? (
@@ -269,6 +426,17 @@ export function QuoteItemsBuilder({
         </div>
       ) : (
         <>
+          {selectionMode && selectedItems.size > 0 && (
+            <BulkActionBar
+              selectedCount={selectedItems.size}
+              sections={localItems.filter((item) => item.type === "section")}
+              onMoveToSection={handleBulkMoveToSection}
+              onCreateSection={handleBulkCreateSection}
+              onClearSelection={() => setSelectedItems(new Set())}
+              onExitSelectionMode={handleToggleSelectionMode}
+            />
+          )}
+
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -298,9 +466,7 @@ export function QuoteItemsBuilder({
                       overId === item.id! &&
                       item.type === "section" &&
                       activeItem?.type !== "section" &&
-                      expandedItems.has(item.id!) &&
-                      item.children &&
-                      item.children.length > 0;
+                      expandedItems.has(item.id!);
 
                     return (
                       <SortableItem
@@ -313,6 +479,9 @@ export function QuoteItemsBuilder({
                         showUnitPrices={showUnitPrices}
                         isDragOverSection={isSectionDragOver}
                         isDragOverRootItem={isRootItemDragOver}
+                        selectionMode={selectionMode}
+                        selectedItems={selectedItems}
+                        onToggleSelect={handleToggleItemSelection}
                       />
                     );
                   })}
@@ -345,6 +514,8 @@ export function QuoteItemsBuilder({
         editingItem={editingItem}
         localItems={localItems}
         priceListId={priceListId}
+        quoteType={quoteType}
+        effectiveEventDays={effectiveEventDays}
       />
     </div>
   );

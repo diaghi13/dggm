@@ -74,11 +74,7 @@ export const useDragAndDrop = (
 
     // CASO 2: Voce → Sezione espansa (inserisci dentro)
     if (activeItem.type !== "section" && overItem.type === "section") {
-      const sectionIsExpanded = expandedItems.has(overItem.id!);
-      const sectionHasChildren =
-        overItem.children && overItem.children.length > 0;
-
-      if (sectionIsExpanded && sectionHasChildren) {
+      if (expandedItems.has(overItem.id!)) {
         console.log("CASO 2: Voce → Sezione espansa (inserisci dentro)");
         let newItems = removeItem(localItems, activeItem.id!);
 

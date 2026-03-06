@@ -22,7 +22,7 @@ class Ddt extends Model implements HasMedia
         'type',
         'supplier_id',
         'customer_id',
-        'site_id',
+        'project_id',
         'from_warehouse_id',
         'to_warehouse_id',
         'ddt_number',
@@ -68,9 +68,9 @@ class Ddt extends Model implements HasMedia
         return $this->belongsTo(Customer::class);
     }
 
-    public function site(): BelongsTo
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(Site::class);
+        return $this->belongsTo(Project::class);
     }
 
     public function fromWarehouse(): BelongsTo
@@ -125,9 +125,9 @@ class Ddt extends Model implements HasMedia
             ->orWhere('to_warehouse_id', $warehouseId);
     }
 
-    public function scopeForSite($query, int $siteId)
+    public function scopeForProject($query, int $projectId)
     {
-        return $query->where('site_id', $siteId);
+        return $query->where('project_id', $projectId);
     }
 
     public function scopeIncoming($query)

@@ -109,6 +109,7 @@ export default function EditQuotePage() {
       province: quote.province,
       postal_code: quote.postal_code,
       status: quote.status,
+      quote_type: quote.quote_type,
       issue_date: quote.issue_date,
       expiry_date: quote.expiry_date,
       price_list_id: quote.price_list_id,

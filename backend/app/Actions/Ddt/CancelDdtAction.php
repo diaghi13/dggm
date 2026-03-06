@@ -26,7 +26,7 @@ class CancelDdtAction
             // Dispatch event - ReverseStockMovementsListener will reverse movements
             DdtCancelled::dispatch($ddt->fresh(['stockMovements.product', 'items.product']), $reason, auth()->id());
 
-            return $ddt->fresh(['stockMovements.product', 'items.product', 'fromWarehouse', 'toWarehouse', 'supplier', 'customer', 'site']);
+            return $ddt->fresh(['stockMovements.product', 'items.product', 'fromWarehouse', 'toWarehouse', 'supplier', 'customer', 'project']);
         });
     }
 }

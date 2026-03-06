@@ -11,21 +11,21 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { siteWorkersApi } from '@/lib/api/site-workers';
-import { SiteRoleBadge } from '@/app/(dashboard)/sites/_components/site-role-badge';
+import { projectWorkersApi } from '@/lib/api/project-workers';
+import { ProjectRoleBadge } from '@/app/(dashboard)/projects/_components/project-role-badge';
 import { toast } from 'sonner';
 import { Loader2, Users } from 'lucide-react';
-import type { SiteWorker, SiteRole } from '@/lib/types';
+import type { ProjectWorker, ProjectRole } from '@/lib/types';
 
 interface ManageWorkerRolesDialogProps {
-  siteId: number;
-  assignment: SiteWorker | null;
+  projectId: number;
+  assignment: ProjectWorker | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export function ManageWorkerRolesDialog({
-  siteId,
+  projectId,
   assignment,
   open,
   onOpenChange,
@@ -34,21 +34,21 @@ export function ManageWorkerRolesDialog({
   const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
 
   const { data: roles, isLoading: loadingRoles } = useQuery({
-    queryKey: ['site-roles'],
-    queryFn: () => siteWorkersApi.getRoles(),
+    queryKey: ['project-roles'],
+    queryFn: () => projectWorkersApi.getRoles(),
     enabled: open,
   });
 
   const updateRolesMutation = useMutation({
     mutationFn: (roleIds: number[]) => {
       if (!assignment) throw new Error('No assignment selected');
-      return siteWorkersApi.updateAssignment(assignment.id, {
+      return projectWorkersApi.updateAssignment(assignment.id, {
         role_ids: roleIds,
       });
     },
     onSuccess: () => {
       toast.success('Ruoli aggiornati con successo');
-      queryClient.invalidateQueries({ queryKey: ['site-workers', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['project-workers', projectId] });
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -91,7 +91,7 @@ export function ManageWorkerRolesDialog({
             Gestisci Ruoli
           </DialogTitle>
           <DialogDescription>
-            Modifica i ruoli di {assignment.worker?.full_name} in questo cantiere
+            Modifica i ruoli di {assignment.worker?.full_name} in questo progetto
           </DialogDescription>
         </DialogHeader>
 
@@ -113,7 +113,7 @@ export function ManageWorkerRolesDialog({
                     onClick={() => toggleRole(role.id)}
                     className="transition-all hover:scale-105"
                   >
-                    <SiteRoleBadge
+                    <ProjectRoleBadge
                       role={role}
                       className={
                         selectedRoles.includes(role.id)

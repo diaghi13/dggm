@@ -34,7 +34,7 @@ class CodeController extends Controller
     public function generate(Request $request, string $entity): JsonResponse
     {
         // Validate entity type
-        $validEntities = ['quote', 'product', 'supplier', 'worker', 'contractor', 'ddt', 'movement', 'site'];
+        $validEntities = ['quote', 'product', 'supplier', 'worker', 'contractor', 'ddt', 'movement', 'project'];
 
         if (! in_array($entity, $validEntities)) {
             return response()->json([

@@ -8,7 +8,7 @@ use App\Http\Requests\RespondToMaterialRequestRequest;
 use App\Http\Requests\UpdateMaterialRequestRequest;
 use App\Http\Resources\MaterialRequestResource;
 use App\Models\MaterialRequest;
-use App\Models\Site;
+use App\Models\Project;
 use App\Services\MaterialRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,14 +21,14 @@ class MaterialRequestController extends Controller
     ) {}
 
     /**
-     * Get all material requests for a site
+     * Get all material requests for a project
      */
-    public function indexBySite(Request $request, Site $site): AnonymousResourceCollection
+    public function indexByProject(Request $request, Project $project): AnonymousResourceCollection
     {
-        $this->authorize('viewAny', [MaterialRequest::class, $site]);
+        $this->authorize('viewAny', [MaterialRequest::class, $project]);
 
         $filters = $request->only(['status', 'priority', 'worker_id']);
-        $requests = $this->materialRequestService->getRequestsBySite($site->id, $filters);
+        $requests = $this->materialRequestService->getRequestsBySite($project->id, $filters);
 
         return MaterialRequestResource::collection($requests);
     }
@@ -45,20 +45,20 @@ class MaterialRequestController extends Controller
             return MaterialRequestResource::collection([]);
         }
 
-        $filters = $request->only(['status', 'site_id']);
+        $filters = $request->only(['status', 'project_id']);
         $requests = $this->materialRequestService->getRequestsByWorker($worker->id, $filters);
 
         return MaterialRequestResource::collection($requests);
     }
 
     /**
-     * Get pending requests count for a site
+     * Get pending requests count for a project
      */
-    public function pendingCount(Site $site): JsonResponse
+    public function pendingCount(Project $project): JsonResponse
     {
-        $this->authorize('viewAny', [MaterialRequest::class, $site]);
+        $this->authorize('viewAny', [MaterialRequest::class, $project]);
 
-        $count = $this->materialRequestService->getPendingCountBySite($site->id);
+        $count = $this->materialRequestService->getPendingCountBySite($project->id);
 
         return response()->json([
             'success' => true,
@@ -69,13 +69,13 @@ class MaterialRequestController extends Controller
     }
 
     /**
-     * Get statistics for a site
+     * Get statistics for a project
      */
-    public function stats(Site $site): JsonResponse
+    public function stats(Project $project): JsonResponse
     {
-        $this->authorize('viewAny', [MaterialRequest::class, $site]);
+        $this->authorize('viewAny', [MaterialRequest::class, $project]);
 
-        $stats = $this->materialRequestService->getStatsBySite($site->id);
+        $stats = $this->materialRequestService->getStatsBySite($project->id);
 
         return response()->json([
             'success' => true,
@@ -114,7 +114,7 @@ class MaterialRequestController extends Controller
         $this->authorize('view', $materialRequest);
 
         $materialRequest->load([
-            'site',
+            'project',
             'material',
             'requestedByWorker.user',
             'requestedByUser',
