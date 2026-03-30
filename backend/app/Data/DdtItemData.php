@@ -42,12 +42,15 @@ class DdtItemData extends Data
 
         public ?string $notes,
 
+        public ?int $kit_assembly_id,
+
         // Timestamps
         public string|Optional $created_at,
         public string|Optional $updated_at,
 
         // Lazy relationships
         public Lazy|ProductData|null $product = null,
+        public Lazy|KitAssemblyData|null $kit_assembly = null,
 
         // Computed properties
         #[Computed]
@@ -67,9 +70,11 @@ class DdtItemData extends Data
             unit: $item->unit,
             unit_cost: $item->unit_cost,
             notes: $item->notes,
+            kit_assembly_id: $item->kit_assembly_id,
             created_at: $item->created_at->toISOString(),
             updated_at: $item->updated_at->toISOString(),
             product: Lazy::whenLoaded('product', $item, fn () => ProductData::from($item->product)),
+            kit_assembly: Lazy::whenLoaded('kitAssembly', $item, fn () => KitAssemblyData::from($item->kitAssembly)),
             total_cost: $item->total_cost,
         );
     }

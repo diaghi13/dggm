@@ -55,6 +55,7 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Plus, Pencil, Trash2, Star, Building2, Info } from 'lucide-react';
 import type { Product, ProductSubrentalSupplier } from '@/lib/types';
+import { CurrencyDisplay } from '@/components/ui/currency-input';
 
 interface SubrentalTabProps {
   product: Product;
@@ -302,7 +303,7 @@ export function SubrentalTab({ product }: SubrentalTabProps) {
               <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
                 <span>Costo base/giorno stimato:</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  €{Number(product.estimated_base_day).toFixed(2)}
+                  <CurrencyDisplay value={Number(product.estimated_base_day)} />
                 </span>
                 {product.rental_price_estimated && (
                   <Badge variant="outline" className="text-xs">
@@ -400,7 +401,7 @@ export function SubrentalTab({ product }: SubrentalTabProps) {
                     </TableCell>
                     <TableCell>
                       <span className="font-semibold text-slate-900 dark:text-slate-100">
-                        €{Number(supplier.day_rate).toFixed(2)}
+                        <CurrencyDisplay value={Number(supplier.day_rate)} />
                       </span>
                     </TableCell>
                     <TableCell>

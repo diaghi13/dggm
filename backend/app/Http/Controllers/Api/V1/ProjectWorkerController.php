@@ -95,6 +95,47 @@ class ProjectWorkerController extends Controller
     }
 
     /**
+     * Assign a worker to an existing project worker slot.
+     * The slot must have status='slot' and worker_id=null.
+     */
+    public function assignSlot(Request $request, ProjectWorker $projectWorker): JsonResponse
+    {
+        $this->authorize('update', $projectWorker);
+
+        abort_if(
+            $projectWorker->status !== ProjectWorkerStatus::Slot,
+            422,
+            'This assignment is not an unassigned slot.'
+        );
+
+        $validated = $request->validate([
+            'worker_id' => ['required', 'integer', 'exists:workers,id'],
+            'assigned_from' => ['nullable', 'date'],
+            'assigned_to' => ['nullable', 'date', 'after_or_equal:assigned_from'],
+            'notes' => ['nullable', 'string'],
+            'actual_cost_rate' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $worker = Worker::findOrFail($validated['worker_id']);
+
+        $actualCostRate = $request->input('actual_cost_rate') !== null
+            ? (float) $request->input('actual_cost_rate')
+            : null;
+
+        $slot = app(\App\Actions\Project\AssignWorkerToSlotAction::class)->execute(
+            $projectWorker,
+            $worker,
+            $validated,
+            $actualCostRate,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => ProjectWorkerData::fromModel($slot),
+        ]);
+    }
+
+    /**
      * Get a single project worker assignment
      */
     public function show(ProjectWorker $projectWorker): JsonResponse

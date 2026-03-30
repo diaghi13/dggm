@@ -2,6 +2,8 @@
 
 namespace App\Listeners;
 
+use App\Enums\DdtType;
+use App\Enums\KitAssemblyStatus;
 use App\Enums\StockMovementType;
 use App\Events\DdtCancelled;
 use App\Models\Inventory;
@@ -20,9 +22,14 @@ class ReverseStockMovementsListener
 {
     public function handle(DdtCancelled $event): void
     {
-        $ddt = $event->ddt->fresh(['stockMovements.product', 'stockMovements.warehouse']);
+        $ddt = $event->ddt->fresh(['stockMovements.product', 'stockMovements.warehouse', 'items.kitAssembly']);
 
         DB::transaction(function () use ($ddt, $event) {
+            // Restore kit assembly statuses for outgoing DDT types
+            if (in_array($ddt->type, [DdtType::Outgoing, DdtType::RentalOut])) {
+                $this->restoreKitAssemblyStatuses($ddt);
+            }
+
             foreach ($ddt->stockMovements as $movement) {
                 // Reverse inventory changes
                 $this->reverseInventoryChange($movement);
@@ -47,6 +54,23 @@ class ReverseStockMovementsListener
                 'reason' => $event->reason,
             ]);
         });
+    }
+
+    /**
+     * Restore KitAssembly status to Returned when a DDT outgoing is cancelled.
+     * Only reverts assemblies that are currently InUse.
+     */
+    private function restoreKitAssemblyStatuses($ddt): void
+    {
+        foreach ($ddt->items as $item) {
+            if ($item->kit_assembly_id && $item->kitAssembly) {
+                $assembly = $item->kitAssembly;
+
+                if ($assembly->status === KitAssemblyStatus::InUse) {
+                    $assembly->update(['status' => KitAssemblyStatus::Returned]);
+                }
+            }
+        }
     }
 
     /**

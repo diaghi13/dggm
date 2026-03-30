@@ -23,6 +23,7 @@ class Ddt extends Model implements HasMedia
         'supplier_id',
         'customer_id',
         'project_id',
+        'price_list_id',
         'from_warehouse_id',
         'to_warehouse_id',
         'ddt_number',
@@ -71,6 +72,11 @@ class Ddt extends Model implements HasMedia
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function priceList(): BelongsTo
+    {
+        return $this->belongsTo(PriceList::class);
     }
 
     public function fromWarehouse(): BelongsTo

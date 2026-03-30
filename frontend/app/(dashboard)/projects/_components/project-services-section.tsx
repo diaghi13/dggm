@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
+import { CurrencyDisplay } from '@/components/ui/currency-input';
 import { AddProjectMaterialDialog } from '@/app/(dashboard)/projects/_components/add-project-material-dialog';
 import { LogMaterialUsageDialog } from '@/components/log-material-usage-dialog';
 
@@ -112,7 +113,7 @@ export function ProjectServicesSection({
           <CardContent>
             <div className="text-2xl font-bold">{stats.extraServices}</div>
             <p className="text-xs text-muted-foreground">
-              € {stats.extraCost.toFixed(2)} costo
+              <CurrencyDisplay value={stats.extraCost} /> costo
             </p>
           </CardContent>
         </Card>
@@ -123,7 +124,7 @@ export function ProjectServicesSection({
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€ {stats.totalPlanned.toFixed(2)}</div>
+            <div className="text-2xl font-bold"><CurrencyDisplay value={stats.totalPlanned} /></div>
             <p className="text-xs text-muted-foreground">Budget servizi</p>
           </CardContent>
         </Card>
@@ -134,7 +135,7 @@ export function ProjectServicesSection({
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€ {stats.totalActual.toFixed(2)}</div>
+            <div className="text-2xl font-bold"><CurrencyDisplay value={stats.totalActual} /></div>
             <p className="text-xs text-muted-foreground">Consuntivo ad oggi</p>
           </CardContent>
         </Card>
@@ -146,7 +147,7 @@ export function ProjectServicesSection({
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              € {variance.toFixed(2)}
+              <CurrencyDisplay value={variance} />
             </div>
             <p className="text-xs text-muted-foreground">
               {variancePercentage >= 0 ? '+' : ''}{variancePercentage.toFixed(1)}%
@@ -237,13 +238,13 @@ export function ProjectServicesSection({
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          € {Number(service.planned_unit_cost || 0).toFixed(2)}
+                          <CurrencyDisplay value={Number(service.planned_unit_cost || 0)} />
                         </TableCell>
                         <TableCell className="text-right">
-                          € {Number(service.actual_unit_cost || 0).toFixed(2)}
+                          <CurrencyDisplay value={Number(service.actual_unit_cost || 0)} />
                         </TableCell>
                         <TableCell className={`text-right ${costVariance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          € {Number(costVariance || 0).toFixed(2)}
+                          <CurrencyDisplay value={Number(costVariance || 0)} />
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(service.status ?? 'planned')}

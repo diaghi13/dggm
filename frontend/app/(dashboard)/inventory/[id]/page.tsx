@@ -10,6 +10,7 @@ import { useInventoryById, useInventoryHistory } from '@/hooks/use-inventory';
 import { DataTable } from '@/components/shared/data-table/data-table';
 import { createStockMovementsColumns } from '@/components/stock-movements-columns';
 import { useMemo } from 'react';
+import { CurrencyDisplay } from '@/components/ui/currency-input';
 
 export default function InventoryDetailPage() {
   const params = useParams();
@@ -196,7 +197,7 @@ export default function InventoryDetailPage() {
                 Prezzo Acquisto
               </div>
               <div className="mt-1 text-sm">
-                € {Number(inventory.product?.purchase_price || 0).toFixed(2)}
+                <CurrencyDisplay value={Number(inventory.product?.purchase_price || 0)} />
               </div>
             </div>
             <div>
@@ -204,7 +205,7 @@ export default function InventoryDetailPage() {
                 Valore Inventario
               </div>
               <div className="mt-1 text-sm font-bold text-green-600">
-                € {(inventory.quantity_available * Number(inventory.product?.purchase_price || 0)).toFixed(2)}
+                <CurrencyDisplay value={inventory.quantity_available * Number(inventory.product?.purchase_price || 0)} />
               </div>
             </div>
           </div>

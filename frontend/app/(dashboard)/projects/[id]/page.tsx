@@ -39,6 +39,11 @@ import { DdtPendingAlert } from '@/components/ddt-pending-alert';
 import { ProjectWorkersTab } from '@/app/(dashboard)/projects/_components/project-workers-tab';
 import { ProductRequestsTab } from '@/app/(dashboard)/products/_components/material-requests-tab';
 import { ProjectServicesSection } from '@/app/(dashboard)/projects/_components/project-services-section';
+import { ProjectLaborSlotsSection } from '@/app/(dashboard)/projects/_components/project-labor-slots-section';
+import { ProjectLaborLogsSection } from '@/app/(dashboard)/projects/_components/project-labor-logs-section';
+import { ProjectExpensesSection } from '@/app/(dashboard)/projects/_components/project-expenses-section';
+import { ProjectFinalBalanceTab } from '@/app/(dashboard)/projects/_components/project-final-balance-tab';
+import { CurrencyDisplay, CurrencyInput } from '@/components/ui/currency-input';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200',
@@ -274,10 +279,14 @@ export default function ProjectDetailPage() {
           <TabsTrigger value="materiali">Materiali</TabsTrigger>
           <TabsTrigger value="servizi">Servizi</TabsTrigger>
           <TabsTrigger value="documenti">Documenti</TabsTrigger>
+          <TabsTrigger value="personale">Personale</TabsTrigger>
           <TabsTrigger value="squadra">Squadra</TabsTrigger>
+          <TabsTrigger value="ore">Ore</TabsTrigger>
+          <TabsTrigger value="spese">Spese</TabsTrigger>
           <TabsTrigger value="richieste">Richieste Materiale</TabsTrigger>
           <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
           <TabsTrigger value="costi">Analisi Costi</TabsTrigger>
+          <TabsTrigger value="final-balance">Final Balance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="riepilogo" className="space-y-6">
@@ -631,86 +640,67 @@ export default function ProjectDetailPage() {
             <CardContent className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Importo Stimato (€)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={
-                    editMode
-                      ? formData.estimated_amount ?? project.estimated_amount ?? ''
-                      : project.estimated_amount || ''
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      estimated_amount: parseFloat(e.target.value),
-                    })
-                  }
-                  disabled={!editMode}
-                  placeholder="0.00"
-                />
+                {editMode ? (
+                  <CurrencyInput
+                    value={formData.estimated_amount ?? Number(project.estimated_amount) ?? null}
+                    onChange={(v) => setFormData({ ...formData, estimated_amount: v })}
+                  />
+                ) : (
+                  <div className="flex h-9 items-center rounded-md border border-slate-200 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-900">
+                    <CurrencyDisplay value={Number(project.estimated_amount)} />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label>Costo Effettivo (€)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={
-                    editMode
-                      ? formData.actual_cost ?? project.actual_cost ?? ''
-                      : project.actual_cost || ''
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      actual_cost: parseFloat(e.target.value),
-                    })
-                  }
-                  disabled={!editMode}
-                  placeholder="0.00"
-                />
+                {editMode ? (
+                  <CurrencyInput
+                    value={formData.actual_cost ?? Number(project.actual_cost) ?? null}
+                    onChange={(v) => setFormData({ ...formData, actual_cost: v })}
+                  />
+                ) : (
+                  <div className="flex h-9 items-center rounded-md border border-slate-200 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-900">
+                    <CurrencyDisplay value={Number(project.actual_cost)} />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label>Importo Fatturato (€)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={
-                    editMode
-                      ? formData.invoiced_amount ?? project.invoiced_amount ?? ''
-                      : project.invoiced_amount || ''
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      invoiced_amount: parseFloat(e.target.value),
-                    })
-                  }
-                  disabled={!editMode}
-                  placeholder="0.00"
-                />
+                {editMode ? (
+                  <CurrencyInput
+                    value={formData.invoiced_amount ?? Number(project.invoiced_amount) ?? null}
+                    onChange={(v) => setFormData({ ...formData, invoiced_amount: v })}
+                  />
+                ) : (
+                  <div className="flex h-9 items-center rounded-md border border-slate-200 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-900">
+                    <CurrencyDisplay value={Number(project.invoiced_amount)} />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label>Margine</Label>
                 <div className="flex items-center gap-2">
-                  <Input
-                    value={`€ ${Number(project.margin || 0).toFixed(2)}`}
-                    disabled
-                    className={`bg-slate-50 dark:bg-slate-900 font-semibold ${
-                      Number(project.margin || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                  <div
+                    className={`flex h-9 flex-1 items-center rounded-md border bg-slate-50 px-3 font-semibold dark:bg-slate-900 ${
+                      Number(project.margin || 0) >= 0
+                        ? 'border-green-200 text-green-600 dark:border-green-800'
+                        : 'border-red-200 text-red-600 dark:border-red-800'
                     }`}
-                  />
-                  <Input
-                    value={`${Number(project.margin_percentage || 0).toFixed(1)}%`}
-                    disabled
-                    className={`bg-slate-50 dark:bg-slate-900 font-semibold w-24 ${
+                  >
+                    <CurrencyDisplay value={Number(project.margin || 0)} />
+                  </div>
+                  <div
+                    className={`flex h-9 w-24 items-center rounded-md border bg-slate-50 px-3 font-semibold dark:bg-slate-900 ${
                       Number(project.margin_percentage || 0) >= 0
-                        ? 'text-green-600'
-                        : 'text-red-600'
+                        ? 'border-green-200 text-green-600 dark:border-green-800'
+                        : 'border-red-200 text-red-600 dark:border-red-800'
                     }`}
-                  />
+                  >
+                    {Number(project.margin_percentage || 0).toFixed(1)}%
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -784,8 +774,20 @@ export default function ProjectDetailPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="personale">
+          <ProjectLaborSlotsSection projectId={project.id} />
+        </TabsContent>
+
         <TabsContent value="squadra">
           <ProjectWorkersTab projectId={projectId} />
+        </TabsContent>
+
+        <TabsContent value="ore">
+          <ProjectLaborLogsSection projectId={project.id} />
+        </TabsContent>
+
+        <TabsContent value="spese">
+          <ProjectExpensesSection projectId={project.id} />
         </TabsContent>
 
         <TabsContent value="richieste">
@@ -812,6 +814,10 @@ export default function ProjectDetailPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="final-balance" className="space-y-4">
+          <ProjectFinalBalanceTab projectId={project.id} />
         </TabsContent>
       </Tabs>
     </div>

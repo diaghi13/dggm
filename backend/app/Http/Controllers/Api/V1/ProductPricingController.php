@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Product\BulkUpdateProductPricesAction;
 use App\Http\Controllers\Controller;
+use App\Models\PriceList;
 use App\Models\Product;
 use App\Queries\Product\GetProductWithPricesQuery;
 use App\Services\ProductPricingService;
@@ -23,12 +24,16 @@ class ProductPricingController extends Controller
     {
         $this->authorize('view', $product);
 
-        $priceListId = $request->integer('price_list_id');
+        $priceListId = $request->integer('price_list_id') ?: null;
+        $quoteType = $request->string('quote_type')->value() ?: null;
+        $durationDays = $request->integer('duration_days') ?: null;
 
         $product = app(GetProductWithPricesQuery::class, [
             'productId' => $product->id,
             'priceListId' => $priceListId,
         ])->execute();
+
+        $priceList = $priceListId ? PriceList::find($priceListId) : null;
 
         return response()->json([
             'success' => true,
@@ -36,7 +41,9 @@ class ProductPricingController extends Controller
                 'product' => $product,
                 'effective_price' => $this->pricingService->getEffectivePrice(
                     $product,
-                    $priceListId ? $product->priceListItems->first()?->priceList : null
+                    $priceList,
+                    $quoteType,
+                    $durationDays
                 ),
             ],
         ]);

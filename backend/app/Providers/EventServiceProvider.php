@@ -13,6 +13,8 @@ use App\Events\InventoryAdjusted;
 use App\Events\InventoryLowStock;
 use App\Events\InventoryReservationReleased;
 use App\Events\InventoryReserved;
+use App\Events\KitAssembled;
+use App\Events\KitDisassembled;
 use App\Events\PasswordChanged;
 use App\Events\PasswordReset;
 use App\Events\PasswordResetRequested;
@@ -33,6 +35,7 @@ use App\Events\StockMovementCreated;
 use App\Events\StockMovementReversed;
 use App\Listeners\CheckLowStockAfterMovementListener;
 use App\Listeners\ClearQuotePdfCacheOnUpdate;
+use App\Listeners\CreateLaborSlotsFromQuoteListener;
 use App\Listeners\GeneratePriceListItemsListener;
 use App\Listeners\GenerateStockMovementsListener;
 use App\Listeners\InvalidatePricingCache;
@@ -198,7 +201,12 @@ class EventServiceProvider extends ServiceProvider
         ],
         QuoteConvertedToProject::class => [
             LogQuoteActivity::class,
+            CreateLaborSlotsFromQuoteListener::class,
         ],
+
+        // Kit Events
+        KitAssembled::class => [],
+        KitDisassembled::class => [],
     ];
 
     /**

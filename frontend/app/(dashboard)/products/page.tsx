@@ -37,6 +37,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/features/auth/protected-route";
 import { Can } from "@/components/features/auth/can";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 import type { Product } from "@/lib/types";
 
 const categoryLabels: Record<string, string> = {
@@ -270,7 +271,7 @@ function ProductsPageContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              € {stats.totalValue.toFixed(2)}
+              <CurrencyDisplay value={stats.totalValue} />
             </div>
             <p className="text-xs text-muted-foreground">Valore totale stock</p>
           </CardContent>

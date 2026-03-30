@@ -44,6 +44,9 @@ class DdtData extends Data
         #[Exists('projects', 'id')]
         public ?int $project_id,
 
+        #[Exists('price_lists', 'id')]
+        public ?int $price_list_id,
+
         // Warehouses
         #[Required, Exists('warehouses', 'id')]
         public int $from_warehouse_id,
@@ -101,6 +104,7 @@ class DdtData extends Data
         public Lazy|SupplierData|null $supplier = null,
         public Lazy|CustomerData|null $customer = null, // CustomerData when created
         public Lazy|ProjectData|null $project = null, // ProjectData when created
+        public Lazy|PriceListData|null $price_list = null,
         public Lazy|WarehouseData|null $from_warehouse = null,
         public Lazy|WarehouseData|null $to_warehouse = null,
         public Lazy|UserData|null $created_by_user = null,
@@ -142,6 +146,7 @@ class DdtData extends Data
             supplier_id: $ddt->supplier_id,
             customer_id: $ddt->customer_id,
             project_id: $ddt->project_id,
+            price_list_id: $ddt->price_list_id,
             from_warehouse_id: $ddt->from_warehouse_id,
             to_warehouse_id: $ddt->to_warehouse_id,
             ddt_number: $ddt->ddt_number,
@@ -165,6 +170,7 @@ class DdtData extends Data
             supplier: Lazy::whenLoaded('supplier', $ddt, fn () => SupplierData::from($ddt->supplier)),
             customer: Lazy::whenLoaded('customer', $ddt, fn () => CustomerData::from($ddt->customer)),
             project: Lazy::whenLoaded('project', $ddt, fn () => ProjectData::from($ddt->project)),
+            price_list: Lazy::whenLoaded('priceList', $ddt, fn () => $ddt->priceList ? PriceListData::from($ddt->priceList) : null),
             from_warehouse: Lazy::whenLoaded('fromWarehouse', $ddt, fn () => WarehouseData::from($ddt->fromWarehouse)),
             to_warehouse: Lazy::whenLoaded('toWarehouse', $ddt, fn () => WarehouseData::from($ddt->toWarehouse)),
             created_by_user: Lazy::whenLoaded('createdBy', $ddt, fn () => UserData::from($ddt->createdBy)),
@@ -222,6 +228,7 @@ class DdtData extends Data
             'carrier_name.max' => 'Il nome del trasportatore non può superare i 255 caratteri.',
             'tracking_number.max' => 'Il numero di tracciamento non può superare i 100 caratteri.',
             'parent_ddt_id.exists' => 'Il DDT di riferimento selezionato non esiste.',
+            'price_list_id.exists' => 'Il listino prezzi selezionato non esiste.',
         ];
     }
 }

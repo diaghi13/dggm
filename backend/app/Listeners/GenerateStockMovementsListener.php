@@ -3,10 +3,13 @@
 namespace App\Listeners;
 
 use App\Enums\DdtType;
+use App\Enums\KitAssemblyStatus;
+use App\Enums\ProductType;
 use App\Enums\StockMovementType;
 use App\Events\DdtConfirmed;
 use App\Events\StockMovementCreated;
 use App\Models\Inventory;
+use App\Models\Product;
 use App\Models\StockMovement;
 use Illuminate\Support\Facades\Log;
 
@@ -22,7 +25,7 @@ class GenerateStockMovementsListener
 {
     public function handle(DdtConfirmed $event): void
     {
-        $ddt = $event->ddt->fresh(['items.product', 'fromWarehouse', 'toWarehouse']);
+        $ddt = $event->ddt->fresh(['items.product', 'items.kitAssembly', 'fromWarehouse', 'toWarehouse']);
 
         match ($ddt->type) {
             DdtType::Incoming => $this->processIncoming($ddt),
@@ -33,6 +36,11 @@ class GenerateStockMovementsListener
             DdtType::ReturnFromCustomer => $this->processReturnFromCustomer($ddt),
             DdtType::ReturnToSupplier => $this->processReturnToSupplier($ddt),
         };
+
+        // Sync kit assembly statuses for outgoing DDT types
+        if (in_array($ddt->type, [DdtType::Outgoing, DdtType::RentalOut])) {
+            $this->syncKitAssemblyStatuses($ddt);
+        }
 
         Log::info('Stock movements generated for DDT', [
             'ddt_id' => $ddt->id,
@@ -70,6 +78,15 @@ class GenerateStockMovementsListener
 
             // Dispatch event
             StockMovementCreated::dispatch($movement);
+
+            // BOM explosion: expand components for KIT/COMPOSITE products
+            $this->expandBomComponents(
+                $item->product_id,
+                $ddt->from_warehouse_id,
+                $item->quantity,
+                'in',
+                $ddt
+            );
         }
     }
 
@@ -100,6 +117,15 @@ class GenerateStockMovementsListener
 
             // Dispatch event
             StockMovementCreated::dispatch($movement);
+
+            // BOM explosion: expand components for KIT/COMPOSITE products
+            $this->expandBomComponents(
+                $item->product_id,
+                $ddt->from_warehouse_id,
+                $item->quantity,
+                'out',
+                $ddt
+            );
         }
     }
 
@@ -181,6 +207,15 @@ class GenerateStockMovementsListener
                 $product->increment('quantity_out_on_rental', $item->quantity);
             }
             StockMovementCreated::dispatch($movement);
+
+            // BOM explosion: expand components for KIT/COMPOSITE products
+            $this->expandBomComponents(
+                $item->product_id,
+                $ddt->from_warehouse_id,
+                $item->quantity,
+                'out',
+                $ddt
+            );
         }
     }
 
@@ -211,6 +246,15 @@ class GenerateStockMovementsListener
                 $product->decrement('quantity_out_on_rental', $item->quantity);
             }
             StockMovementCreated::dispatch($movement);
+
+            // BOM explosion: expand components for KIT/COMPOSITE products
+            $this->expandBomComponents(
+                $item->product_id,
+                $ddt->from_warehouse_id,
+                $item->quantity,
+                'in',
+                $ddt
+            );
         }
     }
 
@@ -236,6 +280,15 @@ class GenerateStockMovementsListener
 
             $this->updateInventory($item->product_id, $ddt->from_warehouse_id, $item->quantity, 'add');
             StockMovementCreated::dispatch($movement);
+
+            // BOM explosion: expand components for KIT/COMPOSITE products
+            $this->expandBomComponents(
+                $item->product_id,
+                $ddt->from_warehouse_id,
+                $item->quantity,
+                'in',
+                $ddt
+            );
         }
     }
 
@@ -262,6 +315,134 @@ class GenerateStockMovementsListener
 
             $this->updateInventory($item->product_id, $ddt->from_warehouse_id, -$item->quantity, 'remove');
             StockMovementCreated::dispatch($movement);
+
+            // BOM explosion: expand components for KIT/COMPOSITE products
+            $this->expandBomComponents(
+                $item->product_id,
+                $ddt->from_warehouse_id,
+                $item->quantity,
+                'out',
+                $ddt
+            );
+        }
+    }
+
+    /**
+     * Sync KitAssembly status to InUse when a DDT outgoing is confirmed.
+     * Only updates assemblies that are in Assembled or Returned state.
+     */
+    private function syncKitAssemblyStatuses($ddt): void
+    {
+        foreach ($ddt->items as $item) {
+            if ($item->kit_assembly_id && $item->kitAssembly) {
+                $assembly = $item->kitAssembly;
+
+                if (in_array($assembly->status, [
+                    KitAssemblyStatus::Assembled,
+                    KitAssemblyStatus::Returned,
+                ])) {
+                    $assembly->update(['status' => KitAssemblyStatus::InUse]);
+                }
+            }
+        }
+    }
+
+    /**
+     * BOM Explosion: expand KIT/COMPOSITE components and create stock movements for each.
+     *
+     * Rules:
+     * - KIT/COMPOSITE → expand all components with is_required_for_stock=true
+     * - COMPOSITE component → recurse (cascade)
+     * - KIT component → do NOT recurse (kit is an independent unit with its own stock)
+     */
+    private function expandBomComponents(
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        string $direction,
+        $ddt,
+        int $depth = 0
+    ): void {
+        // Guard against runaway recursion (circular dependency safety net)
+        if ($depth > 10) {
+            Log::warning('BOM expansion: max recursion depth reached', ['product_id' => $productId]);
+
+            return;
+        }
+
+        $product = Product::with(['relations' => function ($q) {
+            $q->components()
+                ->requiredForStock()
+                ->with(['relatedProduct', 'relationType']);
+        }])->find($productId);
+
+        if (! $product || $product->relations->isEmpty()) {
+            return;
+        }
+
+        // Only explode KIT and COMPOSITE products
+        if (! in_array($product->product_type, [ProductType::KIT, ProductType::COMPOSITE])) {
+            return;
+        }
+
+        $movementType = $direction === 'out'
+            ? StockMovementType::KIT_ASSEMBLY
+            : StockMovementType::KIT_DISASSEMBLY;
+
+        foreach ($product->relations as $relation) {
+            $component = $relation->relatedProduct;
+            if (! $component) {
+                continue;
+            }
+
+            $componentQty = $relation->calculateQuantity($quantity);
+            if ($componentQty <= 0) {
+                continue;
+            }
+
+            // Create stock movement for the component
+            StockMovement::create([
+                'ddt_id' => $ddt->id,
+                'product_id' => $component->id,
+                'warehouse_id' => $warehouseId,
+                'type' => $movementType,
+                'quantity' => $componentQty,
+                'unit_cost' => $component->standard_cost,
+                'movement_date' => $ddt->ddt_date,
+                'project_id' => $ddt->project_id ?? null,
+                'user_id' => $ddt->created_by,
+                'notes' => "BOM expansion da {$product->name} (DDT {$ddt->code})",
+                'reference_document' => $ddt->code,
+            ]);
+
+            // Update inventory for the component
+            $this->updateInventory(
+                $component->id,
+                $warehouseId,
+                $direction === 'out' ? -$componentQty : $componentQty,
+                $direction === 'out' ? 'remove' : 'add'
+            );
+
+            Log::info('BOM component stock updated', [
+                'ddt_id' => $ddt->id,
+                'parent_product_id' => $productId,
+                'component_id' => $component->id,
+                'component_name' => $component->name,
+                'qty' => $componentQty,
+                'direction' => $direction,
+            ]);
+
+            // Recurse only for COMPOSITE components (not KIT — kit is an independent unit)
+            if ($component->product_type === ProductType::COMPOSITE) {
+                $this->expandBomComponents(
+                    $component->id,
+                    $warehouseId,
+                    $componentQty,
+                    $direction,
+                    $ddt,
+                    $depth + 1
+                );
+            }
         }
     }
 

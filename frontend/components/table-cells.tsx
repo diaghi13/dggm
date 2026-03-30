@@ -3,6 +3,7 @@
 import { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/components/ui/currency-input';
 
 // Icon + Text Cell
 interface IconTextCellProps {
@@ -108,9 +109,7 @@ export function MoneyCell({ amount, currency = '€', bold = false }: MoneyCellP
         "text-slate-900 dark:text-slate-100",
         bold ? "font-semibold" : "font-medium"
       )}>
-        {parseFloat(amount.toString()).toLocaleString('it-IT', {
-          minimumFractionDigits: 2,
-        })}
+        {formatCurrency(parseFloat(amount.toString()))}
       </span>
     </div>
   );

@@ -96,4 +96,19 @@ class ProjectController extends Controller
             'message' => 'Project deleted successfully',
         ]);
     }
+
+    /**
+     * Compute the Final Balance report for a project.
+     */
+    public function finalBalance(Project $project): JsonResponse
+    {
+        $this->authorize('view', $project);
+
+        $balance = app(\App\Services\FinalBalanceService::class)->compute($project);
+
+        return response()->json([
+            'success' => true,
+            'data' => $balance,
+        ]);
+    }
 }

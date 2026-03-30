@@ -40,6 +40,7 @@ import { it } from "date-fns/locale";
 import { WorkerForm } from "@/components/worker-form";
 import { WorkerRateForm } from "@/components/worker-rate-form";
 import type { WorkerFormData } from "@/lib/types";
+import { CurrencyDisplay, formatCurrency } from "@/components/ui/currency-input";
 import {
   Dialog,
   DialogContent,
@@ -699,11 +700,7 @@ export default function WorkerDetailPage() {
                           }
                         </TableCell>
                         <TableCell className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                          €{" "}
-                          {parseFloat(rate.rate_amount).toLocaleString(
-                            "it-IT",
-                            { minimumFractionDigits: 2 },
-                          )}
+                          <CurrencyDisplay value={parseFloat(rate.rate_amount)} bold />
                         </TableCell>
                         <TableCell className="text-slate-600 dark:text-slate-400">
                           {format(new Date(rate.valid_from), "dd/MM/yyyy")}
@@ -842,7 +839,7 @@ export default function WorkerDetailPage() {
                   <div className="space-y-2">
                     <Label>Stipendio Mensile Lordo</Label>
                     <Input
-                      value={`€ ${Number(worker.payroll_data.gross_monthly_salary).toLocaleString("it-IT", { minimumFractionDigits: 2 })}`}
+                      value={`€ ${formatCurrency(Number(worker.payroll_data.gross_monthly_salary))}`}
                       disabled
                       className="bg-slate-50 dark:bg-slate-900 font-semibold"
                     />
@@ -853,7 +850,7 @@ export default function WorkerDetailPage() {
                   <div className="space-y-2">
                     <Label>Stipendio Mensile Netto</Label>
                     <Input
-                      value={`€ ${Number(worker.payroll_data.net_monthly_salary).toLocaleString("it-IT", { minimumFractionDigits: 2 })}`}
+                      value={`€ ${formatCurrency(Number(worker.payroll_data.net_monthly_salary))}`}
                       disabled
                       className="bg-slate-50 dark:bg-slate-900 font-semibold"
                     />
@@ -980,11 +977,7 @@ export default function WorkerDetailPage() {
                     }
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                    Importo: €{" "}
-                    {parseFloat(rateToDelete.rate_amount).toLocaleString(
-                      "it-IT",
-                      { minimumFractionDigits: 2 },
-                    )}
+                    Importo: € {formatCurrency(parseFloat(rateToDelete.rate_amount))}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     Valida dal:{" "}

@@ -29,6 +29,7 @@ import { ProductBrandCombobox } from "./product-brand-combobox";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { AlertTriangle, Scan, Package2, Wrench, Layers, Pencil, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import type { ProductBrand } from "@/lib/types";
 import type { ProductType, ProductFormData } from "@/lib/types";
 
@@ -84,7 +85,8 @@ function getFieldVisibility(type: ProductType) {
   const isArticle = type === "article";
   const isComposite = type === "composite";
   const isService = type === "service";
-  const isPhysical = isArticle || isComposite;
+  const isKit = type === "kit";
+  const isPhysical = isArticle || isComposite || isKit;
 
   return {
     showEan: isPhysical,
@@ -103,6 +105,7 @@ function getFieldVisibility(type: ProductType) {
     isArticle,
     isComposite,
     isService,
+    isKit,
     isPhysical,
   };
 }
@@ -202,6 +205,7 @@ export function ProductForm({
     category_id: initialData?.category_id ?? null,
     brand_id: initialData?.brand_id ?? null,
     product_type: initialData?.product_type || "article",
+    kit_type: initialData?.kit_type ?? null,
     is_package: initialData?.is_package ?? false,
     package_weight: initialData?.package_weight ?? null,
     package_volume: initialData?.package_volume ?? null,
@@ -227,6 +231,7 @@ export function ProductForm({
     location: initialData?.location ?? null,
     notes: initialData?.notes ?? null,
     is_active: initialData?.is_active ?? true,
+    is_labor_role: initialData?.is_labor_role ?? false,
   });
 
   const [supplierSearch, setSupplierSearch] = useState("");
@@ -284,6 +289,7 @@ export function ProductForm({
       category_id: formData.category_id ?? null,
       brand_id: formData.brand_id ?? null,
       product_type: formData.product_type,
+      kit_type: formData.kit_type ?? null,
       is_package: formData.is_package ?? false,
       package_weight: formData.package_weight ?? null,
       package_volume: formData.package_volume ?? null,
@@ -306,6 +312,7 @@ export function ProductForm({
       location: formData.location ?? null,
       notes: formData.notes ?? null,
       is_active: formData.is_active ?? true,
+      is_labor_role: formData.is_labor_role ?? false,
     };
 
     onSubmit(submitData);
@@ -325,7 +332,7 @@ export function ProductForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-4">
             {(
               [
                 {
@@ -349,6 +356,17 @@ export function ProductForm({
                   ringColor: "ring-purple-500",
                   textColor: "text-purple-900 dark:text-purple-100",
                   descColor: "text-purple-700 dark:text-purple-300",
+                },
+                {
+                  value: "kit" as const,
+                  label: "Kit",
+                  description: "Assembly operativo tracciato",
+                  Icon: Layers,
+                  borderColor: "border-orange-300 dark:border-orange-700",
+                  bgColor: "bg-orange-50 dark:bg-orange-950/30",
+                  ringColor: "ring-orange-500",
+                  textColor: "text-orange-900 dark:text-orange-100",
+                  descColor: "text-orange-700 dark:text-orange-300",
                 },
                 {
                   value: "service" as const,
@@ -387,14 +405,68 @@ export function ProductForm({
           </div>
 
           {vis.isService && (
-            <p className="mt-3 text-xs text-emerald-700 dark:text-emerald-400 italic">
-              I servizi non hanno gestione magazzino, package o noleggio
-            </p>
+            <div className="mt-3 space-y-3">
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 italic">
+                I servizi non hanno gestione magazzino, package o noleggio
+              </p>
+              <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+                <input
+                  type="checkbox"
+                  id="is-labor-role"
+                  checked={formData.is_labor_role ?? false}
+                  onChange={(e) =>
+                    setFormData({ ...formData, is_labor_role: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <Label
+                  htmlFor="is-labor-role"
+                  className="flex-1 cursor-pointer text-sm text-amber-800 dark:text-amber-300"
+                >
+                  <span className="font-medium">Ruolo manodopera</span>
+                  <span className="ml-1 font-normal">— crea automaticamente uno slot personale quando il preventivo viene convertito in progetto</span>
+                </Label>
+              </div>
+            </div>
           )}
           {vis.isComposite && (
             <p className="mt-3 text-xs text-purple-700 dark:text-purple-400 italic">
               I compositi sono composti da altri prodotti — le relazioni si gestiscono dalla pagina di dettaglio
             </p>
+          )}
+          {vis.isKit && (
+            <div className="mt-3 space-y-3">
+              <p className="text-xs text-orange-700 dark:text-orange-400 italic">
+                I kit hanno un ciclo di vita operativo — gli assembly si gestiscono dalla pagina di dettaglio
+              </p>
+              <div>
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Tipo Kit</Label>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  {([
+                    { value: "assembled", label: "Assemblato", description: "Unità fisica in una cassa (rack, flight case)" },
+                    { value: "distributed", label: "Distribuito", description: "Componenti in posizioni fisiche diverse (impianto audio)" },
+                  ] as const).map(({ value, label, description }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, kit_type: value })}
+                      className={[
+                        "flex items-start gap-2 p-3 rounded-lg border-2 text-left transition-all cursor-pointer",
+                        "border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20",
+                        formData.kit_type === value
+                          ? "ring-2 ring-orange-400 border-orange-400 dark:border-orange-500"
+                          : "opacity-60 hover:opacity-90",
+                      ].join(" ")}
+                    >
+                      <div>
+                        <p className="font-medium text-sm text-orange-900 dark:text-orange-100">{label}</p>
+                        <p className="text-xs mt-0.5 text-orange-700 dark:text-orange-300">{description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -756,36 +828,24 @@ export function ProductForm({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="manufacturer_cost_price">Prezzo Costo Produttore (€)</Label>
-                  <Input
+                  <CurrencyInput
                     id="manufacturer_cost_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.manufacturer_cost_price ?? ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData({ ...formData, manufacturer_cost_price: val === "" ? null : parseFloat(val) });
-                    }}
+                    value={formData.manufacturer_cost_price ?? null}
+                    onChange={(v) => setFormData({ ...formData, manufacturer_cost_price: v })}
                     className="h-11"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                   <p className="text-xs text-slate-500">Prezzo di costo consigliato dal costruttore</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="manufacturer_retail_price">Prezzo Retail (€)</Label>
-                  <Input
+                  <CurrencyInput
                     id="manufacturer_retail_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.manufacturer_retail_price ?? ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData({ ...formData, manufacturer_retail_price: val === "" ? null : parseFloat(val) });
-                    }}
+                    value={formData.manufacturer_retail_price ?? null}
+                    onChange={(v) => setFormData({ ...formData, manufacturer_retail_price: v })}
                     className="h-11"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                   <p className="text-xs text-slate-500">Prezzo al dettaglio suggerito</p>
                 </div>
@@ -813,19 +873,12 @@ export function ProductForm({
               {vis.isService ? (
                 /* SERVICE: always editable */
                 <>
-                  <Input
+                  <CurrencyInput
                     id="standard_cost"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.standard_cost ?? ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData({ ...formData, standard_cost: val === "" ? null : parseFloat(val) });
-                    }}
+                    value={formData.standard_cost ?? null}
+                    onChange={(v) => setFormData({ ...formData, standard_cost: v })}
                     className="h-11"
-                    placeholder="0.00"
-                    required
+                    placeholder="0,00"
                   />
                   <p className="text-xs text-slate-500 dark:text-slate-400">Costo della prestazione</p>
                 </>
@@ -863,18 +916,12 @@ export function ProductForm({
               ) : (
                 /* MANUAL OVERRIDE mode: editable input + reset link */
                 <>
-                  <Input
+                  <CurrencyInput
                     id="standard_cost"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.standard_cost ?? ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData({ ...formData, standard_cost: val === "" ? null : parseFloat(val) });
-                    }}
+                    value={formData.standard_cost ?? null}
+                    onChange={(v) => setFormData({ ...formData, standard_cost: v })}
                     className="h-11"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                   <button
                     type="button"

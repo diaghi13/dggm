@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ProductType;
+use App\Enums\QuoteType;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
 use App\Models\Product;
@@ -22,7 +23,8 @@ use Illuminate\Support\Collection;
 class ProductPricingService
 {
     public function __construct(
-        private readonly PriceCalculatorService $priceCalculator
+        private readonly PriceCalculatorService $priceCalculator,
+        private readonly RentalEngineService $rentalEngine
     ) {}
 
     /**
@@ -184,11 +186,16 @@ class ProductPricingService
     }
 
     /**
-     * Get effective price for product (from price list or fallback)
+     * Get effective price for product (from price list or fallback).
      *
+     * When no price list is available and the quote is of type rental or event,
+     * rental prices are calculated via RentalEngineService instead of falling back
+     * to sale_price-based formulas.
+     *
+     * @param  string|null  $quoteType  QuoteType enum value ('sale', 'rental', 'event') or null
      * @return array Price data with source
      */
-    public function getEffectivePrice(Product $product, ?PriceList $priceList = null): array
+    public function getEffectivePrice(Product $product, ?PriceList $priceList = null, ?string $quoteType = null, ?int $durationDays = null): array
     {
         // Try to get from price list
         if ($priceList) {
@@ -198,7 +205,7 @@ class ProductPricingService
                 ->first();
 
             if ($item) {
-                return [
+                $result = [
                     'sale_price' => $item->sale_price,
                     'rental_hourly' => $item->rental_hourly,
                     'rental_half_day' => $item->rental_half_day,
@@ -211,6 +218,8 @@ class ProductPricingService
                     'price_list_name' => $priceList->name,
                     'source' => 'price_list',
                 ];
+
+                return $this->appendDurationTotal($result, $quoteType, $durationDays);
             }
         }
 
@@ -218,7 +227,7 @@ class ProductPricingService
         if ($product->product_type === ProductType::COMPOSITE) {
             $compositePrices = $this->calculateCompositePrices($product);
 
-            return [
+            $result = [
                 'sale_price' => $compositePrices['sale_price'],
                 'rental_hourly' => $compositePrices['rental_hourly'],
                 'rental_half_day' => $compositePrices['rental_half_day'],
@@ -231,6 +240,38 @@ class ProductPricingService
                 'price_list_name' => null,
                 'source' => 'calculated',
             ];
+
+            return $this->appendDurationTotal($result, $quoteType, $durationDays);
+        }
+
+        // For rental/event quotes without a price list: use RentalEngineService directly
+        // so that rental prices are calculated from the product cost, not from sale_price.
+        $isRentalContext = in_array($quoteType, [QuoteType::Rental->value, QuoteType::Event->value], strict: true);
+
+        if ($isRentalContext) {
+            $purchasePrice = $this->priceCalculator->calculateProductPurchasePrice($product);
+            $rentalPrices = $this->rentalEngine->calculateRentalPrices(
+                $purchasePrice,
+                null,
+                $product->estimated_base_day > 0 ? (float) $product->estimated_base_day : null,
+                (bool) $product->is_premium
+            );
+
+            $result = [
+                'sale_price' => $this->priceCalculator->calculateProductSalePrice($product),
+                'rental_hourly' => $rentalPrices['hourly'],
+                'rental_half_day' => $rentalPrices['half_day'],
+                'rental_daily' => $rentalPrices['daily'],
+                'rental_weekly' => $rentalPrices['weekly'],
+                'rental_monthly' => $rentalPrices['monthly'],
+                'rental_seasonal' => $rentalPrices['seasonal'],
+                'price_list_id' => null,
+                'price_list_item_id' => null,
+                'price_list_name' => null,
+                'source' => 'calculated_rental',
+            ];
+
+            return $this->appendDurationTotal($result, $quoteType, $durationDays);
         }
 
         // Fallback to manufacturer retail price (no markup for sale, but rental uses purchase cost)
@@ -238,7 +279,7 @@ class ProductPricingService
             $purchasePrice = $this->priceCalculator->calculateProductPurchasePrice($product);
             $rentalPrices = $this->priceCalculator->calculateRentalPrices($purchasePrice);
 
-            return [
+            $result = [
                 'sale_price' => $product->manufacturer_retail_price,
                 'rental_hourly' => $rentalPrices['hourly'],
                 'rental_half_day' => $rentalPrices['half_day'],
@@ -250,6 +291,8 @@ class ProductPricingService
                 'price_list_name' => null,
                 'source' => 'manufacturer_msrp',
             ];
+
+            return $this->appendDurationTotal($result, $quoteType, $durationDays);
         }
 
         // Last resort: calculate from purchase price
@@ -257,7 +300,7 @@ class ProductPricingService
         $purchasePrice = $this->priceCalculator->calculateProductPurchasePrice($product);
         $rentalPrices = $this->priceCalculator->calculateRentalPrices($purchasePrice);
 
-        return [
+        $result = [
             'sale_price' => $calculatedPrice,
             'rental_hourly' => $rentalPrices['hourly'],
             'rental_half_day' => $rentalPrices['half_day'],
@@ -269,6 +312,27 @@ class ProductPricingService
             'price_list_name' => null,
             'source' => 'calculated',
         ];
+
+        return $this->appendDurationTotal($result, $quoteType, $durationDays);
+    }
+
+    /**
+     * Append rental_total, duration_days and duration_multiplier to a pricing result
+     * when duration_days is provided and quote is of rental/event type.
+     */
+    private function appendDurationTotal(array $result, ?string $quoteType, ?int $durationDays): array
+    {
+        if ($durationDays && in_array($quoteType, [QuoteType::Rental->value, QuoteType::Event->value], strict: true)) {
+            $multiplier = $this->rentalEngine->calculateDurationMultiplier(
+                (float) $durationDays,
+                null
+            );
+            $result['rental_total'] = round(($result['rental_daily'] ?? 0) * $durationDays * $multiplier, 2);
+            $result['duration_days'] = $durationDays;
+            $result['duration_multiplier'] = $multiplier;
+        }
+
+        return $result;
     }
 
     /**
@@ -324,8 +388,6 @@ class ProductPricingService
             return $this->emptyCompositePrices();
         }
 
-        $rentalEngine = app(RentalEngineService::class);
-
         $totals = [
             'standard_cost' => 0.0,
             'sale_price' => 0.0,
@@ -374,7 +436,7 @@ class ProductPricingService
                 $totals['rental_seasonal'] += (float) ($priceListItem->rental_seasonal ?? 0) * $qty;
             } else {
                 // Estimate rental prices from component purchase cost (not sale price)
-                $rentalPrices = $rentalEngine->calculateRentalPrices($componentCost, null, null, (bool) $component->is_premium);
+                $rentalPrices = $this->rentalEngine->calculateRentalPrices($componentCost, null, null, (bool) $component->is_premium);
                 $totals['rental_hourly'] += $rentalPrices['hourly'] * $qty;
                 $totals['rental_half_day'] += $rentalPrices['half_day'] * $qty;
                 $totals['rental_daily'] += $rentalPrices['daily'] * $qty;
@@ -386,7 +448,7 @@ class ProductPricingService
             // --- estimated_base_day ---
             $componentBaseDay = (float) ($component->estimated_base_day ?? 0);
             if ($componentBaseDay <= 0) {
-                $componentBaseDay = $rentalEngine->calculateEstimatedBaseDay(
+                $componentBaseDay = $this->rentalEngine->calculateEstimatedBaseDay(
                     $componentCost,
                     (bool) $component->is_premium
                 );

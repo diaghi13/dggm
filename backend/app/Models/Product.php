@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Data\ProductData;
+use App\Enums\KitType;
 use App\Enums\ProductType;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +34,8 @@ class Product extends Model implements HasMedia
         'brand_id',
         'category_id',
         'product_type',
+        'billing_unit_default',
+        'is_labor_role',
         'ean',
         'etim_code',
         'is_package',
@@ -60,12 +63,14 @@ class Product extends Model implements HasMedia
         'location',
         'notes',
         'is_active',
+        'kit_type',
     ];
 
     protected function casts(): array
     {
         return [
             'product_type' => ProductType::class,
+            'kit_type' => KitType::class,
             'standard_cost' => 'decimal:2',
             'manufacturer_cost_price' => 'decimal:2',
             'manufacturer_retail_price' => 'decimal:2',
@@ -82,6 +87,7 @@ class Product extends Model implements HasMedia
             'rental_price_estimated' => 'boolean',
             'estimated_base_day' => 'decimal:2',
             'is_active' => 'boolean',
+            'is_labor_role' => 'boolean',
         ];
     }
 
@@ -263,6 +269,16 @@ class Product extends Model implements HasMedia
     public function scopeComposites($query)
     {
         return $query->where('product_type', ProductType::COMPOSITE);
+    }
+
+    public function scopeKits($query)
+    {
+        return $query->where('product_type', ProductType::KIT);
+    }
+
+    public function kitAssemblies(): HasMany
+    {
+        return $this->hasMany(KitAssembly::class);
     }
 
     public function scopeArticles($query)
@@ -830,8 +846,8 @@ class Product extends Model implements HasMedia
         });
 
         static::creating(function ($product) {
-            if ($product->product_type !== ProductType::COMPOSITE && $product->components()->count() > 0) {
-                throw new \Exception('Only COMPOSITE products can have components');
+            if (! in_array($product->product_type, [ProductType::COMPOSITE, ProductType::KIT]) && $product->components()->count() > 0) {
+                throw new \Exception('Only COMPOSITE and KIT products can have components');
             }
         });
 

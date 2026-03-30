@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { QuoteItem } from "./types";
 import { calculateSectionTotal } from "./utils";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 
 interface SortableItemProps {
   item: QuoteItem;
@@ -187,7 +188,7 @@ export function SortableItem({
                     <span>
                       Prezzo:{" "}
                       <span className="font-medium text-slate-900">
-                        € {parseFloat(String(item.unit_price)).toFixed(2)}
+                        <CurrencyDisplay value={parseFloat(String(item.unit_price))} />
                       </span>
                     </span>
                   )}
@@ -213,14 +214,11 @@ export function SortableItem({
               {!isSection && (
                 <div className="text-right">
                   <p className="text-lg font-bold text-slate-900">
-                    €{" "}
-                    {item.total.toLocaleString("it-IT", {
-                      minimumFractionDigits: 2,
-                    })}
+                    <CurrencyDisplay value={item.total} />
                   </p>
                   {item.discount_percentage > 0 && (
                     <p className="text-xs text-slate-500 line-through">
-                      € {item.subtotal.toFixed(2)}
+                      <CurrencyDisplay value={item.subtotal} />
                     </p>
                   )}
                 </div>
@@ -229,10 +227,7 @@ export function SortableItem({
                 <div className="text-right">
                   <p className="text-sm text-slate-600 mb-0.5">Subtotale:</p>
                   <p className="text-lg font-bold text-blue-600">
-                    €{" "}
-                    {sectionTotal.toLocaleString("it-IT", {
-                      minimumFractionDigits: 2,
-                    })}
+                    <CurrencyDisplay value={sectionTotal} />
                   </p>
                 </div>
               )}

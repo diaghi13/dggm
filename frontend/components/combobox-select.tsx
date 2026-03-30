@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Check, ChevronsUpDown, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -62,12 +62,18 @@ export function ComboboxSelect({
   // Debounce search for external queries
   const debouncedSearch = useDebounce(search, debounceMs);
 
-  // Call onSearchChange when debounced search changes
+  // Keep a ref to the latest onSearchChange to avoid it being a dependency
+  const onSearchChangeRef = useRef(onSearchChange);
   useEffect(() => {
-    if (onSearchChange && debouncedSearch !== undefined) {
-      onSearchChange(debouncedSearch);
+    onSearchChangeRef.current = onSearchChange;
+  });
+
+  // Call onSearchChange when debounced search changes (NOT when callback reference changes)
+  useEffect(() => {
+    if (onSearchChangeRef.current && debouncedSearch !== undefined) {
+      onSearchChangeRef.current(debouncedSearch);
     }
-  }, [debouncedSearch, onSearchChange]);
+  }, [debouncedSearch]);
 
   // Filter options locally if no external search handler
   const filteredOptions = useMemo(() => {

@@ -143,6 +143,7 @@ class DdtController extends Controller
             'supplier_id' => 'nullable|exists:suppliers,id',
             'customer_id' => 'nullable|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
+            'price_list_id' => 'nullable|exists:price_lists,id',
             'transport_type' => 'nullable|string',
             'carrier' => 'nullable|string|max:255',
             'tracking_number' => 'nullable|string|max:255',

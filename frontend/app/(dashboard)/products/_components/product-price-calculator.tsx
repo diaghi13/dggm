@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calculator, TrendingUp, AlertCircle, RefreshCw, Save } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CurrencyDisplay, CurrencyInput, formatCurrency } from '@/components/ui/currency-input';
 import { toast } from 'sonner';
 import type { Product, ProductRelation } from '@/lib/types';
 
@@ -29,7 +30,7 @@ interface PriceBreakdown {
 
 export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps) {
   const [baseQuantity, setBaseQuantity] = useState<number>(1);
-  const [manualPrice, setManualPrice] = useState<string>(product.standard_cost?.toString() || '');
+  const [manualPrice, setManualPrice] = useState<number | null>(product.standard_cost ?? null);
   const [useManualPrice, setUseManualPrice] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
@@ -42,12 +43,12 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
   });
 
   const calculatedPrice = priceData?.totalCost ?? 0;
-  const finalPrice = useManualPrice ? parseFloat(manualPrice) || 0 : calculatedPrice;
+  const finalPrice = useManualPrice ? (manualPrice ?? 0) : calculatedPrice;
   const hasRelations = priceData !== undefined && priceData.breakdown.length > 0;
 
   // Determine if there is a valid price to apply
   const canApplyPrice = useManualPrice
-    ? (parseFloat(manualPrice) || 0) > 0
+    ? (manualPrice ?? 0) > 0
     : hasRelations;
 
   // Mutation to persist the price via PATCH /products/{id}
@@ -63,7 +64,7 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
       }),
     onSuccess: () => {
       toast.success('Prezzo aggiornato', {
-        description: `Costo standard aggiornato a € ${finalPrice.toFixed(2)}`,
+        description: `Costo standard aggiornato a €\u00a0${formatCurrency(finalPrice)}`,
       });
       queryClient.invalidateQueries({ queryKey: ['product', product.id] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -172,10 +173,10 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
                         {item.quantity.toFixed(2)} {item.relatedProduct.unit}
                       </div>
                       <div className="text-right text-slate-600 dark:text-slate-400">
-                        € {item.unitCost.toFixed(2)}
+                        <CurrencyDisplay value={item.unitCost} />
                       </div>
                       <div className="text-right font-medium text-slate-900 dark:text-slate-100">
-                        € {item.totalCost.toFixed(2)}
+                        <CurrencyDisplay value={item.totalCost} />
                       </div>
                     </div>
                   ))}
@@ -189,7 +190,7 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-600 dark:text-slate-400">Subtotale Componenti</span>
-                <span className="font-medium">€ {priceData.totalCost.toFixed(2)}</span>
+                <span className="font-medium"><CurrencyDisplay value={priceData.totalCost} /></span>
               </div>
 
               <div className="flex items-center justify-between text-sm">
@@ -199,7 +200,7 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-600 dark:text-slate-400">Costo per Unità</span>
-                <span className="font-medium">€ {(priceData.totalCost / baseQuantity).toFixed(2)}</span>
+                <span className="font-medium"><CurrencyDisplay value={priceData.totalCost / baseQuantity} /></span>
               </div>
 
               <Separator />
@@ -207,7 +208,7 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
               <div className="flex items-center justify-between">
                 <span className="text-base font-semibold">Prezzo Calcolato</span>
                 <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  € {calculatedPrice.toFixed(2)}
+                  <CurrencyDisplay value={calculatedPrice} />
                 </span>
               </div>
             </div>
@@ -230,18 +231,12 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
               {useManualPrice && (
                 <div className="space-y-2">
                   <Label htmlFor="manualPrice">Prezzo Manuale</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-600 dark:text-slate-400">€</span>
-                    <Input
-                      id="manualPrice"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={manualPrice}
-                      onChange={(e) => setManualPrice(e.target.value)}
-                      className="w-40"
-                    />
-                  </div>
+                  <CurrencyInput
+                    id="manualPrice"
+                    value={manualPrice}
+                    onChange={(v) => setManualPrice(v)}
+                    className="w-40"
+                  />
                   <p className="text-xs text-amber-700 dark:text-amber-300">
                     Attenzione: stai sovrascrivendo il prezzo calcolato automaticamente
                   </p>
@@ -256,12 +251,12 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
                 <AlertDescription className="space-y-1">
                   <p className="font-medium">Differenza con Prezzo Attuale</p>
                   <div className="flex items-center gap-4 text-sm">
-                    <span>Attuale: € {parseFloat(product.standard_cost.toString()).toFixed(2)}</span>
+                    <span>Attuale: <CurrencyDisplay value={parseFloat(product.standard_cost.toString())} /></span>
                     <span>→</span>
-                    <span>Calcolato: € {calculatedPrice.toFixed(2)}</span>
+                    <span>Calcolato: <CurrencyDisplay value={calculatedPrice} /></span>
                     <Badge variant={calculatedPrice > parseFloat(product.standard_cost.toString()) ? 'destructive' : 'default'}>
                       {calculatedPrice > parseFloat(product.standard_cost.toString()) ? '+' : ''}
-                      € {(calculatedPrice - parseFloat(product.standard_cost.toString())).toFixed(2)}
+                      <CurrencyDisplay value={calculatedPrice - parseFloat(product.standard_cost.toString())} />
                     </Badge>
                   </div>
                 </AlertDescription>
@@ -281,7 +276,7 @@ export function ProductPriceCalculator({ product }: ProductPriceCalculatorProps)
                 variant="outline"
                 onClick={() => {
                   setUseManualPrice(false);
-                  setManualPrice(product.standard_cost?.toString() || '');
+                  setManualPrice(product.standard_cost ?? null);
                 }}
                 disabled={applyPriceMutation.isPending}
               >

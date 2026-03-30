@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\DdtController;
 use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\InvitationController;
+use App\Http\Controllers\Api\V1\KitAssemblyController;
 use App\Http\Controllers\Api\V1\MaterialCategoryController;
 use App\Http\Controllers\Api\V1\MaterialDependencyTypeController;
 use App\Http\Controllers\Api\V1\MaterialRequestController;
@@ -25,10 +26,13 @@ use App\Http\Controllers\Api\V1\ProductSubrentalSupplierController;
 use App\Http\Controllers\Api\V1\ProductUnitTypeController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ProjectDdtController;
+use App\Http\Controllers\Api\V1\ProjectExpenseController;
 use App\Http\Controllers\Api\V1\ProjectLaborCostController;
+use App\Http\Controllers\Api\V1\ProjectLaborLogController;
 use App\Http\Controllers\Api\V1\ProjectMaterialController;
 use App\Http\Controllers\Api\V1\ProjectRoleController;
 use App\Http\Controllers\Api\V1\ProjectWorkerController;
+use App\Http\Controllers\Api\V1\ProjectWorkerScheduleController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\RentalAnalyticsController;
 use App\Http\Controllers\Api\V1\RentalProfileController;
@@ -104,6 +108,9 @@ Route::prefix('v1')->group(function () {
             Route::get('feature-flags', [SettingController::class, 'featureFlags']);
             Route::get('feature-flags/enabled', [SettingController::class, 'enabledFeatures']);
             Route::post('feature-flags/{feature}/toggle', [SettingController::class, 'toggleFeature']);
+
+            // Batch update multiple settings in one request
+            Route::post('batch', [SettingController::class, 'batchUpdate']);
 
             // Get/Set by key (simplified endpoints)
             Route::get('key/{key}', [SettingController::class, 'getByKey'])->where('key', '.*');
@@ -195,6 +202,17 @@ Route::prefix('v1')->group(function () {
         Route::get('products/{product}/relations/stock-list', [ProductRelationController::class, 'stockList']);
         Route::patch('products/{product}/relations/{relation}', [ProductRelationController::class, 'update']);
         Route::delete('products/{product}/relations/{relation}', [ProductRelationController::class, 'destroy']);
+
+        // Kit Assemblies
+        Route::get('products/{product}/kit-assemblies', [KitAssemblyController::class, 'index']);
+        Route::post('products/{product}/kit-assemblies', [KitAssemblyController::class, 'store']);
+        Route::get('kit-assemblies/{kitAssembly}', [KitAssemblyController::class, 'show']);
+        Route::put('kit-assemblies/{kitAssembly}', [KitAssemblyController::class, 'update']);
+        Route::delete('kit-assemblies/{kitAssembly}', [KitAssemblyController::class, 'destroy']);
+        Route::post('kit-assemblies/{kitAssembly}/disassemble', [KitAssemblyController::class, 'disassemble']);
+        Route::post('kit-assemblies/{kitAssembly}/items', [KitAssemblyController::class, 'addItem']);
+        Route::patch('kit-assemblies/{kitAssembly}/items/{item}', [KitAssemblyController::class, 'updateItem']);
+        Route::delete('kit-assemblies/{kitAssembly}/items/{item}', [KitAssemblyController::class, 'removeItem']);
 
         // Product Relation Types (configurable relation types)
         Route::apiResource('product-relation-types', ProductRelationTypeController::class);
@@ -324,6 +342,35 @@ Route::prefix('v1')->group(function () {
         Route::post('project-workers/{project_worker}/complete', [ProjectWorkerController::class, 'complete']);
         Route::get('project-workers/{project_worker}/conflicts', [ProjectWorkerController::class, 'checkConflicts']);
         Route::get('project-workers/{project_worker}/effective-rate', [ProjectWorkerController::class, 'getEffectiveRate']);
+
+        // Project Worker Schedules
+        Route::get('project-workers/{projectWorker}/schedules', [ProjectWorkerScheduleController::class, 'index']);
+        Route::post('project-workers/{projectWorker}/schedules', [ProjectWorkerScheduleController::class, 'store']);
+        Route::post('project-workers/{projectWorker}/assign-slot', [ProjectWorkerController::class, 'assignSlot']);
+        Route::get('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'show']);
+        Route::put('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'update']);
+        Route::delete('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'destroy']);
+        Route::post('project-worker-schedules/{projectWorkerSchedule}/accept', [ProjectWorkerScheduleController::class, 'accept']);
+        Route::post('project-worker-schedules/{projectWorkerSchedule}/reject', [ProjectWorkerScheduleController::class, 'reject']);
+
+        // Project Labor Logs
+        Route::get('projects/{project}/labor-logs', [ProjectLaborLogController::class, 'index']);
+        Route::post('project-workers/{projectWorker}/labor-logs', [ProjectLaborLogController::class, 'store']);
+        Route::get('project-labor-logs/{projectLaborLog}', [ProjectLaborLogController::class, 'show']);
+        Route::post('project-labor-logs/{projectLaborLog}/approve', [ProjectLaborLogController::class, 'approve']);
+        Route::post('project-labor-logs/{projectLaborLog}/reject', [ProjectLaborLogController::class, 'reject']);
+
+        // Project Expenses
+        Route::get('projects/{project}/expenses', [ProjectExpenseController::class, 'index']);
+        Route::post('projects/{project}/expenses', [ProjectExpenseController::class, 'store']);
+        Route::get('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'show']);
+        Route::put('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'update']);
+        Route::delete('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'destroy']);
+        Route::post('project-expenses/{projectExpense}/approve', [ProjectExpenseController::class, 'approve']);
+        Route::post('project-expenses/{projectExpense}/reject', [ProjectExpenseController::class, 'reject']);
+
+        // Final Balance
+        Route::get('projects/{project}/final-balance', [ProjectController::class, 'finalBalance']);
 
         // Project Roles
         Route::apiResource('project-roles', ProjectRoleController::class);

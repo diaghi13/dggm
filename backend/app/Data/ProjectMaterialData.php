@@ -3,6 +3,7 @@
 namespace App\Data;
 
 use App\Enums\ProjectMaterialStatus;
+use App\Models\ProjectMaterial;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Lazy;
 
@@ -29,6 +30,8 @@ class ProjectMaterialData extends Data
         public ?string $delivery_date,
         public ?string $notes,
 
+        public ?int $kit_assembly_id,
+
         // Computed properties (read-only, not stored directly)
         public readonly ?float $remaining_quantity = null,
         public readonly ?float $usage_percentage = null,
@@ -42,6 +45,7 @@ class ProjectMaterialData extends Data
 
         public ProductData|Lazy|null $product = null,
         public QuoteItemData|Lazy|null $quoteItem = null,
+        public KitAssemblyData|Lazy|null $kit_assembly = null,
     ) {}
 
     public static function rules(): array
@@ -65,10 +69,11 @@ class ProjectMaterialData extends Data
             'required_date' => ['nullable', 'date'],
             'delivery_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
+            'kit_assembly_id' => ['nullable', 'integer', 'exists:kit_assemblies,id'],
         ];
     }
 
-    public static function fromModel($projectMaterial): self
+    public static function fromModel(ProjectMaterial $projectMaterial): self
     {
         return new self(
             id: $projectMaterial->id,
@@ -91,6 +96,8 @@ class ProjectMaterialData extends Data
             delivery_date: optional($projectMaterial->delivery_date)->toDateString(),
             notes: $projectMaterial->notes,
 
+            kit_assembly_id: $projectMaterial->kit_assembly_id,
+
             // Computed properties
             remaining_quantity: $projectMaterial->planned_quantity - ($projectMaterial->used_quantity + $projectMaterial->returned_quantity),
             usage_percentage: $projectMaterial->planned_quantity > 0 ? (($projectMaterial->used_quantity + $projectMaterial->returned_quantity) / $projectMaterial->planned_quantity) * 100 : null,
@@ -104,6 +111,7 @@ class ProjectMaterialData extends Data
 
             product: Lazy::whenLoaded('product', $projectMaterial, fn () => ProductData::fromModel($projectMaterial->product)),
             quoteItem: Lazy::whenLoaded('quoteItem', $projectMaterial, fn () => QuoteItemData::fromModel($projectMaterial->quoteItem)),
+            kit_assembly: Lazy::whenLoaded('kitAssembly', $projectMaterial, fn () => KitAssemblyData::fromModel($projectMaterial->kitAssembly)),
         );
     }
 }

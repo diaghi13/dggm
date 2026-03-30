@@ -9,6 +9,7 @@ import { warrantyTypesApi } from "@/lib/api/warranty-types";
 import { financialResourcesApi } from "@/lib/api/financial-resources";
 import { usersApi } from "@/lib/api/users";
 import { Button } from "@/components/ui/button";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -251,6 +252,19 @@ export function QuoteForm({
         per_page: 50,
       }),
   });
+
+  // Auto-select default price list for new quotes
+  const { data: defaultPriceList } = useQuery({
+    queryKey: ["price-list-default"],
+    queryFn: () => priceListsApi.getDefault(),
+    enabled: !quoteId && !formData.price_list_id,
+  });
+
+  useEffect(() => {
+    if (defaultPriceList && !formData.price_list_id) {
+      onChange("price_list_id", defaultPriceList.id);
+    }
+  }, [defaultPriceList, formData.price_list_id, onChange]);
 
   const { data: paymentTermsData, isLoading: isLoadingPaymentTerms } = useQuery(
     {
@@ -613,7 +627,9 @@ export function QuoteForm({
 
                   {/* Listino Prezzi */}
                   <div className="space-y-2">
-                    <Label htmlFor="price_list_id">Listino Prezzi</Label>
+                    <Label htmlFor="price_list_id">
+                      Listino Prezzi <span className="text-red-500">*</span>
+                    </Label>
                     <ComboboxSelect
                       options={
                         priceListsData?.data.map((priceList) => ({
@@ -635,6 +651,11 @@ export function QuoteForm({
                       emptyText="Nessun listino trovato"
                       loading={isLoadingPriceLists}
                     />
+                    {!quoteId && defaultPriceList === null && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        Nessun listino di default configurato. Vai in Impostazioni → Listini.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1124,7 +1145,7 @@ export function QuoteForm({
                             Totale articoli:
                           </span>
                           <span className="font-medium">
-                            € {itemsTotal.toFixed(2)}
+                            <CurrencyDisplay value={itemsTotal} />
                           </span>
                         </div>
 
@@ -1216,7 +1237,7 @@ export function QuoteForm({
                                     : "text-muted-foreground"
                                 }
                               >
-                                € {discountAmount.toFixed(2)}
+                                <CurrencyDisplay value={discountAmount} />
                               </span>
                             )}
                             <Button
@@ -1241,14 +1262,14 @@ export function QuoteForm({
 
                         <div className="flex justify-between py-1.5 border-b font-medium">
                           <span>Imponibile:</span>
-                          <span>€ {imponibile.toFixed(2)}</span>
+                          <span><CurrencyDisplay value={imponibile} /></span>
                         </div>
 
                         {vatAfterDiscount > 0 && (
                           <div className="flex justify-between py-1.5 border-b">
                             <span className="text-muted-foreground">IVA:</span>
                             <span className="font-medium">
-                              € {vatAfterDiscount.toFixed(2)}
+                              <CurrencyDisplay value={vatAfterDiscount} />
                             </span>
                           </div>
                         )}
@@ -1256,7 +1277,7 @@ export function QuoteForm({
                         <div className="flex justify-between py-2 text-lg font-bold border-t-2">
                           <span>TOTALE:</span>
                           <span className="text-primary">
-                            € {grandTotal.toFixed(2)}
+                            <CurrencyDisplay value={grandTotal} bold />
                           </span>
                         </div>
                       </div>

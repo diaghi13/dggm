@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { productsApi } from "@/lib/api/products";
-import { Check, ChevronsUpDown, Package, Loader2, Scan } from "lucide-react";
+import { Check, ChevronsUpDown, Package, Loader2, Scan, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { toast } from "sonner";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 
 interface ProductAutocompleteProps {
   value?: number | null;
@@ -163,22 +164,28 @@ export function ProductAutocomplete({
               role="combobox"
               aria-expanded={open}
               className={cn(
-                "flex-1 justify-between h-11 border-slate-300 hover:border-blue-500",
+                "flex-1 justify-between h-11 border-slate-300 hover:border-blue-500 max-w-full overflow-hidden",
                 !value && "text-muted-foreground",
                 className,
               )}
             >
               {selectedMaterial ? (
-                <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
                   <Package className="h-4 w-4 flex-shrink-0 text-slate-500" />
-                  <span className="truncate font-medium">
+                  <span className="truncate font-medium text-sm">
                     {selectedMaterial.code}
                   </span>
-                  <span className="truncate text-sm text-slate-600 dark:text-slate-400">
-                    - {selectedMaterial.name}
+                  <span className="truncate text-sm text-slate-600 dark:text-slate-400 hidden sm:inline">
+                    — {selectedMaterial.name}
                   </span>
                   <div className="ml-auto flex-shrink-0 flex items-center gap-1">
-                    {selectedMaterial.product_type === "service" && (
+                    {selectedMaterial.is_labor_role && (
+                      <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800 gap-1">
+                        <Users className="w-3 h-3" />
+                        Ruolo
+                      </Badge>
+                    )}
+                    {selectedMaterial.product_type === "service" && !selectedMaterial.is_labor_role && (
                       <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800">
                         Servizio
                       </Badge>
@@ -188,19 +195,7 @@ export function ProductAutocomplete({
                         Composito
                       </Badge>
                     )}
-                    {selectedMaterial.category && (
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-xs",
-                          categoryColors[
-                            selectedMaterial.category.code || "general"
-                          ] || categoryColors.general,
-                        )}
-                      >
-                        {selectedMaterial.category.name}
-                      </Badge>
-                    )}
+                    {/* Category badge hidden in trigger — visible only in dropdown list */}
                   </div>
                 </div>
               ) : (
@@ -284,9 +279,15 @@ export function ProductAutocomplete({
                                 {material.category.name}
                               </Badge>
                             )}
-                            {material.product_type === "service" && (
+                            {material.product_type === "service" && !material.is_labor_role && (
                               <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800">
                                 Servizio
+                              </Badge>
+                            )}
+                            {material.is_labor_role && (
+                              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800 gap-1">
+                                <Users className="w-3 h-3" />
+                                Ruolo
                               </Badge>
                             )}
                             {material.product_type === "composite" && (
@@ -312,7 +313,7 @@ export function ProductAutocomplete({
                                 return (
                                   <>
                                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                      € {Number(priceListItem.final_sale_price || 0).toFixed(2)}
+                                      <CurrencyDisplay value={Number(priceListItem.final_sale_price || 0)} />
                                     </p>
                                     <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                                       vendita
@@ -325,7 +326,7 @@ export function ProductAutocomplete({
                                 return (
                                   <>
                                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                      € {Number(priceListItem.final_rental_daily).toFixed(2)}
+                                      <CurrencyDisplay value={Number(priceListItem.final_rental_daily)} />
                                     </p>
                                     <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                                       noleggio/gg
@@ -343,7 +344,7 @@ export function ProductAutocomplete({
                                 return (
                                   <>
                                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                      € {Number(material.estimated_base_day).toFixed(2)}
+                                      <CurrencyDisplay value={Number(material.estimated_base_day)} />
                                     </p>
                                     <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
                                       stima/gg
@@ -355,7 +356,7 @@ export function ProductAutocomplete({
                                 return (
                                   <>
                                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                      € {Number(material.manufacturer_retail_price).toFixed(2)}
+                                      <CurrencyDisplay value={Number(material.manufacturer_retail_price)} />
                                     </p>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                                       MSRP
@@ -370,7 +371,7 @@ export function ProductAutocomplete({
                             return (
                               <>
                                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                  € {Number(fallbackPrice || 0).toFixed(2)}
+                                  <CurrencyDisplay value={Number(fallbackPrice || 0)} />
                                 </p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">
                                   {material.manufacturer_retail_price ? "MSRP" : (material.unit ?? "std.")}

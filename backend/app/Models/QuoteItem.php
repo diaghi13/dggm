@@ -29,6 +29,7 @@ class QuoteItem extends Model
         'duration',
         'quantity',
         'unit_price',
+        'cost_price',
         'discount_percentage',
         'hide_unit_price',
         'subtotal',
@@ -39,6 +40,7 @@ class QuoteItem extends Model
         'total_with_vat',
         'include_image',
         'included_media_ids',
+        'expand_kit',
     ];
 
     protected function casts(): array
@@ -49,6 +51,7 @@ class QuoteItem extends Model
             'duration' => 'decimal:2',
             'quantity' => 'decimal:2',
             'unit_price' => 'decimal:2',
+            'cost_price' => 'decimal:2',
             'discount_percentage' => 'decimal:2',
             'hide_unit_price' => 'boolean',
             'subtotal' => 'decimal:2',
@@ -58,6 +61,7 @@ class QuoteItem extends Model
             'vat_amount' => 'decimal:2',
             'total_with_vat' => 'decimal:2',
             'include_image' => 'boolean',
+            'expand_kit' => 'boolean',
             'included_media_ids' => 'array',
         ];
     }
@@ -86,6 +90,11 @@ class QuoteItem extends Model
     public function priceListItem(): BelongsTo
     {
         return $this->belongsTo(PriceListItem::class);
+    }
+
+    public function projectWorkerSlots(): HasMany
+    {
+        return $this->hasMany(ProjectWorker::class, 'quote_item_id');
     }
 
     // Methods
@@ -141,6 +150,24 @@ class QuoteItem extends Model
     private function calculateDurationMultiplier(float $days): float
     {
         return app(RentalEngineService::class)->calculateDurationMultiplier($days);
+    }
+
+    public function getMarginAmountAttribute(): ?float
+    {
+        if ($this->cost_price === null || $this->unit_price === null) {
+            return null;
+        }
+
+        return (float) $this->unit_price - (float) $this->cost_price;
+    }
+
+    public function getMarginPercentAttribute(): ?float
+    {
+        if ($this->cost_price === null || $this->unit_price === null || (float) $this->unit_price == 0) {
+            return null;
+        }
+
+        return ((float) $this->unit_price - (float) $this->cost_price) / (float) $this->unit_price * 100;
     }
 
     public function isSection(): bool

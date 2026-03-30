@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Data\ProjectMaterialData;
+use App\Enums\KitAssemblyStatus;
 use App\Enums\ProjectMaterialStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
@@ -242,7 +243,6 @@ class ProjectMaterialController extends Controller
         $projectMaterial->delivery_date = $validated['delivery_date'] ?? now();
 
         $netQuantity = $projectMaterial->delivered_quantity - $projectMaterial->returned_quantity;
-        $planned = $projectMaterial->planned_quantity;
 
         if ($netQuantity == 0) {
             $projectMaterial->status = ProjectMaterialStatus::PLANNED;
@@ -251,6 +251,14 @@ class ProjectMaterialController extends Controller
         }
 
         $projectMaterial->save();
+
+        // Sync kit assembly status to InUse
+        if ($projectMaterial->kit_assembly_id && $projectMaterial->kitAssembly) {
+            $assembly = $projectMaterial->kitAssembly;
+            if (in_array($assembly->status, [KitAssemblyStatus::Assembled, KitAssemblyStatus::Returned])) {
+                $assembly->update(['status' => KitAssemblyStatus::InUse]);
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -304,6 +312,14 @@ class ProjectMaterialController extends Controller
         }
 
         $projectMaterial->save();
+
+        // Sync kit assembly status to Returned
+        if ($projectMaterial->kit_assembly_id && $projectMaterial->kitAssembly) {
+            $assembly = $projectMaterial->kitAssembly;
+            if ($assembly->status === KitAssemblyStatus::InUse) {
+                $assembly->update(['status' => KitAssemblyStatus::Returned]);
+            }
+        }
 
         return response()->json([
             'success' => true,

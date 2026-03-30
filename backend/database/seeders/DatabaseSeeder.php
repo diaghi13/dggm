@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             ProductCategorySeeder::class,
             ProductRelationTypeSeeder::class,
             SettingSeeder::class,
+            AppSettingsSeeder::class,
             CompanySettingsSeeder::class,
             QuoteSettingsSeeder::class,
             ProjectRoleSeeder::class,

@@ -347,6 +347,13 @@ export interface DdtItem {
   unit_cost: number;
   total_cost: number;
   notes: string | null;
+  kit_assembly_id?: number | null;
+  kit_assembly?: {
+    id: number;
+    name: string;
+    status: KitAssemblyStatus;
+    location: string | null;
+  } | null;
   created_at: string;
   updated_at: string;
 }
@@ -440,6 +447,7 @@ export interface DdtFormData {
   supplier_id?: number | null;
   customer_id?: number | null;
   project_id?: number | null;
+  price_list_id?: number | null;
   from_warehouse_id: number;
   to_warehouse_id?: number | null;
   ddt_number: string;
@@ -460,6 +468,8 @@ export interface DdtFormData {
     unit: string;
     unit_cost?: number;
     notes?: string | null;
+    kit_assembly_id?: number | null;
+    _pricing_breakdown?: string;
   }>;
 }
 
@@ -891,7 +901,8 @@ export type ProjectWorkerStatus =
   | "rejected"
   | "active"
   | "completed"
-  | "cancelled";
+  | "cancelled"
+  | "slot";
 
 export interface ProjectRole {
   id: number;
@@ -933,6 +944,18 @@ export interface ProjectWorker {
   worker?: Worker;
   project?: Project;
   roles?: ProjectRole[];
+  // Slot fields
+  role_name?: string | null;
+  slot_index?: number;
+  quote_item_id?: number | null;
+  estimated_days?: number | null;
+  budget_cost_rate?: number | null;
+  actual_cost_rate?: number | null;
+  customer_rate?: number | null;
+  is_external?: boolean;
+  is_scheduled?: boolean;
+  worker_name?: string | null;
+  worker_code?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -954,6 +977,97 @@ export interface ProjectWorkerConflict {
   has_conflicts: boolean;
   conflict_count: number;
   conflicts: ProjectWorker[];
+}
+
+export type ProjectScheduleDayStatus = "pending" | "accepted" | "rejected" | "modified" | "completed" | "cancelled";
+export type ProjectLogStatus = "draft" | "submitted" | "approved" | "rejected";
+export type ProjectExpenseStatus = "draft" | "submitted" | "auto_approved" | "approved" | "rejected";
+export type ProjectExpenseCategory = "travel" | "accommodation" | "meal" | "fuel" | "toll" | "parking" | "equipment" | "communication" | "other";
+
+export interface ProjectWorkerSchedule {
+  id: number;
+  project_worker_id: number;
+  scheduled_date: string;
+  planned_start_time: string | null;
+  planned_end_time: string | null;
+  planned_hours: number | null;
+  effective_planned_hours: number;
+  status: ProjectScheduleDayStatus;
+  accepted_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectLaborLog {
+  id: number;
+  project_id: number;
+  project_worker_id: number;
+  worker_id: number | null;
+  schedule_day_id: number | null;
+  log_date: string;
+  regular_hours: number;
+  overtime_hours: number;
+  total_hours: number;
+  description: string | null;
+  submitted_by_user_id: number | null;
+  submitted_by_name: string | null;
+  status: ProjectLogStatus;
+  approved_by_user_id: number | null;
+  approved_at: string | null;
+  rejection_reason: string | null;
+  labor_cost_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectExpense {
+  id: number;
+  project_id: number;
+  project_worker_id: number | null;
+  submitted_by_user_id: number | null;
+  submitted_by_name: string | null;
+  category: ProjectExpenseCategory;
+  category_label: string;
+  description: string;
+  amount: number;
+  expense_date: string;
+  is_billable_to_client: boolean;
+  receipt_media_id: number | null;
+  status: ProjectExpenseStatus;
+  approved_by_user_id: number | null;
+  approved_at: string | null;
+  rejection_reason: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FinalBalance {
+  project_id: number;
+  project_name: string;
+  project_code: string;
+  customer_name: string | null;
+  currency: string;
+  quote_total: number;
+  quote_labor_total: number;
+  quote_material_total: number;
+  extra_labor_revenue: number;
+  billable_expenses_revenue: number;
+  total_revenue: number;
+  labor_cost_total: number;
+  external_labor_cost: number;
+  internal_labor_cost: number;
+  material_cost_total: number;
+  approved_expenses_total: number;
+  total_cost: number;
+  gross_margin: number;
+  gross_margin_percent: number;
+  workers: ProjectWorker[];
+  expenses: ProjectExpense[];
+  generated_at: string | null;
 }
 
 // Worker Invitation Types
@@ -1170,6 +1284,7 @@ export interface ProductFormData {
   category_id?: number | null;
   brand_id?: number | null;
   product_type: App.Enums.ProductType;
+  kit_type?: App.Enums.KitType | null;
   is_package?: boolean;
   package_weight?: number | null;
   package_volume?: number | null;
@@ -1194,6 +1309,7 @@ export interface ProductFormData {
   subrental_markup?: number | null;
   rental_price_estimated?: boolean;
   estimated_base_day?: number | null;
+  is_labor_role?: boolean;
 }
 
 export interface ProductRelationFormData {
@@ -1316,4 +1432,55 @@ export interface RentalProfile {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
+}
+
+// ============================================
+// KIT ASSEMBLY TYPES
+// ============================================
+
+export type KitAssemblyStatus = 'assembled' | 'in_use' | 'returned' | 'disassembled';
+export type KitTypeEnum = 'distributed' | 'assembled';
+
+export interface KitAssemblyItem {
+  id: number;
+  kit_assembly_id: number;
+  product_id: number;
+  quantity: number;
+  serial_number: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  product?: App.Data.ProductData;
+}
+
+export interface KitAssembly {
+  id: number;
+  product_id: number;
+  name: string;
+  status: KitAssemblyStatus;
+  location: string | null;
+  notes: string | null;
+  warehouse_id: number | null;
+  warehouse?: { id: number; name: string } | null;
+  assembled_at: string | null;
+  disassembled_at: string | null;
+  assembled_by_user_id: number | null;
+  disassembled_by_user_id: number | null;
+  created_at: string;
+  updated_at: string;
+  product?: App.Data.ProductData;
+  items?: KitAssemblyItem[];
+}
+
+export interface KitAssemblyFormData {
+  name: string;
+  location?: string | null;
+  notes?: string | null;
+  warehouse_id?: number | null;
+  items: {
+    product_id: number;
+    quantity: number;
+    serial_number?: string | null;
+    notes?: string | null;
+  }[];
 }

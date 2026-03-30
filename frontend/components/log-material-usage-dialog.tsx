@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Loader2, Package } from 'lucide-react';
+import { CurrencyDisplay, formatCurrency } from '@/components/ui/currency-input';
 
 interface LogMaterialUsageDialogProps {
   projectId: number;
@@ -184,7 +185,7 @@ export function LogMaterialUsageDialog({
               <p className="text-xs text-muted-foreground">
                 Lascia vuoto per usare il costo pianificato
                 {material.planned_unit_cost != null
-                  ? ` (€${material.planned_unit_cost.toFixed(2)})`
+                  ? ` (€\u00a0${formatCurrency(material.planned_unit_cost)})`
                   : ' (—)'}
               </p>
             </div>
@@ -207,7 +208,7 @@ export function LogMaterialUsageDialog({
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Costo Totale Utilizzo:</span>
                   <span className="text-lg font-bold text-blue-600">
-                    € {(parseFloat(formData.quantity_used) * parseFloat(formData.actual_unit_cost || '0')).toFixed(2)}
+                    <CurrencyDisplay value={parseFloat(formData.quantity_used) * parseFloat(formData.actual_unit_cost || '0')} />
                   </span>
                 </div>
               </div>

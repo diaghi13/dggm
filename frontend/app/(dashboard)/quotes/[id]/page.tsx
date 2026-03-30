@@ -31,6 +31,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PdfViewer } from "@/components/features/pdf/pdf-viewer";
 import { QuoteAttachmentsUpload } from "@/app/(dashboard)/quotes/_components/quote-attachments-upload";
 import type { QuoteItem } from "@/lib/types";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 
 const statusColors: Record<string, string> = {
   draft:
@@ -212,7 +213,7 @@ function renderItemsTree(
           </td>
         )}
         <td className="px-4 py-3 text-right font-medium">
-          {!isSection && `€ ${(item.unit_price || 0).toFixed(2)}`}
+          {!isSection && <CurrencyDisplay value={item.unit_price || 0} />}
         </td>
         <td className="px-4 py-3 text-right">
           {!isSection && item.discount_percentage > 0 ? (
@@ -220,7 +221,7 @@ function renderItemsTree(
               <span className="text-xs">-{item.discount_percentage}%</span>
               <br />
               <span className="font-medium text-sm">
-                -€{(item.discount_amount || 0).toFixed(2)}
+                -<CurrencyDisplay value={item.discount_amount || 0} showCurrency={false} />
               </span>
             </div>
           ) : (
@@ -235,7 +236,7 @@ function renderItemsTree(
               </span>
               <br />
               <span className="text-xs text-slate-500">
-                €{itemTax.toFixed(2)}
+                <CurrencyDisplay value={itemTax} />
               </span>
             </div>
           )}
@@ -245,7 +246,7 @@ function renderItemsTree(
             <p
               className={`font-bold ${isSection ? "text-lg" : "text-base"} text-slate-900 dark:text-slate-100`}
             >
-              €{(item.total_with_vat || 0).toFixed(2)}
+              <CurrencyDisplay value={item.total_with_vat || 0} />
             </p>
             {!isSection && (
               <p className="text-xs text-slate-500">(IVA incl.)</p>
@@ -993,7 +994,7 @@ export default function QuoteDetailPage() {
                       Imponibile
                     </span>
                     <span className="font-semibold text-lg">
-                      €{quote.subtotal.toFixed(2)}
+                      <CurrencyDisplay value={quote.subtotal} />
                     </span>
                   </div>
                   {quote.discount_percentage > 0 && (
@@ -1002,7 +1003,7 @@ export default function QuoteDetailPage() {
                         Sconto ({quote.discount_percentage}%)
                       </span>
                       <span className="font-semibold text-lg text-red-600 dark:text-red-400">
-                        -€{quote.discount_amount.toFixed(2)}
+                        -<CurrencyDisplay value={quote.discount_amount} showCurrency={false} />
                       </span>
                     </div>
                   )}
@@ -1012,7 +1013,7 @@ export default function QuoteDetailPage() {
                         IVA Totale
                       </span>
                       <span className="font-semibold text-lg text-blue-600 dark:text-blue-400">
-                        €{quote.tax_amount.toFixed(2)}
+                        <CurrencyDisplay value={quote.tax_amount} />
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 italic">
@@ -1023,7 +1024,7 @@ export default function QuoteDetailPage() {
                   <div className="flex justify-between items-center pt-2">
                     <span className="text-lg font-bold">Totale Preventivo</span>
                     <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                      €{quote.total_amount.toFixed(2)}
+                      <CurrencyDisplay value={quote.total_amount} />
                     </span>
                   </div>
                   {(quote.deposit_percentage || quote.deposit_amount) && (
@@ -1038,7 +1039,7 @@ export default function QuoteDetailPage() {
                           </span>
                         )}
                         <span className="font-bold text-lg text-amber-900 dark:text-amber-100">
-                          €{(quote.deposit_amount || 0).toFixed(2)}
+                          <CurrencyDisplay value={quote.deposit_amount || 0} />
                         </span>
                       </div>
                     </div>

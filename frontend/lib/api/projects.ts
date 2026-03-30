@@ -1,5 +1,5 @@
 import apiClient from './client';
-import { Project, ProjectFormData, ApiResponse, PaginatedResponse } from '@/lib/types';
+import { Project, ProjectFormData, ApiResponse, PaginatedResponse, FinalBalance } from '@/lib/types';
 
 export interface ProjectsParams {
   page?: number;
@@ -73,5 +73,12 @@ export const projectsApi = {
   confirmMultipleDdts: async (projectId: number, ddtIds: number[]): Promise<any> => {
     const { data } = await apiClient.post(`/projects/${projectId}/ddts/confirm-multiple`, { ddt_ids: ddtIds });
     return data;
+  },
+
+  getFinalBalance: async (projectId: number): Promise<FinalBalance> => {
+    const { data } = await apiClient.get<ApiResponse<FinalBalance>>(
+      `/projects/${projectId}/final-balance`
+    );
+    return data.data;
   },
 };

@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use App\Enums\KitType;
 use App\Enums\ProductType;
 use App\Models\Product;
 use Illuminate\Validation\Rule;
@@ -55,6 +56,8 @@ class ProductData extends Data
         public ?int $brand_id,
 
         public ProductType $product_type,
+
+        public ?KitType $kit_type,
 
         // Package
         public bool|Optional $is_package,
@@ -126,6 +129,8 @@ class ProductData extends Data
         // Status
         public ?bool $is_active,
 
+        public bool $is_labor_role,
+
         // Timestamps
         public string|Optional $created_at,
         public string|Optional $updated_at,
@@ -167,6 +172,7 @@ class ProductData extends Data
             category_id: $product->category_id,
             brand_id: $product->brand_id,
             product_type: $product->product_type,
+            kit_type: $product->kit_type,
             is_package: $product->is_package,
             package_weight: $product->package_weight,
             package_volume: $product->package_volume,
@@ -192,6 +198,7 @@ class ProductData extends Data
             location: $product->location,
             notes: $product->notes,
             is_active: $product->is_active,
+            is_labor_role: (bool) $product->is_labor_role,
             created_at: $product->created_at?->toIsoString() ?? '',
             updated_at: $product->updated_at?->toIsoString() ?? '',
             deleted_at: $product->deleted_at?->toIsoString(),
@@ -270,10 +277,12 @@ class ProductData extends Data
             'code' => [Rule::unique('products', 'code')->ignore($productId)],
             'barcode' => [Rule::unique('products', 'barcode')->ignore($productId)],
             'ownership_type' => ['nullable', 'string', 'in:owned,subrental,mixed'],
+            'kit_type' => ['nullable', 'string', 'in:distributed,assembled'],
             'is_premium' => ['nullable', 'boolean'],
             'subrental_markup' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'rental_price_estimated' => ['nullable', 'boolean'],
             'estimated_base_day' => ['nullable', 'numeric', 'min:0'],
+            'is_labor_role' => ['nullable', 'boolean'],
         ];
     }
 }

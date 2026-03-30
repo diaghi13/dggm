@@ -21,6 +21,7 @@ import { ArrowLeft, Save, RefreshCw, Calculator, Clock, TrendingUp, AlertTriangl
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
+import { formatCurrency } from "@/components/ui/currency-input";
 
 // ─── Setting keys ─────────────────────────────────────────────────────────────
 
@@ -149,7 +150,7 @@ function FormulaPreview({ values }: PreviewProps) {
   const monthly = daily * computeMultiplier(30, exp, decay, maxRef, offset, capDays);
   const seasonal = daily * computeMultiplier(90, exp, decay, maxRef, offset, capDays);
 
-  const fmt = (n: number) => `€ ${n.toFixed(2)}`;
+  const fmt = (n: number) => `€\u00a0${formatCurrency(n)}`;
 
   return (
     <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">

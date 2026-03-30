@@ -5,13 +5,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { PriceListItem } from "@/lib/types";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { FormSection } from "@/components/form-section";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Package } from "lucide-react";
+import { CurrencyInput, CurrencyDisplay } from "@/components/ui/currency-input";
 
 const priceListItemSchema = z.object({
   sale_price: z
@@ -80,15 +80,16 @@ function PriceInput({
   sublabel,
   disabled,
   calculated,
-  register,
+  value,
+  onChange,
 }: {
   id: string;
   label: string;
   sublabel?: string;
   disabled: boolean;
   calculated?: number | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  register: any;
+  value: number | null | undefined;
+  onChange: (v: number | null) => void;
 }) {
   return (
     <div className="space-y-1.5">
@@ -103,25 +104,19 @@ function PriceInput({
           </span>
         )}
       </Label>
-      <div className="relative">
-        <Input
-          id={id}
-          type="number"
-          step="0.01"
-          {...register(id, { valueAsNumber: true })}
-          placeholder="0.00"
-          disabled={disabled}
-          className={
-            disabled ? "bg-slate-50 dark:bg-slate-900/50 text-slate-400" : ""
-          }
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-          €
-        </span>
-      </div>
+      <CurrencyInput
+        id={id}
+        value={value ?? null}
+        onChange={onChange}
+        placeholder="0,00"
+        disabled={disabled}
+        className={
+          disabled ? "bg-slate-50 dark:bg-slate-900/50 text-slate-400" : ""
+        }
+      />
       {calculated != null && (
         <p className="text-xs text-slate-400 dark:text-slate-500">
-          Auto: €{calculated.toFixed(2)}
+          Auto: <CurrencyDisplay value={calculated} />
         </p>
       )}
     </div>
@@ -199,6 +194,13 @@ export function PriceListItemForm({
   const isManualPrice = watch("is_manual_price");
   const isManualRental = watch("is_manual_rental");
   const isActive = watch("is_active");
+  const salePriceValue = watch("sale_price");
+  const rentalHourlyValue = watch("rental_hourly");
+  const rentalHalfDayValue = watch("rental_half_day");
+  const rentalDailyValue = watch("rental_daily");
+  const rentalWeeklyValue = watch("rental_weekly");
+  const rentalMonthlyValue = watch("rental_monthly");
+  const rentalSeasonalValue = watch("rental_seasonal");
 
   const handleFormSubmit = (data: PriceListItemFormValues) => {
     const formData: PriceListItemFormData = {
@@ -329,24 +331,18 @@ export function PriceListItemForm({
               >
                 {isService ? "Tariffa (€)" : "Prezzo di vendita (€)"}
               </Label>
-              <div className="relative">
-                <Input
-                  id="sale_price"
-                  type="number"
-                  step="0.01"
-                  {...register("sale_price", { valueAsNumber: true })}
-                  placeholder="0.00"
-                  disabled={isLoading || !isManualPrice}
-                  className={
-                    !isManualPrice
-                      ? "bg-slate-50 dark:bg-slate-900/50 text-slate-400"
-                      : ""
-                  }
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                  €
-                </span>
-              </div>
+              <CurrencyInput
+                id="sale_price"
+                value={salePriceValue ?? null}
+                onChange={(v) => setValue("sale_price", v ?? undefined)}
+                placeholder="0,00"
+                disabled={isLoading || !isManualPrice}
+                className={
+                  !isManualPrice
+                    ? "bg-slate-50 dark:bg-slate-900/50 text-slate-400"
+                    : ""
+                }
+              />
               {!isManualPrice && autoSaleRef.current == null && (
                 <p className="text-xs text-amber-500 dark:text-amber-400">
                   Prezzo ricalcolato automaticamente al salvataggio
@@ -409,7 +405,8 @@ export function PriceListItemForm({
                   sublabel="/h"
                   disabled={isLoading || !isManualRental}
                   calculated={item.final_rental_hourly}
-                  register={register}
+                  value={rentalHourlyValue}
+                  onChange={(v) => setValue("rental_hourly", v ?? undefined)}
                 />
                 <PriceInput
                   id="rental_half_day"
@@ -417,7 +414,8 @@ export function PriceListItemForm({
                   sublabel="½gg"
                   disabled={isLoading || !isManualRental}
                   calculated={item.final_rental_half_day}
-                  register={register}
+                  value={rentalHalfDayValue}
+                  onChange={(v) => setValue("rental_half_day", v ?? undefined)}
                 />
                 <PriceInput
                   id="rental_daily"
@@ -425,7 +423,8 @@ export function PriceListItemForm({
                   sublabel="/gg"
                   disabled={isLoading || !isManualRental}
                   calculated={item.final_rental_daily}
-                  register={register}
+                  value={rentalDailyValue}
+                  onChange={(v) => setValue("rental_daily", v ?? undefined)}
                 />
               </div>
             </div>
@@ -442,7 +441,8 @@ export function PriceListItemForm({
                   sublabel="/sett"
                   disabled={isLoading || !isManualRental}
                   calculated={item.final_rental_weekly}
-                  register={register}
+                  value={rentalWeeklyValue}
+                  onChange={(v) => setValue("rental_weekly", v ?? undefined)}
                 />
                 <PriceInput
                   id="rental_monthly"
@@ -450,7 +450,8 @@ export function PriceListItemForm({
                   sublabel="/mese"
                   disabled={isLoading || !isManualRental}
                   calculated={item.final_rental_monthly}
-                  register={register}
+                  value={rentalMonthlyValue}
+                  onChange={(v) => setValue("rental_monthly", v ?? undefined)}
                 />
                 <PriceInput
                   id="rental_seasonal"
@@ -458,7 +459,8 @@ export function PriceListItemForm({
                   sublabel="/stag"
                   disabled={isLoading || !isManualRental}
                   calculated={item.final_rental_seasonal}
-                  register={register}
+                  value={rentalSeasonalValue}
+                  onChange={(v) => setValue("rental_seasonal", v ?? undefined)}
                 />
               </div>
             </div>

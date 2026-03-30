@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi } from "@/lib/api/products";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -351,17 +352,13 @@ export function ProductKitComponents({ product }: ProductKitComponentsProps) {
                         {component.relatedProduct?.unit || "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        €{" "}
-                        {Number(
-                          component.relatedProduct?.standard_cost || 0,
-                        ).toFixed(2)}
+                        <CurrencyDisplay value={Number(component.relatedProduct?.standard_cost || 0)} />
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        €{" "}
-                        {(
-                          Number(component.quantity_value) *
-                          Number(component.relatedProduct?.standard_cost || 0)
-                        ).toFixed(2)}
+                        <CurrencyDisplay
+                          value={Number(component.quantity_value) * Number(component.relatedProduct?.standard_cost || 0)}
+                          bold
+                        />
                       </TableCell>
                       <TableCell className="text-sm text-slate-600">
                         {component.notes || "-"}

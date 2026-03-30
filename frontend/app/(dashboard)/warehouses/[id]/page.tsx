@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 
 const typeLabels: Record<string, string> = {
   central: "Centrale",
@@ -238,7 +239,7 @@ export default function WarehouseDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      € {totalValue.toFixed(2)}
+                      <CurrencyDisplay value={totalValue} />
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Valore inventario

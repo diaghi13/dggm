@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 import { AddProjectMaterialDialog } from "@/app/(dashboard)/projects/_components/add-project-material-dialog";
 import { ProjectMaterialOrderList } from "@/app/(dashboard)/projects/_components/project-material-order-list";
 import { DeliverMaterialDialog } from "@/components/deliver-material-dialog";
@@ -234,7 +235,7 @@ export function ProjectMaterialsSection({
           <CardContent>
             <div className="text-2xl font-bold">{stats.extraMaterials}</div>
             <p className="text-xs text-muted-foreground">
-              € {stats.extraCost.toFixed(2)} costo
+              <CurrencyDisplay value={stats.extraCost} /> costo
             </p>
           </CardContent>
         </Card>
@@ -248,7 +249,7 @@ export function ProjectMaterialsSection({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              € {stats.totalPlanned.toFixed(2)}
+              <CurrencyDisplay value={stats.totalPlanned} />
             </div>
             <p className="text-xs text-muted-foreground">Budget materiali</p>
           </CardContent>
@@ -263,7 +264,7 @@ export function ProjectMaterialsSection({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              € {stats.totalActual.toFixed(2)}
+              <CurrencyDisplay value={stats.totalActual} />
             </div>
             <p className="text-xs text-muted-foreground">Consuntivo ad oggi</p>
           </CardContent>
@@ -280,7 +281,7 @@ export function ProjectMaterialsSection({
             <div
               className={`text-2xl font-bold ${variance >= 0 ? "text-green-600" : "text-red-600"}`}
             >
-              € {variance.toFixed(2)}
+              <CurrencyDisplay value={variance} />
             </div>
             <p className="text-xs text-muted-foreground">
               {variancePercentage >= 0 ? "+" : ""}
@@ -375,21 +376,36 @@ export function ProjectMaterialsSection({
                           {material.product.code}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {material.product.name}
-                            {material.product.product_type === "composite" && (
-                              <Badge variant="secondary" className="text-xs">
-                                KIT
-                              </Badge>
-                            )}
-                            {material.is_extra && (
-                              <Badge
-                                variant="outline"
-                                className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300"
-                              >
-                                <Star className="h-3 w-3 mr-1" />
-                                EXTRA
-                              </Badge>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {material.product.name}
+                              {material.product.product_type === "composite" && (
+                                <Badge variant="secondary" className="text-xs">
+                                  KIT
+                                </Badge>
+                              )}
+                              {material.product.product_type === "kit" && (
+                                <Badge variant="secondary" className="text-xs">
+                                  KIT
+                                </Badge>
+                              )}
+                              {material.is_extra && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300"
+                                >
+                                  <Star className="h-3 w-3 mr-1" />
+                                  EXTRA
+                                </Badge>
+                              )}
+                            </div>
+                            {material.kit_assembly && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Assembly: {material.kit_assembly.name}
+                                {material.kit_assembly.location && (
+                                  <span className="ml-1">— {material.kit_assembly.location}</span>
+                                )}
+                              </p>
                             )}
                           </div>
                         </TableCell>
@@ -427,15 +443,15 @@ export function ProjectMaterialsSection({
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          € {Number(material.planned_unit_cost || 0).toFixed(2)}
+                          <CurrencyDisplay value={Number(material.planned_unit_cost || 0)} />
                         </TableCell>
                         <TableCell className="text-right">
-                          € {Number(material.actual_unit_cost || 0).toFixed(2)}
+                          <CurrencyDisplay value={Number(material.actual_unit_cost || 0)} />
                         </TableCell>
                         <TableCell
                           className={`text-right ${costVariance >= 0 ? "text-green-600" : "text-red-600"}`}
                         >
-                          € {Number(costVariance || 0).toFixed(2)}
+                          <CurrencyDisplay value={Number(costVariance || 0)} />
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(material.status && material.status)}

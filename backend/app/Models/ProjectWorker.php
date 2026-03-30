@@ -6,6 +6,7 @@ use App\Enums\ProjectWorkerStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class ProjectWorker extends Pivot
@@ -33,6 +34,15 @@ class ProjectWorker extends Pivot
         'estimated_hours',
         'is_active',
         'notes',
+        'role_name',
+        'slot_index',
+        'quote_item_id',
+        'estimated_days',
+        'budget_cost_rate',
+        'actual_cost_rate',
+        'customer_rate',
+        'is_external',
+        'is_scheduled',
     ];
 
     protected function casts(): array
@@ -47,6 +57,13 @@ class ProjectWorker extends Pivot
             'fixed_rate_override' => 'decimal:2',
             'estimated_hours' => 'decimal:2',
             'is_active' => 'boolean',
+            'slot_index' => 'integer',
+            'estimated_days' => 'decimal:2',
+            'budget_cost_rate' => 'decimal:2',
+            'actual_cost_rate' => 'decimal:2',
+            'customer_rate' => 'decimal:2',
+            'is_external' => 'boolean',
+            'is_scheduled' => 'boolean',
         ];
     }
 
@@ -71,6 +88,21 @@ class ProjectWorker extends Pivot
     {
         return $this->belongsToMany(ProjectRole::class, 'project_worker_role', 'project_worker_id', 'project_role_id')
             ->withTimestamps();
+    }
+
+    public function quoteItem(): BelongsTo
+    {
+        return $this->belongsTo(QuoteItem::class, 'quote_item_id');
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(ProjectWorkerSchedule::class);
+    }
+
+    public function laborLogs(): HasMany
+    {
+        return $this->hasMany(ProjectLaborLog::class);
     }
 
     // ==================== SCOPES ====================
@@ -130,6 +162,17 @@ class ProjectWorker extends Pivot
     public function scopeByStatus($query, ProjectWorkerStatus $status)
     {
         return $query->where('status', $status->value);
+    }
+
+    public function scopeSlots($query)
+    {
+        return $query->where('status', ProjectWorkerStatus::Slot->value);
+    }
+
+    public function scopeAssigned($query)
+    {
+        return $query->whereNotNull('worker_id')
+            ->where('status', '!=', ProjectWorkerStatus::Slot->value);
     }
 
     // ==================== ACCESSORS ====================

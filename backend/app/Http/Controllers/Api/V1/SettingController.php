@@ -288,6 +288,51 @@ class SettingController extends Controller
     }
 
     /**
+     * Batch update multiple settings in a single transaction
+     */
+    public function batchUpdate(Request $request): JsonResponse
+    {
+        $this->authorize('create', Setting::class);
+
+        $validated = $request->validate([
+            'settings' => ['required', 'array', 'min:1'],
+            'settings.*.key' => ['required', 'string'],
+            'settings.*.value' => ['nullable', 'string'],
+            'settings.*.group' => ['nullable', 'string', 'max:100'],
+            'settings.*.is_public' => ['nullable', 'boolean'],
+            'settings.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $service = app(SettingService::class);
+        $shouldRecalculateRental = false;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $service, &$shouldRecalculateRental) {
+            foreach ($validated['settings'] as $item) {
+                $service->set(
+                    $item['key'],
+                    $item['value'] ?? '',
+                    $item['user_id'] ?? null,
+                    $item['group'] ?? null,
+                    $item['is_public'] ?? false,
+                );
+
+                if (str_starts_with($item['key'], 'rental.')) {
+                    $shouldRecalculateRental = true;
+                }
+            }
+        });
+
+        if ($shouldRecalculateRental) {
+            RecalculateRentalPricesJob::dispatch();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Settings updated successfully',
+        ]);
+    }
+
+    /**
      * Reset a setting to its default value
      */
     public function reset(Setting $setting): JsonResponse

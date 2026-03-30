@@ -108,6 +108,16 @@ class Project extends Model implements HasMedia
         return $this->hasMany(ProjectLaborCost::class);
     }
 
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(ProjectExpense::class);
+    }
+
+    public function laborLogs(): HasMany
+    {
+        return $this->hasMany(ProjectLaborLog::class);
+    }
+
     // ==================== SCOPES ====================
 
     public function scopeActive($query)

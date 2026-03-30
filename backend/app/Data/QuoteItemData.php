@@ -58,6 +58,9 @@ class QuoteItemData extends Data
         #[Min(0)]
         public ?float $unit_price = null,
 
+        #[Min(0)]
+        public ?float $cost_price = null,
+
         #[Min(0), Max(100)]
         public float $discount_percentage = 0,
 
@@ -84,6 +87,8 @@ class QuoteItemData extends Data
         /** @var int[]|null Explicit list of media IDs to include. null = use use_in_quotes default. */
         public ?array $included_media_ids = null,
 
+        public bool $expand_kit = false,
+
         // Relazioni (output only)
         public ProductData|Lazy|Optional $product = new Optional,
 
@@ -93,6 +98,10 @@ class QuoteItemData extends Data
 
         /** @var DataCollection<QuoteItemData>|Lazy|Optional */
         public DataCollection|Lazy|Optional $children = new Optional,
+
+        // Computed margin (output only, not saved to DB)
+        public readonly ?float $margin_amount = null,
+        public readonly ?float $margin_percent = null,
     ) {}
 
     public static function rules(): array
@@ -112,6 +121,7 @@ class QuoteItemData extends Data
             'duration' => ['nullable', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'numeric', 'min:0'],
             'unit_price' => ['nullable', 'numeric', 'min:0'],
+            'cost_price' => ['nullable', 'numeric', 'min:0'],
             'discount_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'subtotal' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
@@ -123,6 +133,7 @@ class QuoteItemData extends Data
             'include_image' => ['nullable', 'boolean'],
             'included_media_ids' => ['nullable', 'array'],
             'included_media_ids.*' => ['integer'],
+            'expand_kit' => ['nullable', 'boolean'],
         ];
     }
 
@@ -144,6 +155,7 @@ class QuoteItemData extends Data
             duration: $quoteItem->duration,
             quantity: $quoteItem->quantity,
             unit_price: $quoteItem->unit_price,
+            cost_price: $quoteItem->cost_price,
             discount_percentage: $quoteItem->discount_percentage,
             subtotal: $quoteItem->subtotal,
             discount_amount: $quoteItem->discount_amount,
@@ -153,9 +165,12 @@ class QuoteItemData extends Data
             total_with_vat: $quoteItem->total_with_vat,
             hide_unit_price: $quoteItem->hide_unit_price,
             include_image: $quoteItem->include_image,
+            expand_kit: (bool) $quoteItem->expand_kit,
             children: $quoteItem->relationLoaded('children') && $quoteItem->children->isNotEmpty()
                 ? self::collect($quoteItem->children, DataCollection::class)
                 : new Optional,
+            margin_amount: $quoteItem->margin_amount,
+            margin_percent: $quoteItem->margin_percent,
         );
     }
 }

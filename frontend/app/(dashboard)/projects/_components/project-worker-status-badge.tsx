@@ -8,6 +8,7 @@ import {
   Briefcase,
   CheckCheck,
   Ban,
+  CircleDashed,
 } from 'lucide-react';
 
 interface ProjectWorkerStatusBadgeProps {
@@ -25,6 +26,12 @@ const statusConfig: Record<
     className: string;
   }
 > = {
+  slot: {
+    label: 'Da assegnare',
+    icon: CircleDashed,
+    variant: 'outline',
+    className: 'border-slate-400 text-slate-500 dark:text-slate-400',
+  },
   pending: {
     label: 'In Attesa',
     icon: Clock,

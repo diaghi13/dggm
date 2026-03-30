@@ -9,7 +9,9 @@ import { suppliersApi } from "@/lib/api/suppliers";
 import { customersApi } from "@/lib/api/customers";
 import { projectsApi } from "@/lib/api/projects";
 import { productsApi } from "@/lib/api/products";
-import type { DdtType, DdtFormData, ReturnReason } from "@/lib/types";
+import { priceListsApi } from "@/lib/api/price-lists";
+import { kitAssembliesApi } from "@/lib/api/kit-assemblies";
+import type { DdtType, DdtFormData, ReturnReason, Project, Customer, Supplier } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -37,10 +39,59 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, Save, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Trash2, Save, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ComboboxSelect } from "@/components/combobox-select";
+
+// Component for assembly selector per DDT item
+function KitAssemblySelect({
+  productId,
+  value,
+  onChange,
+  warehouseId,
+}: {
+  productId: number;
+  value: number | null;
+  onChange: (id: number | null) => void;
+  warehouseId?: number;
+}) {
+  const { data: assembliesData, isLoading } = useQuery({
+    queryKey: ['kit-assemblies-available', productId, warehouseId],
+    queryFn: () => kitAssembliesApi.getAvailable(productId, warehouseId),
+  });
+
+  const assemblies = assembliesData?.data ?? [];
+
+  return (
+    <Select
+      value={value?.toString() ?? 'none'}
+      onValueChange={(v) => onChange(v === 'none' ? null : Number(v))}
+      disabled={isLoading}
+    >
+      <SelectTrigger className="min-w-[160px]">
+        <SelectValue placeholder="Nessuna assembly" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">
+          <span className="text-muted-foreground">Nessuna assembly</span>
+        </SelectItem>
+        {assemblies.map((assembly) => (
+          <SelectItem key={assembly.id} value={assembly.id.toString()}>
+            <div className="flex items-center gap-2">
+              <span>{assembly.name}</span>
+              {assembly.warehouse?.name && (
+                <span className="text-xs text-muted-foreground">
+                  ({assembly.warehouse.name})
+                </span>
+              )}
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 const ddtTypeLabels: Record<DdtType, string> = {
   incoming: "Carico da Fornitore",
@@ -73,6 +124,7 @@ export default function NewDdtPage() {
   });
 
   const [searchMaterial, setSearchMaterial] = useState("");
+  const [priceListSearch, setPriceListSearch] = useState("");
 
   // Fetch next DDT number
   const { data: nextNumberData } = useQuery({
@@ -88,6 +140,7 @@ export default function NewDdtPage() {
         ddt_number: nextNumberData.suggested_number,
       }));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextNumberData]);
 
   // Fetch options
@@ -114,6 +167,30 @@ export default function NewDdtPage() {
     enabled: formData.type === "outgoing",
   });
 
+  const { data: rentalProjectsData } = useQuery({
+    queryKey: ["projects-rental", { per_page: 100 }],
+    queryFn: () => projectsApi.getAll({ per_page: 100 }),
+    enabled: formData.type === "rental_out",
+  });
+
+  const { data: priceListsData, isLoading: isLoadingPriceLists } = useQuery({
+    queryKey: ["price-lists", { is_active: true, search: priceListSearch }],
+    queryFn: () => priceListsApi.getAll({ is_active: true, search: priceListSearch, per_page: 50 }),
+  });
+
+  // Auto-select default price list
+  const { data: defaultPriceList } = useQuery({
+    queryKey: ["price-list-default"],
+    queryFn: () => priceListsApi.getDefault(),
+    enabled: !formData.price_list_id,
+  });
+
+  useEffect(() => {
+    if (defaultPriceList && !formData.price_list_id) {
+      setFormData((prev) => ({ ...prev, price_list_id: defaultPriceList.id }));
+    }
+  }, [defaultPriceList, formData.price_list_id]);
+
   const { data: materialsData, isLoading: isLoadingMaterials } = useQuery({
     queryKey: ["products", { search: searchMaterial, is_active: true }],
     queryFn: () =>
@@ -128,7 +205,27 @@ export default function NewDdtPage() {
   const suppliers = suppliersData?.data ?? [];
   const customers = customersData?.data ?? [];
   const sites = sitesData?.data ?? [];
+  const rentalProjects = rentalProjectsData?.data ?? [];
   const materials = materialsData?.data ?? [];
+
+  // Auto-populate rental dates from selected project
+  useEffect(() => {
+    if (formData.type === "rental_out" && formData.project_id) {
+      const project = rentalProjects.find((p: Project) => p.id === formData.project_id);
+      if (project) {
+        setFormData((prev) => ({
+          ...prev,
+          ...(project.start_date && !prev.rental_start_date
+            ? { rental_start_date: project.start_date }
+            : {}),
+          ...(project.estimated_end_date && !prev.rental_end_date
+            ? { rental_end_date: project.estimated_end_date }
+            : {}),
+        }));
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.project_id, formData.type]);
 
   // Create mutation
   const createMutation = useMutation({
@@ -149,12 +246,14 @@ export default function NewDdtPage() {
         return_reason: data.return_reason || undefined,
         return_notes: data.return_notes || undefined,
         notes: data.notes || undefined,
+        price_list_id: data.price_list_id || undefined,
         items: data.items.map((item) => ({
           product_id: item.product_id,
           quantity: item.quantity,
           unit: item.unit,
           unit_cost: item.unit_cost,
           notes: item.notes || undefined,
+          kit_assembly_id: item.kit_assembly_id || undefined,
         })),
       };
       return ddtsApi.create(apiData);
@@ -165,7 +264,7 @@ export default function NewDdtPage() {
       });
       router.push(`/ddts/${ddt.id}`);
     },
-    onError: (error: any) => {
+    onError: (error: { response?: { data?: { message?: string } } }) => {
       toast.error("Errore", {
         description:
           error.response?.data?.message || "Impossibile creare il DDT",
@@ -173,13 +272,50 @@ export default function NewDdtPage() {
     },
   });
 
-  const handleAddItem = async (material: any) => {
-    let unitCost: number = material.standard_cost || 0;
+  const handleAddItem = async (material: App.Data.ProductData) => {
+    if (!material.id) return;
+    const materialId = material.id;
 
-    // Se c'è un fornitore selezionato nel form DDT, cerca il prezzo specifico
-    if (formData.supplier_id) {
+    let unitCost: number = material.standard_cost || 0;
+    let pricingBreakdown: string | undefined;
+
+    if (formData.type === "rental_out") {
+      const start = formData.rental_start_date;
+      const end = formData.rental_end_date;
+      const durationDays =
+        start && end
+          ? Math.ceil(
+              (new Date(end).getTime() - new Date(start).getTime()) /
+                (1000 * 60 * 60 * 24),
+            )
+          : null;
+
       try {
-        const supplierPrices = await productsApi.getSupplierPrices(material.id);
+        const pricing = await productsApi.getPricing(materialId, {
+          price_list_id: formData.price_list_id ?? undefined,
+          quote_type: "rental",
+          duration_days: durationDays ?? undefined,
+        });
+
+        if (pricing.rental_total && durationDays) {
+          unitCost = pricing.rental_total;
+          const dailyRate = pricing.rental_daily ?? 0;
+          const multiplier = pricing.duration_multiplier;
+          if (multiplier && multiplier !== 1) {
+            pricingBreakdown = `${durationDays} gg × €${dailyRate.toFixed(2)}/gg × ${multiplier.toFixed(2)}`;
+          } else {
+            pricingBreakdown = `${durationDays} gg × €${dailyRate.toFixed(2)}/gg`;
+          }
+        } else if (pricing.rental_daily) {
+          unitCost = pricing.rental_daily;
+          pricingBreakdown = `€${pricing.rental_daily.toFixed(2)}/gg`;
+        }
+      } catch {
+        // Fallback al standard_cost
+      }
+    } else if (formData.supplier_id) {
+      try {
+        const supplierPrices = await productsApi.getSupplierPrices(materialId);
         const supplierPrice = supplierPrices.find(
           (sp) => sp.supplier_id === formData.supplier_id,
         );
@@ -196,11 +332,13 @@ export default function NewDdtPage() {
       items: [
         ...prev.items,
         {
-          product_id: material.id,
+          product_id: materialId,
           quantity: 1,
           unit: material.unit || "",
           unit_cost: unitCost,
           notes: null,
+          kit_assembly_id: null,
+          _pricing_breakdown: pricingBreakdown,
         },
       ],
     }));
@@ -214,7 +352,7 @@ export default function NewDdtPage() {
     });
   };
 
-  const handleItemChange = (index: number, field: string, value: any) => {
+  const handleItemChange = (index: number, field: string, value: string | number | null) => {
     const newItems = [...formData.items];
     newItems[index] = { ...newItems[index], [field]: value };
     setFormData({ ...formData, items: newItems });
@@ -241,6 +379,12 @@ export default function NewDdtPage() {
     createMutation.mutate(formData);
   };
 
+  // Check if any item is a kit product
+  const hasKitItems = formData.items.some((item) => {
+    const material = materials.find((m: App.Data.ProductData) => m.id === item.product_id);
+    return material?.product_type === 'kit';
+  });
+
   // Dynamic field requirements based on DDT type
   const requiresSupplier = ["incoming", "return_to_supplier"].includes(
     formData.type,
@@ -249,6 +393,7 @@ export default function NewDdtPage() {
     formData.type,
   );
   const requiresSite = formData.type === "outgoing";
+  const requiresRentalProject = formData.type === "rental_out";
   const requiresToWarehouse = ["internal", "rental_out"].includes(
     formData.type,
   );
@@ -444,10 +589,10 @@ export default function NewDdtPage() {
                       Nessun magazzino disponibile
                     </div>
                   ) : (
-                    warehouses.map((warehouse: any) => (
+                    warehouses.map((warehouse: App.Data.WarehouseData) => (
                       <SelectItem
-                        key={warehouse.id}
-                        value={warehouse.id.toString()}
+                        key={warehouse.id!}
+                        value={warehouse.id!.toString()}
                       >
                         {warehouse.name}
                       </SelectItem>
@@ -477,18 +622,18 @@ export default function NewDdtPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {warehouses.filter(
-                      (w: any) => w.id !== formData.from_warehouse_id,
+                      (w: App.Data.WarehouseData) => w.id !== formData.from_warehouse_id,
                     ).length === 0 ? (
                       <div className="p-2 text-sm text-slate-500">
                         Nessun altro magazzino disponibile
                       </div>
                     ) : (
                       warehouses
-                        .filter((w: any) => w.id !== formData.from_warehouse_id)
-                        .map((warehouse: any) => (
+                        .filter((w: App.Data.WarehouseData) => w.id !== formData.from_warehouse_id)
+                        .map((warehouse: App.Data.WarehouseData) => (
                           <SelectItem
-                            key={warehouse.id}
-                            value={warehouse.id.toString()}
+                            key={warehouse.id!}
+                            value={warehouse.id!.toString()}
                           >
                             {warehouse.name}
                           </SelectItem>
@@ -520,10 +665,10 @@ export default function NewDdtPage() {
                         Nessun fornitore disponibile
                       </div>
                     ) : (
-                      suppliers.map((supplier: any) => (
+                      suppliers.map((supplier: Supplier) => (
                         <SelectItem
                           key={supplier.id}
-                          value={supplier.id.toString()}
+                          value={supplier.id!.toString()}
                         >
                           {supplier.company_name}
                         </SelectItem>
@@ -555,7 +700,7 @@ export default function NewDdtPage() {
                         Nessun cliente disponibile
                       </div>
                     ) : (
-                      customers.map((customer: any) => (
+                      customers.map((customer: Customer) => (
                         <SelectItem
                           key={customer.id}
                           value={customer.id.toString()}
@@ -591,7 +736,7 @@ export default function NewDdtPage() {
                         Nessun progetto disponibile
                       </div>
                     ) : (
-                      sites.map((site: any) => (
+                      sites.map((site: Project) => (
                         <SelectItem key={site.id} value={site.id.toString()}>
                           {site.name}
                         </SelectItem>
@@ -600,6 +745,78 @@ export default function NewDdtPage() {
                   </SelectContent>
                 </Select>
               </div>
+            )}
+
+            {/* Project for rental_out */}
+            {requiresRentalProject && (
+              <div className="space-y-2">
+                <Label htmlFor="rental_project_id">Progetto (opzionale)</Label>
+                <Select
+                  value={formData.project_id?.toString() || undefined}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      project_id: value ? parseInt(value) : null,
+                      // Reset date auto-popolate se si cambia progetto
+                      rental_start_date: null,
+                      rental_end_date: null,
+                    })
+                  }
+                >
+                  <SelectTrigger className="min-w-[200px]">
+                    <SelectValue placeholder="Seleziona progetto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rentalProjects.length === 0 ? (
+                      <div className="p-2 text-sm text-slate-500 dark:text-slate-400">
+                        Nessun progetto disponibile
+                      </div>
+                    ) : (
+                      rentalProjects.map((project: Project) => (
+                        <SelectItem key={project.id} value={project.id.toString()}>
+                          {project.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {formData.project_id && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Le date di noleggio vengono auto-popolate dalle date del progetto
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Listino Prezzi */}
+          <div className="space-y-2">
+            <Label htmlFor="price_list_id">Listino Prezzi</Label>
+            <ComboboxSelect
+              options={
+                priceListsData?.data.map((priceList) => ({
+                  value: priceList.id!.toString(),
+                  label: priceList.name || "",
+                  description: priceList.description || undefined,
+                })) || []
+              }
+              value={formData.price_list_id?.toString()}
+              onValueChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  price_list_id: value ? parseInt(value) : null,
+                }))
+              }
+              onSearchChange={setPriceListSearch}
+              placeholder="Seleziona listino"
+              searchPlaceholder="Cerca listino..."
+              emptyText="Nessun listino trovato"
+              loading={isLoadingPriceLists}
+            />
+            {formData.type === "rental_out" && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Il listino viene usato per calcolare i prezzi di noleggio degli articoli aggiunti
+              </p>
             )}
           </div>
         </CardContent>
@@ -725,7 +942,7 @@ export default function NewDdtPage() {
               value={searchMaterial}
               onValueChange={(value) => {
                 const material = materials.find(
-                  (m: any) => m.id.toString() === value,
+                  (m: App.Data.ProductData) => m.id?.toString() === value,
                 );
                 if (material) {
                   handleAddItem(material);
@@ -742,8 +959,8 @@ export default function NewDdtPage() {
                   : "Nessun articolo trovato"
               }
               loading={isLoadingMaterials}
-              options={materials.map((m: any) => ({
-                value: m.id.toString(),
+              options={materials.map((m: App.Data.ProductData) => ({
+                value: m.id!.toString(),
                 label: `${m.code} - ${m.name}`,
               }))}
               onSearchChange={setSearchMaterial}
@@ -756,6 +973,7 @@ export default function NewDdtPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Articolo</TableHead>
+                  {hasKitItems && <TableHead>Assembly</TableHead>}
                   <TableHead>Quantità</TableHead>
                   <TableHead>Unità</TableHead>
                   <TableHead>Costo Unit.</TableHead>
@@ -766,22 +984,47 @@ export default function NewDdtPage() {
               <TableBody>
                 {formData.items.map((item, index) => {
                   const material = materials.find(
-                    (m: any) => m.id === item.product_id,
+                    (m: App.Data.ProductData) => m.id === item.product_id,
                   );
+                  const isKit = material?.product_type === 'kit';
                   return (
                     <TableRow key={index}>
                       <TableCell>
                         {material ? (
                           <div>
                             <p className="font-medium">{material.name}</p>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
                               {material.code}
                             </p>
+                            {isKit && (
+                              <Badge variant="secondary" className="text-xs mt-1">
+                                KIT
+                              </Badge>
+                            )}
+                            {formData.type === "rental_out" && item._pricing_breakdown && (
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                {item._pricing_breakdown}
+                              </p>
+                            )}
                           </div>
                         ) : (
                           `ID: ${item.product_id}`
                         )}
                       </TableCell>
+                      {hasKitItems && (
+                        <TableCell>
+                          {isKit ? (
+                            <KitAssemblySelect
+                              productId={item.product_id}
+                              value={item.kit_assembly_id ?? null}
+                              onChange={(id) => handleItemChange(index, 'kit_assembly_id', id)}
+                              warehouseId={formData.from_warehouse_id || undefined}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Input
                           type="number"

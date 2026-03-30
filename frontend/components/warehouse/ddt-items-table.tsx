@@ -11,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit2, Trash2 } from 'lucide-react';
+import { CurrencyDisplay, formatCurrency } from '@/components/ui/currency-input';
 
 interface DdtItemsTableProps {
   items: App.Data.DdtItemData[];
@@ -85,10 +86,10 @@ export function DdtItemsTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  € {Number(item.unit_cost || 0).toFixed(2)}
+                  <CurrencyDisplay value={Number(item.unit_cost || 0)} />
                 </TableCell>
                 <TableCell className="text-right font-medium">
-                  € {calculateTotal(item)}
+                  <CurrencyDisplay value={Number(calculateTotal(item))} />
                 </TableCell>
                 {editable && (
                   <TableCell className="text-right">
@@ -128,7 +129,7 @@ export function DdtItemsTable({
               Totale DDT:
             </span>
             <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              € {grandTotal.toFixed(2)}
+              <CurrencyDisplay value={grandTotal} />
             </span>
           </div>
           <div className="text-xs text-slate-500 mt-1">

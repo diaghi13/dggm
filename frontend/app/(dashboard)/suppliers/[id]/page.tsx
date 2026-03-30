@@ -27,6 +27,7 @@ import {
   FileText,
 } from "lucide-react";
 import Link from "next/link";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 
 export default function SupplierDetailPage() {
   const params = useParams();
@@ -446,11 +447,7 @@ export default function SupplierDetailPage() {
                               {rate.rate_type === "fixed_project" && "Forfait"}
                             </TableCell>
                             <TableCell className="text-right font-semibold">
-                              €{" "}
-                              {parseFloat(rate.rate_amount).toLocaleString(
-                                "it-IT",
-                                { minimumFractionDigits: 2 },
-                              )}
+                              <CurrencyDisplay value={parseFloat(rate.rate_amount)} bold />
                             </TableCell>
                             <TableCell className="text-slate-600 dark:text-slate-400">
                               {rate.valid_from

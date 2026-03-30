@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { Package, Briefcase, Boxes } from 'lucide-react';
+import { Package, Briefcase, Boxes, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProductTypeBadgeProps {
@@ -28,6 +28,11 @@ const typeConfig: Record<App.Enums.ProductType, {
     label: 'Composto',
     icon: Boxes,
     className: 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
+  },
+  kit: {
+    label: 'Kit',
+    icon: Layers,
+    className: 'bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
   },
 };
 

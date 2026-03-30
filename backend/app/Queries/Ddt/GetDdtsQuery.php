@@ -29,6 +29,7 @@ readonly class GetDdtsQuery
                 'supplier',
                 'customer',
                 'project',
+                'priceList',
                 'fromWarehouse',
                 'toWarehouse',
                 'items.product',

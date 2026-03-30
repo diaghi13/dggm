@@ -254,7 +254,7 @@ const navigationConfig: NavigationItem[] = [
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout, isAuthChecked } = useAuthStore();
+  const { user, logout, isAuthChecked, settings } = useAuthStore();
   const { primaryColor } = useThemeSettings();
   const { hasAnyPermission, isAdmin, hasRole } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -354,6 +354,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthChecked, user]);
+
+  useEffect(() => {
+    if (!isAuthChecked) return;
+    if (!user) return;
+    if (pathname?.startsWith("/setup")) return;
+    const setupCompleted = settings?.global["app.setup_completed"];
+    if (
+      hasRole("super-admin") &&
+      (setupCompleted === undefined ||
+        setupCompleted === false ||
+        setupCompleted === "0" ||
+        setupCompleted === "false")
+    ) {
+      router.push("/setup");
+    }
+  }, [isAuthChecked, user, settings, pathname, hasRole, router]);
 
   if (!user) {
     return null;

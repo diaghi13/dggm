@@ -30,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ComboboxSelect } from '@/components/combobox-select';
+import { formatCurrency } from '@/components/ui/currency-input';
 
 interface CreateStockMovementDialogProps {
   trigger?: React.ReactNode;
@@ -286,7 +287,7 @@ export function CreateStockMovementDialog({
                 const sp = supplierPrices.find((p) => p.supplier_id === selectedSupplierId);
                 return sp ? (
                   <p className="text-xs text-muted-foreground">
-                    Prezzo fornitore: € {(sp.final_price ?? sp.purchase_price).toFixed(2)}
+                    Prezzo fornitore: €\u00a0{formatCurrency(sp.final_price ?? sp.purchase_price)}
                     {sp.supplier_product_code && ` — cod. ${sp.supplier_product_code}`}
                   </p>
                 ) : (

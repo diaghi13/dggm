@@ -30,6 +30,7 @@ import { useDragAndDrop } from "./use-drag-and-drop";
 import { SortableItem } from "./sortable-item";
 import { ItemFormDialog } from "./item-form-dialog";
 import { BulkActionBar } from "./bulk-action-bar";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 
 export function QuoteItemsBuilder({
   items,
@@ -139,6 +140,7 @@ export function QuoteItemsBuilder({
       unit: null,
       quantity: 1,
       unit_price: 0,
+      cost_price: null,
       discount_percentage: 0,
       subtotal: 0,
       discount_amount: 0,
@@ -222,6 +224,9 @@ export function QuoteItemsBuilder({
         billing_unit: formData.billing_unit ?? "unit",
         duration: formData.duration ?? null,
         unit_price: formData.unit_price ?? 0,
+        cost_price: formData.cost_price ?? null,
+        margin_amount: null,
+        margin_percent: null,
         product_id: formData.product_id ?? null,
         price_list_item_id: formData.price_list_item_id ?? null,
         discount_percentage: formData.discount_percentage ?? 0,
@@ -230,6 +235,7 @@ export function QuoteItemsBuilder({
         hide_unit_price: formData.hide_unit_price ?? false,
         include_image: formData.include_image ?? false,
         included_media_ids: formData.included_media_ids ?? [],
+        expand_kit: formData.expand_kit ?? false,
         //show_subtotal: formData.show_subtotal ?? true,
         ...totals,
       };
@@ -346,6 +352,10 @@ export function QuoteItemsBuilder({
       hide_unit_price: false,
       include_image: false,
       included_media_ids: [],
+      expand_kit: false,
+      cost_price: null,
+      margin_amount: null,
+      margin_percent: null,
       subtotal: 0,
       discount_amount: 0,
       total: 0,
@@ -495,10 +505,7 @@ export function QuoteItemsBuilder({
                 Totale Voci
               </p>
               <p className="text-2xl font-bold text-blue-600">
-                €{" "}
-                {totalAmount.toLocaleString("it-IT", {
-                  minimumFractionDigits: 2,
-                })}
+                <CurrencyDisplay value={totalAmount} />
               </p>
             </div>
           </div>

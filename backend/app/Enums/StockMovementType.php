@@ -14,6 +14,8 @@ enum StockMovementType: string
     case RENTAL_RETURN = 'rental_return';     // Noleggio - rientro
     case SITE_ALLOCATION = 'site_allocation'; // Assegnazione a cantiere
     case SITE_RETURN = 'site_return';         // Rientro da cantiere
+    case KIT_ASSEMBLY = 'kit_assembly';       // Assemblaggio kit (componenti scalati)
+    case KIT_DISASSEMBLY = 'kit_disassembly'; // Smontaggio kit (componenti ripristinati)
 
     public function label(): string
     {
@@ -28,6 +30,8 @@ enum StockMovementType: string
             self::RENTAL_RETURN => 'Noleggio Rientro',
             self::SITE_ALLOCATION => 'Assegnazione Cantiere',
             self::SITE_RETURN => 'Rientro da Cantiere',
+            self::KIT_ASSEMBLY => 'Assemblaggio Kit',
+            self::KIT_DISASSEMBLY => 'Smontaggio Kit',
         };
     }
 
@@ -38,6 +42,7 @@ enum StockMovementType: string
             self::WASTE,
             self::RENTAL_OUT,
             self::SITE_ALLOCATION,
+            self::KIT_ASSEMBLY,
         ]);
     }
 
@@ -48,6 +53,7 @@ enum StockMovementType: string
             self::RETURN,
             self::RENTAL_RETURN,
             self::SITE_RETURN,
+            self::KIT_DISASSEMBLY,
         ]);
     }
 
@@ -59,8 +65,8 @@ enum StockMovementType: string
     public function color(): string
     {
         return match ($this) {
-            self::INTAKE, self::RETURN, self::RENTAL_RETURN, self::SITE_RETURN => 'green',
-            self::OUTPUT, self::RENTAL_OUT, self::SITE_ALLOCATION => 'blue',
+            self::INTAKE, self::RETURN, self::RENTAL_RETURN, self::SITE_RETURN, self::KIT_DISASSEMBLY => 'green',
+            self::OUTPUT, self::RENTAL_OUT, self::SITE_ALLOCATION, self::KIT_ASSEMBLY => 'blue',
             self::WASTE => 'red',
             self::ADJUSTMENT => 'amber',
             self::TRANSFER => 'purple',

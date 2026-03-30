@@ -5,6 +5,7 @@ import {
   ProjectWorkerFormData,
   ProjectWorkerStatus,
   ProjectWorkerConflict,
+  ProjectWorkerSchedule,
   ProjectRole,
 } from '@/lib/types';
 
@@ -152,5 +153,43 @@ export const projectWorkersApi = {
   getRoles: async (): Promise<ProjectRole[]> => {
     const { data } = await apiClient.get<ApiResponse<ProjectRole[]>>('/project-roles');
     return data.data;
+  },
+
+  // Assign a worker to an existing slot
+  assignSlot: async (projectWorkerId: number, data: {
+    worker_id: number;
+    assigned_from?: string;
+    assigned_to?: string | null;
+    notes?: string | null;
+    actual_cost_rate?: number;
+  }): Promise<ProjectWorker> => {
+    const response = await apiClient.post<ApiResponse<ProjectWorker>>(
+      `/project-workers/${projectWorkerId}/assign-slot`,
+      data
+    );
+    return response.data.data;
+  },
+
+  // Get schedules for a worker slot
+  getSchedules: async (projectWorkerId: number): Promise<ProjectWorkerSchedule[]> => {
+    const response = await apiClient.get<ApiResponse<ProjectWorkerSchedule[]>>(
+      `/project-workers/${projectWorkerId}/schedules`
+    );
+    return response.data.data;
+  },
+
+  // Create a schedule day
+  createSchedule: async (projectWorkerId: number, data: {
+    scheduled_date: string;
+    planned_start_time?: string | null;
+    planned_end_time?: string | null;
+    planned_hours?: number | null;
+    notes?: string | null;
+  }): Promise<ProjectWorkerSchedule> => {
+    const response = await apiClient.post<ApiResponse<ProjectWorkerSchedule>>(
+      `/project-workers/${projectWorkerId}/schedules`,
+      data
+    );
+    return response.data.data;
   },
 };

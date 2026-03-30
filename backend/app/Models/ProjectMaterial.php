@@ -33,6 +33,7 @@ class ProjectMaterial extends Model
         'required_date',
         'delivery_date',
         'notes',
+        'kit_assembly_id',
     ];
 
     protected function casts(): array
@@ -73,6 +74,11 @@ class ProjectMaterial extends Model
     public function requestedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by');
+    }
+
+    public function kitAssembly(): BelongsTo
+    {
+        return $this->belongsTo(KitAssembly::class);
     }
 
     // ==================== SCOPES ====================

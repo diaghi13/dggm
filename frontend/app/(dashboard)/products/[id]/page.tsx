@@ -34,7 +34,9 @@ import { ProductListsPreview } from "@/app/(dashboard)/products/_components/prod
 import { ProductMediaSection } from "@/components/products/product-media-section";
 import { SubrentalTab } from "@/app/(dashboard)/products/_components/subrental-tab";
 import { CompositeBreakdownSection } from "@/app/(dashboard)/products/_components/composite-breakdown-section";
+import { KitAssembliesSection } from "@/app/(dashboard)/products/_components/kit-assemblies-section";
 import type { ProductType } from "@/lib/types";
+import { formatCurrency as formatCurrencyUtil } from "@/components/ui/currency-input";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Field visibility — SINGLE SOURCE OF TRUTH (same logic as product-form.tsx)
@@ -43,7 +45,8 @@ function getFieldVisibility(type: ProductType) {
   const isArticle = type === "article";
   const isComposite = type === "composite";
   const isService = type === "service";
-  const isPhysical = isArticle || isComposite;
+  const isKit = type === "kit";
+  const isPhysical = isArticle || isComposite || isKit;
 
   return {
     showEan: isPhysical,
@@ -62,6 +65,7 @@ function getFieldVisibility(type: ProductType) {
     isArticle,
     isComposite,
     isService,
+    isKit,
     isPhysical,
   };
 }
@@ -82,10 +86,7 @@ function FieldValue({ value }: { value: string | number | null | undefined }) {
 
 function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
-  return new Intl.NumberFormat("it-IT", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value));
+  return formatCurrencyUtil(value) || "—";
 }
 
 function formatNumber(value: number | null | undefined, decimals = 2): string {
@@ -204,7 +205,9 @@ export default function ProductDetailPage() {
       ? "Articolo"
       : product.product_type === "service"
         ? "Servizio"
-        : "Composto";
+        : product.product_type === "kit"
+          ? "Kit"
+          : "Composto";
 
   // Determine standard_cost label
   const standardCostNote = (() => {
@@ -292,6 +295,9 @@ export default function ProductDetailPage() {
           <TabsTrigger value="inventory">Inventario</TabsTrigger>
           <TabsTrigger value="movements">Movimenti</TabsTrigger>
           <TabsTrigger value="usage">Utilizzo</TabsTrigger>
+          {vis.isKit && (
+            <TabsTrigger value="kit-assemblies">Assemblies</TabsTrigger>
+          )}
           {product.is_rentable && (
             <TabsTrigger value="subrental">Sub-Noleggio</TabsTrigger>
           )}
@@ -950,6 +956,15 @@ export default function ProductDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            TAB: KIT ASSEMBLIES
+            ═══════════════════════════════════════════════════════════════════ */}
+        {vis.isKit && (
+          <TabsContent value="kit-assemblies" className="space-y-6">
+            <KitAssembliesSection product={product} />
+          </TabsContent>
+        )}
 
         {/* ═══════════════════════════════════════════════════════════════════
             TAB: SUB-NOLEGGIO

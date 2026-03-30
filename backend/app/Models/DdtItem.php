@@ -17,6 +17,7 @@ class DdtItem extends Model
         'unit',
         'unit_cost',
         'notes',
+        'kit_assembly_id',
     ];
 
     protected function casts(): array
@@ -36,6 +37,11 @@ class DdtItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function kitAssembly(): BelongsTo
+    {
+        return $this->belongsTo(KitAssembly::class);
     }
 
     // Accessors

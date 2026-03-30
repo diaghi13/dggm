@@ -50,6 +50,7 @@ import {
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import Link from "next/link";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 
 const ddtTypeLabels: Record<App.Enums.DdtType, string> = {
   incoming: "Carico da Fornitore",
@@ -521,7 +522,19 @@ export default function DdtDetailPage() {
                     {item.product?.code}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {item.product?.name}
+                    <div>
+                      <span>{item.product?.name}</span>
+                      {item.kit_assembly && (
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Assembly: {item.kit_assembly.name}
+                          {item.kit_assembly.location && (
+                            <span className="ml-1">
+                              — {item.kit_assembly.location}
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -548,12 +561,12 @@ export default function DdtDetailPage() {
                   <TableCell>{item.unit}</TableCell>
                   <TableCell className="text-right">
                     {Number(item.unit_cost) > 0
-                      ? `€ ${Number(item.unit_cost).toFixed(2)}`
+                      ? <CurrencyDisplay value={Number(item.unit_cost)} />
                       : "-"}
                   </TableCell>
                   <TableCell className="text-right font-semibold">
                     {Number(item.total_cost) > 0
-                      ? `€ ${Number(item.total_cost).toFixed(2)}`
+                      ? <CurrencyDisplay value={Number(item.total_cost)} />
                       : "-"}
                   </TableCell>
                 </TableRow>

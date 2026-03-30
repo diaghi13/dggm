@@ -20,13 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Folder, FileText, ShoppingCart, Wrench, Calendar, Tag } from "lucide-react";
+import { Folder, FileText, ShoppingCart, Wrench, Calendar, Tag, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ProductAutocomplete } from "@/app/(dashboard)/products/_components/product-autocomplete";
 import { productsApi } from "@/lib/api/products";
 import { QuoteItem, ItemFormData } from "./types";
 import { calculateTotals, calculateDurationMultiplier } from "./utils";
 import { MediaSelector } from "./media-selector";
+import { CurrencyInput, CurrencyDisplay, formatCurrency } from "@/components/ui/currency-input";
 
 type EffectivePrice = {
   sale_price?: number | string | null;
@@ -133,18 +134,19 @@ function buildFormulaPreview(item: ItemFormData): string | null {
   const duration = Number(item.duration) || 1;
   const unitLabel = BILLING_UNIT_LABELS[billingUnit] ?? billingUnit;
   const totals = calculateTotals(item);
+  const fmt = (n: number) => `€\u00a0${formatCurrency(n)}`;
 
   if (billingUnit === "flat") {
-    return `Costo fisso: €\u00a0${price.toFixed(2)}`;
+    return `Costo fisso: ${fmt(price)}`;
   }
   if (billingUnit === "unit") {
-    return `${qty} × €\u00a0${price.toFixed(2)} = €\u00a0${totals.subtotal.toFixed(2)}`;
+    return `${qty} × ${fmt(price)} = ${fmt(totals.subtotal)}`;
   }
   if (billingUnit === "day") {
     const coeff = calculateDurationMultiplier(duration);
-    return `${qty} × €\u00a0${price.toFixed(2)}/gg × curva(${duration}gg) = ×${coeff.toFixed(3)} → €\u00a0${totals.subtotal.toFixed(2)}`;
+    return `${qty} × ${fmt(price)}/gg × curva(${duration}gg) = ×${coeff.toFixed(3)} → ${fmt(totals.subtotal)}`;
   }
-  return `${qty} × €\u00a0${price.toFixed(2)}/${unitLabel.toLowerCase()} × ${duration} = €\u00a0${totals.subtotal.toFixed(2)}`;
+  return `${qty} × ${fmt(price)}/${unitLabel.toLowerCase()} × ${duration} = ${fmt(totals.subtotal)}`;
 }
 
 interface ItemFormDialogProps {
@@ -165,9 +167,11 @@ function getAutoBillingUnit(
   productUnit: string | null | undefined,
   quoteType: string | null | undefined,
   productType?: string | null,
+  isLaborRole?: boolean,
 ): string {
   if (!quoteType || quoteType === "sale") return "unit";
-  if (productType === "service") return "unit"; // Servizi sempre per unità anche in noleggio
+  // Servizi normali sempre per unità, ma i ruoli personale seguono la durata
+  if (productType === "service" && !isLaborRole) return "unit";
   if (productUnit?.toLowerCase() === "h") return "hour";
   return "day";
 }
@@ -187,20 +191,25 @@ export function ItemFormDialog({
   // Persist the last fetched pricing data so we can re-price on billing_unit change
   const pricingRef = useRef<EffectivePrice | null>(null);
   const [selectedProductType, setSelectedProductType] = useState<string | null>(null);
+  const [selectedIsLaborRole, setSelectedIsLaborRole] = useState(false);
   const [pricingInfo, setPricingInfo] = useState<{ source?: string | null; priceListName?: string | null } | null>(null);
+  const [mediaOpen, setMediaOpen] = useState(false);
 
   // When dialog opens: init product type from editing item; reset pricing info
   useEffect(() => {
     if (isOpen) {
       setSelectedProductType(editingItem?.product?.product_type ?? null); // eslint-disable-line react-hooks/set-state-in-effect
+      setSelectedIsLaborRole(editingItem?.product?.is_labor_role ?? false); // eslint-disable-line react-hooks/set-state-in-effect
       setPricingInfo(null);
+      setMediaOpen(false);
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleBillingUnitChange = useCallback(
     (newUnit: string) => {
       const updates: Partial<ItemFormData> = { billing_unit: newUnit as ItemFormData["billing_unit"] };
-      if (pricingRef.current) {
+      // "flat" = forfait personalizzato: mantieni il prezzo corrente senza sovrascriverlo
+      if (newUnit !== "flat" && pricingRef.current) {
         const newPrice = getPriceForBillingUnit(pricingRef.current, newUnit);
         if (newPrice > 0) {
           updates.unit_price = newPrice;
@@ -216,119 +225,141 @@ export function ItemFormDialog({
   );
 
   const isRentalOrEvent = quoteType === "rental" || quoteType === "event";
+  // Labor-role services behave like articles (support day/hour billing), not plain services
   const isServiceProduct =
-    selectedProductType === "service" ||
-    editingItem?.product?.product_type === "service";
+    (selectedProductType === "service" && !selectedIsLaborRole) ||
+    (editingItem?.product?.product_type === "service" && !(editingItem?.product?.is_labor_role ?? false));
   const quoteTypeConfig = quoteType ? QUOTE_TYPE_CONFIG[quoteType] : null;
+
+  const totals = calculateTotals(formData);
+  const isRentalMode =
+    isRentalOrEvent &&
+    !isServiceProduct &&
+    !!formData.billing_unit &&
+    formData.billing_unit !== "unit" &&
+    formData.billing_unit !== "flat";
+  const formulaPreview = buildFormulaPreview(formData);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            {editingItem ? "Modifica Voce" : "Nuova Voce"}
-          </DialogTitle>
-          <DialogDescription className="text-slate-600 dark:text-slate-400">
-            {editingItem
-              ? "Modifica i dettagli della voce"
-              : "Inserisci i dettagli della nuova voce"}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl w-full flex flex-col max-h-[90vh] overflow-hidden p-0 gap-0">
+        {/* Header fisso */}
+        <div className="px-6 pt-6 pb-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              {editingItem ? "Modifica Voce" : "Nuova Voce"}
+            </DialogTitle>
+            <DialogDescription className="text-slate-600 dark:text-slate-400 sr-only">
+              {editingItem
+                ? "Modifica i dettagli della voce"
+                : "Inserisci i dettagli della nuova voce"}
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Quote type context banner */}
-        {isRentalOrEvent && quoteTypeConfig && (
-          <div className={`flex items-start gap-2 p-3 rounded-lg border text-sm ${quoteTypeConfig.color}`}>
-            {quoteTypeConfig.icon}
-            <div>
+          {/* Quote type context banner — compact border-left style */}
+          {isRentalOrEvent && quoteTypeConfig && (
+            <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded border-l-4 text-xs ${quoteTypeConfig.color}`}>
+              {quoteTypeConfig.icon}
               <span className="font-medium">{quoteTypeConfig.label}</span>
-              {" — "}
+              <span className="text-slate-500 dark:text-slate-400">—</span>
               <span>{quoteTypeConfig.description}</span>
               {quoteType === "event" && effectiveEventDays && (
-                <span className="ml-1 font-medium">Periodo: {effectiveEventDays} gg.</span>
+                <span className="font-medium ml-1">Periodo: {effectiveEventDays} gg.</span>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="space-y-4 py-4">
-          {/* Type Selection */}
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Tipo</Label>
-            <Select
-              value={formData.type}
-              onValueChange={(value: "section" | "item") =>
-                setFormData({ ...formData, type: value })
-              }
-            >
-              <SelectTrigger className="h-11 border-slate-300">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="item">Voce</SelectItem>
-                <SelectItem value="section">Sezione</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Body scrollabile */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 min-w-0">
+        <div className="space-y-3">
 
-          {/* Parent Section Selection */}
-          {formData.type === "item" && (
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">
-                Sezione (opzionale)
+          {/* ROW 1: Tipo + Sezione — inline */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                Tipo
               </Label>
               <Select
-                value={formData.parent_id?.toString() ?? "none"}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    parent_id: value === "none" ? null : parseInt(value),
-                  })
+                value={formData.type}
+                onValueChange={(value: "section" | "item") =>
+                  setFormData({ ...formData, type: value })
                 }
               >
-                <SelectTrigger className="h-11 border-slate-300">
-                  <SelectValue placeholder="Nessuna sezione (root level)" />
+                <SelectTrigger className="h-9 border-slate-300 dark:border-slate-600 text-sm">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-slate-400" />
-                      <span>Nessuna sezione (root level)</span>
-                    </div>
-                  </SelectItem>
-                  {localItems
-                    .filter(
-                      (item) => item.type === "section" && !item.parent_id,
-                    )
-                    .map((section) => (
-                      <SelectItem
-                        key={section.id!}
-                        value={section.id!.toString()}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Folder className="w-4 h-4 text-blue-600" />
-                          <span>{section.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                  <SelectItem value="item">Voce</SelectItem>
+                  <SelectItem value="section">Sezione</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-slate-500">
-                Seleziona una sezione per organizzare la voce, o lascia vuoto
-                per il livello principale
-              </p>
             </div>
-          )}
 
-          {/* Price List Item Selection */}
+            {formData.type === "item" && (
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                  Sezione
+                </Label>
+                <Select
+                  value={formData.parent_id?.toString() ?? "none"}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      parent_id: value === "none" ? null : parseInt(value),
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-9 border-slate-300 dark:border-slate-600 text-sm">
+                    <SelectValue placeholder="Nessuna" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Nessuna (livello root)</span>
+                      </div>
+                    </SelectItem>
+                    {localItems
+                      .filter(
+                        (item) => item.type === "section" && !item.parent_id,
+                      )
+                      .map((section) => (
+                        <SelectItem
+                          key={section.id!}
+                          value={section.id!.toString()}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Folder className="w-3.5 h-3.5 text-blue-600" />
+                            <span>{section.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Placeholder when type=section so grid stays stable */}
+            {formData.type === "section" && <div />}
+          </div>
+
+          {/* ROW 2: Prodotto dal catalogo (solo type=item) */}
           {formData.type === "item" && (
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">
-                Articolo dal Catalogo (opzionale)
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                Prodotto dal Catalogo
               </Label>
               {!priceListId && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-                  💡 Seleziona un listino prezzi nel preventivo per utilizzare i
-                  prezzi configurati
+                <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3">
+                  <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                    ⚠ Nessun listino selezionato
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                    {quoteType === "rental" || quoteType === "event"
+                      ? "I prezzi di noleggio potrebbero non essere corretti. Configura un listino nel preventivo."
+                      : "I prezzi verranno calcolati dal costo prodotto."}
+                  </p>
                 </div>
               )}
               <ProductAutocomplete
@@ -338,22 +369,27 @@ export function ItemFormDialog({
                 onSelect={async (product) => {
                   if (product) {
                     const productType = product.product_type ?? null;
+                    const isLaborRole = product.is_labor_role ?? false;
                     setSelectedProductType(productType);
+                    setSelectedIsLaborRole(isLaborRole);
                     // Auto-deriva billing_unit da tipo prodotto + tipologia preventivo
-                    const autoBillingUnit = getAutoBillingUnit(product.unit, quoteType, productType);
+                    const autoBillingUnit = getAutoBillingUnit(product.unit, quoteType, productType, isLaborRole);
                     try {
                       const pricingData = await productsApi.getPricing(
                         product.id!,
-                        priceListId ?? undefined,
+                        priceListId != null ? { price_list_id: priceListId } : undefined,
                       );
 
                       const ep: EffectivePrice = pricingData.effective_price ?? {};
                       pricingRef.current = ep;
                       setPricingInfo({ source: ep.source, priceListName: ep.price_list_name });
 
-                      const unitPrice =
-                        getPriceForBillingUnit(ep, autoBillingUnit) ||
-                        Number(ep.sale_price || product.standard_cost || 0);
+                      const priceFromBillingUnit = getPriceForBillingUnit(ep, autoBillingUnit);
+                      const fallbackPrice =
+                        quoteType === "rental" || quoteType === "event"
+                          ? Number(ep.rental_daily || ep.rental_hourly || ep.sale_price || 0)
+                          : Number(ep.sale_price || product.standard_cost || 0);
+                      const unitPrice = priceFromBillingUnit || fallbackPrice;
 
                       setFormData({
                         ...formData,
@@ -384,6 +420,7 @@ export function ItemFormDialog({
                   } else {
                     pricingRef.current = null;
                     setSelectedProductType(null);
+                    setSelectedIsLaborRole(false);
                     setPricingInfo(null);
                     setFormData({
                       ...formData,
@@ -394,343 +431,384 @@ export function ItemFormDialog({
                 }}
                 placeholder="Cerca prodotto nel catalogo..."
               />
-              <p className="text-xs text-slate-500">
-                {priceListId
-                  ? "Il prezzo verrà preso dal listino selezionato nel preventivo"
-                  : "Verrà usato il costo standard del prodotto"}
-              </p>
+              {selectedIsLaborRole && (
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
+                  <Users className="w-3.5 h-3.5 shrink-0" />
+                  Ruolo personale — verrà creato uno slot da assegnare quando il preventivo è convertito in progetto
+                </div>
+              )}
             </div>
           )}
 
-          {/* Code */}
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">
-              Codice (opzionale)
+          {/* ROW 3: Codice */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+              Codice
             </Label>
             <Input
               value={formData.code ?? ""}
               onChange={(e) =>
                 setFormData({ ...formData, code: e.target.value })
               }
-              placeholder="Es: ART-001"
-              className="h-11 border-slate-300 focus:border-blue-500"
+              placeholder="ART-001"
+              className="h-9 text-sm border-slate-300 dark:border-slate-600 focus:border-blue-500"
             />
           </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">Descrizione *</Label>
-            <Input
+          {/* ROW 4: Descrizione (textarea) */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+              Descrizione *
+            </Label>
+            <Textarea
               value={formData.description ?? ""}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
               placeholder="Descrizione della voce"
-              className="h-11 border-slate-300 focus:border-blue-500"
+              rows={2}
+              className="text-sm border-slate-300 dark:border-slate-600 focus:border-blue-500 resize-none"
             />
           </div>
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-medium">
-              Note (opzionale)
-            </Label>
-            <Textarea
-              value={formData.notes ?? ""}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              placeholder="Note aggiuntive..."
-              rows={3}
-              className="border-slate-300 focus:border-blue-500"
-            />
-          </div>
-
-          {/* Show Subtotal for Sections */}
-          {/* {formData.type === "section" && (
-            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <input
-                type="checkbox"
-                id="show-subtotal"
-                checked={formData.show_subtotal ?? true}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    show_subtotal: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-              />
-              <Label
-                htmlFor="show-subtotal"
-                className="text-sm text-slate-700 cursor-pointer flex-1"
-              >
-                Mostra subtotale della sezione
-              </Label>
-            </div>
-          )} */}
-
+          {/* ROWS 4+: Solo per type=item */}
           {formData.type === "item" && (
             <>
-              {/* Quantity & Unit */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-slate-700 font-medium">
-                    Quantità *
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.quantity ?? 0}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        quantity: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="h-11 border-slate-300 focus:border-blue-500"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-700 font-medium">
-                    Unità di Misura
-                  </Label>
-                  <Input
-                    value={formData.unit ?? ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, unit: e.target.value })
-                    }
-                    placeholder="Es: pz, m, kg"
-                    className="h-11 border-slate-300 focus:border-blue-500"
-                  />
-                </div>
-              </div>
+              {/* ROW 4: Pricing — QTÀ | UM | PREZZO | SCONTO% | IVA% | TOTALE */}
+              <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-3 space-y-2 overflow-hidden">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                  Prezzi
+                </p>
 
-              {/* Service notice in rental/event quotes */}
-              {isRentalOrEvent && isServiceProduct && (
-                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
-                  <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-                  Servizio — fatturato a prezzo fisso (vendita)
-                </div>
-              )}
-
-              {/* Billing Unit — hidden for sale quotes and services (always "unit") */}
-              {isRentalOrEvent && !isServiceProduct ? (
-                <div className="space-y-3">
-                  {/* Vendita / Noleggio toggle */}
-                  <div className="space-y-2">
-                    <Label className="text-slate-700 dark:text-slate-300 font-medium">
-                      Modalità Prezzo
-                    </Label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={
-                          !formData.billing_unit || formData.billing_unit === "unit" || formData.billing_unit === "flat"
-                            ? "default"
-                            : "outline"
-                        }
-                        size="sm"
-                        className={
-                          !formData.billing_unit || formData.billing_unit === "unit" || formData.billing_unit === "flat"
-                            ? "flex-1 gap-2"
-                            : "flex-1 gap-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
-                        }
-                        onClick={() => handleBillingUnitChange("unit")}
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        Vendita
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          !!formData.billing_unit && formData.billing_unit !== "unit" && formData.billing_unit !== "flat"
-                            ? "default"
-                            : "outline"
-                        }
-                        size="sm"
-                        className={
-                          !!formData.billing_unit && formData.billing_unit !== "unit" && formData.billing_unit !== "flat"
-                            ? "flex-1 gap-2"
-                            : "flex-1 gap-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
-                        }
-                        onClick={() => {
-                          const currentUnit = formData.billing_unit;
-                          // Switch to rental mode — use "day" if currently in sale mode or unset
-                          if (!currentUnit || currentUnit === "unit" || currentUnit === "flat") {
-                            handleBillingUnitChange("day");
-                          }
-                          // Otherwise already in rental mode — no-op
-                        }}
-                      >
-                        <Wrench className="w-4 h-4" />
-                        Noleggio
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Billing unit selector — only shown in rental mode */}
-                  {!!formData.billing_unit && formData.billing_unit !== "unit" && formData.billing_unit !== "flat" && (
-                    <div className="space-y-2">
-                      <Label className="text-slate-700 dark:text-slate-300 font-medium">
-                        Unità di Fatturazione
-                      </Label>
-                      <Select
-                        value={formData.billing_unit ?? "day"}
-                        onValueChange={handleBillingUnitChange}
-                      >
-                        <SelectTrigger className="h-11 border-slate-300 dark:border-slate-600">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="hour">Ora (qty × prezzo × ore)</SelectItem>
-                          <SelectItem value="day">Giorno (qty × prezzo × giorni^0.70)</SelectItem>
-                          <SelectItem value="week">Settimana (qty × prezzo × settimane)</SelectItem>
-                          <SelectItem value="month">Mese (qty × prezzo × mesi)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {formData.product_id && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Auto-derivato dal tipo prodotto — modifica se necessario
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Flat cost option — available in both modes */}
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="billing-flat"
-                      checked={formData.billing_unit === "flat"}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          handleBillingUnitChange("flat");
-                        } else {
-                          // Restore to previous non-flat mode
-                          handleBillingUnitChange("unit");
-                        }
-                      }}
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <Label
-                      htmlFor="billing-flat"
-                      className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer"
-                    >
-                      Costo Fisso (prezzo fisso, ignora quantità e durata)
-                    </Label>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Duration — visible for rental/event (non-service) when billing_unit is not 'unit' or 'flat' */}
-              {isRentalOrEvent &&
-                !isServiceProduct &&
-                formData.billing_unit &&
-                formData.billing_unit !== "unit" &&
-                formData.billing_unit !== "flat" && (
-                  <div className="space-y-2">
-                    <Label className="text-slate-700 dark:text-slate-300 font-medium">
-                      {DURATION_LABELS[formData.billing_unit] ?? "Durata"}
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={formData.duration ?? ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          duration: parseFloat(e.target.value) || null,
-                        })
-                      }
-                      placeholder={
-                        effectiveEventDays && formData.billing_unit === "day"
-                          ? `${effectiveEventDays} (da preventivo)`
-                          : "Es: 5"
-                      }
-                      className="h-11 border-slate-300 dark:border-slate-600 focus:border-blue-500"
-                    />
-                    {effectiveEventDays &&
-                      formData.billing_unit === "day" &&
-                      !formData.duration && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Lascia vuoto per ereditare {effectiveEventDays} gg dal preventivo
-                        </p>
-                      )}
+                {/* Service notice in rental/event quotes */}
+                {isRentalOrEvent && isServiceProduct && (
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
+                    <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+                    Servizio — fatturato a prezzo fisso (vendita)
                   </div>
                 )}
 
-              {/* Unit Price & Discount */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Label className="text-slate-700 dark:text-slate-300 font-medium">
-                      Prezzo Unitario *
+                {/* Main pricing grid */}
+                <div className="flex flex-wrap gap-2 items-end">
+                  {/* QTÀ */}
+                  <div className="w-[72px] shrink-0 space-y-1">
+                    <Label className="text-xs text-slate-500 dark:text-slate-400">
+                      Qtà *
                     </Label>
-                    <PriceSourceBadge source={pricingInfo?.source} priceListName={pricingInfo?.priceListName} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.quantity ?? 0}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          quantity: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      className="h-9 text-sm border-slate-300 dark:border-slate-600 focus:border-blue-500"
+                    />
                   </div>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.unit_price ?? ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        unit_price: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="h-11 border-slate-300 focus:border-blue-500"
-                  />
+
+                  {/* UM */}
+                  <div className="w-[70px] shrink-0 space-y-1">
+                    <Label className="text-xs text-slate-500 dark:text-slate-400">
+                      U.M.
+                    </Label>
+                    <Input
+                      value={formData.unit ?? ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, unit: e.target.value })
+                      }
+                      placeholder="pz"
+                      className="h-9 text-sm border-slate-300 dark:border-slate-600 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Prezzo */}
+                  <div className="flex-1 min-w-[120px] space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Label className="text-xs text-slate-500 dark:text-slate-400">
+                        Prezzo *
+                      </Label>
+                      <PriceSourceBadge source={pricingInfo?.source} priceListName={pricingInfo?.priceListName} />
+                    </div>
+                    <CurrencyInput
+                      value={formData.unit_price ?? null}
+                      onChange={(v) =>
+                        setFormData({
+                          ...formData,
+                          unit_price: v ?? 0,
+                        })
+                      }
+                      className="border-slate-300 dark:border-slate-600"
+                    />
+                  </div>
+
+                  {/* Sconto% */}
+                  <div className="w-[80px] shrink-0 space-y-1">
+                    <Label className="text-xs text-slate-500 dark:text-slate-400">
+                      Sconto %
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={formData.discount_percentage ?? 0}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          discount_percentage: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      className="h-9 text-sm border-slate-300 dark:border-slate-600 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* IVA% */}
+                  <div className="w-[100px] shrink-0 space-y-1">
+                    <Label className="text-xs text-slate-500 dark:text-slate-400">
+                      IVA %
+                    </Label>
+                    <Select
+                      value={formData.vat_rate?.toString() ?? "22"}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          vat_rate: parseFloat(value),
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-9 text-sm border-slate-300 dark:border-slate-600">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0%</SelectItem>
+                        <SelectItem value="4">4%</SelectItem>
+                        <SelectItem value="5">5%</SelectItem>
+                        <SelectItem value="10">10%</SelectItem>
+                        <SelectItem value="22">22%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-700 font-medium">Sconto %</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={formData.discount_percentage ?? 0}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        discount_percentage: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="h-11 border-slate-300 focus:border-blue-500"
-                  />
+
+                {/* Totale summary bar */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
+                  <span>
+                    Subtotale:{" "}
+                    <CurrencyDisplay
+                      value={totals.subtotal}
+                      bold
+                      className="text-slate-800 dark:text-slate-200"
+                    />
+                  </span>
+                  {(formData.discount_percentage ?? 0) > 0 && (
+                    <span>
+                      Sconto:{" "}
+                      <CurrencyDisplay
+                        value={totals.discount_amount}
+                        bold
+                        className="text-red-600 dark:text-red-400"
+                      />
+                    </span>
+                  )}
+                  <span>
+                    Imponibile:{" "}
+                    <CurrencyDisplay
+                      value={totals.total}
+                      bold
+                      className="text-slate-800 dark:text-slate-200"
+                    />
+                  </span>
+                  {(formData.vat_rate ?? 0) > 0 && (
+                    <span>
+                      IVA:{" "}
+                      <CurrencyDisplay
+                        value={totals.vat_amount}
+                        bold
+                        className="text-slate-800 dark:text-slate-200"
+                      />
+                    </span>
+                  )}
+                  <span className="ml-auto font-bold text-sm text-blue-600 dark:text-blue-400">
+                    Totale:{" "}
+                    <CurrencyDisplay
+                      value={totals.total_with_vat}
+                      bold
+                      className="text-blue-600 dark:text-blue-400"
+                    />
+                  </span>
                 </div>
               </div>
 
-              {/* VAT Rate */}
-              <div className="space-y-2">
-                <Label className="text-slate-700 font-medium">
-                  Aliquota IVA %
+              {/* ROW 5: Rental controls (solo rental/event, non-service) */}
+              {isRentalOrEvent && !isServiceProduct && (
+                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-3 space-y-2 overflow-hidden">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    Modalità Noleggio
+                  </p>
+
+                  <div className="space-y-3">
+                    {/* Riga 1: Toggle Vendita/Noleggio */}
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-500 dark:text-slate-400">
+                        Modalità
+                      </Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={
+                            !formData.billing_unit || formData.billing_unit === "unit"
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          className={
+                            !formData.billing_unit || formData.billing_unit === "unit"
+                              ? "h-9 gap-1.5 text-xs px-3"
+                              : "h-9 gap-1.5 text-xs px-3 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                          }
+                          onClick={() => handleBillingUnitChange("unit")}
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                          Vendita
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={
+                            !!formData.billing_unit && formData.billing_unit !== "unit"
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          className={
+                            !!formData.billing_unit && formData.billing_unit !== "unit"
+                              ? "h-9 gap-1.5 text-xs px-3"
+                              : "h-9 gap-1.5 text-xs px-3 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                          }
+                          onClick={() => {
+                            const currentUnit = formData.billing_unit;
+                            if (!currentUnit || currentUnit === "unit") {
+                              handleBillingUnitChange("day");
+                            }
+                          }}
+                        >
+                          <Wrench className="w-3.5 h-3.5" />
+                          Noleggio
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Riga 2: Unità fatturazione + Durata (solo in rental mode) */}
+                    {isRentalMode && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-slate-500 dark:text-slate-400">
+                            Unità fatturazione
+                          </Label>
+                          <Select
+                            value={formData.billing_unit ?? "day"}
+                            onValueChange={handleBillingUnitChange}
+                          >
+                            <SelectTrigger className="h-9 text-sm border-slate-300 dark:border-slate-600">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="hour">Ora</SelectItem>
+                              <SelectItem value="day">Giorno</SelectItem>
+                              <SelectItem value="week">Settimana</SelectItem>
+                              <SelectItem value="month">Mese</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-slate-500 dark:text-slate-400">
+                            {DURATION_LABELS[formData.billing_unit ?? "day"] ?? "Durata"}
+                          </Label>
+                          <Input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            value={formData.duration ?? ""}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                duration: parseFloat(e.target.value) || null,
+                              })
+                            }
+                            placeholder={
+                              effectiveEventDays && formData.billing_unit === "day"
+                                ? `${effectiveEventDays}`
+                                : "5"
+                            }
+                            className="h-9 text-sm border-slate-300 dark:border-slate-600 focus:border-blue-500"
+                          />
+                          {effectiveEventDays &&
+                            formData.billing_unit === "day" &&
+                            !formData.duration && (
+                              <p className="text-xs text-slate-400 dark:text-slate-500 leading-tight">
+                                Eredita {effectiveEventDays} gg
+                              </p>
+                            )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Riga 3: Formula preview (solo in rental mode) */}
+                    {isRentalMode && formulaPreview && (
+                      <div className="px-3 py-2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="text-xs font-mono text-slate-600 dark:text-slate-400">
+                          {formulaPreview}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Checkbox Costo Fisso */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="billing-flat"
+                        checked={formData.billing_unit === "flat"}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            handleBillingUnitChange("flat");
+                          } else {
+                            // Torna a noleggio giornaliero, non a vendita
+                            handleBillingUnitChange("day");
+                          }
+                        }}
+                        className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <Label
+                        htmlFor="billing-flat"
+                        className="text-xs text-slate-600 dark:text-slate-400 cursor-pointer"
+                      >
+                        Costo Fisso (ignora quantità e durata)
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ROW 6: Note */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                  Note interne (opzionale)
                 </Label>
-                <Select
-                  value={formData.vat_rate?.toString() ?? "22"}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      vat_rate: parseFloat(value),
-                    })
+                <Textarea
+                  value={formData.notes ?? ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
                   }
-                >
-                  <SelectTrigger className="h-11 border-slate-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">Esente (0%)</SelectItem>
-                    <SelectItem value="4">Ridotta 4%</SelectItem>
-                    <SelectItem value="5">Ridotta 5%</SelectItem>
-                    <SelectItem value="10">Ridotta 10%</SelectItem>
-                    <SelectItem value="22">Ordinaria 22%</SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder="Note aggiuntive..."
+                  rows={2}
+                  className="text-sm border-slate-300 dark:border-slate-600 focus:border-blue-500 resize-none"
+                />
               </div>
 
-              {/* Hide Unit Price */}
-              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+              {/* ROW 7: Nascondi prezzo unitario */}
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                 <input
                   type="checkbox"
                   id="hide-price"
@@ -741,97 +819,71 @@ export function ItemFormDialog({
                       hide_unit_price: e.target.checked,
                     })
                   }
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
                 />
-                <Label
-                  htmlFor="hide-price"
-                  className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer"
-                >
-                  Nascondi prezzo unitario nel preventivo
-                </Label>
+                <div>
+                  <Label
+                    htmlFor="hide-price"
+                    className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer font-medium"
+                  >
+                    Nascondi prezzo unitario nel preventivo
+                  </Label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Il totale riga rimane visibile, ma il prezzo unitario non viene stampato
+                  </p>
+                </div>
               </div>
 
-              {/* Media selector — shown only when a product is linked */}
+              {/* ROW 8: Media (collassato, espandibile) */}
               {formData.product_id && (
-                <MediaSelector
-                  productId={formData.product_id}
-                  value={formData.included_media_ids ?? []}
-                  onChange={(ids) =>
-                    setFormData({ ...formData, included_media_ids: ids })
-                  }
-                />
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => setMediaOpen((v) => !v)}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                  >
+                    {mediaOpen ? "▲" : "▼"} Allega media al PDF
+                    {(formData.included_media_ids ?? []).length > 0 && (
+                      <Badge variant="secondary" className="text-xs ml-1">
+                        {(formData.included_media_ids ?? []).length}
+                      </Badge>
+                    )}
+                  </button>
+                  {mediaOpen && (
+                    <MediaSelector
+                      productId={formData.product_id}
+                      value={formData.included_media_ids ?? []}
+                      onChange={(ids) =>
+                        setFormData({ ...formData, included_media_ids: ids })
+                      }
+                    />
+                  )}
+                </div>
               )}
-
-              {/* Calculated Total */}
-              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                {/* Formula preview */}
-                {(() => {
-                  const preview = buildFormulaPreview(formData);
-                  return preview ? (
-                    <div className="text-xs text-blue-700 dark:text-blue-400 font-mono pb-1 border-b border-blue-200 dark:border-blue-800">
-                      {preview}
-                    </div>
-                  ) : null;
-                })()}
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-600">Subtotale:</span>
-                  <span className="font-medium">
-                    € {calculateTotals(formData).subtotal.toFixed(2)}
-                  </span>
-                </div>
-                {(formData.discount_percentage ?? 0) > 0 && (
-                  <div className="flex justify-between items-center text-sm text-red-600">
-                    <span>Sconto ({formData.discount_percentage}%):</span>
-                    <span className="font-medium">
-                      - € {calculateTotals(formData).discount_amount.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center text-sm border-t pt-2">
-                  <span className="text-slate-600">Imponibile:</span>
-                  <span className="font-medium">
-                    € {calculateTotals(formData).total.toFixed(2)}
-                  </span>
-                </div>
-                {(formData.vat_rate ?? 0) > 0 && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-600">
-                      IVA ({formData.vat_rate}%):
-                    </span>
-                    <span className="font-medium">
-                      € {calculateTotals(formData).vat_amount.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center border-t pt-2">
-                  <span className="text-sm font-medium text-slate-700">
-                    Totale con IVA:
-                  </span>
-                  <span className="text-2xl font-bold text-blue-600">
-                    € {calculateTotals(formData).total_with_vat.toFixed(2)}
-                  </span>
-                </div>
-              </div>
             </>
           )}
         </div>
+        </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="border-slate-300"
-          >
-            Annulla
-          </Button>
-          <Button
-            onClick={onSave}
-            disabled={!formData.description}
-            className="shadow-md"
-          >
-            {editingItem ? "Salva Modifiche" : "Aggiungi Voce"}
-          </Button>
-        </DialogFooter>
+        {/* Footer fisso */}
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="border-slate-300 dark:border-slate-600"
+            >
+              Annulla
+            </Button>
+            <Button
+              onClick={onSave}
+              disabled={!formData.description}
+              className="shadow-md"
+            >
+              {editingItem ? "Salva Modifiche" : "Aggiungi Voce"}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

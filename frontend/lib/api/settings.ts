@@ -194,12 +194,10 @@ export const settingsApi = {
     return response.data.data as SettingTypeInfo[];
   },
 
-  // Bulk update settings
+  // Bulk update settings in a single request
   bulkUpdate: async (settings: Array<{ key: string; value: string }>) => {
-    const promises = settings.map(({ key, value }) =>
-      settingsApi.updateByKey(key, value),
-    );
-    return Promise.all(promises);
+    const response = await apiClient.post("/settings/batch", { settings });
+    return response.data;
   },
 };
 

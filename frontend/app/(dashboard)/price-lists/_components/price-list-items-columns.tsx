@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Package, Trash2, RefreshCw } from "lucide-react";
 import { AvatarTextCell } from "@/components/table-cells";
+import { CurrencyDisplay } from "@/components/ui/currency-input";
 
 export const createPriceListItemsColumns = (
   onEdit: (item: PriceListItem) => void,
@@ -73,7 +74,7 @@ export const createPriceListItemsColumns = (
         return (
           <div className="text-right">
             <div className="font-medium">
-              {price ? `€ ${price.toFixed(2)}` : "-"}
+              <CurrencyDisplay value={price} />
             </div>
             {row.original.is_manual_price && (
               <Badge variant="outline" className="text-xs mt-1">
@@ -99,7 +100,7 @@ export const createPriceListItemsColumns = (
               row.original.final_rental_hourly || row.original.rental_hourly;
             return (
               <div className="text-right text-slate-700 dark:text-slate-300">
-                {price ? `€ ${price.toFixed(2)}` : "-"}
+                <CurrencyDisplay value={price} />
               </div>
             );
           },
@@ -113,7 +114,7 @@ export const createPriceListItemsColumns = (
               row.original.rental_half_day;
             return (
               <div className="text-right text-slate-700 dark:text-slate-300">
-                {price ? `€ ${price.toFixed(2)}` : "-"}
+                <CurrencyDisplay value={price} />
               </div>
             );
           },
@@ -131,7 +132,7 @@ export const createPriceListItemsColumns = (
             row.original.final_rental_daily || row.original.rental_daily;
           return (
             <div className="text-right font-medium">
-              {price ? `€ ${price.toFixed(2)}` : "-"}
+              <CurrencyDisplay value={price} />
             </div>
           );
         },
@@ -144,7 +145,7 @@ export const createPriceListItemsColumns = (
             row.original.final_rental_weekly || row.original.rental_weekly;
           return (
             <div className="text-right text-slate-700 dark:text-slate-300">
-              {price ? `€ ${price.toFixed(2)}` : "-"}
+              <CurrencyDisplay value={price} />
             </div>
           );
         },
@@ -162,7 +163,7 @@ export const createPriceListItemsColumns = (
               row.original.final_rental_monthly || row.original.rental_monthly;
             return (
               <div className="text-right text-slate-700 dark:text-slate-300">
-                {price ? `€ ${price.toFixed(2)}` : "-"}
+                <CurrencyDisplay value={price} />
               </div>
             );
           },
@@ -176,7 +177,7 @@ export const createPriceListItemsColumns = (
               row.original.rental_seasonal;
             return (
               <div className="text-right text-slate-700 dark:text-slate-300">
-                {price ? `€ ${price.toFixed(2)}` : "-"}
+                <CurrencyDisplay value={price} />
               </div>
             );
           },

@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ProductAutocomplete } from "@/app/(dashboard)/products/_components/product-autocomplete";
+import { CurrencyDisplay, formatCurrency } from "@/components/ui/currency-input";
 import ProductData = App.Data.ProductData;
 
 interface BulkIntakeDialogProps {
@@ -384,7 +385,7 @@ export function BulkIntakeDialog({
               <Label>Prodotti da Caricare ({totalItems})</Label>
               {totalValue > 0 && (
                 <Badge variant="secondary" className="gap-1">
-                  Valore Totale: € {totalValue.toFixed(2)}
+                  Valore Totale: <CurrencyDisplay value={totalValue} />
                 </Badge>
               )}
             </div>
@@ -424,12 +425,12 @@ export function BulkIntakeDialog({
                         </TableCell>
                         <TableCell className="text-right">
                           {item.unit_cost
-                            ? `€ ${item.unit_cost.toFixed(2)}`
+                            ? <CurrencyDisplay value={item.unit_cost} />
                             : "-"}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {item.unit_cost
-                            ? `€ ${(item.quantity * item.unit_cost).toFixed(2)}`
+                            ? <CurrencyDisplay value={item.quantity * item.unit_cost} />
                             : "-"}
                         </TableCell>
                         <TableCell>

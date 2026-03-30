@@ -119,6 +119,21 @@ class Worker extends Model
         return $this->hasMany(ProjectLaborCost::class);
     }
 
+    public function laborLogs(): HasMany
+    {
+        return $this->hasMany(ProjectLaborLog::class);
+    }
+
+    public function schedules(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            ProjectWorkerSchedule::class,
+            ProjectWorker::class,
+            'worker_id',
+            'project_worker_id'
+        );
+    }
+
     // ==================== SCOPES ====================
 
     public function scopeActive($query)

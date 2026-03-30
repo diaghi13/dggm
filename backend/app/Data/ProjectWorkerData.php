@@ -24,6 +24,21 @@ class ProjectWorkerData extends Data
         public ?float $estimated_hours,
         public bool $is_active = true,
         public ?string $notes = null,
+
+        // Slot fields (added for labor system)
+        public ?string $role_name = null,
+        public int $slot_index = 1,
+        public ?int $quote_item_id = null,
+        public ?float $estimated_days = null,
+        public ?float $budget_cost_rate = null,
+        public ?float $actual_cost_rate = null,
+        public ?float $customer_rate = null,
+        public bool $is_external = false,
+        public bool $is_scheduled = false,
+
+        // Computed (output only)
+        public readonly ?string $worker_name = null,
+        public readonly ?string $worker_code = null,
     ) {}
 
     public static function rules(): array
@@ -31,7 +46,7 @@ class ProjectWorkerData extends Data
         return [
             'project_id' => ['nullable', 'integer', 'exists:projects,id'],
             'worker_id' => ['nullable', 'integer', 'exists:workers,id'],
-            'status' => ['nullable', 'string', 'in:pending,accepted,rejected,active,completed,cancelled'],
+            'status' => ['nullable', 'string', 'in:slot,pending,accepted,rejected,active,completed,cancelled'],
             'assigned_by_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'site_role' => ['nullable', 'string', 'max:255'],
             'assigned_from' => ['nullable', 'date'],
@@ -45,6 +60,49 @@ class ProjectWorkerData extends Data
             'estimated_hours' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
             'notes' => ['nullable', 'string'],
+            'role_name' => ['nullable', 'string', 'max:255'],
+            'slot_index' => ['nullable', 'integer', 'min:1'],
+            'quote_item_id' => ['nullable', 'integer', 'exists:quote_items,id'],
+            'estimated_days' => ['nullable', 'numeric', 'min:0'],
+            'budget_cost_rate' => ['nullable', 'numeric', 'min:0'],
+            'actual_cost_rate' => ['nullable', 'numeric', 'min:0'],
+            'customer_rate' => ['nullable', 'numeric', 'min:0'],
+            'is_external' => ['boolean'],
+            'is_scheduled' => ['boolean'],
         ];
+    }
+
+    public static function fromModel(\App\Models\ProjectWorker $worker): self
+    {
+        return new self(
+            id: $worker->id,
+            project_id: $worker->project_id,
+            worker_id: $worker->worker_id,
+            status: $worker->status?->value,
+            assigned_by_user_id: $worker->assigned_by_user_id,
+            site_role: $worker->site_role,
+            assigned_from: $worker->assigned_from?->format('Y-m-d'),
+            assigned_to: $worker->assigned_to?->format('Y-m-d'),
+            responded_at: $worker->responded_at?->toIso8601String(),
+            response_due_at: $worker->response_due_at?->toIso8601String(),
+            rejection_reason: $worker->rejection_reason,
+            hourly_rate_override: $worker->hourly_rate_override,
+            fixed_rate_override: $worker->fixed_rate_override,
+            rate_override_notes: $worker->rate_override_notes,
+            estimated_hours: $worker->estimated_hours,
+            is_active: $worker->is_active,
+            notes: $worker->notes,
+            role_name: $worker->role_name,
+            slot_index: $worker->slot_index ?? 1,
+            quote_item_id: $worker->quote_item_id,
+            estimated_days: $worker->estimated_days,
+            budget_cost_rate: $worker->budget_cost_rate,
+            actual_cost_rate: $worker->actual_cost_rate,
+            customer_rate: $worker->customer_rate,
+            is_external: $worker->is_external ?? false,
+            is_scheduled: $worker->is_scheduled ?? false,
+            worker_name: $worker->relationLoaded('worker') ? $worker->worker?->full_name : null,
+            worker_code: $worker->relationLoaded('worker') ? $worker->worker?->code : null,
+        );
     }
 }

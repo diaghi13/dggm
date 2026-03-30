@@ -57,9 +57,16 @@ export const productsApi = {
     return response.data.data;
   },
 
-  getPricing: async (id: number, priceListId?: number) => {
-    const params = priceListId ? { price_list_id: priceListId } : {};
-    const response = await apiClient.get(`/products/${id}/pricing`, { params });
+  getPricing: async (id: number, params?: {
+    price_list_id?: number;
+    quote_type?: string;
+    duration_days?: number;
+  }) => {
+    const queryParams: Record<string, string> = {};
+    if (params?.price_list_id) queryParams.price_list_id = params.price_list_id.toString();
+    if (params?.quote_type) queryParams.quote_type = params.quote_type;
+    if (params?.duration_days) queryParams.duration_days = params.duration_days.toString();
+    const response = await apiClient.get(`/products/${id}/pricing`, { params: queryParams });
     return response.data.data;
   },
 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productsApi } from '@/lib/api/products';
 import { projectMaterialsApi } from '@/lib/api/project-materials';
+import { kitAssembliesApi } from '@/lib/api/kit-assemblies';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ComboboxSelect } from '@/components/combobox-select';
+import { CurrencyDisplay } from '@/components/ui/currency-input';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -34,6 +43,7 @@ export function AddProjectMaterialDialog({
 }: AddProjectMaterialDialogProps) {
   const queryClient = useQueryClient();
   const [materialSearch, setMaterialSearch] = useState('');
+  const [kitAssemblyId, setKitAssemblyId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     material_id: '',
     planned_quantity: '',
@@ -54,6 +64,16 @@ export function AddProjectMaterialDialog({
         per_page: 50,
       }),
     enabled: open,
+  });
+
+  const selectedProductId = formData.material_id ? parseInt(formData.material_id) : null;
+  const selectedProduct = materialsData?.data?.find((m: any) => m.id.toString() === formData.material_id);
+
+  // Fetch available kit assemblies when a kit product is selected
+  const { data: availableAssemblies } = useQuery({
+    queryKey: ['kit-assemblies-available', selectedProductId],
+    queryFn: () => kitAssembliesApi.getAvailable(selectedProductId!),
+    enabled: !!selectedProductId && selectedProduct?.product_type === 'kit',
   });
 
   const addMutation = useMutation({
@@ -80,6 +100,7 @@ export function AddProjectMaterialDialog({
       notes: '',
     });
     setMaterialSearch('');
+    setKitAssemblyId(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -98,6 +119,7 @@ export function AddProjectMaterialDialog({
       is_extra: formData.is_extra,
       extra_reason: formData.extra_reason || undefined,
       notes: formData.notes || undefined,
+      kit_assembly_id: kitAssemblyId || undefined,
     });
   };
 
@@ -147,6 +169,40 @@ export function AddProjectMaterialDialog({
                 disabled={isLoadingMaterials}
               />
             </div>
+
+            {selectedProduct?.product_type === 'kit' && (
+              <div className="grid gap-2">
+                <Label>
+                  Assembly specifica{' '}
+                  <span className="text-muted-foreground text-xs">(opzionale)</span>
+                </Label>
+                <Select
+                  value={kitAssemblyId?.toString() ?? 'none'}
+                  onValueChange={(v) => setKitAssemblyId(v === 'none' ? null : Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Nessuna assembly specifica" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="text-muted-foreground">Nessuna assembly specifica</span>
+                    </SelectItem>
+                    {availableAssemblies?.data?.map((assembly) => (
+                      <SelectItem key={assembly.id} value={assembly.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <span>{assembly.name}</span>
+                          {(assembly.warehouse?.name ?? assembly.location) && (
+                            <span className="text-xs text-muted-foreground">
+                              {assembly.warehouse?.name ?? assembly.location}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
@@ -248,7 +304,7 @@ export function AddProjectMaterialDialog({
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Costo Totale Pianificato:</span>
                   <span className="text-lg font-bold">
-                    € {(parseFloat(formData.planned_quantity) * parseFloat(formData.planned_unit_cost)).toFixed(2)}
+                    <CurrencyDisplay value={parseFloat(formData.planned_quantity) * parseFloat(formData.planned_unit_cost)} />
                   </span>
                 </div>
               </div>
