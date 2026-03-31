@@ -14,6 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -62,6 +63,11 @@ class BootstrapTenantJob implements ShouldQueue
         }
 
         $globalUser = GlobalUser::findOrFail($globalUserId);
+
+        // Ensure tenant DB is fully migrated before seeding (idempotent — safe to run on retry)
+        Artisan::call('tenants:migrate', [
+            '--tenants' => [$this->tenant->getTenantKey()],
+        ]);
 
         $this->tenant->run(function () use ($companyName) {
             (new TenantSeeder($companyName))->run();
