@@ -18,6 +18,16 @@ export function AuthInitProvider({ children }: { children: React.ReactNode }) {
     if (done.current) return;
     done.current = true;
 
+    // Se è un landlord admin puro (nessun tenant selezionato), salta refreshUser():
+    // non esiste auth_token cookie (nessun tenant user), /auth/me restituirebbe 401.
+    // L'autenticazione avviene tramite globalToken (Bearer) per le route /central.
+    const { globalToken, globalUser, currentTenant } = useAuthStore.getState();
+    if (globalToken && globalUser?.is_landlord_admin && !currentTenant) {
+      setAuthChecked();
+      setChecking(false);
+      return;
+    }
+
     // Verifica sempre con il backend: il vero stato auth è nel cookie httpOnly,
     // non nel localStorage. Se il token è scaduto/invalido (es. dopo DB reset)
     // refreshUser() chiama clearAuth() + logout per pulire il cookie httpOnly.
