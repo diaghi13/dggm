@@ -37,6 +37,15 @@ class BootstrapTenantJob implements ShouldQueue
 
     public function handle(): void
     {
+        // Idempotency guard: skip if already fully bootstrapped
+        if ($this->tenant->bootstrap_status === BootstrapStatus::Ready->value) {
+            Log::info('BootstrapTenantJob: tenant already ready, skipping.', [
+                'tenant_id' => $this->tenant->id,
+            ]);
+
+            return;
+        }
+
         $globalUserId = $this->tenant->global_user_id;
         $companyName = $this->tenant->company_name ?? $this->tenant->name ?? '';
 
