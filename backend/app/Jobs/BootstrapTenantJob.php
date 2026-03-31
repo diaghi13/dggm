@@ -8,7 +8,6 @@ use App\Enums\BootstrapStatus;
 use App\Models\Landlord\GlobalUser;
 use App\Models\Tenant;
 use App\Models\User;
-use Database\Seeders\TenantSeeder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -18,12 +17,11 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Pipeline job — runs after CreateDatabase + MigrateDatabase.
- * Seeds the tenant DB and creates the admin user.
+ * Pipeline job — runs after CreateDatabase + MigrateDatabase + SeedDatabase.
+ * Creates the admin user from the linked GlobalUser and marks tenant as ready.
  *
  * Attributes required on $tenant (stored in the JSON data column by stancl/tenancy):
  *   - global_user_id (string UUID)
- *   - company_name   (string, optional — falls back to $tenant->name)
  */
 class BootstrapTenantJob implements ShouldQueue
 {
@@ -46,11 +44,9 @@ class BootstrapTenantJob implements ShouldQueue
             return;
         }
 
-        $globalUserId = $this->tenant->global_user_id;
-        $companyName = $this->tenant->company_name ?? $this->tenant->name ?? '';
-
-        // Mark as bootstrapping so the admin can see progress
         $this->tenant->update(['bootstrap_status' => BootstrapStatus::Bootstrapping->value]);
+
+        $globalUserId = $this->tenant->global_user_id;
 
         if (! $globalUserId) {
             $this->tenant->update(['bootstrap_status' => BootstrapStatus::Failed->value]);
@@ -62,10 +58,6 @@ class BootstrapTenantJob implements ShouldQueue
         }
 
         $globalUser = GlobalUser::findOrFail($globalUserId);
-
-        $this->tenant->run(function () use ($companyName) {
-            (new TenantSeeder($companyName))->run();
-        });
 
         $this->tenant->run(function () use ($globalUser) {
             $user = User::where('email', $globalUser->email)->first();
@@ -85,7 +77,6 @@ class BootstrapTenantJob implements ShouldQueue
             $user->assignRole('admin');
         });
 
-        // Mark as ready — tenant DB is fully seeded and admin user exists
         $this->tenant->update(['bootstrap_status' => BootstrapStatus::Ready->value]);
 
         Log::info('Tenant bootstrapped successfully', [

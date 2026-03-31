@@ -6,20 +6,20 @@ use Illuminate\Database\Seeder;
 
 class TenantSeeder extends Seeder
 {
-    public function __construct(
-        private readonly string $companyName = '',
-    ) {}
-
     /**
      * Seed a new tenant database with all required defaults.
-     * This is called for every new tenant created via CreateTenantJob.
+     *
+     * Called by DatabaseSeeder (via SeedDatabase pipeline job) inside
+     * the tenant context, so tenancy()->tenant is available.
      */
     public function run(): void
     {
+        $companyName = tenancy()->tenant?->company_name ?? tenancy()->tenant?->name ?? '';
+
         // Use direct instantiation instead of $this->call() so this seeder can be
-        // invoked from a queued job (BootstrapTenantJob) where no artisan Command
-        // context is available — $this->call() internally calls setCommand($this->command)
-        // which requires a non-null Command in Laravel 12.
+        // invoked from a queued job where no artisan Command context is available —
+        // $this->call() internally calls setCommand($this->command) which requires
+        // a non-null Command in Laravel 12.
         $container = app();
 
         foreach ([
@@ -31,8 +31,7 @@ class TenantSeeder extends Seeder
             (new $class)->setContainer($container)->run();
         }
 
-        // Pass company name so SettingSeeder seeds the correct company.name value
-        (new SettingSeeder($this->companyName))->setContainer($container)->run();
+        (new SettingSeeder($companyName))->setContainer($container)->run();
 
         foreach ([
             AppSettingsSeeder::class,
