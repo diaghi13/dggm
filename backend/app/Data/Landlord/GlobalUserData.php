@@ -52,6 +52,8 @@ class GlobalUserData extends Data
         public ?bool $is_landlord_admin,
 
         public string|Optional $created_at,
+
+        public int|Optional $tenants_count,
     ) {}
 
     public static function fromModel(GlobalUser $user): self
@@ -71,6 +73,7 @@ class GlobalUserData extends Data
             iban: $user->iban,
             is_landlord_admin: $user->is_landlord_admin,
             created_at: $user->created_at?->toIsoString() ?? '',
+            tenants_count: isset($user->tenant_memberships_count) ? $user->tenant_memberships_count : Optional::create(),
         );
     }
 }

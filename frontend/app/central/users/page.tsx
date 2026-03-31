@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { landlordApi } from "@/lib/api/landlord";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Users, Shield } from "lucide-react";
+import { ChevronRight, Search, Shield, Users } from "lucide-react";
+import Link from "next/link";
 
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "-";
@@ -28,20 +29,25 @@ function getInitials(name: string): string {
 export default function GlobalUsersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const perPage = 20;
 
+  // Debounce search: update debouncedSearch after 400ms of inactivity
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => setDebouncedSearch(value), 400);
+  };
+
   const { data, isLoading } = useQuery({
-    queryKey: ["landlord-global-users", { page, perPage }],
-    queryFn: () => landlordApi.getGlobalUsers({ page, per_page: perPage }),
+    queryKey: ["landlord-global-users", { page, perPage, search: debouncedSearch }],
+    queryFn: () =>
+      landlordApi.getGlobalUsers({ page, per_page: perPage, search: debouncedSearch || undefined }),
   });
 
-  const users = (data?.data ?? []).filter(
-    (u) =>
-      !search ||
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()),
-  );
-
+  const users = data?.data ?? [];
   const meta = data?.meta;
 
   return (
@@ -63,7 +69,7 @@ export default function GlobalUsersPage() {
           <Input
             placeholder="Cerca per nome o email..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 h-10 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
           />
         </div>
@@ -82,6 +88,7 @@ export default function GlobalUsersPage() {
                 </div>
                 <Skeleton className="h-6 w-20 rounded-full" />
                 <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
               </div>
             ))}
           </div>
@@ -115,50 +122,75 @@ export default function GlobalUsersPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden lg:table-cell">
                   Registrato il
                 </th>
+                <th className="px-4 py-3 w-8" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {users.map((user) => (
-                <tr
-                  key={user.id}
-                  className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                >
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm">
-                        {getInitials(user.name)}
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-slate-100">
-                          {user.name}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 sm:hidden">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 hidden sm:table-cell text-slate-600 dark:text-slate-400">
-                    {user.email}
-                  </td>
-                  <td className="px-4 py-4 hidden md:table-cell">
-                    {user.is_landlord_admin ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400">
-                        <Shield className="h-3 w-3" />
-                        Landlord Admin
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        <Users className="h-3 w-3" />
-                        Utente
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4 hidden lg:table-cell text-slate-600 dark:text-slate-400 text-sm">
-                    {formatDate(user.created_at)}
-                  </td>
-                </tr>
-              ))}
+              {users.map((user) => {
+                const tenantsCount = (user as App.Data.Landlord.GlobalUserData & { tenants_count?: number }).tenants_count;
+                return (
+                  <tr
+                    key={user.id}
+                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-4 py-4">
+                      <Link
+                        href={`/central/users/${user.id}`}
+                        className="flex items-center gap-3"
+                      >
+                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm">
+                          {getInitials(user.name)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-slate-900 dark:text-slate-100">
+                              {user.name}
+                            </p>
+                            {tenantsCount != null && tenantsCount > 0 && (
+                              <span className="inline-flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium px-1.5 py-0.5 min-w-[20px]">
+                                {tenantsCount}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 sm:hidden">
+                            {user.email}
+                          </p>
+                        </div>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 hidden sm:table-cell text-slate-600 dark:text-slate-400">
+                      <Link href={`/central/users/${user.id}`} className="block">
+                        {user.email}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 hidden md:table-cell">
+                      <Link href={`/central/users/${user.id}`} className="block">
+                        {user.is_landlord_admin ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400">
+                            <Shield className="h-3 w-3" />
+                            Landlord Admin
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                            <Users className="h-3 w-3" />
+                            Utente
+                          </span>
+                        )}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 hidden lg:table-cell text-slate-600 dark:text-slate-400 text-sm">
+                      <Link href={`/central/users/${user.id}`} className="block">
+                        {formatDate(user.created_at)}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <Link href={`/central/users/${user.id}`} className="block">
+                        <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-600 ml-auto" />
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

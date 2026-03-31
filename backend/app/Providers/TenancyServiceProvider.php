@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Jobs\BootstrapTenantJob;
+use App\Jobs\CreateTenantStorageDirectoriesJob;
 use App\Jobs\SafeCreateDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
@@ -31,6 +32,7 @@ class TenancyServiceProvider extends ServiceProvider
                 JobPipeline::make([
                     SafeCreateDatabase::class,
                     MigrateDatabase::class,
+                    CreateTenantStorageDirectoriesJob::class,
                     SeedDatabase::class,
                     BootstrapTenantJob::class,
                 ])->send(function (Events\TenantCreated $event) {

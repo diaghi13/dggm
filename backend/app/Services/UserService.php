@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Data\UserData;
+use App\Models\Landlord\GlobalUser;
+use App\Models\Landlord\TenantMembership;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -58,13 +60,33 @@ class UserService
      */
     public function create(UserData $data): User
     {
-        return DB::transaction(function () use ($data) {
+        // Create or find GlobalUser in landlord DB (outside tenant transaction)
+        $globalUser = GlobalUser::firstOrCreate(
+            ['email' => $data->email],
+            [
+                'name' => $data->name,
+                'password' => $data->password, // GlobalUser model handles hashing via cast
+            ]
+        );
+
+        // Create TenantMembership if not exists
+        $tenantId = tenancy()->tenant?->id;
+        $primaryRole = ! empty($data->roles) ? $data->roles[0] : 'admin';
+        if ($tenantId) {
+            TenantMembership::firstOrCreate(
+                ['global_user_id' => $globalUser->id, 'tenant_id' => $tenantId],
+                ['role' => strtolower($primaryRole), 'status' => 'active']
+            );
+        }
+
+        return DB::transaction(function () use ($data, $globalUser) {
             // Create user
             $user = User::create([
                 'name' => $data->name,
                 'email' => $data->email,
                 'password' => Hash::make($data->password),
                 'is_active' => $data->is_active,
+                'global_user_id' => $globalUser->id,
             ]);
 
             // Assign roles if provided

@@ -21,6 +21,7 @@ class Worker extends Model
     protected $fillable = [
         'code',
         'user_id',
+        'global_user_id',
         'worker_type',
         'contract_type',
         'first_name',

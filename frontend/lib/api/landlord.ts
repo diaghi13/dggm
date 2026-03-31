@@ -61,6 +61,25 @@ export interface LandlordPlansResponse {
   data: App.Data.Landlord.PlanData[];
 }
 
+export interface TenantMembershipWithTenant {
+  id: number;
+  tenant_id: string;
+  tenant_name: string;
+  role: string;
+  status: string;
+  created_at: string;
+}
+
+export interface GlobalUserMembershipsResponse {
+  success: boolean;
+  data: TenantMembershipWithTenant[];
+}
+
+export interface AddMembershipPayload {
+  tenant_id: string;
+  role?: string;
+}
+
 export interface AdminPlanFeature {
   id: number;
   plan_id: number;
@@ -99,6 +118,19 @@ export interface PlanFormPayload {
   is_active: boolean;
   sort_order: number;
   features: Array<{ feature_key: string; price?: number | null; price_yearly?: number | null }>;
+}
+
+export interface TenantInvitationPreview {
+  tenant_name: string;
+  email: string;
+  role: string;
+  expires_at: string | null;
+  is_new_user: boolean;
+}
+
+export interface SendTenantInvitationPayload {
+  email: string;
+  role: string;
 }
 
 export const landlordApi = {
@@ -151,15 +183,57 @@ export const landlordApi = {
   },
 
   // Global Users
-  getGlobalUsers: async (params?: { page?: number; per_page?: number }): Promise<LandlordGlobalUsersResponse> => {
+  getGlobalUsers: async (params?: { page?: number; per_page?: number; search?: string }): Promise<LandlordGlobalUsersResponse> => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append("page", String(params.page));
     if (params?.per_page) searchParams.append("per_page", String(params.per_page));
+    if (params?.search) searchParams.append("search", params.search);
     const query = searchParams.toString();
     const response = await apiClient.get(`/landlord/users${query ? `?${query}` : ""}`, {
       headers: getGlobalAuthHeader(),
     });
     return response.data;
+  },
+
+  getGlobalUser: async (id: string): Promise<{ success: boolean; data: App.Data.Landlord.GlobalUserData & { tenants_count?: number } }> => {
+    const response = await apiClient.get(`/landlord/users/${id}`, {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  updateGlobalUser: async (id: string, data: { name: string; is_landlord_admin?: boolean }): Promise<{ success: boolean; data: App.Data.Landlord.GlobalUserData }> => {
+    const response = await apiClient.put(`/landlord/users/${id}`, data, {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  toggleAdmin: async (userId: string): Promise<{ success: boolean; data: App.Data.Landlord.GlobalUserData }> => {
+    const response = await apiClient.post(`/landlord/users/${userId}/toggle-admin`, undefined, {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  getUserMemberships: async (userId: string): Promise<GlobalUserMembershipsResponse> => {
+    const response = await apiClient.get(`/landlord/users/${userId}/memberships`, {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  addUserMembership: async (userId: string, data: AddMembershipPayload): Promise<{ success: boolean; data: TenantMembershipWithTenant }> => {
+    const response = await apiClient.post(`/landlord/users/${userId}/memberships`, data, {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  removeUserMembership: async (userId: string, membershipId: number): Promise<void> => {
+    await apiClient.delete(`/landlord/users/${userId}/memberships/${membershipId}`, {
+      headers: getGlobalAuthHeader(),
+    });
   },
 
   // Plans (public list)
@@ -196,5 +270,40 @@ export const landlordApi = {
     await apiClient.delete(`/landlord/plans/${id}`, {
       headers: getGlobalAuthHeader(),
     });
+  },
+
+  // Tenant Invitations — public endpoints (no auth)
+  previewTenantInvitation: async (
+    token: string
+  ): Promise<{ success: boolean; data: TenantInvitationPreview }> => {
+    const response = await apiClient.get(`/tenant-invitations/preview/${token}`);
+    return response.data;
+  },
+
+  acceptTenantInvitation: async (
+    token: string,
+    password?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: { global_user_id: string; email: string };
+  }> => {
+    const response = await apiClient.post("/tenant-invitations/accept", {
+      token,
+      ...(password !== undefined ? { password } : {}),
+    });
+    return response.data;
+  },
+
+  // Send cross-tenant invitation — auth:sanctum (standard apiClient, tenant context)
+  sendTenantInvitation: async (
+    data: SendTenantInvitationPayload
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: { id: number; email: string; role: string };
+  }> => {
+    const response = await apiClient.post("/tenant-invitations", data);
+    return response.data;
   },
 };

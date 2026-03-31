@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Landlord\GlobalUser;
+use App\Models\Landlord\TenantMembership;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
@@ -46,10 +48,29 @@ class CreateUserCommand extends Command
             }
         }
 
+        // Create or find GlobalUser in landlord DB
+        $globalUser = GlobalUser::firstOrCreate(
+            ['email' => $email],
+            [
+                'name' => $name,
+                'password' => $password, // GlobalUser model handles hashing via cast
+            ]
+        );
+
+        // Create TenantMembership if inside a tenant context
+        $tenantId = tenancy()->tenant?->id;
+        if ($tenantId) {
+            TenantMembership::firstOrCreate(
+                ['global_user_id' => $globalUser->id, 'tenant_id' => $tenantId],
+                ['role' => strtolower($role ?? 'admin'), 'status' => 'active']
+            );
+        }
+
         $user = User::create([
             'name' => $name,
             'email' => $email,
             'password' => Hash::make($password),
+            'global_user_id' => $globalUser->id,
         ]);
 
         if ($role) {

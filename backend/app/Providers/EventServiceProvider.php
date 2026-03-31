@@ -56,6 +56,7 @@ use App\Listeners\NotifyWarehouseManagerListener;
 use App\Listeners\ReverseStockMovementsListener;
 use App\Listeners\SendLowStockAlert;
 use App\Listeners\SendTenantActivationEmailListener;
+use App\Listeners\SyncTenantUsersListener;
 use App\Listeners\SyncWorkerProfileListener;
 use App\Listeners\UpdateCompositePricesFromComponentListener;
 use App\Listeners\UpdateProductStandardCostListener;
@@ -215,6 +216,7 @@ class EventServiceProvider extends ServiceProvider
         // Global User Events
         GlobalUserUpdated::class => [
             SyncWorkerProfileListener::class,
+            SyncTenantUsersListener::class,
         ],
 
         // Tenant Lifecycle Events

@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Enums\WorkerType;
+use App\Models\Landlord\GlobalUser;
+use App\Models\Landlord\TenantMembership;
 use App\Models\User;
 use App\Models\Worker;
 use App\Models\WorkerInvitation;
@@ -96,17 +98,37 @@ class InvitationService
             throw new \Exception('A user with this email already exists');
         }
 
-        return DB::transaction(function () use ($invitation, $userData) {
+        // 1. Create or find GlobalUser in landlord DB (outside tenant transaction)
+        $globalUser = GlobalUser::firstOrCreate(
+            ['email' => $invitation->email],
+            [
+                'name' => $invitation->first_name.' '.$invitation->last_name,
+                'password' => $userData['password'], // GlobalUser model handles hashing via cast
+            ]
+        );
+
+        // 2. Create TenantMembership if not exists
+        $tenantId = tenancy()->tenant?->id;
+        if ($tenantId) {
+            TenantMembership::firstOrCreate(
+                ['global_user_id' => $globalUser->id, 'tenant_id' => $tenantId],
+                ['role' => 'worker', 'status' => 'active']
+            );
+        }
+
+        return DB::transaction(function () use ($invitation, $userData, $globalUser) {
             $user = User::create([
                 'name' => $invitation->first_name.' '.$invitation->last_name,
                 'email' => $invitation->email,
                 'password' => Hash::make($userData['password']),
+                'global_user_id' => $globalUser->id,
             ]);
 
             $user->assignRole('worker');
 
             $worker = Worker::create([
                 'user_id' => $user->id,
+                'global_user_id' => $globalUser->id,
                 'worker_type' => $invitation->worker_type,
                 'contract_type' => $invitation->contract_type,
                 'first_name' => $invitation->first_name,

@@ -13,7 +13,23 @@ class TenantMembership extends Model
 
     protected $table = 'tenant_memberships';
 
-    protected $fillable = ['global_user_id', 'tenant_id', 'role', 'status'];
+    protected $fillable = [
+        'global_user_id',
+        'tenant_id',
+        'role',
+        'status',
+        'invitation_token',
+        'invited_at',
+        'expires_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'invited_at' => 'datetime',
+            'expires_at' => 'datetime',
+        ];
+    }
 
     public function globalUser(): BelongsTo
     {

@@ -3,9 +3,19 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invitationsApi } from '@/lib/api/invitations';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { landlordApi } from '@/lib/api/landlord';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -37,13 +47,45 @@ import {
   Clock,
   AlertCircle,
   Copy,
+  KeyRound,
 } from 'lucide-react';
 import type { WorkerInvitation } from '@/lib/types';
+
+const TENANT_ROLES: { value: string; label: string }[] = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'project-manager', label: 'Project Manager' },
+  { value: 'worker', label: 'Worker' },
+  { value: 'warehouse-manager', label: 'Responsabile Magazzino' },
+  { value: 'accountant', label: 'Contabile' },
+  { value: 'foreman', label: 'Capo Cantiere' },
+];
 
 export default function InvitationsPage() {
   const queryClient = useQueryClient();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState('pending');
+
+  // Tenant invitation form state
+  const [tenantInviteEmail, setTenantInviteEmail] = useState('');
+  const [tenantInviteRole, setTenantInviteRole] = useState('admin');
+
+  const sendTenantInviteMutation = useMutation({
+    mutationFn: (data: { email: string; role: string }) =>
+      landlordApi.sendTenantInvitation(data),
+    onSuccess: (_, vars) => {
+      toast.success(`Invito inviato a ${vars.email}`);
+      setTenantInviteEmail('');
+      setTenantInviteRole('admin');
+    },
+    onError: (err: unknown) => {
+      const axiosErr = err as { response?: { data?: { message?: string; error?: { message?: string } } } };
+      const msg =
+        axiosErr?.response?.data?.message ??
+        axiosErr?.response?.data?.error?.message ??
+        "Errore durante l'invio dell'invito";
+      toast.error(msg);
+    },
+  });
 
   const { data: invitations, isLoading } = useQuery({
     queryKey: ['invitations'],
@@ -221,6 +263,79 @@ export default function InvitationsPage() {
           Nuovo Invito
         </Button>
       </div>
+
+      {/* Tenant Access Invitations */}
+      <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              Inviti Accesso Tenant
+            </CardTitle>
+          </div>
+          <CardDescription className="text-slate-500 dark:text-slate-400">
+            Invita utenti esistenti ad accedere a questo tenant con un ruolo specifico
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!tenantInviteEmail.trim()) return;
+              sendTenantInviteMutation.mutate({
+                email: tenantInviteEmail.trim(),
+                role: tenantInviteRole,
+              });
+            }}
+            className="flex flex-col sm:flex-row gap-3"
+          >
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="tenant-invite-email" className="text-slate-700 dark:text-slate-300">
+                Email
+              </Label>
+              <Input
+                id="tenant-invite-email"
+                type="email"
+                placeholder="utente@esempio.com"
+                value={tenantInviteEmail}
+                onChange={(e) => setTenantInviteEmail(e.target.value)}
+                required
+                className="bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              />
+            </div>
+            <div className="w-full sm:w-52 space-y-1.5">
+              <Label htmlFor="tenant-invite-role" className="text-slate-700 dark:text-slate-300">
+                Ruolo
+              </Label>
+              <Select value={tenantInviteRole} onValueChange={setTenantInviteRole}>
+                <SelectTrigger
+                  id="tenant-invite-role"
+                  className="bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                  {TENANT_ROLES.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button
+                type="submit"
+                disabled={sendTenantInviteMutation.isPending || !tenantInviteEmail.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {sendTenantInviteMutation.isPending ? 'Invio...' : 'Invia invito'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

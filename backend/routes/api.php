@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SettingController;
 use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\SupplierController;
+use App\Http\Controllers\Api\V1\TenantInvitationController;
 use App\Http\Controllers\Api\V1\WarehouseController;
 use App\Http\Controllers\Api\V1\WorkerController;
 use App\Http\Controllers\Auth\GlobalAuthController;
@@ -96,6 +97,11 @@ Route::prefix('v1')->group(function () {
 
         Route::get('users', [\App\Http\Controllers\Landlord\GlobalUserController::class, 'index']);
         Route::get('users/{id}', [\App\Http\Controllers\Landlord\GlobalUserController::class, 'show']);
+        Route::patch('users/{id}', [\App\Http\Controllers\Landlord\GlobalUserController::class, 'update']);
+        Route::post('users/{id}/toggle-admin', [\App\Http\Controllers\Landlord\GlobalUserController::class, 'toggleAdmin']);
+        Route::get('users/{id}/memberships', [\App\Http\Controllers\Landlord\GlobalUserController::class, 'memberships']);
+        Route::post('users/{id}/memberships', [\App\Http\Controllers\Landlord\GlobalUserController::class, 'addMembership']);
+        Route::delete('users/{userId}/memberships/{membershipId}', [\App\Http\Controllers\Landlord\GlobalUserController::class, 'removeMembership']);
 
         // Plans management (landlord admin)
         Route::prefix('plans')->group(function () {
@@ -133,6 +139,10 @@ Route::prefix('v1')->group(function () {
     // Public invitation routes (no authentication)
     Route::get('invitations/{token}', [InvitationController::class, 'showByToken']);
     Route::post('invitations/{token}/accept', [InvitationController::class, 'accept']);
+
+    // Tenant invitations — public (no auth required to preview/accept)
+    Route::post('tenant-invitations/accept', [TenantInvitationController::class, 'accept']);
+    Route::get('tenant-invitations/preview/{token}', [TenantInvitationController::class, 'preview']);
 
     // Protected routes (require authentication)
     Route::middleware('auth:sanctum')->group(function () {
@@ -522,5 +532,8 @@ Route::prefix('v1')->group(function () {
         Route::get('contractors/{contractor}/rates/current', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'current']);
         Route::post('contractors/{contractor}/rates', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'store']);
         Route::get('contractors/{contractor}/rates/history', [\App\Http\Controllers\Api\V1\ContractorRateController::class, 'history']);
+
+        // Tenant invitations — authenticated (admin invites a user to this tenant)
+        Route::post('tenant-invitations', [TenantInvitationController::class, 'invite']);
     });
 });
