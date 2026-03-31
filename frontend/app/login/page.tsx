@@ -169,22 +169,6 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-sm">
-            <p className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-              Credenziali Demo:
-            </p>
-            <ul className="space-y-1 text-slate-600 dark:text-slate-400 text-xs">
-              <li>
-                <strong>Admin:</strong> admin@dggm.com / password
-              </li>
-              <li>
-                <strong>PM:</strong> pm@dggm.com / password
-              </li>
-              <li>
-                <strong>Worker:</strong> worker@dggm.com / password
-              </li>
-            </ul>
-          </div>
         </CardContent>
       </Card>
     </div>
