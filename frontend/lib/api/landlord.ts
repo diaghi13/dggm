@@ -83,6 +83,13 @@ export interface AdminPlan {
   features: AdminPlanFeature[];
 }
 
+export interface CreateTenantPayload {
+  global_user_id: string;
+  company_name: string;
+  plan_id: number;
+  billing_cycle?: "monthly" | "yearly";
+}
+
 export interface PlanFormPayload {
   name: string;
   slug: string;
@@ -131,6 +138,13 @@ export const landlordApi = {
 
   deleteTenant: async (id: string): Promise<LandlordActionResponse> => {
     const response = await apiClient.delete(`/landlord/tenants/${id}`, {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  createTenant: async (data: CreateTenantPayload): Promise<LandlordTenantResponse> => {
+    const response = await apiClient.post("/landlord/tenants", data, {
       headers: getGlobalAuthHeader(),
     });
     return response.data;

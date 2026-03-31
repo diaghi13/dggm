@@ -128,6 +128,7 @@ export const useAuthStore = create<AuthState>()(
               globalUser: global_user,
               globalToken: global_token ?? null,
               availableTenants: tenants ?? [],
+              isAuthenticated: true,
             });
           }
 

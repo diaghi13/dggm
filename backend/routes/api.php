@@ -88,6 +88,7 @@ Route::prefix('v1')->group(function () {
     // Landlord Admin routes (only is_landlord_admin GlobalUsers)
     Route::prefix('landlord')->middleware(['auth:global', 'landlord.admin'])->group(function () {
         Route::get('tenants', [TenantManagementController::class, 'index']);
+        Route::post('tenants', [TenantManagementController::class, 'store']);
         Route::get('tenants/{id}', [TenantManagementController::class, 'show']);
         Route::patch('tenants/{id}/activate', [TenantManagementController::class, 'activate']);
         Route::patch('tenants/{id}/suspend', [TenantManagementController::class, 'suspend']);

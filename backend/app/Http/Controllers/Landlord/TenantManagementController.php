@@ -10,17 +10,66 @@ use App\Data\Landlord\TenantSubscriptionData;
 use App\Data\Landlord\TenantSubscriptionFeatureData;
 use App\Events\TenantActivated;
 use App\Http\Controllers\Controller;
+use App\Jobs\CreateTenantJob;
 use App\Models\Landlord\GlobalUser;
+use App\Models\Landlord\Plan;
 use App\Models\Landlord\TenantMembership;
 use App\Models\Landlord\TenantSubscription;
 use App\Models\Tenant;
 use App\Services\FeatureService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Spatie\LaravelData\DataCollection;
 
 class TenantManagementController extends Controller
 {
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'global_user_id' => ['required', 'string', 'exists:landlord.global_users,id'],
+            'company_name' => ['required', 'string', 'max:255'],
+            'plan_id' => ['required', 'integer', 'exists:landlord.plans,id'],
+            'billing_cycle' => ['nullable', 'string', 'in:monthly,yearly'],
+        ]);
+
+        $globalUser = GlobalUser::findOrFail($validated['global_user_id']);
+        $billingCycle = $validated['billing_cycle'] ?? 'monthly';
+
+        $tenant = Tenant::create([
+            'name' => $validated['company_name'],
+            'slug' => Str::slug($validated['company_name']) . '-' . Str::random(6),
+        ]);
+
+        TenantMembership::create([
+            'global_user_id' => $globalUser->id,
+            'tenant_id' => $tenant->id,
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+
+        TenantSubscription::create([
+            'tenant_id' => $tenant->id,
+            'plan_id' => $validated['plan_id'],
+            'status' => 'pending_payment',
+            'billing_cycle' => $billingCycle,
+        ]);
+
+        CreateTenantJob::dispatch($tenant->id, $globalUser->id, $validated['company_name']);
+
+        return response()->json([
+            'success' => true,
+            'data' => new TenantData(
+                id: $tenant->id,
+                name: $tenant->name,
+                slug: $tenant->slug,
+                created_at: $tenant->created_at?->toIsoString() ?? '',
+                subscription: null,
+            ),
+            'message' => 'Tenant creato con successo.',
+        ], 201);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $tenants = Tenant::query()
