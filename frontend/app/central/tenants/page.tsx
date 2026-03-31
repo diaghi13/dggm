@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { landlordApi } from "@/lib/api/landlord";
+import { landlordApi, CreateTenantPayload } from "@/lib/api/landlord";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -13,6 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +44,9 @@ import {
   Circle,
   PlayCircle,
   PauseCircle,
+  Plus,
+  ChevronsUpDown,
+  Check,
 } from "lucide-react";
 import { Suspense } from "react";
 
@@ -140,6 +152,22 @@ function TenantsContent() {
     tenantName: string;
   } | null>(null);
 
+  // New Tenant dialog state
+  const [isNewTenantOpen, setIsNewTenantOpen] = useState(false);
+  const [newTenantForm, setNewTenantForm] = useState<{
+    global_user_id: string;
+    company_name: string;
+    plan_id: string;
+    billing_cycle: "monthly" | "yearly";
+  }>({
+    global_user_id: "",
+    company_name: "",
+    plan_id: "",
+    billing_cycle: "monthly",
+  });
+  const [userSearch, setUserSearch] = useState("");
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ["landlord-tenants", { status: statusFilter, page, perPage }],
     queryFn: () =>
@@ -149,6 +177,52 @@ function TenantsContent() {
         per_page: perPage,
       }),
   });
+
+  const { data: globalUsersData } = useQuery({
+    queryKey: ["landlord-global-users", userSearch],
+    queryFn: () => landlordApi.getGlobalUsers({ per_page: 50 }),
+    enabled: isNewTenantOpen,
+  });
+
+  const { data: adminPlans } = useQuery({
+    queryKey: ["landlord-admin-plans"],
+    queryFn: () => landlordApi.getAdminPlans(),
+    enabled: isNewTenantOpen,
+  });
+
+  const createTenantMutation = useMutation({
+    mutationFn: (data: CreateTenantPayload) => landlordApi.createTenant(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["landlord-tenants"] });
+      toast.success("Tenant creato", {
+        description: "Il tenant è stato creato con successo.",
+      });
+      setIsNewTenantOpen(false);
+      setNewTenantForm({
+        global_user_id: "",
+        company_name: "",
+        plan_id: "",
+        billing_cycle: "monthly",
+      });
+      setUserSearch("");
+    },
+    onError: () => {
+      toast.error("Errore", {
+        description: "Impossibile creare il tenant. Riprova.",
+      });
+    },
+  });
+
+  const globalUsers = globalUsersData?.data ?? [];
+  const filteredUsers = userSearch
+    ? globalUsers.filter(
+        (u) =>
+          u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+          u.email.toLowerCase().includes(userSearch.toLowerCase()),
+      )
+    : globalUsers;
+
+  const selectedUser = globalUsers.find((u) => u.id === newTenantForm.global_user_id);
 
   const activateMutation = useMutation({
     mutationFn: (id: string) => landlordApi.activateTenant(id),
@@ -196,13 +270,22 @@ function TenantsContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-          Tenant
-        </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Gestisci le organizzazioni registrate nel sistema
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            Tenant
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Gestisci le organizzazioni registrate nel sistema
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsNewTenantOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Nuovo Tenant
+        </Button>
       </div>
 
       {/* Filters */}
@@ -529,6 +612,219 @@ function TenantsContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* New Tenant Dialog */}
+      <Dialog open={isNewTenantOpen} onOpenChange={setIsNewTenantOpen}>
+        <DialogContent className="sm:max-w-lg bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              Nuovo Tenant
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 dark:text-slate-400">
+              Crea un nuovo tenant associato a un utente globale esistente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Global User selector */}
+            <div className="space-y-1.5">
+              <Label className="text-slate-700 dark:text-slate-300">
+                Utente globale <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={userDropdownOpen}
+                  className="w-full justify-between h-10 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-normal"
+                  onClick={() => setUserDropdownOpen((o) => !o)}
+                >
+                  {selectedUser ? (
+                    <span className="truncate">
+                      {selectedUser.name}{" "}
+                      <span className="text-slate-400 text-xs">
+                        ({selectedUser.email})
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 dark:text-slate-500">
+                      Seleziona utente...
+                    </span>
+                  )}
+                  <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                </Button>
+                {userDropdownOpen && (
+                  <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+                    <div className="p-2 border-b border-slate-100 dark:border-slate-800">
+                      <Input
+                        placeholder="Cerca per nome o email..."
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        className="h-8 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-52 overflow-y-auto">
+                      {filteredUsers.length === 0 ? (
+                        <p className="px-3 py-4 text-sm text-center text-slate-500 dark:text-slate-400">
+                          Nessun utente trovato
+                        </p>
+                      ) : (
+                        filteredUsers.map((user) => (
+                          <button
+                            key={user.id}
+                            type="button"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
+                            onClick={() => {
+                              setNewTenantForm((f) => ({
+                                ...f,
+                                global_user_id: user.id ?? "",
+                              }));
+                              setUserDropdownOpen(false);
+                              setUserSearch("");
+                            }}
+                          >
+                            <Check
+                              className={`h-4 w-4 shrink-0 ${newTenantForm.global_user_id === user.id ? "opacity-100 text-blue-600" : "opacity-0"}`}
+                            />
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{user.name}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                {user.email}
+                              </p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Company name */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="company-name"
+                className="text-slate-700 dark:text-slate-300"
+              >
+                Nome azienda <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="company-name"
+                placeholder="Es. Acme S.r.l."
+                value={newTenantForm.company_name}
+                onChange={(e) =>
+                  setNewTenantForm((f) => ({
+                    ...f,
+                    company_name: e.target.value,
+                  }))
+                }
+                className="h-10 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+              />
+            </div>
+
+            {/* Plan selector */}
+            <div className="space-y-1.5">
+              <Label className="text-slate-700 dark:text-slate-300">
+                Piano <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={newTenantForm.plan_id}
+                onValueChange={(v) =>
+                  setNewTenantForm((f) => ({ ...f, plan_id: v }))
+                }
+              >
+                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                  <SelectValue placeholder="Seleziona piano..." />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                  {(adminPlans ?? []).map((plan) => (
+                    <SelectItem
+                      key={plan.id}
+                      value={String(plan.id)}
+                      className="text-slate-900 dark:text-slate-100"
+                    >
+                      {plan.name}
+                      {plan.price != null && (
+                        <span className="ml-2 text-slate-400 text-xs">
+                          €{plan.price}/mese
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Billing cycle */}
+            <div className="space-y-1.5">
+              <Label className="text-slate-700 dark:text-slate-300">
+                Ciclo di fatturazione
+              </Label>
+              <Select
+                value={newTenantForm.billing_cycle}
+                onValueChange={(v) =>
+                  setNewTenantForm((f) => ({
+                    ...f,
+                    billing_cycle: v as "monthly" | "yearly",
+                  }))
+                }
+              >
+                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                  <SelectItem
+                    value="monthly"
+                    className="text-slate-900 dark:text-slate-100"
+                  >
+                    Mensile
+                  </SelectItem>
+                  <SelectItem
+                    value="yearly"
+                    className="text-slate-900 dark:text-slate-100"
+                  >
+                    Annuale
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsNewTenantOpen(false)}
+              className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+            >
+              Annulla
+            </Button>
+            <Button
+              onClick={() => {
+                if (
+                  !newTenantForm.global_user_id ||
+                  !newTenantForm.company_name.trim() ||
+                  !newTenantForm.plan_id
+                ) {
+                  toast.error("Compila tutti i campi obbligatori");
+                  return;
+                }
+                createTenantMutation.mutate({
+                  global_user_id: newTenantForm.global_user_id,
+                  company_name: newTenantForm.company_name.trim(),
+                  plan_id: Number(newTenantForm.plan_id),
+                  billing_cycle: newTenantForm.billing_cycle,
+                });
+              }}
+              disabled={createTenantMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {createTenantMutation.isPending ? "Creazione..." : "Crea Tenant"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

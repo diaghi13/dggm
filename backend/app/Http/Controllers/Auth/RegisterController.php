@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\CreateTenantJob;
 use App\Models\Landlord\GlobalUser;
 use App\Models\Landlord\Plan;
 use App\Models\Landlord\TenantMembership;
@@ -42,6 +41,10 @@ class RegisterController extends Controller
         $tenant = Tenant::create([
             'name' => $request->company_name,
             'slug' => $slug,
+            'data' => [
+                'global_user_id' => $globalUser->id,
+                'company_name' => $request->company_name,
+            ],
         ]);
 
         TenantMembership::create([
@@ -82,8 +85,6 @@ class RegisterController extends Controller
                 ]);
             }
         }
-
-        CreateTenantJob::dispatch($tenant->id, $globalUser->id, $request->company_name);
 
         $token = $globalUser->createToken('global-token')->plainTextToken;
 

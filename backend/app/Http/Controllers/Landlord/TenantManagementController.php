@@ -10,9 +10,7 @@ use App\Data\Landlord\TenantSubscriptionData;
 use App\Data\Landlord\TenantSubscriptionFeatureData;
 use App\Events\TenantActivated;
 use App\Http\Controllers\Controller;
-use App\Jobs\CreateTenantJob;
 use App\Models\Landlord\GlobalUser;
-use App\Models\Landlord\Plan;
 use App\Models\Landlord\TenantMembership;
 use App\Models\Landlord\TenantSubscription;
 use App\Models\Tenant;
@@ -38,7 +36,11 @@ class TenantManagementController extends Controller
 
         $tenant = Tenant::create([
             'name' => $validated['company_name'],
-            'slug' => Str::slug($validated['company_name']) . '-' . Str::random(6),
+            'slug' => Str::slug($validated['company_name']).'-'.Str::random(6),
+            'data' => [
+                'global_user_id' => $globalUser->id,
+                'company_name' => $validated['company_name'],
+            ],
         ]);
 
         TenantMembership::create([
@@ -54,8 +56,6 @@ class TenantManagementController extends Controller
             'status' => 'pending_payment',
             'billing_cycle' => $billingCycle,
         ]);
-
-        CreateTenantJob::dispatch($tenant->id, $globalUser->id, $validated['company_name']);
 
         return response()->json([
             'success' => true,
