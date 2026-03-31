@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
+import { tenantContext } from '@/lib/tenant-context';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -24,17 +25,26 @@ apiClient.interceptors.request.use(
     // Token is automatically sent via httpOnly cookie.
     // We only need to add the x-tenant header for multi-tenant routing.
     if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('auth-storage');
-        if (raw) {
-          const parsed = JSON.parse(raw) as { state?: { currentTenant?: { id?: string } } };
-          const tenantId = parsed?.state?.currentTenant?.id;
-          if (tenantId) {
-            config.headers['x-tenant'] = tenantId;
+      // First: read from in-memory context (set synchronously by auth-store,
+      // avoids the async localStorage write timing issue with Zustand persist).
+      let tenantId = tenantContext.get();
+
+      // Fallback: read from localStorage (for page refreshes where auth-store
+      // hasn't had setCurrentTenant called yet, but persist has hydrated).
+      if (!tenantId) {
+        try {
+          const raw = localStorage.getItem('auth-storage');
+          if (raw) {
+            const parsed = JSON.parse(raw) as { state?: { currentTenant?: { id?: string } } };
+            tenantId = parsed?.state?.currentTenant?.id ?? null;
           }
+        } catch {
+          // Ignore JSON parse errors — localStorage may be empty or corrupted
         }
-      } catch {
-        // Ignore JSON parse errors — localStorage may be empty or corrupted
+      }
+
+      if (tenantId) {
+        config.headers['x-tenant'] = tenantId;
       }
     }
     return config;

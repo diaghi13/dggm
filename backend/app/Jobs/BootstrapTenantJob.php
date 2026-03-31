@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\BootstrapStatus;
 use App\Models\Landlord\GlobalUser;
 use App\Models\Tenant;
 use App\Models\User;
@@ -20,7 +21,7 @@ use Throwable;
  * Pipeline job — runs after CreateDatabase + MigrateDatabase.
  * Seeds the tenant DB and creates the admin user.
  *
- * Data required in $tenant->data:
+ * Attributes required on $tenant (stored in the JSON data column by stancl/tenancy):
  *   - global_user_id (string UUID)
  *   - company_name   (string, optional — falls back to $tenant->name)
  */
@@ -36,11 +37,14 @@ class BootstrapTenantJob implements ShouldQueue
 
     public function handle(): void
     {
-        $data = $this->tenant->data ?? [];
-        $globalUserId = $data['global_user_id'] ?? null;
-        $companyName = $data['company_name'] ?? $this->tenant->name ?? '';
+        $globalUserId = $this->tenant->global_user_id;
+        $companyName = $this->tenant->company_name ?? $this->tenant->name ?? '';
+
+        // Mark as bootstrapping so the admin can see progress
+        $this->tenant->update(['bootstrap_status' => BootstrapStatus::Bootstrapping->value]);
 
         if (! $globalUserId) {
+            $this->tenant->update(['bootstrap_status' => BootstrapStatus::Failed->value]);
             Log::warning('BootstrapTenantJob: missing global_user_id in tenant data', [
                 'tenant_id' => $this->tenant->id,
             ]);
@@ -72,6 +76,9 @@ class BootstrapTenantJob implements ShouldQueue
             $user->assignRole('admin');
         });
 
+        // Mark as ready — tenant DB is fully seeded and admin user exists
+        $this->tenant->update(['bootstrap_status' => BootstrapStatus::Ready->value]);
+
         Log::info('Tenant bootstrapped successfully', [
             'tenant_id' => $this->tenant->id,
             'global_user_id' => $globalUserId,
@@ -80,6 +87,8 @@ class BootstrapTenantJob implements ShouldQueue
 
     public function failed(Throwable $exception): void
     {
+        $this->tenant->update(['bootstrap_status' => BootstrapStatus::Failed->value]);
+
         Log::error('BootstrapTenantJob failed', [
             'tenant_id' => $this->tenant->id,
             'error' => $exception->getMessage(),

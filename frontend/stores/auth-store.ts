@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { User, UserSettings, TenantInfo, GlobalUser } from "@/lib/types";
 import { authApi } from "@/lib/api/auth";
+import { tenantContext } from "@/lib/tenant-context";
 
 interface AuthState {
   user: User | null;
@@ -60,6 +61,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       clearAuth: () => {
+        tenantContext.set(null);
         set({
           user: null,
           settings: null,
@@ -93,10 +95,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setCurrentTenant: (tenant) => {
+        tenantContext.set(tenant.id);
         set({ currentTenant: tenant });
       },
 
       switchTenant: (tenant) => {
+        tenantContext.set(tenant.id);
         // Clear user data so refreshUser() will load the new tenant's user
         set({
           currentTenant: tenant,
@@ -200,6 +204,9 @@ export const useAuthStore = create<AuthState>()(
         availableTenants: state.availableTenants,
       }),
       onRehydrateStorage: () => (state) => {
+        if (state?.currentTenant?.id) {
+          tenantContext.set(state.currentTenant.id);
+        }
         state?.setHasHydrated(true);
       },
     },

@@ -47,6 +47,8 @@ import {
   Plus,
   ChevronsUpDown,
   Check,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Suspense } from "react";
 
@@ -125,6 +127,41 @@ function StatusBadge({ status }: StatusBadgeProps) {
   );
 }
 
+function BootstrapBadge({ status }: { status: App.Enums.BootstrapStatus | null | undefined }) {
+  if (!status || status === 'ready') return null;
+
+  const map: Record<string, { label: string; className: string; icon: React.ElementType; spin?: boolean }> = {
+    pending: {
+      label: "In coda",
+      className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+      icon: Clock,
+    },
+    bootstrapping: {
+      label: "Inizializzazione...",
+      className: "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400",
+      icon: Loader2,
+      spin: true,
+    },
+    failed: {
+      label: "Init fallita",
+      className: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400",
+      icon: AlertCircle,
+    },
+  };
+
+  const config = map[status];
+  if (!config) return null;
+  const Icon = config.icon;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${config.className}`}
+    >
+      <Icon className={`h-3 w-3 ${config.spin ? "animate-spin" : ""}`} />
+      {config.label}
+    </span>
+  );
+}
+
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("it-IT", {
@@ -176,6 +213,13 @@ function TenantsContent() {
         page,
         per_page: perPage,
       }),
+    refetchInterval: (query) => {
+      const tenants = query.state.data?.data ?? [];
+      const hasPending = tenants.some(
+        (t) => t.bootstrap_status === "pending" || t.bootstrap_status === "bootstrapping",
+      );
+      return hasPending ? 4000 : false;
+    },
   });
 
   const { data: globalUsersData } = useQuery({
@@ -236,10 +280,10 @@ function TenantsContent() {
       });
       setConfirmAction(null);
     },
-    onError: () => {
-      toast.error("Errore", {
-        description: "Impossibile attivare il tenant. Riprova.",
-      });
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ?? "Impossibile attivare il tenant. Riprova.";
+      toast.error("Errore", { description: message });
     },
   });
 
@@ -436,7 +480,10 @@ function TenantsContent() {
                         )}
                       </td>
                       <td className="px-4 py-4">
-                        <StatusBadge status={subscriptionStatus} />
+                        <div className="flex flex-col gap-1">
+                          <StatusBadge status={subscriptionStatus} />
+                          <BootstrapBadge status={tenant.bootstrap_status} />
+                        </div>
                       </td>
                       <td className="px-4 py-4 hidden lg:table-cell text-slate-600 dark:text-slate-400">
                         {formatDate(tenant.created_at)}
@@ -450,7 +497,13 @@ function TenantsContent() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700/50 dark:text-green-400 dark:hover:bg-green-950/30 h-8"
+                              className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700/50 dark:text-green-400 dark:hover:bg-green-950/30 h-8 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={tenant.bootstrap_status !== "ready"}
+                              title={
+                                tenant.bootstrap_status !== "ready"
+                                  ? "Il tenant non è ancora pronto"
+                                  : undefined
+                              }
                               onClick={() =>
                                 setConfirmAction({
                                   type: "activate",
@@ -459,7 +512,11 @@ function TenantsContent() {
                                 })
                               }
                             >
-                              <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                              {tenant.bootstrap_status === "bootstrapping" ? (
+                                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                              ) : (
+                                <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                              )}
                               Attiva
                             </Button>
                           )}

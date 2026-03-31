@@ -919,6 +919,7 @@ id?: string;
 name: string;
 slug: string | null;
 created_at?: string;
+bootstrap_status: App.Enums.BootstrapStatus | null;
 subscription?: App.Data.Landlord.TenantSubscriptionData | null;
 };
 export type TenantMembershipData = {
@@ -959,6 +960,7 @@ price_at_purchase: number | null;
 };
 }
 declare namespace App.Enums {
+export type BootstrapStatus = 'pending' | 'bootstrapping' | 'ready' | 'failed';
 export type ContractType = 'permanent' | 'fixed_term' | 'seasonal' | 'project_based' | 'internship';
 export type ContractorType = 'cooperative' | 'subcontractor' | 'temporary_agency';
 export type DdtStatus = 'draft' | 'issued' | 'in_transit' | 'delivered' | 'cancelled';

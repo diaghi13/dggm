@@ -16,25 +16,33 @@ class TenantSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
+        // Use direct instantiation instead of $this->call() so this seeder can be
+        // invoked from a queued job (BootstrapTenantJob) where no artisan Command
+        // context is available — $this->call() internally calls setCommand($this->command)
+        // which requires a non-null Command in Laravel 12.
+        $container = app();
+
+        foreach ([
             RoleAndPermissionSeeder::class,
-            //DiscountFamilySeeder::class,
             PaymentTermSeeder::class,
             ProductCategorySeeder::class,
             ProductRelationTypeSeeder::class,
-        ]);
+        ] as $class) {
+            (new $class)->setContainer($container)->run();
+        }
 
         // Pass company name so SettingSeeder seeds the correct company.name value
-        $seeder = new SettingSeeder($this->companyName);
-        $seeder->setContainer(app())->setCommand($this->command)->run();
+        (new SettingSeeder($this->companyName))->setContainer($container)->run();
 
-        $this->call([
+        foreach ([
             AppSettingsSeeder::class,
             CompanySettingsSeeder::class,
             QuoteSettingsSeeder::class,
             ProjectRoleSeeder::class,
             WarrantyTypeSeeder::class,
             RentalProfileSeeder::class,
-        ]);
+        ] as $class) {
+            (new $class)->setContainer($container)->run();
+        }
     }
 }

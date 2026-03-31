@@ -61,12 +61,18 @@ export default function LoginPage() {
       }
 
       if (activeTenants.length === 1) {
-        // Single active tenant: auto-select, refresh user context, then navigate.
-        // refreshUser() must be awaited so that x-tenant is in localStorage before
-        // AuthInitProvider runs on the dashboard page, avoiding a race condition
-        // where /auth/me is called without the tenant header → 401 → clearAuth.
+        // Single active tenant: auto-select, then refresh user context if the
+        // tenant user exists (i.e. auth_token cookie was set during login).
+        // setCurrentTenant() synchronously seeds tenantContext so the very next
+        // API call already has the x-tenant header — no race condition.
         useAuthStore.getState().setCurrentTenant(activeTenants[0]);
-        await refreshUser();
+        // Only call refreshUser if the tenant user was found during login
+        // (user is non-null in the store). If null, the tenant bootstrap job
+        // may still be running — skip refreshUser and navigate directly.
+        const { user } = useAuthStore.getState();
+        if (user) {
+          await refreshUser();
+        }
         toast.success("Accesso effettuato!");
         router.push("/dashboard");
         return;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\BootstrapStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Landlord\GlobalUser;
 use App\Models\Landlord\Plan;
@@ -41,10 +42,9 @@ class RegisterController extends Controller
         $tenant = Tenant::create([
             'name' => $request->company_name,
             'slug' => $slug,
-            'data' => [
-                'global_user_id' => $globalUser->id,
-                'company_name' => $request->company_name,
-            ],
+            'global_user_id' => $globalUser->id,
+            'company_name' => $request->company_name,
+            'bootstrap_status' => BootstrapStatus::Pending->value,
         ]);
 
         TenantMembership::create([

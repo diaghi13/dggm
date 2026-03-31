@@ -8,6 +8,7 @@ use App\Data\Landlord\PlanData;
 use App\Data\Landlord\TenantData;
 use App\Data\Landlord\TenantSubscriptionData;
 use App\Data\Landlord\TenantSubscriptionFeatureData;
+use App\Enums\BootstrapStatus;
 use App\Events\TenantActivated;
 use App\Http\Controllers\Controller;
 use App\Models\Landlord\GlobalUser;
@@ -37,10 +38,9 @@ class TenantManagementController extends Controller
         $tenant = Tenant::create([
             'name' => $validated['company_name'],
             'slug' => Str::slug($validated['company_name']).'-'.Str::random(6),
-            'data' => [
-                'global_user_id' => $globalUser->id,
-                'company_name' => $validated['company_name'],
-            ],
+            'global_user_id' => $globalUser->id,
+            'company_name' => $validated['company_name'],
+            'bootstrap_status' => BootstrapStatus::Pending->value,
         ]);
 
         TenantMembership::create([
@@ -64,6 +64,7 @@ class TenantManagementController extends Controller
                 name: $tenant->name,
                 slug: $tenant->slug,
                 created_at: $tenant->created_at?->toIsoString() ?? '',
+                bootstrap_status: BootstrapStatus::tryFrom($tenant->bootstrap_status ?? ''),
                 subscription: null,
             ),
             'message' => 'Tenant creato con successo.',
@@ -100,6 +101,7 @@ class TenantManagementController extends Controller
                 name: $tenant->name,
                 slug: $tenant->slug,
                 created_at: $tenant->created_at?->toIsoString() ?? '',
+                bootstrap_status: BootstrapStatus::tryFrom($tenant->bootstrap_status ?? ''),
                 subscription: $subscriptionData,
             );
         });
@@ -134,6 +136,7 @@ class TenantManagementController extends Controller
                 name: $tenant->name,
                 slug: $tenant->slug,
                 created_at: $tenant->created_at?->toIsoString() ?? '',
+                bootstrap_status: BootstrapStatus::tryFrom($tenant->bootstrap_status ?? ''),
                 subscription: $subscriptionData,
             ),
         ]);
@@ -174,6 +177,18 @@ class TenantManagementController extends Controller
     public function activate(string $id): JsonResponse
     {
         $tenant = Tenant::findOrFail($id);
+
+        $bootstrapStatus = BootstrapStatus::tryFrom($tenant->bootstrap_status ?? '');
+        if ($bootstrapStatus !== BootstrapStatus::Ready) {
+            $message = match ($bootstrapStatus) {
+                BootstrapStatus::Pending => 'Il tenant è in attesa di inizializzazione. Riprova tra qualche minuto.',
+                BootstrapStatus::Bootstrapping => 'Il tenant è in fase di inizializzazione. Attendere il completamento.',
+                BootstrapStatus::Failed => 'L\'inizializzazione del tenant è fallita. Contatta il supporto.',
+                default => 'Il tenant non è ancora pronto per essere attivato.',
+            };
+
+            return response()->json(['success' => false, 'message' => $message], 422);
+        }
 
         $subscription = TenantSubscription::where('tenant_id', $id)
             ->orderBy('created_at', 'desc')

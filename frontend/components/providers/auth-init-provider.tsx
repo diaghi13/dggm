@@ -21,11 +21,26 @@ export function AuthInitProvider({ children }: { children: React.ReactNode }) {
     // Se è un landlord admin puro (nessun tenant selezionato), salta refreshUser():
     // non esiste auth_token cookie (nessun tenant user), /auth/me restituirebbe 401.
     // L'autenticazione avviene tramite globalToken (Bearer) per le route /central.
-    const { globalToken, globalUser, currentTenant } = useAuthStore.getState();
+    const { globalToken, globalUser, currentTenant, availableTenants } = useAuthStore.getState();
     if (globalToken && globalUser?.is_landlord_admin && !currentTenant) {
       setAuthChecked();
       setChecking(false);
       return;
+    }
+
+    // Skip refreshUser() if there is no currentTenant and no active/trial tenants.
+    // This covers the pending-activation case where the auth_token cookie may not
+    // exist yet (bootstrap still running) and there is no tenant context to use.
+    // Without this guard, refreshUser() would get a 401 → clearAuth() → infinite loop.
+    if (!currentTenant) {
+      const hasActiveTenant = availableTenants.some(
+        (t) => t.subscription_status === "active" || t.subscription_status === "trial"
+      );
+      if (!hasActiveTenant) {
+        setAuthChecked();
+        setChecking(false);
+        return;
+      }
     }
 
     // Verifica sempre con il backend: il vero stato auth è nel cookie httpOnly,
