@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading } = useAuthStore();
+  const { login, refreshUser, isLoading } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -61,8 +61,12 @@ export default function LoginPage() {
       }
 
       if (activeTenants.length === 1) {
-        // Single active tenant: auto-select and enter the app
+        // Single active tenant: auto-select, refresh user context, then navigate.
+        // refreshUser() must be awaited so that x-tenant is in localStorage before
+        // AuthInitProvider runs on the dashboard page, avoiding a race condition
+        // where /auth/me is called without the tenant header → 401 → clearAuth.
         useAuthStore.getState().setCurrentTenant(activeTenants[0]);
+        await refreshUser();
         toast.success("Accesso effettuato!");
         router.push("/dashboard");
         return;
