@@ -20,10 +20,9 @@ use Stancl\Tenancy\Exceptions\TenantDatabaseAlreadyExistsException;
  * Idempotent wrapper around stancl's CreateDatabase.
  *
  * On retry (DB already exists):
- *  - status = 'ready'                     → stop pipeline, nothing to do.
- *  - DB has migrations but not bootstrapped → dispatch BootstrapTenantJob independently,
- *                                             stop pipeline (avoids re-running MigrateDatabase).
- *  - DB has no migrations yet             → continue pipeline (MigrateDatabase + BootstrapTenantJob).
+ *  - status = 'ready' → stop pipeline, nothing to do.
+ *  - otherwise        → skip creation and continue the pipeline so
+ *                       MigrateDatabase + SeedDatabase + BootstrapTenantJob can retry.
  */
 class SafeCreateDatabase implements ShouldQueue
 {
@@ -44,44 +43,19 @@ class SafeCreateDatabase implements ShouldQueue
         try {
             $databaseManager->ensureTenantCanBeCreated($this->tenant);
             $this->tenant->database()->manager()->createDatabase($this->tenant);
-            event(new DatabaseCreated($this->tenant));
         } catch (TenantDatabaseAlreadyExistsException) {
-            $status = $this->tenant->bootstrap_status;
-
-            Log::info('SafeCreateDatabase: database already exists.', [
+            Log::info('SafeCreateDatabase: database already exists, skipping creation.', [
                 'tenant_id' => $this->tenant->id,
-                'bootstrap_status' => $status,
+                'bootstrap_status' => $this->tenant->bootstrap_status,
             ]);
 
-            if ($status === 'ready') {
-                Log::info('SafeCreateDatabase: tenant already ready, stopping pipeline.', [
-                    'tenant_id' => $this->tenant->id,
-                ]);
-
-                return false;
+            if ($this->tenant->bootstrap_status === 'ready') {
+                return false; // Nothing left to do — stop the pipeline.
             }
-
-            // Check if migrations have already been applied.
-            // If yes, MigrateDatabase would fail on re-run (MySQL DDL is not transactional).
-            // Dispatch BootstrapTenantJob as an independent job and stop the pipeline.
-            $migrationsRecorded = $this->tenant->run(
-                fn () => \Illuminate\Support\Facades\DB::table('migrations')->count()
-            );
-
-            if ($migrationsRecorded > 0) {
-                Log::info('SafeCreateDatabase: DB already migrated, dispatching BootstrapTenantJob independently.', [
-                    'tenant_id' => $this->tenant->id,
-                    'migrations_count' => $migrationsRecorded,
-                ]);
-
-                dispatch(new BootstrapTenantJob($this->tenant));
-
-                return false; // Stop pipeline — MigrateDatabase must not run again
-            }
-
-            // DB exists but not yet migrated — continue the pipeline normally.
-            event(new DatabaseCreated($this->tenant));
+            // Otherwise let the pipeline continue so the remaining steps can retry.
         }
+
+        event(new DatabaseCreated($this->tenant));
 
         return null;
     }
