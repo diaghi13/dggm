@@ -7,13 +7,14 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
+  Archive,
   Building2,
-  Users,
+  CreditCard,
   LayoutDashboard,
   LogOut,
   ArrowLeft,
   Shield,
-  CreditCard,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/central/tenants", label: "Tenant", icon: Building2, exact: false },
   { href: "/central/users", label: "Utenti Globali", icon: Users, exact: false },
   { href: "/central/plans", label: "Piani", icon: CreditCard, exact: false },
+  { href: "/central/backups", label: "Backup", icon: Archive, exact: false },
 ];
 
 export default function CentralLayout({

@@ -268,13 +268,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, globalUser, logout, isAuthChecked, settings, features, currentTenant, availableTenants: allTenants, switchTenant } = useAuthStore();
-  // Only expose active/trial tenants to the switcher UI
-  const availableTenants = allTenants.filter(
-    (t) =>
-      !t.subscription_status ||
-      t.subscription_status === "active" ||
-      t.subscription_status === "trial"
-  );
+  // Show all tenants the user has membership for — non-active ones get a status indicator
+  const availableTenants = allTenants;
   const { primaryColor } = useThemeSettings();
   const { hasAnyPermission, isAdmin, hasRole } = usePermissions();
   const queryClient = useQueryClient();
@@ -457,6 +452,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                     DGGM ERP
                   </h1>
+                  {currentTenant?.name && (
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[140px]">
+                      {currentTenant.name}
+                    </p>
+                  )}
                 </div>
               </Link>
             )}
@@ -502,19 +502,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     Cambia azienda
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {availableTenants.map((tenant) => (
-                    <DropdownMenuItem
-                      key={tenant.id}
-                      onClick={() => handleSwitchTenant(tenant)}
-                      className="cursor-pointer"
-                    >
-                      <Building2 className="mr-2 h-4 w-4 text-slate-500" />
-                      <span className="flex-1 truncate">{tenant.name}</span>
-                      {tenant.id === currentTenant?.id && (
-                        <Check className="ml-2 h-4 w-4 text-green-500 shrink-0" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
+                  {availableTenants.map((tenant) => {
+                    const isActiveStatus = !tenant.subscription_status || tenant.subscription_status === "active" || tenant.subscription_status === "trial";
+                    return (
+                      <DropdownMenuItem
+                        key={tenant.id}
+                        onClick={() => handleSwitchTenant(tenant)}
+                        className="cursor-pointer"
+                      >
+                        <Building2 className="mr-2 h-4 w-4 text-slate-500" />
+                        <span className="flex-1 truncate">{tenant.name}</span>
+                        {!isActiveStatus && (
+                          <span className="ml-2 w-2 h-2 rounded-full bg-amber-400 shrink-0" title={tenant.subscription_status ?? undefined} />
+                        )}
+                        {tenant.id === currentTenant?.id && (
+                          <Check className="ml-1 h-4 w-4 text-green-500 shrink-0" />
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/select-tenant" className="cursor-pointer">
@@ -544,19 +550,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     Cambia azienda
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {availableTenants.map((tenant) => (
-                    <DropdownMenuItem
-                      key={tenant.id}
-                      onClick={() => handleSwitchTenant(tenant)}
-                      className="cursor-pointer"
-                    >
-                      <Building2 className="mr-2 h-4 w-4 text-slate-500" />
-                      <span className="flex-1 truncate">{tenant.name}</span>
-                      {tenant.id === currentTenant?.id && (
-                        <Check className="ml-2 h-4 w-4 text-green-500 shrink-0" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
+                  {availableTenants.map((tenant) => {
+                    const isActiveStatus = !tenant.subscription_status || tenant.subscription_status === "active" || tenant.subscription_status === "trial";
+                    return (
+                      <DropdownMenuItem
+                        key={tenant.id}
+                        onClick={() => handleSwitchTenant(tenant)}
+                        className="cursor-pointer"
+                      >
+                        <Building2 className="mr-2 h-4 w-4 text-slate-500" />
+                        <span className="flex-1 truncate">{tenant.name}</span>
+                        {!isActiveStatus && (
+                          <span className="ml-2 w-2 h-2 rounded-full bg-amber-400 shrink-0" title={tenant.subscription_status ?? undefined} />
+                        )}
+                        {tenant.id === currentTenant?.id && (
+                          <Check className="ml-1 h-4 w-4 text-green-500 shrink-0" />
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -827,6 +839,29 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           sidebarCollapsed ? "lg:pl-16" : "lg:pl-64",
         )}
       >
+        {/* Desktop topbar — tenant + user context */}
+        <header className="hidden lg:flex sticky top-0 z-30 items-center justify-end h-12 px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+            {currentTenant?.name && (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
+                    {currentTenant.name}
+                  </span>
+                </div>
+                <span className="text-slate-300 dark:text-slate-600">|</span>
+              </>
+            )}
+            <span>
+              Accesso come:{" "}
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {user.name}
+              </span>
+            </span>
+          </div>
+        </header>
+
         {/* Mobile header */}
         <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 lg:hidden">
           {/* Logo - Left */}
@@ -840,9 +875,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             >
               <Building2 className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-              DGGM ERP
-            </h1>
+            <div>
+              <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                DGGM ERP
+              </h1>
+              {currentTenant?.name && (
+                <p className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[160px]">
+                  {currentTenant.name}
+                </p>
+              )}
+            </div>
           </Link>
 
           {/* Actions - Right */}

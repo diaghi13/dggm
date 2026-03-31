@@ -878,6 +878,10 @@ sort_order: number;
 };
 }
 declare namespace App.Data.Landlord {
+export type AddMembershipData = {
+tenant_id: string;
+role: string;
+};
 export type GlobalUserData = {
 id?: string;
 name: string;
@@ -893,6 +897,7 @@ country: string | null;
 iban: string | null;
 is_landlord_admin: boolean | null;
 created_at?: string;
+tenants_count?: number;
 };
 export type PlanData = {
 id?: number;
@@ -926,6 +931,14 @@ export type TenantMembershipData = {
 id?: number;
 global_user_id: string;
 tenant_id: string;
+role: string;
+status: string;
+created_at?: string;
+};
+export type TenantMembershipWithTenantData = {
+id?: number;
+tenant_id: string;
+tenant_name: string;
 role: string;
 status: string;
 created_at?: string;

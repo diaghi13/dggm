@@ -43,7 +43,13 @@ class TenancyServiceProvider extends ServiceProvider
             Events\TenantSaved::class => [],
             Events\UpdatingTenant::class => [],
             Events\TenantUpdated::class => [],
-            Events\DeletingTenant::class => [],
+            Events\DeletingTenant::class => [
+                JobPipeline::make([
+                    \App\Jobs\BackupTenantBeforeDeletionJob::class,
+                ])->send(function (Events\DeletingTenant $event) {
+                    return $event->tenant;
+                })->shouldBeQueued(false),
+            ],
             Events\TenantDeleted::class => [
                 JobPipeline::make([
                     DeleteDatabase::class,

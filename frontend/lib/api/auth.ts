@@ -5,6 +5,7 @@ import {
   User,
   ApiResponse,
   AuthMeResponse,
+  UserSettings,
   TenantInfo,
 } from "@/lib/types";
 
@@ -94,6 +95,32 @@ export const authApi = {
     const { data } = await apiClient.get<
       ApiResponse<{ status: string; tenant_name?: string }>
     >(`/auth/tenant-status/${tenantId}`);
+    return data.data;
+  },
+
+  switchTenant: async (
+    tenantId: string,
+    globalToken: string,
+  ): Promise<{
+    user: User;
+    settings: UserSettings;
+    features: string[];
+  }> => {
+    // Must send global_token as Authorization Bearer (NOT the cookie token)
+    // and x-tenant header for the TARGET tenant.
+    // The server responds with a new auth_token cookie for the target tenant.
+    const { data } = await apiClient.post<
+      ApiResponse<{ user: User; settings: UserSettings; features: string[] }>
+    >(
+      "/auth/switch-tenant",
+      { tenant_id: tenantId },
+      {
+        headers: {
+          Authorization: `Bearer ${globalToken}`,
+          "x-tenant": tenantId,
+        },
+      },
+    );
     return data.data;
   },
 };

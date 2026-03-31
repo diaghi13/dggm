@@ -379,6 +379,118 @@ class AuthController extends Controller
     }
 
     /**
+     * Switch the active tenant for an already-authenticated user.
+     *
+     * The frontend sends the global_token as `Authorization: Bearer {global_token}`.
+     * A new tenant-scoped Sanctum token is created inside the target tenant's DB
+     * and returned as an httpOnly cookie — identical pattern to login().
+     */
+    public function switchTenant(Request $request): JsonResponse
+    {
+        $request->validate([
+            'tenant_id' => ['required', 'string'],
+        ]);
+
+        // Authenticate via global guard (Bearer global_token in Authorization header)
+        $globalUser = $request->user('global');
+
+        if (! $globalUser) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        // Verify the user has an active membership in the requested tenant
+        $membership = TenantMembership::where('global_user_id', $globalUser->id)
+            ->where('tenant_id', $request->tenant_id)
+            ->where('status', 'active')
+            ->first();
+
+        if (! $membership) {
+            return response()->json(['success' => false, 'message' => 'Non sei membro di questo tenant.'], 403);
+        }
+
+        $tenant = Tenant::find($request->tenant_id);
+        if (! $tenant) {
+            return response()->json(['success' => false, 'message' => 'Tenant non trovato.'], 404);
+        }
+
+        $newToken = null;
+        $userData = null;
+        $globalSettings = collect();
+        $userSettings = collect();
+        $featureFlags = [];
+
+        $tenant->run(function () use ($globalUser, $request, &$newToken, &$userData, &$globalSettings, &$userSettings, &$featureFlags) {
+            $tenantUser = User::with('worker')->where('email', $globalUser->email)->first();
+
+            if (! $tenantUser) {
+                return;
+            }
+
+            $deviceName = $request->input('device_name', 'Switch');
+            $userAgent = $request->userAgent() ?? 'Unknown';
+            $tokenName = sprintf('%s (%s)', $deviceName, substr($userAgent, 0, 50));
+
+            $newToken = $tenantUser->createToken($tokenName)->plainTextToken;
+
+            $userData = (new UserResource($tenantUser))->resolve();
+
+            $globalSettings = \App\Models\Setting::global()
+                ->where('is_public', true)
+                ->ordered()
+                ->get()
+                ->mapWithKeys(fn ($s) => [$s->key => $s->getTypedValue()]);
+
+            $userSettings = \App\Models\Setting::forUser($tenantUser->id)
+                ->ordered()
+                ->get()
+                ->mapWithKeys(fn ($s) => [$s->key => $s->getTypedValue()]);
+
+            $featureFlags = \App\Models\Setting::where('is_feature_flag', true)
+                ->where(fn ($q) => $q->whereNull('user_id')->orWhere('user_id', $tenantUser->id))
+                ->get()
+                ->filter(fn ($s) => filter_var($s->getTypedValue(), FILTER_VALIDATE_BOOLEAN))
+                ->pluck('key')
+                ->toArray();
+        });
+
+        if (! $newToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utente non trovato nel tenant selezionato.',
+            ], 404);
+        }
+
+        // Merge plan-based features (landlord DB) with setting-based flags
+        $planFeatures = $this->getPlanFeatures($request->tenant_id);
+        $featureFlags = array_values(array_unique(array_merge($featureFlags, $planFeatures)));
+
+        $response = response()->json([
+            'success' => true,
+            'data' => [
+                'user' => $userData,
+                'settings' => [
+                    'global' => $globalSettings,
+                    'user' => $userSettings,
+                ],
+                'features' => $featureFlags,
+            ],
+        ]);
+
+        // Set new tenant-scoped httpOnly cookie — same pattern as login()
+        return $response->cookie(
+            'auth_token',
+            $newToken,
+            60 * 24 * 30,
+            config('session.path', '/'),
+            config('session.domain'),
+            config('session.secure', false),
+            true,  // httpOnly
+            false,
+            config('session.same_site', 'lax')
+        );
+    }
+
+    /**
      * Send password reset link to user's email
      */
     public function forgotPassword(ForgotPasswordData $data): JsonResponse

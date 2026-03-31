@@ -61,6 +61,9 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            'dump' => array_filter([
+                'dump_binary_path' => env('MYSQLDUMP_BINARY_PATH'),
+            ]),
         ],
 
         // Landlord connection — central DB for tenants, global users, plans, subscriptions.
@@ -83,6 +86,11 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            // Path to the mysqldump binary. Required when mysqldump is not in $PATH.
+            // Leave empty on servers where mysqldump is globally available.
+            'dump' => array_filter([
+                'dump_binary_path' => env('MYSQLDUMP_BINARY_PATH'),
+            ]),
         ],
 
         'mariadb' => [

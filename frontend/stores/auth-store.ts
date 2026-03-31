@@ -31,7 +31,7 @@ interface AuthState {
   setGlobalAuth: (globalUser: GlobalUser, tenants: TenantInfo[]) => void;
   setGlobalToken: (token: string | null) => void;
   setCurrentTenant: (tenant: TenantInfo) => void;
-  switchTenant: (tenant: TenantInfo) => void;
+  switchTenant: (tenant: TenantInfo) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -99,17 +99,33 @@ export const useAuthStore = create<AuthState>()(
         set({ currentTenant: tenant });
       },
 
-      switchTenant: (tenant) => {
+      switchTenant: async (tenant) => {
+        const { globalToken } = get();
+
+        // 1. Update tenant context immediately so x-tenant header is correct
         tenantContext.set(tenant.id);
-        // Clear user data so refreshUser() will load the new tenant's user
-        set({
-          currentTenant: tenant,
-          user: null,
-          settings: null,
-          features: [],
-        });
-        // After switch, refreshUser will pick up the new x-tenant header from the store
-        get().refreshUser().catch(console.error);
+        set({ currentTenant: tenant, user: null, settings: null, features: [] });
+
+        try {
+          if (globalToken) {
+            // 2. Call switch-tenant to obtain a new cookie token for this tenant
+            const result = await authApi.switchTenant(tenant.id, globalToken);
+            // 3. Update store — the server has already set the new cookie
+            set({
+              user: result.user,
+              settings: result.settings,
+              features: result.features,
+              isAuthenticated: true,
+            });
+          } else {
+            // Fallback: try refreshUser (may fail if no global token)
+            await get().refreshUser();
+          }
+        } catch (error) {
+          console.error("Failed to switch tenant:", error);
+          // Fallback to refreshUser as last resort
+          get().refreshUser().catch(console.error);
+        }
       },
 
       login: async (email, password) => {

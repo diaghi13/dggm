@@ -74,6 +74,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/logout', [AuthController::class, 'logout']); // public: must clear cookie even with invalid token
+        Route::post('/switch-tenant', [AuthController::class, 'switchTenant']); // public: uses auth:global internally
         Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     });
@@ -111,6 +112,12 @@ Route::prefix('v1')->group(function () {
             Route::put('{id}', [\App\Http\Controllers\Landlord\PlansController::class, 'update']);
             Route::delete('{id}', [\App\Http\Controllers\Landlord\PlansController::class, 'destroy']);
             Route::get('{id}/tenant-count', [\App\Http\Controllers\Landlord\PlansController::class, 'tenantCount']);
+        });
+
+        // Backup monitoring & management
+        Route::prefix('backup')->group(function () {
+            Route::get('status', [\App\Http\Controllers\Api\V1\BackupStatusController::class, 'status']);
+            Route::post('run', [\App\Http\Controllers\Api\V1\BackupStatusController::class, 'runBackup']);
         });
     });
 
