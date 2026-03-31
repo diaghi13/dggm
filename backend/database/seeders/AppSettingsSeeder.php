@@ -15,7 +15,7 @@ class AppSettingsSeeder extends Seeder
                 'value' => '0',
                 'type' => 'boolean',
                 'group' => 'app',
-                'is_public' => false,
+                'is_public' => true,
                 'description' => 'Indica se il wizard di configurazione iniziale è stato completato',
                 'order' => 1,
             ],

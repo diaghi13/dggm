@@ -7,10 +7,14 @@ use App\Actions\Auth\ResetPasswordAction;
 use App\Actions\Auth\SendPasswordResetLinkAction;
 use App\Data\ChangePasswordData;
 use App\Data\ForgotPasswordData;
+use App\Data\Landlord\GlobalUserData;
 use App\Data\ResetPasswordData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
+use App\Models\Landlord\GlobalUser;
+use App\Models\Landlord\TenantMembership;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,79 +31,112 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        $user = User::with('worker')->where('email', $request->email)->first();
+        // Authenticate against GlobalUser (landlord DB) — works without x-tenant header.
+        // The legacy AuthController::login() used the tenant User model, which requires
+        // tenancy context (x-tenant header) that doesn't exist at login time.
+        $globalUser = GlobalUser::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (! $globalUser || ! Hash::check($request->password, $globalUser->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        // Allow multiple active sessions - do NOT revoke previous tokens
-        // Each device/session gets its own token
+        $globalUserData = GlobalUserData::fromModel($globalUser);
+        $tenants = $this->getGlobalUserTenants($globalUser);
+        $globalToken = $globalUser->createToken('global-web')->plainTextToken;
 
         // Create token name with device info for tracking
         $deviceName = $request->input('device_name', 'Unknown Device');
         $userAgent = $request->userAgent() ?? 'Unknown';
         $tokenName = sprintf('%s (%s)', $deviceName, substr($userAgent, 0, 50));
 
-        // Create new token for this device
-        $token = $user->createToken($tokenName)->plainTextToken;
+        // Try to load the tenant User and create a cookie token by switching into
+        // the first active tenant's DB context (needed for httpOnly cookie auth).
+        $token = null;
+        $userData = null;
+        $globalSettings = collect();
+        $userSettings = collect();
+        $featureFlags = [];
 
-        // Get public global settings
-        $globalSettings = \App\Models\Setting::global()
-            ->where('is_public', true)
-            ->ordered()
-            ->get()
-            ->mapWithKeys(function ($setting) {
-                return [$setting->key => $setting->getTypedValue()];
-            });
+        if (! empty($tenants)) {
+            // Prefer first active/trial tenant for loading user context; fall back to first in list
+            $activeTenant = collect($tenants)->first(fn ($t) => in_array($t['subscription_status'], ['active', 'trial']));
+            $firstTenantId = ($activeTenant ?? $tenants[0])['id'];
+            $tenant = Tenant::find($firstTenantId);
 
-        // Get user-specific settings
-        $userSettings = \App\Models\Setting::forUser($user->id)
-            ->ordered()
-            ->get()
-            ->mapWithKeys(function ($setting) {
-                return [$setting->key => $setting->getTypedValue()];
-            });
+            if ($tenant) {
+                $tenant->run(function () use ($globalUser, $tokenName, &$token, &$userData, &$globalSettings, &$userSettings, &$featureFlags) {
+                    $tenantUser = User::with('worker')->where('email', $globalUser->email)->first();
 
-        // Get enabled feature flags (global + user-specific)
-        $featureFlags = \App\Models\Setting::where('is_feature_flag', true)
-            ->where(function ($query) use ($user) {
-                $query->whereNull('user_id')
-                    ->orWhere('user_id', $user->id);
-            })
-            ->get()
-            ->filter(function ($setting) {
-                return filter_var($setting->getTypedValue(), FILTER_VALIDATE_BOOLEAN);
-            })
-            ->pluck('key')
-            ->toArray();
+                    if ($tenantUser) {
+                        $token = $tenantUser->createToken($tokenName)->plainTextToken;
 
-        return response()->json([
+                        // Eagerly resolve all tenant-DB-dependent data inside run() so that
+                        // the "tenant" connection is still active. Storing a plain array avoids
+                        // UserResource triggering lazy Spatie-Permission queries after tenancy
+                        // has ended and the "tenant" connection has been purged.
+                        $userData = (new UserResource($tenantUser))->resolve();
+
+                        $globalSettings = \App\Models\Setting::global()
+                            ->where('is_public', true)
+                            ->ordered()
+                            ->get()
+                            ->mapWithKeys(fn ($s) => [$s->key => $s->getTypedValue()]);
+
+                        $userSettings = \App\Models\Setting::forUser($tenantUser->id)
+                            ->ordered()
+                            ->get()
+                            ->mapWithKeys(fn ($s) => [$s->key => $s->getTypedValue()]);
+
+                        $featureFlags = \App\Models\Setting::where('is_feature_flag', true)
+                            ->where(fn ($q) => $q->whereNull('user_id')->orWhere('user_id', $tenantUser->id))
+                            ->get()
+                            ->filter(fn ($s) => filter_var($s->getTypedValue(), FILTER_VALIDATE_BOOLEAN))
+                            ->pluck('key')
+                            ->toArray();
+                    }
+                });
+
+                // Merge plan-based feature keys (landlord DB) with setting-based flags.
+                // New tenants may have no feature flag settings yet; the active subscription
+                // plan is the authoritative source of what is actually unlocked.
+                $planFeatures = $this->getPlanFeatures($firstTenantId);
+                $featureFlags = array_values(array_unique(array_merge($featureFlags, $planFeatures)));
+            }
+        }
+
+        $response = response()->json([
             'success' => true,
             'message' => 'Login successful',
             'data' => [
-                'user' => new UserResource($user),
+                'user' => $userData,
                 'settings' => [
                     'global' => $globalSettings,
                     'user' => $userSettings,
                 ],
                 'features' => $featureFlags,
-                // Don't send token in response body for httpOnly cookie approach
-                // 'token' => $token,
+                'global_user' => $globalUserData,
+                'tenants' => $tenants,
+                'global_token' => $globalToken,
             ],
-        ])->cookie(
-            'auth_token',                                    // name
-            $token,                                          // value
-            60 * 24 * 30,                                    // minutes (30 days)
-            config('session.path', '/'),                     // path
-            config('session.domain'),                        // domain (from SESSION_DOMAIN env)
-            config('session.secure', false),                 // secure (from SESSION_SECURE_COOKIE env)
-            true,                                            // httpOnly (XSS protection)
-            false,                                           // raw
-            config('session.same_site', 'lax')               // sameSite (from SESSION_SAME_SITE env)
-        );
+        ]);
+
+        if ($token) {
+            $response = $response->cookie(
+                'auth_token',                                    // name
+                $token,                                          // value
+                60 * 24 * 30,                                    // minutes (30 days)
+                config('session.path', '/'),                     // path
+                config('session.domain'),                        // domain (from SESSION_DOMAIN env)
+                config('session.secure', false),                 // secure (from SESSION_SECURE_COOKIE env)
+                true,                                            // httpOnly (XSS protection)
+                false,                                           // raw
+                config('session.same_site', 'lax')               // sameSite (from SESSION_SAME_SITE env)
+            );
+        }
+
+        return $response;
     }
 
     /**
@@ -177,16 +214,34 @@ class AuthController extends Controller
             ->pluck('key')
             ->toArray();
 
+        // Lookup matching GlobalUser by email to include multi-tenant identity
+        $globalUser = GlobalUser::where('email', $user->email)->first();
+        $globalUserData = null;
+        $tenants = [];
+
+        if ($globalUser) {
+            $globalUserData = GlobalUserData::fromModel($globalUser);
+            $tenants = $this->getGlobalUserTenants($globalUser);
+
+            // Merge plan-based feature keys (from landlord DB) into the feature flags array.
+            // Setting-based flags may be empty for new tenants; the plan subscription is the
+            // authoritative source of what features are actually unlocked.
+            $planFeatures = $this->getPlanFeatures(tenancy()->tenant?->id);
+            $featureFlags = array_values(array_unique(array_merge($featureFlags, $planFeatures)));
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
                 'user' => new UserResource($user),
                 'settings' => [
-                    // 'all' => $allSettings,
                     'global' => $globalSettings,
                     'user' => $userSettings,
                 ],
                 'features' => $featureFlags,
+                'global_user' => $globalUserData,
+                'tenants' => $tenants,
+                'global_token' => null, // Token already issued at login; not re-issued on /me
             ],
         ]);
     }
@@ -262,6 +317,65 @@ class AuthController extends Controller
             'message' => sprintf('Revoked %d other session(s)', $revokedCount),
             'revoked_count' => $revokedCount,
         ]);
+    }
+
+    /**
+     * Returns the feature keys enabled by the tenant's active subscription plan.
+     * Reads from the landlord DB — safe to call outside tenant context.
+     *
+     * @return string[]
+     */
+    private function getPlanFeatures(?string $tenantId): array
+    {
+        if (! $tenantId) {
+            return [];
+        }
+
+        $subscription = \App\Models\Landlord\TenantSubscription::where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->with('plan.features')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (! $subscription) {
+            return [];
+        }
+
+        return $subscription->plan->features
+            ->pluck('feature_key')
+            ->toArray();
+    }
+
+    /**
+     * Returns tenant summaries for a GlobalUser.
+     * Includes subscription_status so the frontend can redirect pending/suspended tenants.
+     *
+     * @return array<int, array{id: string, name: string, slug: string, role: string, subscription_status: string}>
+     */
+    private function getGlobalUserTenants(GlobalUser $globalUser): array
+    {
+        $memberships = TenantMembership::where('global_user_id', $globalUser->id)
+            ->where('status', 'active')
+            ->get();
+
+        return $memberships->map(function (TenantMembership $membership): ?array {
+            $tenant = Tenant::find($membership->tenant_id);
+            if (! $tenant) {
+                return null;
+            }
+
+            $subscription = \App\Models\Landlord\TenantSubscription::where('tenant_id', $tenant->id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            return [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'slug' => $tenant->slug,
+                'role' => $membership->role,
+                'subscription_status' => $subscription?->status ?? 'none',
+            ];
+        })->filter()->values()->all();
     }
 
     /**

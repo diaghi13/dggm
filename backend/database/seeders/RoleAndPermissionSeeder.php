@@ -365,6 +365,6 @@ class RoleAndPermissionSeeder extends Seeder
             'invoices.view',
         ]);
 
-        $this->command->info('Roles and permissions created successfully!');
+        $this->command?->info('Roles and permissions created successfully!');
     }
 }

@@ -18,12 +18,25 @@ export const apiClient = axios.create({
 apiClient.defaults.xsrfCookieName = 'XSRF-TOKEN';
 apiClient.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
 
-// Request interceptor - No longer needed for auth token
-// Token is now sent automatically via httpOnly cookie
+// Request interceptor — adds x-tenant header when a tenant is selected
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Token is automatically sent via httpOnly cookie
-    // No need to manually add Authorization header
+    // Token is automatically sent via httpOnly cookie.
+    // We only need to add the x-tenant header for multi-tenant routing.
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('auth-storage');
+        if (raw) {
+          const parsed = JSON.parse(raw) as { state?: { currentTenant?: { id?: string } } };
+          const tenantId = parsed?.state?.currentTenant?.id;
+          if (tenantId) {
+            config.headers['x-tenant'] = tenantId;
+          }
+        }
+      } catch {
+        // Ignore JSON parse errors — localStorage may be empty or corrupted
+      }
+    }
     return config;
   },
   (error) => {
@@ -35,11 +48,17 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth-storage');
+      }
+      return Promise.reject(error);
+    }
+
+    // Handle 402 Payment Required — subscription inactive
+    if (error.response?.status === 402) {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/pending-activation';
       }
       return Promise.reject(error);
     }

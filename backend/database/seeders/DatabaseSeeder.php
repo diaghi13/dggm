@@ -58,9 +58,9 @@ class DatabaseSeeder extends Seeder
         );
         $worker->assignRole('worker');
 
-        $this->command->info('Database seeded successfully!');
-        $this->command->info('Super Admin: admin@dggm.com / password');
-        $this->command->info('Project Manager: pm@dggm.com / password');
-        $this->command->info('Worker: worker@dggm.com / password');
+        $this->command?->info('Database seeded successfully!');
+        $this->command?->info('Super Admin: admin@dggm.com / password');
+        $this->command?->info('Project Manager: pm@dggm.com / password');
+        $this->command?->info('Worker: worker@dggm.com / password');
     }
 }

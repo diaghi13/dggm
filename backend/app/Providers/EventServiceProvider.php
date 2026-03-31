@@ -9,6 +9,7 @@ use App\Events\DdtCreated;
 use App\Events\DdtDeleted;
 use App\Events\DdtDelivered;
 use App\Events\DdtUpdated;
+use App\Events\GlobalUserUpdated;
 use App\Events\InventoryAdjusted;
 use App\Events\InventoryLowStock;
 use App\Events\InventoryReservationReleased;
@@ -33,6 +34,7 @@ use App\Events\SettingDeleted;
 use App\Events\SettingUpdated;
 use App\Events\StockMovementCreated;
 use App\Events\StockMovementReversed;
+use App\Events\TenantActivated;
 use App\Listeners\CheckLowStockAfterMovementListener;
 use App\Listeners\ClearQuotePdfCacheOnUpdate;
 use App\Listeners\CreateLaborSlotsFromQuoteListener;
@@ -53,6 +55,8 @@ use App\Listeners\NotifyProjectManagerOfQuoteApproval;
 use App\Listeners\NotifyWarehouseManagerListener;
 use App\Listeners\ReverseStockMovementsListener;
 use App\Listeners\SendLowStockAlert;
+use App\Listeners\SendTenantActivationEmailListener;
+use App\Listeners\SyncWorkerProfileListener;
 use App\Listeners\UpdateCompositePricesFromComponentListener;
 use App\Listeners\UpdateProductStandardCostListener;
 use App\Listeners\UpdateProjectMaterialQuantitiesListener;
@@ -207,6 +211,16 @@ class EventServiceProvider extends ServiceProvider
         // Kit Events
         KitAssembled::class => [],
         KitDisassembled::class => [],
+
+        // Global User Events
+        GlobalUserUpdated::class => [
+            SyncWorkerProfileListener::class,
+        ],
+
+        // Tenant Lifecycle Events
+        TenantActivated::class => [
+            SendTenantActivationEmailListener::class,
+        ],
     ];
 
     /**

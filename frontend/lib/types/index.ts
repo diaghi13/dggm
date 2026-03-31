@@ -1,3 +1,20 @@
+// Multi-tenant types
+export interface TenantInfo {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  /** Subscription status returned by the backend (e.g. 'active', 'trial', 'pending_payment', 'suspended', 'none') */
+  subscription_status?: string;
+}
+
+export interface GlobalUser {
+  id: string;
+  name: string;
+  email: string;
+  is_landlord_admin: boolean;
+}
+
 // User & Auth Types
 export interface User {
   id: number;
@@ -26,6 +43,9 @@ export interface AuthMeResponse {
   user: User;
   settings: UserSettings;
   features: string[];
+  tenants?: TenantInfo[];
+  global_user?: GlobalUser;
+  global_token?: string | null;
 }
 
 export interface LoginCredentials {
@@ -39,6 +59,13 @@ export interface AuthResponse {
   data: {
     user: User;
     token: string;
+    settings?: UserSettings;
+    features?: string[];
+    tenants?: TenantInfo[];
+    global_user?: GlobalUser;
+    global_token?: string | null;
+    tenant?: { id: string; name: string; slug: string };
+    subscription_status?: string;
   };
 }
 
@@ -979,10 +1006,30 @@ export interface ProjectWorkerConflict {
   conflicts: ProjectWorker[];
 }
 
-export type ProjectScheduleDayStatus = "pending" | "accepted" | "rejected" | "modified" | "completed" | "cancelled";
+export type ProjectScheduleDayStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "modified"
+  | "completed"
+  | "cancelled";
 export type ProjectLogStatus = "draft" | "submitted" | "approved" | "rejected";
-export type ProjectExpenseStatus = "draft" | "submitted" | "auto_approved" | "approved" | "rejected";
-export type ProjectExpenseCategory = "travel" | "accommodation" | "meal" | "fuel" | "toll" | "parking" | "equipment" | "communication" | "other";
+export type ProjectExpenseStatus =
+  | "draft"
+  | "submitted"
+  | "auto_approved"
+  | "approved"
+  | "rejected";
+export type ProjectExpenseCategory =
+  | "travel"
+  | "accommodation"
+  | "meal"
+  | "fuel"
+  | "toll"
+  | "parking"
+  | "equipment"
+  | "communication"
+  | "other";
 
 export interface ProjectWorkerSchedule {
   id: number;
@@ -1256,7 +1303,7 @@ export interface NotificationMeta {
 // ProductDetail extends the base generated type with subrental/ownership fields
 // that will be added to the backend API response in Phase 3 of the Rental Engine.
 export type Product = App.Data.ProductData & {
-  ownership_type?: 'owned' | 'subrental' | 'mixed';
+  ownership_type?: "owned" | "subrental" | "mixed";
   is_premium?: boolean;
   subrental_markup?: number | null;
   rental_price_estimated?: boolean;
@@ -1304,7 +1351,7 @@ export interface ProductFormData {
   location?: string | null;
   notes?: string | null;
   is_active?: boolean;
-  ownership_type?: 'owned' | 'subrental' | 'mixed';
+  ownership_type?: "owned" | "subrental" | "mixed";
   is_premium?: boolean;
   subrental_markup?: number | null;
   rental_price_estimated?: boolean;
@@ -1438,8 +1485,12 @@ export interface RentalProfile {
 // KIT ASSEMBLY TYPES
 // ============================================
 
-export type KitAssemblyStatus = 'assembled' | 'in_use' | 'returned' | 'disassembled';
-export type KitTypeEnum = 'distributed' | 'assembled';
+export type KitAssemblyStatus =
+  | "assembled"
+  | "in_use"
+  | "returned"
+  | "disassembled";
+export type KitTypeEnum = "distributed" | "assembled";
 
 export interface KitAssemblyItem {
   id: number;
@@ -1461,7 +1512,7 @@ export interface KitAssembly {
   location: string | null;
   notes: string | null;
   warehouse_id: number | null;
-  warehouse?: { id: number; name: string } | null;
+  warehouse?: App.Data.WarehouseData | null;
   assembled_at: string | null;
   disassembled_at: string | null;
   assembled_by_user_id: number | null;

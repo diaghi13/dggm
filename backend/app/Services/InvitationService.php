@@ -103,7 +103,7 @@ class InvitationService
                 'password' => Hash::make($userData['password']),
             ]);
 
-            $user->assignRole('Worker');
+            $user->assignRole('worker');
 
             $worker = Worker::create([
                 'user_id' => $user->id,

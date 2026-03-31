@@ -130,7 +130,8 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
       } else {
         details.card_type = values.details.card_type ?? "";
         details.provider = values.details.provider ?? "";
-        if (values.details.last_digits) details.last_digits = values.details.last_digits;
+        if (values.details.last_digits)
+          details.last_digits = values.details.last_digits;
       }
       return financialResourcesApi.create({
         type: selectedType,
@@ -213,7 +214,10 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4">
+      <form
+        onSubmit={handleSubmit((v) => mutation.mutate(v))}
+        className="space-y-4"
+      >
         <div className="space-y-1.5">
           <Label htmlFor="name">
             Nome <span className="text-red-500">*</span>
@@ -246,7 +250,9 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
                 placeholder="IT60 X054 2811 1010 0000 0123 456"
               />
               {detailsErrors?.iban && (
-                <p className="text-xs text-red-500">{detailsErrors.iban.message}</p>
+                <p className="text-xs text-red-500">
+                  {detailsErrors.iban.message}
+                </p>
               )}
             </div>
 
@@ -260,7 +266,9 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
                 placeholder="Intesa Sanpaolo"
               />
               {detailsErrors?.bank_name && (
-                <p className="text-xs text-red-500">{detailsErrors.bank_name.message}</p>
+                <p className="text-xs text-red-500">
+                  {detailsErrors.bank_name.message}
+                </p>
               )}
             </div>
 
@@ -274,7 +282,9 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
                 placeholder="DGGM S.r.l."
               />
               {detailsErrors?.account_holder && (
-                <p className="text-xs text-red-500">{detailsErrors.account_holder.message}</p>
+                <p className="text-xs text-red-500">
+                  {detailsErrors.account_holder.message}
+                </p>
               )}
             </div>
 
@@ -300,7 +310,9 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
               placeholder="Sede principale - Via Roma 1, Milano"
             />
             {detailsErrors?.location && (
-              <p className="text-xs text-red-500">{detailsErrors.location.message}</p>
+              <p className="text-xs text-red-500">
+                {detailsErrors.location.message}
+              </p>
             )}
           </div>
         )}
@@ -317,7 +329,9 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
                 placeholder="Visa / Mastercard"
               />
               {detailsErrors?.card_type && (
-                <p className="text-xs text-red-500">{detailsErrors.card_type.message}</p>
+                <p className="text-xs text-red-500">
+                  {detailsErrors.card_type.message}
+                </p>
               )}
             </div>
 
@@ -331,7 +345,9 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
                 placeholder="Nexi, SumUp, ..."
               />
               {detailsErrors?.provider && (
-                <p className="text-xs text-red-500">{detailsErrors.provider.message}</p>
+                <p className="text-xs text-red-500">
+                  {detailsErrors.provider.message}
+                </p>
               )}
             </div>
 

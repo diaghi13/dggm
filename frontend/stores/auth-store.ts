@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { User, UserSettings } from "@/lib/types";
+import { User, UserSettings, TenantInfo, GlobalUser } from "@/lib/types";
 import { authApi } from "@/lib/api/auth";
 
 interface AuthState {
@@ -12,13 +12,25 @@ interface AuthState {
   hasHydrated: boolean;
   isAuthChecked: boolean; // true dopo che AuthInitProvider ha completato la verifica del token
 
+  // Multi-tenant state
+  globalUser: GlobalUser | null;
+  globalToken: string | null;
+  currentTenant: TenantInfo | null;
+  availableTenants: TenantInfo[];
+
   setAuth: (user: User, settings?: UserSettings, features?: string[]) => void;
   clearAuth: () => void;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ tenants: TenantInfo[]; hasTenants: boolean }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setHasHydrated: (hydrated: boolean) => void;
   setAuthChecked: () => void;
+
+  // Multi-tenant actions
+  setGlobalAuth: (globalUser: GlobalUser, tenants: TenantInfo[]) => void;
+  setGlobalToken: (token: string | null) => void;
+  setCurrentTenant: (tenant: TenantInfo) => void;
+  switchTenant: (tenant: TenantInfo) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,6 +43,12 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       hasHydrated: false,
       isAuthChecked: false,
+
+      // Multi-tenant state
+      globalUser: null,
+      globalToken: null,
+      currentTenant: null,
+      availableTenants: [],
 
       setAuth: (user, settings, features) => {
         set({
@@ -47,6 +65,10 @@ export const useAuthStore = create<AuthState>()(
           settings: null,
           features: [],
           isAuthenticated: false,
+          globalUser: null,
+          globalToken: null,
+          currentTenant: null,
+          availableTenants: [],
         });
       },
 
@@ -58,14 +80,61 @@ export const useAuthStore = create<AuthState>()(
         set({ isAuthChecked: true });
       },
 
+      setGlobalAuth: (globalUser, tenants) => {
+        set({
+          globalUser,
+          availableTenants: tenants,
+          isAuthenticated: true,
+        });
+      },
+
+      setGlobalToken: (token) => {
+        set({ globalToken: token });
+      },
+
+      setCurrentTenant: (tenant) => {
+        set({ currentTenant: tenant });
+      },
+
+      switchTenant: (tenant) => {
+        // Clear user data so refreshUser() will load the new tenant's user
+        set({
+          currentTenant: tenant,
+          user: null,
+          settings: null,
+          features: [],
+        });
+        // After switch, refreshUser will pick up the new x-tenant header from the store
+        get().refreshUser().catch(console.error);
+      },
+
       login: async (email, password) => {
         set({ isLoading: true });
         try {
           const response = await authApi.login({ email, password });
-          // Token is now in httpOnly cookie, we only store user data
-          get().setAuth(response.data.user);
-          // After login, fetch full user data with settings and features
-          await get().refreshUser();
+          const { user, settings, features, tenants, global_user, global_token } = response.data;
+
+          // Always set the tenant user data (httpOnly cookie auth)
+          if (user) {
+            get().setAuth(user, settings as any, features as any);
+          }
+
+          // If GlobalUser data is returned, store it too (multi-tenant identity).
+          // Store ALL tenants (including pending/suspended) so the pending-activation
+          // page can read the tenant ID to poll. The tenant-switcher UI filters to
+          // active/trial tenants independently.
+          if (global_user) {
+            set({
+              globalUser: global_user,
+              globalToken: global_token ?? null,
+              availableTenants: tenants ?? [],
+            });
+          }
+
+          return {
+            tenants: tenants ?? [],
+            hasTenants: (tenants?.length ?? 0) > 0,
+          };
         } catch (error) {
           get().clearAuth();
           throw error;
@@ -94,6 +163,15 @@ export const useAuthStore = create<AuthState>()(
             features: authData.features,
             isAuthenticated: true,
           });
+          // If /me returns tenant list and global user, update them
+          if (authData.global_user) {
+            set({ globalUser: authData.global_user });
+          }
+          if (authData.tenants) {
+            // Store ALL tenants (including pending/suspended) so the pending-activation
+            // page can read the tenant ID. The tenant-switcher UI filters independently.
+            set({ availableTenants: authData.tenants });
+          }
         } catch (error: any) {
           console.error("Failed to refresh user:", error);
           get().clearAuth();
@@ -114,6 +192,11 @@ export const useAuthStore = create<AuthState>()(
         settings: state.settings,
         features: state.features,
         isAuthenticated: state.isAuthenticated,
+        // Persist tenant info so page refreshes keep the selected tenant
+        globalUser: state.globalUser,
+        globalToken: state.globalToken,
+        currentTenant: state.currentTenant,
+        availableTenants: state.availableTenants,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

@@ -27,7 +27,7 @@ for (const typeName of CONVERSIONS) {
   // Also handle the closing }; → }
   const typeRegex = new RegExp(
     `(export type ${typeName} = \\{)([\\s\\S]*?)(\\n\\};)`,
-    "m"
+    "m",
   );
   if (typeRegex.test(content)) {
     content = content.replace(typeRegex, (_, _open, body, _close) => {

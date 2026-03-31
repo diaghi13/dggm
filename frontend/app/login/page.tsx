@@ -26,13 +26,54 @@ export default function LoginPage() {
     e.preventDefault();
 
     try {
-      await login(email, password);
-      toast.success("Login successful!");
-      router.push("/dashboard");
+      const { tenants } = await login(email, password);
+
+      // Check if the logged-in user is a landlord admin
+      const { globalUser } = useAuthStore.getState();
+      const isLandlordAdmin = globalUser?.is_landlord_admin === true;
+
+      if (tenants.length === 0) {
+        if (isLandlordAdmin) {
+          // Landlord admin with no personal tenants: go to central admin
+          toast.success("Accesso effettuato!");
+          router.push("/central");
+          return;
+        }
+        // Regular user with no tenants at all: pending activation
+        toast.info("Account in attesa di attivazione");
+        router.push("/pending-activation");
+        return;
+      }
+
+      // Filter tenants to those with an active or trial subscription
+      const activeTenants = tenants.filter(
+        (t) =>
+          !t.subscription_status ||
+          t.subscription_status === "active" ||
+          t.subscription_status === "trial"
+      );
+
+      if (activeTenants.length === 0) {
+        // User has tenants but none are active — pending payment / suspended
+        toast.info("Account in attesa di attivazione");
+        router.push("/pending-activation");
+        return;
+      }
+
+      if (activeTenants.length === 1) {
+        // Single active tenant: auto-select and enter the app
+        useAuthStore.getState().setCurrentTenant(activeTenants[0]);
+        toast.success("Accesso effettuato!");
+        router.push("/dashboard");
+        return;
+      }
+
+      // Multiple active tenants: let the user choose
+      router.push("/select-tenant");
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
-        "Login failed. Please check your credentials.";
+        "Login fallito. Controlla le tue credenziali.";
       toast.error(message);
     }
   };
@@ -107,6 +148,16 @@ export default function LoginPage() {
               {isLoading ? "Accesso in corso..." : "Accedi"}
             </Button>
           </form>
+
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-4">
+            Non hai un account?{" "}
+            <Link
+              href="/register"
+              className="text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Registrati
+            </Link>
+          </p>
 
           <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-sm">
             <p className="font-medium text-slate-900 dark:text-slate-100 mb-2">

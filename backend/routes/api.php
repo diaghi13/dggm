@@ -42,6 +42,10 @@ use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\WarehouseController;
 use App\Http\Controllers\Api\V1\WorkerController;
+use App\Http\Controllers\Auth\GlobalAuthController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Landlord\TenantManagementController;
+use App\Http\Controllers\Worker\WorkerOverviewController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -58,6 +62,11 @@ Route::get('/password-reset/{token}', function ($token) {
     return redirect()->away("{$frontendUrl}/reset-password?token={$token}&email={$email}");
 })->name('password.reset');
 
+// Temporary route for tenancy context testing (used in TenancyBasicTest)
+Route::get('/test-tenant-context', function () {
+    return response()->json(['tenant' => tenancy()->tenant?->id]);
+});
+
 // API v1 routes
 Route::prefix('v1')->group(function () {
     // Public routes (no authentication)
@@ -66,6 +75,58 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']); // public: must clear cookie even with invalid token
         Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    });
+
+    // Company registration (public)
+    Route::post('auth/register', [RegisterController::class, 'register']);
+    Route::get('auth/tenant-status/{tenantId}', [RegisterController::class, 'tenantStatus']);
+
+    // Global auth routes (landlord DB, cross-tenant token)
+    // Login is public — no auth required
+    Route::post('auth/global/login', [GlobalAuthController::class, 'login']);
+
+    // Landlord Admin routes (only is_landlord_admin GlobalUsers)
+    Route::prefix('landlord')->middleware(['auth:global', 'landlord.admin'])->group(function () {
+        Route::get('tenants', [TenantManagementController::class, 'index']);
+        Route::get('tenants/{id}', [TenantManagementController::class, 'show']);
+        Route::patch('tenants/{id}/activate', [TenantManagementController::class, 'activate']);
+        Route::patch('tenants/{id}/suspend', [TenantManagementController::class, 'suspend']);
+        Route::delete('tenants/{id}', [TenantManagementController::class, 'destroy']);
+
+        Route::get('users', [\App\Http\Controllers\Landlord\GlobalUserController::class, 'index']);
+        Route::get('users/{id}', [\App\Http\Controllers\Landlord\GlobalUserController::class, 'show']);
+
+        // Plans management (landlord admin)
+        Route::prefix('plans')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Landlord\PlansController::class, 'adminIndex']);
+            Route::post('/', [\App\Http\Controllers\Landlord\PlansController::class, 'store']);
+            Route::get('{id}', [\App\Http\Controllers\Landlord\PlansController::class, 'show']);
+            Route::put('{id}', [\App\Http\Controllers\Landlord\PlansController::class, 'update']);
+            Route::delete('{id}', [\App\Http\Controllers\Landlord\PlansController::class, 'destroy']);
+            Route::get('{id}/tenant-count', [\App\Http\Controllers\Landlord\PlansController::class, 'tenantCount']);
+        });
+    });
+
+    // Plans — public (registration page needs to show plans before the user has a token)
+    Route::get('plans', [\App\Http\Controllers\Landlord\PlansController::class, 'index']);
+
+    // Authenticated global auth routes — require GlobalUser token (auth:global guard)
+    // Also apply EnsureTenantMembership so that when an X-Tenant header is present,
+    // the user's membership and subscription are verified.
+    Route::prefix('auth/global')->middleware(['auth:global', 'tenant.member'])->group(function () {
+        Route::get('/me', [GlobalAuthController::class, 'me']);
+        Route::get('/tenants', [GlobalAuthController::class, 'tenants']);
+        Route::post('/logout', [GlobalAuthController::class, 'logout']);
+    });
+
+    // Worker global view — landlord context, no x-tenant required.
+    // InitializeTenancyByRequestData::$onFail is configured as a no-op in AppServiceProvider,
+    // so these routes work without the x-tenant header.
+    Route::prefix('my')->middleware(['auth:global'])->group(function () {
+        Route::get('overview', [WorkerOverviewController::class, 'overview']);
+        Route::get('projects', [WorkerOverviewController::class, 'projects']);
+        Route::get('profile', [WorkerOverviewController::class, 'profile']);
+        Route::patch('profile', [WorkerOverviewController::class, 'updateProfile']);
     });
 
     // Public invitation routes (no authentication)
@@ -248,29 +309,32 @@ Route::prefix('v1')->group(function () {
         Route::get('warranty-types/default', [\App\Http\Controllers\Api\V1\WarrantyTypeController::class, 'getDefault']);
         Route::apiResource('warranty-types', \App\Http\Controllers\Api\V1\WarrantyTypeController::class);
 
-        // Rental Profiles (sector presets for RentalEngineService)
-        Route::apiResource('rental-profiles', RentalProfileController::class);
-        Route::post('rental-profiles/{rentalProfile}/recalculate', [RentalProfileController::class, 'recalculate']);
+        // Rental module — requires feature:rental
+        Route::middleware('feature:rental')->group(function () {
+            // Rental Profiles (sector presets for RentalEngineService)
+            Route::apiResource('rental-profiles', RentalProfileController::class);
+            Route::post('rental-profiles/{rentalProfile}/recalculate', [RentalProfileController::class, 'recalculate']);
 
-        // Rental Analytics (KPIs: break-even, buy-vs-rent, ROI, underperformers, scarcity)
-        Route::get('rental-analytics', [RentalAnalyticsController::class, 'index']);
+            // Rental Analytics (KPIs: break-even, buy-vs-rent, ROI, underperformers, scarcity)
+            Route::get('rental-analytics', [RentalAnalyticsController::class, 'index']);
 
-        // Price Lists
-        Route::prefix('price-lists')->group(function () {
-            Route::get('default', [PriceListController::class, 'getDefault']);
-            Route::get('/', [PriceListController::class, 'index']);
-            Route::post('/', [PriceListController::class, 'store']);
-            Route::get('/{priceList}', [PriceListController::class, 'show']);
-            Route::put('/{priceList}', [PriceListController::class, 'update']);
-            Route::delete('/{priceList}', [PriceListController::class, 'destroy']);
-            Route::post('/{priceList}/regenerate', [PriceListController::class, 'regenerate']);
+            // Price Lists
+            Route::prefix('price-lists')->group(function () {
+                Route::get('default', [PriceListController::class, 'getDefault']);
+                Route::get('/', [PriceListController::class, 'index']);
+                Route::post('/', [PriceListController::class, 'store']);
+                Route::get('/{priceList}', [PriceListController::class, 'show']);
+                Route::put('/{priceList}', [PriceListController::class, 'update']);
+                Route::delete('/{priceList}', [PriceListController::class, 'destroy']);
+                Route::post('/{priceList}/regenerate', [PriceListController::class, 'regenerate']);
 
-            // Price List Items (nested resource)
-            Route::get('/{priceList}/items', [PriceListItemController::class, 'index']);
-            Route::post('/{priceList}/items', [PriceListItemController::class, 'store']);
-            Route::put('/{priceList}/items/{item}', [PriceListItemController::class, 'update']);
-            Route::delete('/{priceList}/items/{item}', [PriceListItemController::class, 'destroy']);
-            Route::post('/{priceList}/items/{item}/recalculate', [PriceListItemController::class, 'recalculate']);
+                // Price List Items (nested resource)
+                Route::get('/{priceList}/items', [PriceListItemController::class, 'index']);
+                Route::post('/{priceList}/items', [PriceListItemController::class, 'store']);
+                Route::put('/{priceList}/items/{item}', [PriceListItemController::class, 'update']);
+                Route::delete('/{priceList}/items/{item}', [PriceListItemController::class, 'destroy']);
+                Route::post('/{priceList}/items/{item}/recalculate', [PriceListItemController::class, 'recalculate']);
+            });
         });
 
         // Product Unit Types
@@ -288,144 +352,156 @@ Route::prefix('v1')->group(function () {
         // Material Dependency Types
         Route::apiResource('material-dependency-types', MaterialDependencyTypeController::class);
 
-        // Warehouses
-        Route::apiResource('warehouses', WarehouseController::class);
-        Route::get('warehouses/{warehouse}/inventory', [WarehouseController::class, 'getInventory']);
+        // Warehouse module — requires feature:warehouse
+        Route::middleware('feature:warehouse')->group(function () {
+            // Warehouses
+            Route::apiResource('warehouses', WarehouseController::class);
+            Route::get('warehouses/{warehouse}/inventory', [WarehouseController::class, 'getInventory']);
 
-        // Inventory
-        Route::get('inventory', [InventoryController::class, 'index']);
-        Route::get('inventory/warehouse/{warehouseId}', [InventoryController::class, 'byWarehouse']);
-        Route::get('inventory/material/{materialId}', [InventoryController::class, 'byMaterial']);
-        Route::get('inventory/low-stock', [InventoryController::class, 'lowStock']);
-        Route::get('inventory/valuation', [InventoryController::class, 'valuation']);
-        Route::post('inventory/adjust', [InventoryController::class, 'adjust']);
-        Route::post('inventory/minimum-stock', [InventoryController::class, 'updateMinimumStock']);
+            // Inventory
+            Route::get('inventory', [InventoryController::class, 'index']);
+            Route::get('inventory/warehouse/{warehouseId}', [InventoryController::class, 'byWarehouse']);
+            Route::get('inventory/material/{materialId}', [InventoryController::class, 'byMaterial']);
+            Route::get('inventory/low-stock', [InventoryController::class, 'lowStock']);
+            Route::get('inventory/valuation', [InventoryController::class, 'valuation']);
+            Route::post('inventory/adjust', [InventoryController::class, 'adjust']);
+            Route::post('inventory/minimum-stock', [InventoryController::class, 'updateMinimumStock']);
 
-        // Stock Movements
-        Route::get('stock-movements', [StockMovementController::class, 'index']);
-        Route::post('stock-movements/intake', [StockMovementController::class, 'intake']);
-        Route::post('stock-movements/output', [StockMovementController::class, 'output']);
-        Route::post('stock-movements/transfer', [StockMovementController::class, 'transfer']);
-        Route::post('stock-movements/rental-out', [StockMovementController::class, 'rentalOut']);
-        Route::post('stock-movements/rental-return', [StockMovementController::class, 'rentalReturn']);
-        Route::post('stock-movements/deliver-to-project', [StockMovementController::class, 'deliverToProject']);
-        Route::post('stock-movements/return-from-project', [StockMovementController::class, 'returnFromProject']);
+            // Stock Movements
+            Route::get('stock-movements', [StockMovementController::class, 'index']);
+            Route::post('stock-movements/intake', [StockMovementController::class, 'intake']);
+            Route::post('stock-movements/output', [StockMovementController::class, 'output']);
+            Route::post('stock-movements/transfer', [StockMovementController::class, 'transfer']);
+            Route::post('stock-movements/rental-out', [StockMovementController::class, 'rentalOut']);
+            Route::post('stock-movements/rental-return', [StockMovementController::class, 'rentalReturn']);
+            Route::post('stock-movements/deliver-to-project', [StockMovementController::class, 'deliverToProject']);
+            Route::post('stock-movements/return-from-project', [StockMovementController::class, 'returnFromProject']);
 
-        // Project Materials
-        Route::get('projects/{project}/materials', [ProjectMaterialController::class, 'index']);
-        Route::get('projects/{project}/materials/extras', [ProjectMaterialController::class, 'extras']);
-        Route::post('projects/{project}/materials', [ProjectMaterialController::class, 'store']);
-        Route::patch('projects/{project}/materials/{projectMaterial}', [ProjectMaterialController::class, 'update']);
-        Route::delete('projects/{project}/materials/{projectMaterial}', [ProjectMaterialController::class, 'destroy']);
-        Route::post('projects/{project}/materials/{projectMaterial}/log-usage', [ProjectMaterialController::class, 'logUsage']);
-        Route::post('projects/{project}/materials/{projectMaterial}/reserve', [ProjectMaterialController::class, 'reserve']);
-        Route::post('projects/{project}/materials/{projectMaterial}/deliver', [ProjectMaterialController::class, 'deliver']);
-        Route::post('projects/{project}/materials/{projectMaterial}/return', [ProjectMaterialController::class, 'returnMaterial']);
-        Route::post('projects/{project}/materials/{projectMaterial}/transfer', [ProjectMaterialController::class, 'transferToProject']);
+            // DDT (Documento Di Trasporto)
+            Route::get('ddts/next-number', [DdtController::class, 'getNextNumber']);
+            Route::apiResource('ddts', DdtController::class);
+            Route::post('ddts/{ddt}/confirm', [DdtController::class, 'confirm']);
+            Route::post('ddts/{ddt}/cancel', [DdtController::class, 'cancel']);
+            Route::post('ddts/{ddt}/mark-delivered', [DdtController::class, 'markAsDelivered']);
+            Route::post('ddts/{ddt}/deliver', [DdtController::class, 'deliver']);
 
-        // Project DDTs
-        Route::get('projects/{project}/ddts', [ProjectDdtController::class, 'index']);
-        Route::post('projects/{project}/ddts/{ddt}/confirm', [ProjectDdtController::class, 'confirm']);
-        Route::post('projects/{project}/ddts/confirm-multiple', [ProjectDdtController::class, 'confirmMultiple']);
+            // Project DDTs
+            Route::get('projects/{project}/ddts', [ProjectDdtController::class, 'index']);
+            Route::post('projects/{project}/ddts/{ddt}/confirm', [ProjectDdtController::class, 'confirm']);
+            Route::post('projects/{project}/ddts/confirm-multiple', [ProjectDdtController::class, 'confirmMultiple']);
 
-        // Project Workers (Team Management)
-        Route::get('projects/{project}/workers', [ProjectWorkerController::class, 'indexByProject']);
-        Route::post('projects/{project}/workers', [ProjectWorkerController::class, 'store']);
-        Route::get('workers/{worker}/projects', [ProjectWorkerController::class, 'indexByWorker']);
-        Route::get('project-workers/{project_worker}', [ProjectWorkerController::class, 'show']);
-        Route::put('project-workers/{project_worker}', [ProjectWorkerController::class, 'update']);
-        Route::delete('project-workers/{project_worker}', [ProjectWorkerController::class, 'destroy']);
-        Route::post('project-workers/{project_worker}/accept', [ProjectWorkerController::class, 'accept']);
-        Route::post('project-workers/{project_worker}/reject', [ProjectWorkerController::class, 'reject']);
-        Route::post('project-workers/{project_worker}/change-status', [ProjectWorkerController::class, 'changeStatus']);
-        Route::post('project-workers/{project_worker}/cancel', [ProjectWorkerController::class, 'cancel']);
-        Route::post('project-workers/{project_worker}/complete', [ProjectWorkerController::class, 'complete']);
-        Route::get('project-workers/{project_worker}/conflicts', [ProjectWorkerController::class, 'checkConflicts']);
-        Route::get('project-workers/{project_worker}/effective-rate', [ProjectWorkerController::class, 'getEffectiveRate']);
+            // Project Materials (linked to warehouse operations)
+            Route::get('projects/{project}/materials', [ProjectMaterialController::class, 'index']);
+            Route::get('projects/{project}/materials/extras', [ProjectMaterialController::class, 'extras']);
+            Route::post('projects/{project}/materials', [ProjectMaterialController::class, 'store']);
+            Route::patch('projects/{project}/materials/{projectMaterial}', [ProjectMaterialController::class, 'update']);
+            Route::delete('projects/{project}/materials/{projectMaterial}', [ProjectMaterialController::class, 'destroy']);
+            Route::post('projects/{project}/materials/{projectMaterial}/log-usage', [ProjectMaterialController::class, 'logUsage']);
+            Route::post('projects/{project}/materials/{projectMaterial}/reserve', [ProjectMaterialController::class, 'reserve']);
+            Route::post('projects/{project}/materials/{projectMaterial}/deliver', [ProjectMaterialController::class, 'deliver']);
+            Route::post('projects/{project}/materials/{projectMaterial}/return', [ProjectMaterialController::class, 'returnMaterial']);
+            Route::post('projects/{project}/materials/{projectMaterial}/transfer', [ProjectMaterialController::class, 'transferToProject']);
 
-        // Project Worker Schedules
-        Route::get('project-workers/{projectWorker}/schedules', [ProjectWorkerScheduleController::class, 'index']);
-        Route::post('project-workers/{projectWorker}/schedules', [ProjectWorkerScheduleController::class, 'store']);
-        Route::post('project-workers/{projectWorker}/assign-slot', [ProjectWorkerController::class, 'assignSlot']);
-        Route::get('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'show']);
-        Route::put('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'update']);
-        Route::delete('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'destroy']);
-        Route::post('project-worker-schedules/{projectWorkerSchedule}/accept', [ProjectWorkerScheduleController::class, 'accept']);
-        Route::post('project-worker-schedules/{projectWorkerSchedule}/reject', [ProjectWorkerScheduleController::class, 'reject']);
+            // Material Requests
+            Route::get('projects/{project}/material-requests', [MaterialRequestController::class, 'indexByProject']);
+            Route::get('projects/{project}/material-requests/pending-count', [MaterialRequestController::class, 'pendingCount']);
+            Route::get('projects/{project}/material-requests/stats', [MaterialRequestController::class, 'stats']);
+            Route::get('my-material-requests', [MaterialRequestController::class, 'myRequests']);
+            Route::post('material-requests', [MaterialRequestController::class, 'store']);
+            Route::get('material-requests/{material_request}', [MaterialRequestController::class, 'show']);
+            Route::patch('material-requests/{material_request}', [MaterialRequestController::class, 'update']);
+            Route::post('material-requests/{material_request}/approve', [MaterialRequestController::class, 'approve']);
+            Route::post('material-requests/{material_request}/reject', [MaterialRequestController::class, 'reject']);
+            Route::post('material-requests/{material_request}/mark-delivered', [MaterialRequestController::class, 'markDelivered']);
+            Route::delete('material-requests/{material_request}', [MaterialRequestController::class, 'destroy']);
+        });
 
-        // Project Labor Logs
-        Route::get('projects/{project}/labor-logs', [ProjectLaborLogController::class, 'index']);
-        Route::post('project-workers/{projectWorker}/labor-logs', [ProjectLaborLogController::class, 'store']);
-        Route::get('project-labor-logs/{projectLaborLog}', [ProjectLaborLogController::class, 'show']);
-        Route::post('project-labor-logs/{projectLaborLog}/approve', [ProjectLaborLogController::class, 'approve']);
-        Route::post('project-labor-logs/{projectLaborLog}/reject', [ProjectLaborLogController::class, 'reject']);
+        // Workers module — requires feature:workers
+        Route::middleware('feature:workers')->group(function () {
+            // Workers (Collaboratori)
+            Route::apiResource('workers', WorkerController::class);
+            Route::post('workers/{worker}/deactivate', [WorkerController::class, 'deactivate']);
+            Route::post('workers/{worker}/reactivate', [WorkerController::class, 'reactivate']);
+            Route::get('workers/{worker}/statistics', [WorkerController::class, 'statistics']);
+            Route::get('workers/available/list', [WorkerController::class, 'available']);
 
-        // Project Expenses
-        Route::get('projects/{project}/expenses', [ProjectExpenseController::class, 'index']);
-        Route::post('projects/{project}/expenses', [ProjectExpenseController::class, 'store']);
-        Route::get('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'show']);
-        Route::put('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'update']);
-        Route::delete('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'destroy']);
-        Route::post('project-expenses/{projectExpense}/approve', [ProjectExpenseController::class, 'approve']);
-        Route::post('project-expenses/{projectExpense}/reject', [ProjectExpenseController::class, 'reject']);
+            // Worker Rates
+            Route::get('workers/{worker}/rates', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'index']);
+            Route::get('workers/{worker}/rates/current', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'current']);
+            Route::post('workers/{worker}/rates', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'store']);
+            Route::delete('workers/{worker}/rates/{rate}', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'destroy']);
+            Route::get('workers/{worker}/rates/history', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'history']);
+            Route::post('workers/{worker}/rates/calculate', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'calculate']);
 
-        // Final Balance
-        Route::get('projects/{project}/final-balance', [ProjectController::class, 'finalBalance']);
+            // Worker Invitations
+            Route::get('invitations', [InvitationController::class, 'index']);
+            Route::post('invitations', [InvitationController::class, 'store']);
+            Route::get('invitations/pending', [InvitationController::class, 'pending']);
+            Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend']);
+            Route::delete('invitations/{invitation}', [InvitationController::class, 'destroy']);
 
-        // Project Roles
-        Route::apiResource('project-roles', ProjectRoleController::class);
+            // Worker Projects
+            Route::get('workers/{worker}/projects', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'index']);
+            Route::post('workers/{worker}/projects', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'store']);
+            Route::delete('workers/{worker}/projects/{project}', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'destroy']);
+            Route::get('workers/{worker}/projects/{project}/statistics', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'statistics']);
 
-        // Project Labor Costs
-        Route::get('projects/{project}/labor-costs', [ProjectLaborCostController::class, 'index']);
-        Route::post('projects/{project}/labor-costs', [ProjectLaborCostController::class, 'store']);
-        Route::put('projects/{project}/labor-costs/{laborCost}', [ProjectLaborCostController::class, 'update']);
-        Route::delete('projects/{project}/labor-costs/{laborCost}', [ProjectLaborCostController::class, 'destroy']);
-        Route::get('projects/{project}/labor-costs/breakdown', [ProjectLaborCostController::class, 'breakdown']);
-        Route::get('projects/{project}/labor-costs/monthly', [ProjectLaborCostController::class, 'monthly']);
-        Route::get('projects/{project}/labor-costs/by-worker', [ProjectLaborCostController::class, 'byWorker']);
+            // Project Workers (Team Management)
+            Route::get('projects/{project}/workers', [ProjectWorkerController::class, 'indexByProject']);
+            Route::post('projects/{project}/workers', [ProjectWorkerController::class, 'store']);
+            Route::get('workers/{worker}/projects', [ProjectWorkerController::class, 'indexByWorker']);
+            Route::get('project-workers/{project_worker}', [ProjectWorkerController::class, 'show']);
+            Route::put('project-workers/{project_worker}', [ProjectWorkerController::class, 'update']);
+            Route::delete('project-workers/{project_worker}', [ProjectWorkerController::class, 'destroy']);
+            Route::post('project-workers/{project_worker}/accept', [ProjectWorkerController::class, 'accept']);
+            Route::post('project-workers/{project_worker}/reject', [ProjectWorkerController::class, 'reject']);
+            Route::post('project-workers/{project_worker}/change-status', [ProjectWorkerController::class, 'changeStatus']);
+            Route::post('project-workers/{project_worker}/cancel', [ProjectWorkerController::class, 'cancel']);
+            Route::post('project-workers/{project_worker}/complete', [ProjectWorkerController::class, 'complete']);
+            Route::get('project-workers/{project_worker}/conflicts', [ProjectWorkerController::class, 'checkConflicts']);
+            Route::get('project-workers/{project_worker}/effective-rate', [ProjectWorkerController::class, 'getEffectiveRate']);
 
-        // DDT (Documento Di Trasporto)
-        Route::get('ddts/next-number', [DdtController::class, 'getNextNumber']);
-        Route::apiResource('ddts', DdtController::class);
-        Route::post('ddts/{ddt}/confirm', [DdtController::class, 'confirm']);
-        Route::post('ddts/{ddt}/cancel', [DdtController::class, 'cancel']);
-        Route::post('ddts/{ddt}/mark-delivered', [DdtController::class, 'markAsDelivered']);
-        Route::post('ddts/{ddt}/deliver', [DdtController::class, 'deliver']);
+            // Project Worker Schedules
+            Route::get('project-workers/{projectWorker}/schedules', [ProjectWorkerScheduleController::class, 'index']);
+            Route::post('project-workers/{projectWorker}/schedules', [ProjectWorkerScheduleController::class, 'store']);
+            Route::post('project-workers/{projectWorker}/assign-slot', [ProjectWorkerController::class, 'assignSlot']);
+            Route::get('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'show']);
+            Route::put('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'update']);
+            Route::delete('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'destroy']);
+            Route::post('project-worker-schedules/{projectWorkerSchedule}/accept', [ProjectWorkerScheduleController::class, 'accept']);
+            Route::post('project-worker-schedules/{projectWorkerSchedule}/reject', [ProjectWorkerScheduleController::class, 'reject']);
 
-        // Workers (Collaboratori)
-        Route::apiResource('workers', WorkerController::class);
-        Route::post('workers/{worker}/deactivate', [WorkerController::class, 'deactivate']);
-        Route::post('workers/{worker}/reactivate', [WorkerController::class, 'reactivate']);
-        Route::get('workers/{worker}/statistics', [WorkerController::class, 'statistics']);
-        Route::get('workers/available/list', [WorkerController::class, 'available']);
+            // Project Labor Logs
+            Route::get('projects/{project}/labor-logs', [ProjectLaborLogController::class, 'index']);
+            Route::post('project-workers/{projectWorker}/labor-logs', [ProjectLaborLogController::class, 'store']);
+            Route::get('project-labor-logs/{projectLaborLog}', [ProjectLaborLogController::class, 'show']);
+            Route::post('project-labor-logs/{projectLaborLog}/approve', [ProjectLaborLogController::class, 'approve']);
+            Route::post('project-labor-logs/{projectLaborLog}/reject', [ProjectLaborLogController::class, 'reject']);
 
-        // Worker Rates
-        Route::get('workers/{worker}/rates', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'index']);
-        Route::get('workers/{worker}/rates/current', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'current']);
-        Route::post('workers/{worker}/rates', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'store']);
-        Route::delete('workers/{worker}/rates/{rate}', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'destroy']);
-        Route::get('workers/{worker}/rates/history', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'history']);
-        Route::post('workers/{worker}/rates/calculate', [\App\Http\Controllers\Api\V1\WorkerRateController::class, 'calculate']);
+            // Project Expenses
+            Route::get('projects/{project}/expenses', [ProjectExpenseController::class, 'index']);
+            Route::post('projects/{project}/expenses', [ProjectExpenseController::class, 'store']);
+            Route::get('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'show']);
+            Route::put('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'update']);
+            Route::delete('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'destroy']);
+            Route::post('project-expenses/{projectExpense}/approve', [ProjectExpenseController::class, 'approve']);
+            Route::post('project-expenses/{projectExpense}/reject', [ProjectExpenseController::class, 'reject']);
 
-        // Worker Invitations
-        Route::get('invitations', [InvitationController::class, 'index']);
-        Route::post('invitations', [InvitationController::class, 'store']);
-        Route::get('invitations/pending', [InvitationController::class, 'pending']);
-        Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend']);
-        Route::delete('invitations/{invitation}', [InvitationController::class, 'destroy']);
+            // Final Balance
+            Route::get('projects/{project}/final-balance', [ProjectController::class, 'finalBalance']);
 
-        // Material Requests
-        Route::get('projects/{project}/material-requests', [MaterialRequestController::class, 'indexByProject']);
-        Route::get('projects/{project}/material-requests/pending-count', [MaterialRequestController::class, 'pendingCount']);
-        Route::get('projects/{project}/material-requests/stats', [MaterialRequestController::class, 'stats']);
-        Route::get('my-material-requests', [MaterialRequestController::class, 'myRequests']);
-        Route::post('material-requests', [MaterialRequestController::class, 'store']);
-        Route::get('material-requests/{material_request}', [MaterialRequestController::class, 'show']);
-        Route::patch('material-requests/{material_request}', [MaterialRequestController::class, 'update']);
-        Route::post('material-requests/{material_request}/approve', [MaterialRequestController::class, 'approve']);
-        Route::post('material-requests/{material_request}/reject', [MaterialRequestController::class, 'reject']);
-        Route::post('material-requests/{material_request}/mark-delivered', [MaterialRequestController::class, 'markDelivered']);
-        Route::delete('material-requests/{material_request}', [MaterialRequestController::class, 'destroy']);
+            // Project Roles
+            Route::apiResource('project-roles', ProjectRoleController::class);
+
+            // Project Labor Costs
+            Route::get('projects/{project}/labor-costs', [ProjectLaborCostController::class, 'index']);
+            Route::post('projects/{project}/labor-costs', [ProjectLaborCostController::class, 'store']);
+            Route::put('projects/{project}/labor-costs/{laborCost}', [ProjectLaborCostController::class, 'update']);
+            Route::delete('projects/{project}/labor-costs/{laborCost}', [ProjectLaborCostController::class, 'destroy']);
+            Route::get('projects/{project}/labor-costs/breakdown', [ProjectLaborCostController::class, 'breakdown']);
+            Route::get('projects/{project}/labor-costs/monthly', [ProjectLaborCostController::class, 'monthly']);
+            Route::get('projects/{project}/labor-costs/by-worker', [ProjectLaborCostController::class, 'byWorker']);
+        });
 
         // Notifications
         Route::get('notifications', [NotificationController::class, 'index']);
@@ -434,12 +510,6 @@ Route::prefix('v1')->group(function () {
         Route::post('notifications/{notification}/mark-read', [NotificationController::class, 'markAsRead']);
         Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
         Route::delete('notifications/read/all', [NotificationController::class, 'deleteAllRead']);
-
-        // Worker Projects
-        Route::get('workers/{worker}/projects', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'index']);
-        Route::post('workers/{worker}/projects', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'store']);
-        Route::delete('workers/{worker}/projects/{project}', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'destroy']);
-        Route::get('workers/{worker}/projects/{project}/statistics', [\App\Http\Controllers\Api\V1\WorkerProjectController::class, 'statistics']);
 
         // Contractors (Cooperative/Ditte Esterne)
         Route::apiResource('contractors', ContractorController::class);

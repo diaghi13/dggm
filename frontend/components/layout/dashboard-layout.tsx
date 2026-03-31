@@ -43,6 +43,9 @@ import {
   DollarSign,
   TrendingDown,
   Zap,
+  ChevronsUpDown,
+  Check,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -53,12 +56,17 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useMemo } from "react";
 import { LucideIcon } from "lucide-react";
 import { OfflineIndicator } from "@/components/offline-indicator";
+import { useQueryClient } from "@tanstack/react-query";
+import type { TenantInfo } from "@/lib/types";
 
 interface NavigationItem {
   name: string;
   href?: string;
   icon: LucideIcon;
   permissions?: string[];
+  /** Feature key from tenant plan (e.g. 'warehouse', 'workers', 'rental').
+   *  If set and features array is non-empty, item is hidden unless the key is included. */
+  feature?: string;
   children?: NavigationItem[];
 }
 
@@ -74,6 +82,7 @@ const navigationConfig: NavigationItem[] = [
     href: "/dashboard/rental",
     icon: BarChart3,
     permissions: ["materials.view"],
+    feature: "rental",
   },
   {
     name: "Anagrafica",
@@ -102,6 +111,7 @@ const navigationConfig: NavigationItem[] = [
         href: "/workers",
         icon: UserCheck,
         permissions: ["workers.view"],
+        feature: "workers",
       },
       {
         name: "Inviti",
@@ -168,6 +178,7 @@ const navigationConfig: NavigationItem[] = [
   {
     name: "Magazzino",
     icon: Package,
+    feature: "warehouse",
     children: [
       {
         name: "Prodotti",
@@ -240,12 +251,14 @@ const navigationConfig: NavigationItem[] = [
         href: "/settings/rental-engine",
         icon: Zap,
         permissions: ["settings.view"],
+        feature: "rental",
       },
       {
         name: "Profili Noleggio",
         href: "/settings/rental-profiles",
         icon: TrendingDown,
         permissions: ["settings.view"],
+        feature: "rental",
       },
     ],
   },
@@ -254,10 +267,25 @@ const navigationConfig: NavigationItem[] = [
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout, isAuthChecked, settings } = useAuthStore();
+  const { user, globalUser, logout, isAuthChecked, settings, features, currentTenant, availableTenants: allTenants, switchTenant } = useAuthStore();
+  // Only expose active/trial tenants to the switcher UI
+  const availableTenants = allTenants.filter(
+    (t) =>
+      !t.subscription_status ||
+      t.subscription_status === "active" ||
+      t.subscription_status === "trial"
+  );
   const { primaryColor } = useThemeSettings();
   const { hasAnyPermission, isAdmin, hasRole } = usePermissions();
+  const queryClient = useQueryClient();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleSwitchTenant = (tenant: TenantInfo) => {
+    if (tenant.id === currentTenant?.id) return;
+    // Invalidate all queries so new tenant data loads fresh
+    queryClient.clear();
+    switchTenant(tenant);
+  };
 
   // Determine dashboard URL based on role
   const dashboardUrl = useMemo(() => {
@@ -267,15 +295,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return "/dashboard";
   }, [hasRole]);
 
-  // Filter navigation based on user permissions
+  // Filter navigation based on user permissions and feature flags.
+  // If features array is non-empty, items with a `feature` key are only shown
+  // when that feature is included. Empty features = backward-compat (show all).
   const navigation = useMemo(() => {
     if (!user) return [];
 
+    const isFeatureEnabled = (feature?: string): boolean => {
+      if (!feature) return true; // no restriction
+      if (features.length === 0) return true; // backward compat: no flags set → show all
+      return features.includes(feature);
+    };
+
     return navigationConfig
       .map((item) => {
-        // If item has children, filter them based on permissions
+        // Feature-gate the parent item itself
+        if (!isFeatureEnabled(item.feature)) return null;
+
+        // If item has children, filter them based on permissions and features
         if (item.children && item.children.length > 0) {
           const filteredChildren = item.children.filter((child) => {
+            // Feature gate child
+            if (!isFeatureEnabled(child.feature)) return false;
             // If no permissions specified, show to all
             if (!child.permissions || child.permissions.length === 0)
               return true;
@@ -304,7 +345,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         return item;
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
-  }, [user, hasAnyPermission, isAdmin]);
+  }, [user, features, hasAnyPermission, isAdmin]);
 
   // Load sidebar collapsed state from localStorage
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -359,9 +400,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     if (!isAuthChecked) return;
     if (!user) return;
     if (pathname?.startsWith("/setup")) return;
-    const setupCompleted = settings?.global["app.setup_completed"];
+    const setupCompleted = settings?.global?.["app.setup_completed"];
     if (
-      hasRole("super-admin") &&
+      (hasRole("super-admin") || hasRole("admin")) &&
       (setupCompleted === undefined ||
         setupCompleted === false ||
         setupCompleted === "0" ||
@@ -437,6 +478,89 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <X className="h-5 w-5" />
             </Button>
           </div>
+
+          {/* Tenant Switcher — shown only when multiple tenants are available */}
+          {availableTenants.length > 1 && !sidebarCollapsed && (
+            <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-800">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between gap-2 h-9 px-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Building2 className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
+                      <span className="truncate">
+                        {currentTenant?.name ?? "Seleziona azienda"}
+                      </span>
+                    </div>
+                    <ChevronsUpDown className="w-4 h-4 shrink-0 text-slate-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel className="text-xs text-slate-500 dark:text-slate-400">
+                    Cambia azienda
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {availableTenants.map((tenant) => (
+                    <DropdownMenuItem
+                      key={tenant.id}
+                      onClick={() => handleSwitchTenant(tenant)}
+                      className="cursor-pointer"
+                    >
+                      <Building2 className="mr-2 h-4 w-4 text-slate-500" />
+                      <span className="flex-1 truncate">{tenant.name}</span>
+                      {tenant.id === currentTenant?.id && (
+                        <Check className="ml-2 h-4 w-4 text-green-500 shrink-0" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/select-tenant" className="cursor-pointer">
+                      <ChevronsUpDown className="mr-2 h-4 w-4 text-slate-500" />
+                      Tutte le aziende
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+          {availableTenants.length > 1 && sidebarCollapsed && (
+            <div className="flex items-center justify-center px-2 py-2 border-b border-slate-200 dark:border-slate-800">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    title="Cambia azienda"
+                  >
+                    <Building2 className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel className="text-xs text-slate-500 dark:text-slate-400">
+                    Cambia azienda
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {availableTenants.map((tenant) => (
+                    <DropdownMenuItem
+                      key={tenant.id}
+                      onClick={() => handleSwitchTenant(tenant)}
+                      className="cursor-pointer"
+                    >
+                      <Building2 className="mr-2 h-4 w-4 text-slate-500" />
+                      <span className="flex-1 truncate">{tenant.name}</span>
+                      {tenant.id === currentTenant?.id && (
+                        <Check className="ml-2 h-4 w-4 text-green-500 shrink-0" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
 
           {/* Toggle Collapse Button */}
           <div className="hidden lg:flex items-center justify-end px-3 py-2">
@@ -547,6 +671,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
+
+          {/* Landlord Admin Link */}
+          {globalUser?.is_landlord_admin && (
+            <div className={cn("px-3 py-2 border-t border-slate-200 dark:border-slate-800", sidebarCollapsed && "px-2")}>
+              <Link
+                href="/central"
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30 transition-colors",
+                  sidebarCollapsed && "justify-center px-2",
+                )}
+                title="Area Admin Centrale"
+              >
+                <Shield className="h-4 w-4 flex-shrink-0" />
+                {!sidebarCollapsed && <span>Admin Centrale</span>}
+              </Link>
+            </div>
+          )}
 
           {/* User Section */}
           <div

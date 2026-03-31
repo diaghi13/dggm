@@ -158,7 +158,7 @@ quantity_free: number;
 is_low_stock: boolean;
 stock_value: number;
 };
-export interface KitAssemblyData {
+export type KitAssemblyData = {
 id?: number;
 product_id: number;
 name: string;
@@ -175,7 +175,7 @@ updated_at?: string;
 product?: App.Data.ProductData | null;
 warehouse?: App.Data.WarehouseData | null;
 items?: Array<App.Data.KitAssemblyItemData> | null;
-}
+};
 export type KitAssemblyItemData = {
 id?: number;
 kit_assembly_id: number;
@@ -498,7 +498,7 @@ labor_cost_id: number | null;
 total_hours: number | null;
 submitted_by_name: string | null;
 };
-export interface ProjectMaterialData {
+export type ProjectMaterialData = {
 id: number | null;
 project_id: number | null;
 product_id: number | null;
@@ -529,7 +529,7 @@ product_code: string | null;
 product?: App.Data.ProductData | null;
 quoteItem?: App.Data.QuoteItemData | null;
 kit_assembly?: App.Data.KitAssemblyData | null;
-}
+};
 export type ProjectRoleData = {
 id: number | null;
 name: string;
@@ -875,6 +875,87 @@ exclusions: Array<string> | null;
 is_default: boolean;
 is_active: boolean;
 sort_order: number;
+};
+}
+declare namespace App.Data.Landlord {
+export type GlobalUserData = {
+id?: string;
+name: string;
+email: string;
+phone: string | null;
+tax_code: string | null;
+fiscal_code: string | null;
+address: string | null;
+city: string | null;
+province: string | null;
+postal_code: string | null;
+country: string | null;
+iban: string | null;
+is_landlord_admin: boolean | null;
+created_at?: string;
+};
+export type PlanData = {
+id?: number;
+name: string;
+slug: string;
+description: string | null;
+price: number | null;
+price_yearly: number | null;
+is_active: boolean;
+sort_order: number;
+trial_days: number;
+features?: Array<App.Data.Landlord.PlanFeatureData> | null;
+};
+export type PlanFeatureData = {
+id?: number;
+plan_id?: number;
+feature_key: string;
+price: number | null;
+price_yearly: number | null;
+limits: Array<any> | null;
+};
+export type TenantData = {
+id?: string;
+name: string;
+slug: string | null;
+created_at?: string;
+subscription?: App.Data.Landlord.TenantSubscriptionData | null;
+};
+export type TenantMembershipData = {
+id?: number;
+global_user_id: string;
+tenant_id: string;
+role: string;
+status: string;
+created_at?: string;
+};
+export type TenantOverviewItemData = {
+tenant_id: string;
+tenant_name: string;
+role: string;
+worker_id: number | null;
+projects_count: number;
+};
+export type TenantSubscriptionData = {
+id?: number;
+tenant_id: string;
+plan_id: number | null;
+status: string;
+starts_at: string | null;
+ends_at: string | null;
+trial_ends_at: string | null;
+billing_cycle: string;
+renews_at: string | null;
+notes: string | null;
+created_at?: string;
+plan?: App.Data.Landlord.PlanData | null;
+addons?: Array<App.Data.Landlord.TenantSubscriptionFeatureData> | null;
+total_price: number | null;
+};
+export type TenantSubscriptionFeatureData = {
+id?: number;
+feature_key: string;
+price_at_purchase: number | null;
 };
 }
 declare namespace App.Enums {

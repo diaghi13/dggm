@@ -21,6 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // This runs before Sanctum authentication, allowing cookie-based auth
         $middleware->api(prepend: [
             \App\Http\Middleware\AddBearerTokenFromCookie::class,
+            \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class,
+        ]);
+
+        $middleware->alias([
+            'tenant.member' => \App\Http\Middleware\EnsureTenantMembership::class,
+            'landlord.admin' => \App\Http\Middleware\EnsureLandlordAdmin::class,
+            'feature' => \App\Http\Middleware\RequireFeature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

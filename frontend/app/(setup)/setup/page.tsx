@@ -34,7 +34,7 @@ export default function SetupPage() {
     return null;
   }
 
-  if (!user.roles.includes("super-admin")) {
+  if (!user.roles.includes("super-admin") && !user.roles.includes("admin")) {
     router.replace("/dashboard");
     return null;
   }

@@ -40,6 +40,16 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'api' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
+
+        'global' => [
+            'driver' => 'global-sanctum',
+            'provider' => 'global_users',
+        ],
     ],
 
     /*
@@ -63,6 +73,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'global_users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Landlord\GlobalUser::class,
         ],
 
         // 'users' => [

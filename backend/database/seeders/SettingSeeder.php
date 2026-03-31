@@ -7,6 +7,10 @@ use Illuminate\Database\Seeder;
 
 class SettingSeeder extends Seeder
 {
+    public function __construct(
+        private readonly string $companyName = '',
+    ) {}
+
     /**
      * Run the database seeds.
      */
@@ -42,7 +46,7 @@ class SettingSeeder extends Seeder
             // Company
             [
                 'key' => 'company.name',
-                'value' => 'DGGM S.r.l.',
+                'value' => $this->companyName !== '' ? $this->companyName : 'DGGM S.r.l.',
                 'type' => 'string',
                 'group' => 'company',
                 'is_public' => false,
@@ -89,6 +93,38 @@ class SettingSeeder extends Seeder
                 'group' => 'warehouse',
                 'is_public' => false,
                 'description' => 'Enable warehouse notifications',
+            ],
+            [
+                'key' => 'warehouse.ddt_code_prefix',
+                'value' => 'DDT',
+                'type' => 'string',
+                'group' => 'warehouse',
+                'is_public' => false,
+                'description' => 'Prefix for DDT (transport document) codes (e.g., DDT-2026-0001)',
+            ],
+            [
+                'key' => 'warehouse.ddt_code_format',
+                'value' => '{prefix}-{year}-{number:4}',
+                'type' => 'string',
+                'group' => 'warehouse',
+                'is_public' => false,
+                'description' => 'Format for DDT codes. Available placeholders: {prefix}, {year}, {date}, {number:X}',
+            ],
+            [
+                'key' => 'warehouse.movement_code_prefix',
+                'value' => 'MOV',
+                'type' => 'string',
+                'group' => 'warehouse',
+                'is_public' => false,
+                'description' => 'Prefix for stock movement codes (e.g., MOV-20260211-001)',
+            ],
+            [
+                'key' => 'warehouse.movement_code_format',
+                'value' => '{prefix}-{date}-{number:3}',
+                'type' => 'string',
+                'group' => 'warehouse',
+                'is_public' => false,
+                'description' => 'Format for stock movement codes. Available placeholders: {prefix}, {year}, {date}, {number:X}',
             ],
 
             // Email
@@ -172,6 +208,14 @@ class SettingSeeder extends Seeder
             ],
 
             // Pricing & Rental
+            [
+                'key' => 'pricing.default_vat_rate',
+                'value' => '22',
+                'type' => 'number',
+                'group' => 'pricing',
+                'is_public' => true,
+                'description' => 'Aliquota IVA predefinita in percentuale',
+            ],
             [
                 'key' => 'pricing.default_markup_percent',
                 'value' => '30',
@@ -414,6 +458,92 @@ class SettingSeeder extends Seeder
                 'description' => 'Peso reliability nel calcolo score fornitore',
                 'min_value' => 0.0,
                 'max_value' => 1.0,
+            ],
+
+            // Products — code generation
+            [
+                'key' => 'products.code_prefix',
+                'value' => 'PRD',
+                'type' => 'string',
+                'group' => 'products',
+                'is_public' => false,
+                'description' => 'Prefix for product codes (e.g., PRD-00001)',
+            ],
+            [
+                'key' => 'products.code_format',
+                'value' => '{prefix}-{number:5}',
+                'type' => 'string',
+                'group' => 'products',
+                'is_public' => false,
+                'description' => 'Format for product codes. Available placeholders: {prefix}, {year}, {date}, {number:X}',
+            ],
+
+            // Sites — code generation
+            [
+                'key' => 'sites.code_prefix',
+                'value' => 'CANT',
+                'type' => 'string',
+                'group' => 'sites',
+                'is_public' => false,
+                'description' => 'Prefix for construction site codes (e.g., CANT-0001)',
+            ],
+            [
+                'key' => 'sites.code_format',
+                'value' => '{prefix}-{number:4}',
+                'type' => 'string',
+                'group' => 'sites',
+                'is_public' => false,
+                'description' => 'Format for site codes. Available placeholders: {prefix}, {year}, {date}, {number:X}',
+            ],
+
+            // Codes — registry entities
+            [
+                'key' => 'codes.worker_prefix',
+                'value' => 'LAV',
+                'type' => 'string',
+                'group' => 'codes',
+                'is_public' => false,
+                'description' => 'Prefix for worker codes (e.g., LAV-00001)',
+            ],
+            [
+                'key' => 'codes.worker_format',
+                'value' => '{prefix}-{number:5}',
+                'type' => 'string',
+                'group' => 'codes',
+                'is_public' => false,
+                'description' => 'Format for worker codes. Available placeholders: {prefix}, {year}, {date}, {number:X}',
+            ],
+            [
+                'key' => 'codes.supplier_prefix',
+                'value' => 'FOR',
+                'type' => 'string',
+                'group' => 'codes',
+                'is_public' => false,
+                'description' => 'Prefix for supplier codes (e.g., FOR-00001)',
+            ],
+            [
+                'key' => 'codes.supplier_format',
+                'value' => '{prefix}-{number:5}',
+                'type' => 'string',
+                'group' => 'codes',
+                'is_public' => false,
+                'description' => 'Format for supplier codes. Available placeholders: {prefix}, {year}, {date}, {number:X}',
+            ],
+            [
+                'key' => 'codes.contractor_prefix',
+                'value' => 'CON',
+                'type' => 'string',
+                'group' => 'codes',
+                'is_public' => false,
+                'description' => 'Prefix for contractor codes (e.g., CON-00001)',
+            ],
+            [
+                'key' => 'codes.contractor_format',
+                'value' => '{prefix}-{number:5}',
+                'type' => 'string',
+                'group' => 'codes',
+                'is_public' => false,
+                'description' => 'Format for contractor codes. Available placeholders: {prefix}, {year}, {date}, {number:X}',
             ],
 
             // Theme / UI (Public settings for dynamic UI)

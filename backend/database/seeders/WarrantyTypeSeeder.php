@@ -74,6 +74,6 @@ class WarrantyTypeSeeder extends Seeder
             );
         }
 
-        $this->command->info('Created '.count($warranties).' warranty types');
+        $this->command?->info('Created '.count($warranties).' warranty types');
     }
 }

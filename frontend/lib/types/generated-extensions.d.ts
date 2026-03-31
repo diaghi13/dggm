@@ -1,28 +1,39 @@
 /**
  * GENERATED TYPE EXTENSIONS
  *
- * This file extends auto-generated types from the backend (generated.d.ts)
+ * Use this file to extend auto-generated types from the backend (generated.d.ts)
  * with extra relation fields that the generator does not include.
  *
- * IMPORTANT: After regenerating generated.d.ts from the backend, you must:
- *   1. Change `export type KitAssemblyData = {` → `export interface KitAssemblyData {`
- *   2. Change `export type ProjectMaterialData = {` → `export interface ProjectMaterialData {`
- *   (removing the trailing semicolon on the closing `};` → `}` too)
+ * HOW TO ADD AN EXTENSION:
+ *   1. In generated.d.ts, change the target:
+ *        export type FooData = {  →  export interface FooData {
+ *      (also change the closing `};` → `}`)
+ *   2. Add the merge below:
+ *        declare namespace App.Data {
+ *          export interface FooData {
+ *            extraField?: SomeType;
+ *          }
+ *        }
  *
- * Then the merges below will continue to work automatically.
+ * Run `node scripts/patch-generated-types.mjs` after each backend regeneration
+ * to re-apply the type→interface conversions automatically.
  *
- * Run this helper after regeneration:
- *   node scripts/patch-generated-types.mjs
+ * NOTE: Do NOT redeclare fields that the backend already includes in generated.d.ts —
+ * a type alias and an interface with the same name in the same namespace will conflict.
  */
 
-declare namespace App.Data {
-  /** Extra relations on KitAssemblyData not in the generated DTO */
-  export interface KitAssemblyData {
-    warehouse?: { id: number; name: string } | null;
-  }
+// No extensions currently needed — all relation fields are generated natively.
+// Add merges here as needed following the instructions above.
 
-  /** Extra relations on ProjectMaterialData not in the generated DTO */
-  export interface ProjectMaterialData {
-    kit_assembly?: App.Data.KitAssemblyData | null;
-  }
+/**
+ * ENUM ALIASES
+ * Correct backend generator typos / name mismatches here.
+ * Remove an alias once the backend fixes the source name.
+ */
+declare namespace App.Enums {
+  /**
+   * Backend generator typo: emitted as `AssKitemblyStatus` instead of `KitAssemblyStatus`.
+   * Remove this alias once the backend is fixed.
+   */
+  export type KitAssemblyStatus = AssKitemblyStatus;
 }
