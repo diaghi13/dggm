@@ -105,19 +105,20 @@ return [
             /**
              * Logger to use for swagger-php generation
              */
-            'logger' => new class
-            {
-                public function __invoke(string $entry, string $type): void
-                {
-                    // Suppress PathItem warning
-                    if (str_contains($entry, 'Required @OA\PathItem() not found')) {
-                        return;
-                    }
-                    if ($type === 'error') {
-                        \Log::error($entry);
-                    }
-                }
-            },
+//            'logger' => new class
+//            {
+//                public function __invoke(string $entry, string $type): void
+//                {
+//                    // Suppress PathItem warning
+//                    if (str_contains($entry, 'Required @OA\PathItem() not found')) {
+//                        return;
+//                    }
+//                    if ($type === 'error') {
+//                        \Log::error($entry);
+//                    }
+//                }
+//            },
+            'logger' => null,
 
             /**
              * Configuration for default processors. Allows to pass processors configuration to swagger-php.
