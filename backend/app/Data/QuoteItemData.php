@@ -21,7 +21,7 @@ class QuoteItemData extends Data
         #[Required]
         public QuoteItemType $type,
 
-        #[Required, Max(1000)]
+        #[Required]
         public string $description,
 
         // Optional fields
@@ -113,7 +113,7 @@ class QuoteItemData extends Data
             'price_list_item_id' => ['nullable', 'integer'],
             'type' => ['required'],
             'code' => ['nullable', 'string', 'max:100'],
-            'description' => ['required', 'string', 'max:1000'],
+            'description' => ['required', 'string'],
             'notes' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'unit' => ['nullable', 'string', 'max:50'],

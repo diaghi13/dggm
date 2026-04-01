@@ -16,7 +16,19 @@ import {
 } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, FileText, CheckSquare, X, AlertTriangle } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Plus,
+  FileText,
+  CheckSquare,
+  X,
+  AlertTriangle,
+  HelpCircle,
+} from "lucide-react";
 import { QuoteItem, ItemFormData, QuoteItemsBuilderProps } from "./types";
 import {
   flattenItems,
@@ -406,6 +418,51 @@ export function QuoteItemsBuilder({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="end">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">Scorciatoie da tastiera</p>
+                  <div className="space-y-2">
+                    {[
+                      { keys: ["⌘", "↵"], label: "Aggiungi voce" },
+                      { keys: ["Spazio"], label: "Afferra elemento (drag)" },
+                      { keys: ["↑", "↓"], label: "Sposta elemento" },
+                      { keys: ["↵"], label: "Rilascia elemento" },
+                      { keys: ["Esc"], label: "Annulla spostamento" },
+                    ].map(({ keys, label }) => (
+                      <div key={label} className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">{label}</span>
+                        <div className="flex items-center gap-1">
+                          {keys.map((k) => (
+                            <kbd key={k} className="px-1.5 py-0.5 text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700">{k}</kbd>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">Selezione multipla</p>
+                  <ol className="space-y-1.5 list-decimal list-inside">
+                    {[
+                      'Clicca "Seleziona" per attivare la modalità',
+                      "Spunta le voci da raggruppare",
+                      'Clicca "Sposta in sezione": scegli una sezione esistente o creane una nuova',
+                      "Digita il nome della sezione e premi ↵ per confermare",
+                    ].map((step) => (
+                      <li key={step} className="text-xs text-slate-600 dark:text-slate-400">{step}</li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button
             variant={selectionMode ? "default" : "outline"}
             onClick={handleToggleSelectionMode}

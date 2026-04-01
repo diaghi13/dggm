@@ -181,7 +181,7 @@ class QuoteData extends Data
             'expiry_date' => ['nullable', 'date', 'after_or_equal:issue_date'],
             'sent_date' => ['nullable', 'date'],
             'approved_date' => ['nullable', 'date'],
-            'price_list_id' => [$isUpdate ? 'nullable' : 'required', 'exists:price_lists,id'],
+            'price_list_id' => ['nullable', 'exists:price_lists,id'],
             'payment_term_id' => ['nullable', 'exists:payment_terms,id'],
             'financial_resource_id' => ['nullable', 'exists:financial_resources,id'],
             'template_id' => ['nullable', 'exists:quote_templates,id'],
