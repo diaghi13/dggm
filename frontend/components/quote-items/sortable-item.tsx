@@ -168,7 +168,7 @@ export function SortableItem({
                   </Badge>
                 )}
               </div>
-              <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
+              <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1 whitespace-pre-wrap">
                 {item.description}
               </h4>
               {item.notes && (

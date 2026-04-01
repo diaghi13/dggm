@@ -241,7 +241,7 @@
                                 <td class="py-1.5 font-mono text-[10px] text-slate-500 align-top">{{ $child->code ?? ($child->product ? $child->product->code : '') }}</td>
                             @endif
                             <td class="py-1.5 align-top">
-                                <div class="font-medium text-slate-800 leading-snug">{{ $child->description }}</div>
+                                <div class="font-medium text-slate-800 leading-snug whitespace-pre-wrap">{{ $child->description }}</div>
                                 @if($child->notes)
                                     <div class="text-[9px] mt-0.5 text-slate-500 whitespace-pre-line leading-tight">{{ $child->notes }}</div>
                                 @endif
@@ -285,7 +285,7 @@
                             <td class="py-1.5 font-mono text-[10px] text-slate-500 align-top">{{ $item->code ?? ($item->product ? $item->product->code : '') }}</td>
                         @endif
                         <td class="py-1.5 align-top">
-                            <div class="font-medium text-slate-900 leading-snug">{{ $item->description }}</div>
+                            <div class="font-medium text-slate-900 leading-snug whitespace-pre-wrap">{{ $item->description }}</div>
                             @if($item->notes)
                                 <div class="text-[9px] mt-0.5 text-slate-500 whitespace-pre-line leading-tight">{{ $item->notes }}</div>
                             @endif

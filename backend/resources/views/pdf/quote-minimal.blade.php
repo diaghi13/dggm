@@ -129,7 +129,7 @@
                                  class="text-xs py-1 opacity-60">{{ $child->code ?? ($child->product ? $child->product->code : '') }}</div>
                         @endif
                         <div class="flex-1 py-1">
-                            <div class="font-bold">{{ $child->description }}</div>
+                            <div class="font-bold whitespace-pre-wrap">{{ $child->description }}</div>
                             @if($child->notes)
                                 <div class="text-xs text-gray-500">{{ $child->notes }}</div>
                             @endif
@@ -174,7 +174,7 @@
                              class="text-xs py-1 opacity-60">{{ $item->code ?? ($item->product ? $item->product->code : '') }}</div>
                     @endif
                     <div class="flex-1 py-1">
-                        <div class="font-bold">{{ $item->description }}</div>
+                        <div class="font-bold whitespace-pre-wrap">{{ $item->description }}</div>
                         @if($item->notes)
                             <div class="text-xs text-gray-500">{{ $item->notes }}</div>
                         @endif
