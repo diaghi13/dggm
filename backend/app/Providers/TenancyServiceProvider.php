@@ -7,14 +7,14 @@ namespace App\Providers;
 use App\Jobs\BootstrapTenantJob;
 use App\Jobs\CreateTenantStorageDirectoriesJob;
 use App\Jobs\SafeCreateDatabase;
+use App\Jobs\SafeMigrateDatabase;
+use App\Jobs\SafeSeedDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Stancl\JobPipeline\JobPipeline;
 use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Jobs\DeleteDatabase;
-use Stancl\Tenancy\Jobs\MigrateDatabase;
-use Stancl\Tenancy\Jobs\SeedDatabase;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
 
@@ -31,9 +31,9 @@ class TenancyServiceProvider extends ServiceProvider
             Events\TenantCreated::class => [
                 JobPipeline::make([
                     SafeCreateDatabase::class,
-                    MigrateDatabase::class,
+                    SafeMigrateDatabase::class,
                     CreateTenantStorageDirectoriesJob::class,
-                    SeedDatabase::class,
+                    SafeSeedDatabase::class,
                     BootstrapTenantJob::class,
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;

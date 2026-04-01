@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\BootstrapStatus;
+use App\Models\Tenant;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -56,6 +58,10 @@ class SafeCreateDatabase implements ShouldQueue
         }
 
         event(new DatabaseCreated($this->tenant));
+
+        if ($this->tenant instanceof Tenant) {
+            $this->tenant->update(['bootstrap_status' => BootstrapStatus::DatabaseCreated->value]);
+        }
 
         return null;
     }

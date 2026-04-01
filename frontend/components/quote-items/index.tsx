@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -16,6 +16,16 @@ import {
 } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Popover,
   PopoverContent,
@@ -37,6 +47,7 @@ import {
   calculateTotals,
   calculateItemTotal,
   extractSelectedItems,
+  sanitizeOrphanedChildren,
 } from "./utils";
 import { useDragAndDrop } from "./use-drag-and-drop";
 import { SortableItem } from "./sortable-item";
@@ -64,6 +75,10 @@ export function QuoteItemsBuilder({
   const isSyncing = useRef(false);
   const tempIdCounter = useRef(Date.now());
   const prevQuoteType = useRef(quoteType);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    id: number;
+    childCount: number;
+  } | null>(null);
   const [formData, setFormData] = useState<ItemFormData>({
     type: "item",
     parent_id: null,
@@ -274,10 +289,28 @@ export function QuoteItemsBuilder({
     setEditingItem(null);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = useCallback((id: number) => {
+    const itemToDelete = localItems.find((item) => item.id === id);
+    const childCount = itemToDelete?.children?.length ?? 0;
+
+    if (itemToDelete?.type === "section" && childCount > 0) {
+      setDeleteConfirm({ id, childCount });
+      return;
+    }
+
     const updatedItems = removeItem(localItems, id);
-    setLocalItems(updatedItems);
-  };
+    const sanitized = sanitizeOrphanedChildren(updatedItems);
+    setLocalItems(sanitized);
+  }, [localItems]);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteConfirm) return;
+
+    const updatedItems = removeItem(localItems, deleteConfirm.id);
+    const sanitized = sanitizeOrphanedChildren(updatedItems);
+    setLocalItems(sanitized);
+    setDeleteConfirm(null);
+  }, [localItems, deleteConfirm]);
 
   const handleToggleExpand = (id: number) => {
     setExpandedItems((prev) => {
@@ -581,6 +614,34 @@ export function QuoteItemsBuilder({
         quoteType={quoteType}
         effectiveEventDays={effectiveEventDays}
       />
+
+      <AlertDialog
+        open={deleteConfirm !== null}
+        onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare la sezione?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Questa sezione contiene{" "}
+              {deleteConfirm?.childCount === 1
+                ? "1 elemento"
+                : `${deleteConfirm?.childCount} elementi`}
+              . Eliminando la sezione verranno eliminati anche tutti gli elementi
+              al suo interno.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Elimina sezione e contenuto
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

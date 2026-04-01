@@ -26,9 +26,12 @@ class UpdateQuoteAction
                 // Pre-load all existing items into memory to avoid N+1 (one SELECT per item)
                 $existingItemsMap = $quote->items()->get()->keyBy('id');
 
+                // Track IDs of parents persisted in this transaction (for FK validation)
+                $savedParentIds = collect();
+
                 // Update/create items with hierarchy
                 foreach ($data->items as $itemData) {
-                    $this->updateOrCreateItemWithChildren($quote, $itemData, null, $existingItemsMap);
+                    $this->updateOrCreateItemWithChildren($quote, $itemData, null, $existingItemsMap, $savedParentIds);
                 }
             }
 
@@ -73,14 +76,36 @@ class UpdateQuoteAction
      * calculateTotal() (per-item totals) is called manually with the quote relation pre-set
      * to avoid the lazy load in the `updating` event.
      * The quote's calculateTotals() is called once explicitly at the end of execute().
+     *
+     * @param  \Illuminate\Support\Collection<int, QuoteItem>  $savedParentIds  IDs of parents already persisted in this transaction
      */
-    private function updateOrCreateItemWithChildren(Quote $quote, $itemData, ?int $parentId, \Illuminate\Support\Collection $existingItemsMap): void
+    private function updateOrCreateItemWithChildren(Quote $quote, $itemData, ?int $parentId, \Illuminate\Support\Collection $existingItemsMap, \Illuminate\Support\Collection $savedParentIds): void
     {
         $itemArray = $itemData->except('id', 'product', 'priceListItem', 'parent', 'children')->toArray();
 
         // If called as child (parentId passed), use that; otherwise preserve parent_id from data
         // This fixes the bug where items were moved out of sections incorrectly
-        $itemArray['parent_id'] = $parentId ?? ($itemArray['parent_id'] ?? null);
+        $resolvedParentId = $parentId ?? ($itemArray['parent_id'] ?? null);
+
+        // Defensive check: if parent_id points to an ID that does not exist in DB and was not
+        // created in this same transaction, the FK constraint will fail. Skip the item to avoid
+        // SQLSTATE[23000] and log a warning so it can be investigated.
+        if ($resolvedParentId !== null) {
+            $parentExistsInDb = $existingItemsMap->has($resolvedParentId);
+            $parentCreatedInTransaction = $savedParentIds->contains($resolvedParentId);
+
+            if (! $parentExistsInDb && ! $parentCreatedInTransaction) {
+                \Log::warning('UpdateQuoteAction: skipping item with missing parent_id', [
+                    'quote_id' => $quote->id,
+                    'item_description' => $itemData->description ?? null,
+                    'missing_parent_id' => $resolvedParentId,
+                ]);
+
+                return;
+            }
+        }
+
+        $itemArray['parent_id'] = $resolvedParentId;
 
         $itemId = (! ($itemData->id instanceof \Spatie\LaravelData\Optional)) ? $itemData->id : null;
         $existingItem = $itemId ? $existingItemsMap->get($itemId) : null;
@@ -101,10 +126,13 @@ class UpdateQuoteAction
             $item = $newItem;
         }
 
+        // Track this item's persisted ID so children can validate their parent_id
+        $savedParentIds->push($item->id);
+
         // Update/create children recursively
         if (isset($itemData->children) && $itemData->children instanceof \Spatie\LaravelData\DataCollection) {
             foreach ($itemData->children as $childData) {
-                $this->updateOrCreateItemWithChildren($quote, $childData, $item->id, $existingItemsMap);
+                $this->updateOrCreateItemWithChildren($quote, $childData, $item->id, $existingItemsMap, $savedParentIds);
             }
         }
     }

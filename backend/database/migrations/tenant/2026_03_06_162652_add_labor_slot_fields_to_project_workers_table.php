@@ -21,36 +21,55 @@ return new class extends Migration
             $table->date('assigned_from')->nullable()->change();
 
             // Role label copied from quote item description (e.g. "Fonico", "Tecnico Audio")
-            $table->string('role_name')->nullable()->after('site_role');
+            if (! Schema::hasColumn('project_workers', 'role_name')) {
+                $table->string('role_name')->nullable()->after('site_role');
+            }
 
             // Index within a group of identical roles from the same quote item.
             // e.g. Facchino qty=2 → slot_index 1 and 2
-            $table->unsignedTinyInteger('slot_index')->default(1)->after('role_name');
+            if (! Schema::hasColumn('project_workers', 'slot_index')) {
+                $table->unsignedTinyInteger('slot_index')->default(1)->after('role_name');
+            }
 
             // Link back to the originating quote item (for traceability)
-            $table->foreignId('quote_item_id')
-                ->nullable()
-                ->after('slot_index')
-                ->constrained('quote_items')
-                ->nullOnDelete();
+            if (! Schema::hasColumn('project_workers', 'quote_item_id')) {
+                $table->foreignId('quote_item_id')
+                    ->nullable()
+                    ->after('slot_index')
+                    ->constrained('quote_items')
+                    ->nullOnDelete();
+            }
 
             // Budget estimate pulled from quote at conversion time
-            $table->decimal('estimated_days', 8, 2)->nullable()->after('estimated_hours');
-            $table->decimal('budget_cost_rate', 10, 2)->nullable()->after('estimated_days');
+            if (! Schema::hasColumn('project_workers', 'estimated_days')) {
+                $table->decimal('estimated_days', 8, 2)->nullable()->after('estimated_hours');
+            }
+
+            if (! Schema::hasColumn('project_workers', 'budget_cost_rate')) {
+                $table->decimal('budget_cost_rate', 10, 2)->nullable()->after('estimated_days');
+            }
 
             // Real cost rate: pulled from WorkerRate when worker is assigned
-            $table->decimal('actual_cost_rate', 10, 2)->nullable()->after('budget_cost_rate');
+            if (! Schema::hasColumn('project_workers', 'actual_cost_rate')) {
+                $table->decimal('actual_cost_rate', 10, 2)->nullable()->after('budget_cost_rate');
+            }
 
             // Customer-facing rate for computing extra-hour revenue in Final Balance
-            $table->decimal('customer_rate', 10, 2)->nullable()->after('actual_cost_rate');
+            if (! Schema::hasColumn('project_workers', 'customer_rate')) {
+                $table->decimal('customer_rate', 10, 2)->nullable()->after('actual_cost_rate');
+            }
 
             // true  = external (freelancer/collaborator) → uses actual_cost_rate from WorkerRate
             // false = internal (employee) → uses monthly_salary / hours_per_month setting
-            $table->boolean('is_external')->default(false)->after('customer_rate');
+            if (! Schema::hasColumn('project_workers', 'is_external')) {
+                $table->boolean('is_external')->default(false)->after('customer_rate');
+            }
 
             // true  = event mode: worker has scheduled days (ProjectWorkerSchedule)
             // false = cantiere mode: worker clocks in freely
-            $table->boolean('is_scheduled')->default(false)->after('is_external');
+            if (! Schema::hasColumn('project_workers', 'is_scheduled')) {
+                $table->boolean('is_scheduled')->default(false)->after('is_external');
+            }
         });
     }
 

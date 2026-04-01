@@ -130,6 +130,27 @@ export const extractSelectedItems = (
 };
 
 /**
+ * Rimuove items orfani: items top-level il cui parent_id punta a una sezione
+ * che non esiste più nell'albero. Difesa contro stati inconsistenti post-DnD.
+ */
+export const sanitizeOrphanedChildren = (items: QuoteItem[]): QuoteItem[] => {
+  const existingIds = new Set(items.map((item) => item.id));
+  return items
+    .map((item) => {
+      if (item.children) {
+        return {
+          ...item,
+          children: item.children.filter(
+            (child) => child.parent_id === null || existingIds.has(child.parent_id),
+          ),
+        };
+      }
+      return item;
+    })
+    .filter((item) => item.parent_id === null || existingIds.has(item.parent_id));
+};
+
+/**
  * Calcola il subtotale di una sezione
  */
 export const calculateSectionTotal = (item: QuoteItem): number => {

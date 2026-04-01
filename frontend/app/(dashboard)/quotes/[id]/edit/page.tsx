@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { QuoteFormData, QuoteItem } from "@/lib/types";
+import { sanitizeOrphanedChildren } from "@/components/quote-items/utils";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { QuoteForm } from "@/components/quotes/quote-form";
 import { PageHeader } from "@/components/layout/page-header";
@@ -178,7 +179,8 @@ export default function EditQuotePage() {
       return;
     }
 
-    updateMutation.mutate(formData);
+    const sanitizedItems = sanitizeOrphanedChildren(formData.items || []);
+    updateMutation.mutate({ ...formData, items: sanitizedItems });
   }, [formData, updateMutation]);
 
   const handleBack = useCallback(() => {
