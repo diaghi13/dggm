@@ -81,7 +81,7 @@ class GlobalUser extends Authenticatable implements CanResetPasswordContract
      */
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
-        $this->notify(new ResetPasswordNotification($token));
+        $this->notify(new ResetPasswordNotification($token, config('app.name')));
     }
 
     /**

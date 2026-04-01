@@ -5,6 +5,8 @@ namespace App\Listeners;
 use App\Events\PriceListItemsGenerationCompleted;
 use App\Models\User;
 use App\Notifications\PriceListGenerationCompletedNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,8 +19,14 @@ use Illuminate\Support\Facades\Log;
  * - Includes price list details and action link
  * - Queued for async delivery
  */
-class NotifyPriceListGenerationCompleted
+class NotifyPriceListGenerationCompleted implements ShouldQueue
 {
+    use InteractsWithQueue;
+
+    public int $tries = 3;
+
+    public int $timeout = 30;
+
     /**
      * Handle the event
      */

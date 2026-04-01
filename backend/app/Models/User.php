@@ -58,8 +58,9 @@ class User extends Authenticatable
         return $this->hasOne(Worker::class);
     }
 
-    public function sendPasswordResetNotification($token): void
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
-        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+        $companyName = \App\Models\Setting::get('company.name') ?? config('app.name');
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token, $companyName));
     }
 }

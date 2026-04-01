@@ -5,6 +5,8 @@ namespace App\Listeners;
 use App\Events\PasswordChanged;
 use App\Events\PasswordReset;
 use App\Events\PasswordResetRequested;
+use App\Models\Landlord\GlobalUser;
+use App\Models\User;
 use App\Notifications\PasswordChangedNotification;
 use App\Notifications\PasswordResetSuccessful;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -52,10 +54,16 @@ class LogPasswordActivity implements ShouldQueue
     }
 
     /**
-     * Send email notification after password reset
+     * Send email notification after password reset.
+     * Only notifies concrete tenant User instances — GlobalUser handles its
+     * own notifications via the landlord password-reset flow.
      */
     private function notifyPasswordReset(PasswordReset $event): void
     {
+        if (! ($event->user instanceof User)) {
+            return;
+        }
+
         $event->user->notify(new PasswordResetSuccessful(
             ipAddress: $event->metadata['ip_address'] ?? 'Unknown',
             userAgent: $event->metadata['user_agent'] ?? 'Unknown',
@@ -64,10 +72,16 @@ class LogPasswordActivity implements ShouldQueue
     }
 
     /**
-     * Send email notification after password change
+     * Send email notification after password change.
+     * Only notifies concrete tenant User instances — GlobalUser does not
+     * go through this flow.
      */
     private function notifyPasswordChanged(PasswordChanged $event): void
     {
+        if (! ($event->user instanceof User)) {
+            return;
+        }
+
         $event->user->notify(new PasswordChangedNotification(
             ipAddress: $event->metadata['ip_address'] ?? 'Unknown',
             userAgent: $event->metadata['user_agent'] ?? 'Unknown',

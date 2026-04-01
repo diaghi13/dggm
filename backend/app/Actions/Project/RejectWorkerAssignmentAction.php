@@ -4,6 +4,7 @@ namespace App\Actions\Project;
 
 use App\Enums\ProjectWorkerStatus;
 use App\Models\ProjectWorker;
+use App\Notifications\AssignmentRespondedByWorker;
 use Illuminate\Support\Facades\DB;
 
 class RejectWorkerAssignmentAction
@@ -16,7 +17,18 @@ class RejectWorkerAssignmentAction
             $projectWorker->rejection_reason = $rejectionReason;
             $projectWorker->save();
 
-            return $projectWorker->fresh(['worker.user', 'project', 'assignedBy']);
+            $fresh = $projectWorker->fresh(['worker.user', 'project.customer', 'assignedBy']);
+
+            // Notify the project manager (assigned-by user) of the rejection
+            if ($fresh->assignedBy) {
+                $fresh->assignedBy->notify(new AssignmentRespondedByWorker(
+                    projectWorker: $fresh,
+                    wasAccepted: false,
+                    reason: $rejectionReason
+                ));
+            }
+
+            return $fresh;
         });
     }
 }

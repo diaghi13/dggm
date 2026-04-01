@@ -4,6 +4,7 @@ namespace App\Actions\Project;
 
 use App\Enums\ProjectWorkerStatus;
 use App\Models\ProjectWorker;
+use App\Notifications\AssignmentRespondedByWorker;
 use Illuminate\Support\Facades\DB;
 
 class AcceptWorkerAssignmentAction
@@ -20,7 +21,18 @@ class AcceptWorkerAssignmentAction
 
             $projectWorker->save();
 
-            return $projectWorker->fresh(['worker.user', 'project', 'assignedBy']);
+            $fresh = $projectWorker->fresh(['worker.user', 'project.customer', 'assignedBy']);
+
+            // Notify the project manager (assigned-by user) of the acceptance
+            if ($fresh->assignedBy) {
+                $fresh->assignedBy->notify(new AssignmentRespondedByWorker(
+                    projectWorker: $fresh,
+                    wasAccepted: true,
+                    reason: $notes
+                ));
+            }
+
+            return $fresh;
         });
     }
 }
