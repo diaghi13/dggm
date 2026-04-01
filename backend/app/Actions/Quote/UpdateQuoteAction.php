@@ -13,7 +13,7 @@ class UpdateQuoteAction
     public function execute(Quote $quote, QuoteData $data): Quote
     {
         return DB::transaction(function () use ($quote, $data) {
-            $quote->update($data->except('id', 'items', 'code', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'financialResource', 'warrantyType', 'project', 'full_address')->toArray());
+            $quote->update($data->except('id', 'items', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'financialResource', 'warrantyType', 'project', 'full_address')->toArray());
 
             // Update items if provided (with hierarchy support)
             if ($data->items instanceof \Spatie\LaravelData\DataCollection) {
