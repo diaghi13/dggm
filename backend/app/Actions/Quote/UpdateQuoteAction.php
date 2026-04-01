@@ -81,7 +81,7 @@ class UpdateQuoteAction
      */
     private function updateOrCreateItemWithChildren(Quote $quote, $itemData, ?int $parentId, \Illuminate\Support\Collection $existingItemsMap, \Illuminate\Support\Collection $savedParentIds): void
     {
-        $itemArray = $itemData->except('id', 'product', 'priceListItem', 'parent', 'children')->toArray();
+        $itemArray = $itemData->except('id', 'quote_id', 'product', 'priceListItem', 'parent', 'children')->toArray();
 
         // If called as child (parentId passed), use that; otherwise preserve parent_id from data
         // This fixes the bug where items were moved out of sections incorrectly
