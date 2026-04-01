@@ -93,7 +93,7 @@ class BackupTenantsCommand extends Command
             ->setUserName(config('database.connections.mysql.username'))
             ->setPassword(config('database.connections.mysql.password', ''))
             ->useCompressor(new GzipCompressor)
-            ->doNotUseSSL();
+            ->addExtraOption('--skip-ssl');
 
         $binaryPath = config('database.connections.mysql.dump.dump_binary_path', '');
 
