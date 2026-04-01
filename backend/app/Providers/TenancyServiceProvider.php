@@ -87,7 +87,9 @@ class TenancyServiceProvider extends ServiceProvider
             ],
 
             Events\BootstrappingTenancy::class => [],
-            Events\TenancyBootstrapped::class => [],
+            Events\TenancyBootstrapped::class => [
+                \App\Listeners\FixTenantPublicDiskUrl::class,
+            ],
             Events\RevertingToCentralContext::class => [],
             Events\RevertedToCentralContext::class => [],
 

@@ -46,5 +46,35 @@ class CreateTenantStorageDirectoriesJob implements ShouldQueue
         } finally {
             tenancy()->end();
         }
+
+        $this->createPublicStorageSymlink();
+    }
+
+    /**
+     * Create a symlink inside the central public storage so tenant files
+     * are accessible via /storage/tenants/{tenant_id}/...
+     */
+    protected function createPublicStorageSymlink(): void
+    {
+        $tenantId = $this->tenant->getTenantKey();
+        $tenantsDir = base_path('storage/app/public/tenants');
+
+        if (! is_dir($tenantsDir)) {
+            mkdir($tenantsDir, 0755, true);
+        }
+
+        $symlinkPath = $tenantsDir.'/'.$tenantId;
+
+        if (! file_exists($symlinkPath) && ! is_link($symlinkPath)) {
+            // Relative path from storage/app/public/tenants/ to the tenant storage
+            $target = '../../../erp_tenant_'.$tenantId.'/app/public/';
+            symlink($target, $symlinkPath);
+
+            Log::info('CreateTenantStorageDirectoriesJob: created public symlink', [
+                'tenant_id' => $tenantId,
+                'symlink' => $symlinkPath,
+                'target' => $target,
+            ]);
+        }
     }
 }

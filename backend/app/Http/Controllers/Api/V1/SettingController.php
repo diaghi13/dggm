@@ -360,8 +360,9 @@ class SettingController extends Controller
         ]);
 
         $file = $request->file('logo');
-        $file->storeAs('company', 'logo.'.$file->getClientOriginalExtension(), 'public');
-        $relativePath = '/storage/company/logo.'.$file->getClientOriginalExtension();
+        $filename = 'logo.'.$file->getClientOriginalExtension();
+        $file->storeAs('company', $filename, 'public');
+        $relativePath = parse_url(Storage::disk('public')->url("company/{$filename}"), PHP_URL_PATH);
 
         \App\Models\Setting::set('company.logo', $relativePath, null, 'company', true);
 
@@ -402,7 +403,7 @@ class SettingController extends Controller
         $file = $request->file('image');
         $filename = "{$type}.png";
         $file->storeAs('company', $filename, 'public');
-        $relativePath = "/storage/company/{$filename}";
+        $relativePath = parse_url(Storage::disk('public')->url("company/{$filename}"), PHP_URL_PATH);
 
         \App\Models\Setting::set("company.{$type}", $relativePath, null, 'company', true);
 
