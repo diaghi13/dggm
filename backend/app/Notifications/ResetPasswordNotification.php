@@ -13,7 +13,10 @@ class ResetPasswordNotification extends ResetPassword
     public function toMail(mixed $notifiable): MailMessage
     {
         $resetUrl = $this->resetUrl($notifiable);
-        $companyName = \App\Models\Setting::get('company.name') ?? config('app.name');
+        // Setting::get() queries the tenant DB — not available in landlord context.
+        $companyName = tenancy()->initialized
+            ? (\App\Models\Setting::get('company.name') ?? config('app.name'))
+            : config('app.name');
 
         return (new MailMessage)
             ->subject('Ripristino Password - '.$companyName)
