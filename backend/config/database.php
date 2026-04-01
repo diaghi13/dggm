@@ -90,6 +90,7 @@ return [
             // Leave empty on servers where mysqldump is globally available.
             'dump' => array_filter([
                 'dump_binary_path' => env('MYSQLDUMP_BINARY_PATH'),
+                'add_extra_option' => '--skip-ssl',
             ]),
         ],
 
