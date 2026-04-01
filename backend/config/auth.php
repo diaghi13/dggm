@@ -112,6 +112,14 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        'global_users' => [
+            'provider' => 'global_users',
+            'connection' => 'landlord',
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
     ],
 
     /*

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models\Landlord;
 
+use App\Notifications\ResetPasswordNotification;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -12,9 +15,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class GlobalUser extends Authenticatable
+class GlobalUser extends Authenticatable implements CanResetPasswordContract
 {
-    use HasApiTokens, HasUuids, Notifiable, SoftDeletes;
+    use CanResetPassword, HasApiTokens, HasUuids, Notifiable, SoftDeletes;
 
     protected $connection = 'landlord';
 
@@ -71,6 +74,14 @@ class GlobalUser extends Authenticatable
             'postal_code' => $this->postal_code,
             'country' => $this->country,
         ], fn ($v) => $v !== null);
+    }
+
+    /**
+     * Send the password reset notification using our custom notification class.
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     /**

@@ -10,13 +10,11 @@ class SendPasswordResetLinkAction
 {
     public function execute(ForgotPasswordData $data): string
     {
-        // Use Laravel's built-in password broker to send reset link
-        $status = Password::sendResetLink(
+        $status = Password::broker('global_users')->sendResetLink(
             ['email' => $data->email]
         );
 
         if ($status === Password::RESET_LINK_SENT) {
-            // Dispatch event for logging/audit
             PasswordResetRequested::dispatch($data->email, [
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),

@@ -3,38 +3,32 @@
 namespace App\Actions\Auth;
 
 use App\Data\ResetPasswordData;
-use App\Events\PasswordReset;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use App\Events\GlobalUserUpdated;
+use App\Models\Landlord\GlobalUser;
 use Illuminate\Support\Facades\Password;
 
 class ResetPasswordAction
 {
     public function execute(ResetPasswordData $data): string
     {
-        // Use Laravel's built-in password broker to reset password
-        $status = Password::reset(
+        return Password::broker('global_users')->reset(
             [
                 'email' => $data->email,
                 'password' => $data->password,
                 'password_confirmation' => $data->password_confirmation,
                 'token' => $data->token,
             ],
-            function (User $user, string $password) {
-                $user->password = Hash::make($password);
-                $user->save();
+            function (GlobalUser $globalUser, string $password) {
+                $globalUser->password = $password; // cast 'hashed' handles hashing
+                $globalUser->save();
 
-                // Revoke all existing tokens for security
-                $user->tokens()->delete();
+                // Dispatching GlobalUserUpdated triggers SyncTenantUsersListener,
+                // which syncs the new password down to all tenant User records automatically.
+                GlobalUserUpdated::dispatch($globalUser, ['password']);
 
-                // Dispatch event for logging/audit
-                PasswordReset::dispatch($user, [
-                    'ip_address' => request()->ip(),
-                    'user_agent' => request()->userAgent(),
-                ]);
+                // Revoke all existing landlord tokens for security
+                $globalUser->tokens()->delete();
             }
         );
-
-        return $status;
     }
 }
