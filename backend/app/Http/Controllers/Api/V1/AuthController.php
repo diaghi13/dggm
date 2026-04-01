@@ -497,17 +497,18 @@ class AuthController extends Controller
     {
         $status = app(SendPasswordResetLinkAction::class)->execute($data);
 
-        if ($status === Password::RESET_LINK_SENT) {
+        if ($status === Password::RESET_THROTTLED) {
             return response()->json([
-                'success' => true,
-                'message' => 'Password reset link sent to your email',
-            ]);
+                'success' => false,
+                'message' => 'Hai già richiesto un link di reset. Attendi qualche minuto prima di riprovare.',
+            ], 429);
         }
 
+        // Always return a generic success message for security (do not reveal if email exists)
         return response()->json([
-            'success' => false,
-            'message' => 'Unable to send password reset link',
-        ], 500);
+            'success' => true,
+            'message' => 'Se l\'email è registrata, riceverai un link di reset a breve.',
+        ]);
     }
 
     /**
@@ -520,21 +521,21 @@ class AuthController extends Controller
         if ($status === Password::PASSWORD_RESET) {
             return response()->json([
                 'success' => true,
-                'message' => 'Password reset successfully',
+                'message' => 'Password reimpostata con successo.',
             ]);
         }
 
-        // Handle different error cases
-        $message = match ($status) {
-            Password::INVALID_TOKEN => 'Invalid or expired reset token',
-            Password::INVALID_USER => 'User not found',
-            default => 'Unable to reset password',
+        [$httpStatus, $message] = match ($status) {
+            Password::INVALID_TOKEN => [400, 'Il link di reset non è valido o è scaduto. Richiedi un nuovo link.'],
+            Password::RESET_THROTTLED => [429, 'Troppe richieste. Attendi qualche minuto prima di riprovare.'],
+            Password::INVALID_USER => [400, 'Nessun account trovato con questo indirizzo email.'],
+            default => [400, 'Impossibile reimpostare la password. Riprova.'],
         };
 
         return response()->json([
             'success' => false,
             'message' => $message,
-        ], 400);
+        ], $httpStatus);
     }
 
     /**
