@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\TenantInvitationController;
 use App\Http\Controllers\Api\V1\WarehouseController;
 use App\Http\Controllers\Api\V1\WorkerController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\GlobalAuthController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Landlord\TenantManagementController;
@@ -123,6 +124,16 @@ Route::prefix('v1')->group(function () {
 
     // Plans — public (registration page needs to show plans before the user has a token)
     Route::get('plans', [\App\Http\Controllers\Landlord\PlansController::class, 'index']);
+
+    // Email verification — no auth required, HMAC validated in controller
+    Route::get('auth/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware('throttle:6,1')
+        ->name('verification.verify');
+
+    // Email verification resend — requires GlobalUser auth
+    Route::post('auth/email/verify/resend', [EmailVerificationController::class, 'resend'])
+        ->middleware(['auth:global', 'throttle:6,1'])
+        ->name('verification.send');
 
     // Authenticated global auth routes — require GlobalUser token (auth:global guard)
     // Also apply EnsureTenantMembership so that when an X-Tenant header is present,

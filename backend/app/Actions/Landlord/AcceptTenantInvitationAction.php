@@ -36,6 +36,12 @@ class AcceptTenantInvitationAction
                 $globalUser->update(['password' => $password]);
             }
 
+            // Accepting an invitation sent to their email address acts as implicit verification
+            if (is_null($globalUser->email_verified_at)) {
+                $globalUser->email_verified_at = now();
+                $globalUser->save();
+            }
+
             // Activate membership and clear invitation token
             $membership->update([
                 'status' => 'active',

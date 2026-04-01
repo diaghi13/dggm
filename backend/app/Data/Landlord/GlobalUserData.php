@@ -51,6 +51,8 @@ class GlobalUserData extends Data
 
         public ?bool $is_landlord_admin,
 
+        public ?string $email_verified_at,
+
         public string|Optional $created_at,
 
         public int|Optional $tenants_count,
@@ -72,6 +74,7 @@ class GlobalUserData extends Data
             country: $user->country,
             iban: $user->iban,
             is_landlord_admin: $user->is_landlord_admin,
+            email_verified_at: $user->email_verified_at?->toIsoString(),
             created_at: $user->created_at?->toIsoString() ?? '',
             tenants_count: isset($user->tenant_memberships_count) ? $user->tenant_memberships_count : Optional::create(),
         );

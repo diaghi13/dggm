@@ -98,6 +98,32 @@ export const authApi = {
     return data.data;
   },
 
+  verifyEmail: async (
+    id: string,
+    hash: string,
+    expires: string,
+    signature: string,
+  ): Promise<{ message: string }> => {
+    const { data } = await apiClient.get<ApiResponse<{ message: string }>>(
+      `/auth/email/verify/${id}/${hash}`,
+      { params: { expires, signature } },
+    );
+    return data.data || { message: data.message || "Email verificata con successo." };
+  },
+
+  resendVerificationEmail: async (globalToken: string): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<ApiResponse<{ message: string }>>(
+      "/auth/email/verify/resend",
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${globalToken}`,
+        },
+      },
+    );
+    return data.data || { message: data.message || "Verification email sent" };
+  },
+
   switchTenant: async (
     tenantId: string,
     globalToken: string,

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,6 +27,7 @@ import {
   ChevronLeft,
   Loader2,
   Plus,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -61,13 +61,15 @@ const featureLabels: Record<string, string> = {
 };
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [isResending, setIsResending] = useState(false);
 
   const { data: plans = [], isLoading: plansLoading } = useQuery({
     queryKey: ["public-plans"],
@@ -185,8 +187,8 @@ export default function RegisterPage() {
         });
       }
 
-      toast.success("Registrazione completata!");
-      router.push("/pending-activation");
+      setRegisteredEmail(step1Data.email);
+      setEmailSent(true);
     } catch (error: unknown) {
       const axiosError = error as {
         response?: { data?: { message?: string; errors?: { email?: string[] } } };
@@ -200,6 +202,83 @@ export default function RegisterPage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleResend = async () => {
+    const globalToken = useAuthStore.getState().globalToken;
+    if (!globalToken) {
+      toast.error("Sessione scaduta. Effettua nuovamente il login.");
+      return;
+    }
+    setIsResending(true);
+    try {
+      await authApi.resendVerificationEmail(globalToken);
+      toast.success("Email di verifica inviata!");
+    } catch {
+      toast.error("Errore durante l'invio. Riprova tra qualche minuto.");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  if (emailSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center space-y-2">
+            <div className="flex justify-center">
+              <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
+                <Mail className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+            <CardTitle className="text-xl text-slate-900 dark:text-slate-100">
+              Controlla la tua email
+            </CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">
+              Abbiamo inviato un link di verifica a{" "}
+              <span className="font-medium text-slate-900 dark:text-slate-100">
+                {registeredEmail}
+              </span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 text-sm text-blue-800 dark:text-blue-200 space-y-1">
+              <p>• Clicca sul link nella email per verificare il tuo account</p>
+              <p>• Il link è valido per 60 minuti</p>
+              <p>• Controlla anche la cartella spam</p>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={isResending}
+              onClick={handleResend}
+            >
+              {isResending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Invio in
+                  corso...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" /> Invia di nuovo
+                </>
+              )}
+            </Button>
+
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+              Hai già verificato?{" "}
+              <Link
+                href="/login"
+                className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+              >
+                Accedi
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 px-4 py-12">

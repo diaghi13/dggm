@@ -30,6 +30,13 @@ export default function LoginPage() {
 
       // Check if the logged-in user is a landlord admin
       const { globalUser } = useAuthStore.getState();
+
+      // Check email verification before any routing decision
+      if (globalUser && !globalUser.email_verified_at) {
+        router.push("/verify-email-pending");
+        return;
+      }
+
       const isLandlordAdmin = globalUser?.is_landlord_admin === true;
 
       if (tenants.length === 0) {

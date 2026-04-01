@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Models\Landlord;
 
 use App\Notifications\ResetPasswordNotification;
+use App\Notifications\VerifyGlobalUserEmailNotification;
+use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -15,9 +18,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class GlobalUser extends Authenticatable implements CanResetPasswordContract
+class GlobalUser extends Authenticatable implements CanResetPasswordContract, MustVerifyEmailContract
 {
-    use CanResetPassword, HasApiTokens, HasUuids, Notifiable, SoftDeletes;
+    use CanResetPassword, HasApiTokens, HasUuids, MustVerifyEmail, Notifiable, SoftDeletes;
 
     protected $connection = 'landlord';
 
@@ -26,6 +29,7 @@ class GlobalUser extends Authenticatable implements CanResetPasswordContract
     protected $fillable = [
         'name',
         'email',
+        'email_verified_at',
         'password',
         'phone',
         'tax_code',
@@ -44,6 +48,7 @@ class GlobalUser extends Authenticatable implements CanResetPasswordContract
     protected function casts(): array
     {
         return [
+            'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_landlord_admin' => 'boolean',
         ];
@@ -82,6 +87,17 @@ class GlobalUser extends Authenticatable implements CanResetPasswordContract
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
         $this->notify(new ResetPasswordNotification($token, config('app.name')));
+    }
+
+    /**
+     * Send the email verification notification using our custom queued notification.
+     * Company name is resolved at dispatch time (not inside the notification) to avoid
+     * DB-dependent logic within the queued job's execution context.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $companyName = config('app.name');
+        $this->notify(new VerifyGlobalUserEmailNotification($companyName));
     }
 
     /**

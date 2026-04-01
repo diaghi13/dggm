@@ -38,6 +38,8 @@ class RegisterController extends Controller
             'password' => $request->password,
         ]);
 
+        $globalUser->sendEmailVerificationNotification();
+
         $slug = Str::slug($request->company_name).'-'.Str::random(6);
         $tenant = Tenant::create([
             'name' => $request->company_name,
