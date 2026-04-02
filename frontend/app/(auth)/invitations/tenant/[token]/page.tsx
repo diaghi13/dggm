@@ -60,6 +60,7 @@ const buildSchema = (isNewUser: boolean) =>
   isNewUser
     ? z
         .object({
+          name: z.string().min(1, 'Il nome è obbligatorio'),
           password: z.string().min(8, 'La password deve essere di almeno 8 caratteri'),
           password_confirmation: z.string(),
         })
@@ -68,11 +69,13 @@ const buildSchema = (isNewUser: boolean) =>
           path: ['password_confirmation'],
         })
     : z.object({
+        name: z.string().optional(),
         password: z.string().optional(),
         password_confirmation: z.string().optional(),
       });
 
 type FormData = {
+  name?: string;
   password?: string;
   password_confirmation?: string;
 };
@@ -172,6 +175,7 @@ export default function AcceptTenantInvitationPage({ params }: PageProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
+      name: '',
       password: '',
       password_confirmation: '',
     },
@@ -179,7 +183,7 @@ export default function AcceptTenantInvitationPage({ params }: PageProps) {
 
   const acceptMutation = useMutation({
     mutationFn: (data: FormData) =>
-      landlordApi.acceptTenantInvitation(token, data.password || undefined),
+      landlordApi.acceptTenantInvitation(token, data.password || undefined, data.name || undefined),
     onSuccess: () => {
       setAccepted(true);
     },
@@ -256,6 +260,27 @@ export default function AcceptTenantInvitationPage({ params }: PageProps) {
           {/* Form */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-700 dark:text-slate-300">
+                      Nome completo {isNewUser && <span className="text-red-500">*</span>}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Mario Rossi"
+                        className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {isNewUser && (
                 <>
                   <p className="text-sm text-slate-600 dark:text-slate-400">

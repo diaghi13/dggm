@@ -14,4 +14,5 @@ export interface QuoteItemsBuilderProps {
   showUnitPrices?: boolean;
   quoteType?: string | null;
   effectiveEventDays?: number | null;
+  defaultVatRate?: number;
 }

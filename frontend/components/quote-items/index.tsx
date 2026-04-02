@@ -62,6 +62,7 @@ export function QuoteItemsBuilder({
   showUnitPrices = true,
   quoteType,
   effectiveEventDays,
+  defaultVatRate = 22,
 }: QuoteItemsBuilderProps) {
   const [localItems, setLocalItems] = useState<QuoteItem[]>(items);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
@@ -172,7 +173,7 @@ export function QuoteItemsBuilder({
       subtotal: 0,
       discount_amount: 0,
       total: 0,
-      vat_rate: 22,
+      vat_rate: defaultVatRate,
       vat_amount: 0,
       total_with_vat: 0,
       hide_unit_price: false,

@@ -45,6 +45,7 @@ export default function EditQuotePage() {
     total_amount: 0,
     deposit_percentage: null,
     deposit_amount: null,
+    deposits: [],
     work_start_description: null,
     work_start_date: null,
     work_duration_description: null,
@@ -87,10 +88,14 @@ export default function EditQuotePage() {
     },
     onError: (error: any) => {
       // eslint-disable-line @typescript-eslint/no-explicit-any
-      toast.error("Errore", {
-        description:
-          error.response?.data?.message || "Impossibile salvare le modifiche",
-      });
+      const apiErrors = error.response?.data?.errors;
+      const description = apiErrors
+        ? (Object.values(apiErrors) as string[][])
+            .flat()
+            .slice(0, 4)
+            .join(" • ")
+        : (error.response?.data?.message ?? "Impossibile salvare le modifiche");
+      toast.error("Errore di validazione", { description });
     },
   });
 
@@ -140,6 +145,7 @@ export default function EditQuotePage() {
       terms_and_conditions: quote.terms_and_conditions,
       footer_text: quote.footer_text,
       items: quote.items || [],
+      deposits: quote.deposits || [],
     });
     // NON attiviamo hasUnsavedChanges al primo caricamento
     setHasUnsavedChanges(false);

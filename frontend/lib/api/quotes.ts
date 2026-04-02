@@ -95,6 +95,16 @@ export const quotesApi = {
     return response.data;
   },
 
+  async refreshTerms(id: number): Promise<{ terms_and_conditions: string }> {
+    const response = await apiClient.post(`/quotes/${id}/refresh-terms`);
+    return response.data.data;
+  },
+
+  async duplicate(id: number): Promise<Quote> {
+    const response = await apiClient.post(`/quotes/${id}/duplicate`);
+    return response.data.data;
+  },
+
   // Media Library (Spatie)
   async uploadMedia(quoteId: number, formData: FormData): Promise<any> {
     const response = await apiClient.post(

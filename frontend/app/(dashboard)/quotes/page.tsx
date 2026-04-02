@@ -41,6 +41,37 @@ export default function QuotesPage() {
 
   const queryClient = useQueryClient();
 
+  const duplicateMutation = useMutation({
+    mutationFn: (id: number) => quotesApi.duplicate(id),
+    onSuccess: (newQuote) => {
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      toast.success("Preventivo duplicato", {
+        description: `Creato ${newQuote.code}`,
+      });
+      router.push(`/quotes/${newQuote.id}/edit`);
+    },
+    onError: () => toast.error("Errore nella duplicazione"),
+  });
+
+  const handleDuplicate = (quote: Quote) => {
+    if (!quote.id) return;
+    duplicateMutation.mutate(quote.id);
+  };
+
+  const sendMutation = useMutation({
+    mutationFn: (id: number) => quotesApi.send(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      toast.success("Preventivo inviato");
+    },
+    onError: () => toast.error("Errore nell'invio"),
+  });
+
+  const handleSend = (quote: Quote) => {
+    if (!quote.id) return;
+    sendMutation.mutate(quote.id);
+  };
+
   // Define columns
   const columns = useMemo(
     () =>
@@ -52,7 +83,11 @@ export default function QuotesPage() {
         (quote) => {
           router.push(`/quotes/${quote.id}`);
         },
+        handleDuplicate,
+        (quote) => router.push(`/quotes/${quote.id}/edit`),
+        handleSend,
       ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [router],
   );
 

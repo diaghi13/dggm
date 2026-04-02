@@ -238,7 +238,43 @@
                 <span>TOTALE</span>
                 <span>{{ number_format($quote->total_amount, 2, ',', '.') }} €</span>
             </div>
-            @if($quote->deposit_amount > 0)
+            @if($quote->deposits->isNotEmpty())
+                <div class="avoid-break mt-4 pt-4 border-t border-black">
+                    <h4 class="font-bold text-[10px] mb-2 uppercase tracking-wider">Piano Pagamenti</h4>
+                    <table class="w-full text-[10px]">
+                        <thead>
+                            <tr class="border-b border-black">
+                                <th class="text-left py-1 font-medium">Descrizione</th>
+                                <th class="text-right py-1 font-medium w-16">%</th>
+                                <th class="text-right py-1 font-medium w-24">Importo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($quote->deposits as $deposit)
+                            <tr class="border-b border-slate-200">
+                                <td class="py-1">
+                                    {{ $deposit->description }}
+                                    @if($deposit->due_event) <span class="text-slate-500"> — {{ $deposit->due_event }}</span>@endif
+                                    @if($deposit->due_date) <span class="text-slate-500"> ({{ $deposit->due_date->format('d/m/Y') }})</span>@endif
+                                </td>
+                                <td class="text-right py-1">{{ $deposit->percentage ? number_format($deposit->percentage, 1).'%' : '—' }}</td>
+                                <td class="text-right py-1 font-medium">€ {{ number_format($deposit->amount, 2, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                            <tr class="border-t-2 border-black">
+                                <td class="py-1 font-bold">Saldo finale</td>
+                                <td class="text-right py-1">
+                                    {{ number_format(100 - $quote->deposits->sum('percentage'), 1) }}%
+                                </td>
+                                <td class="text-right py-1 font-bold">
+                                    € {{ number_format($quote->total_amount - $quote->deposits->sum('amount'), 2, ',', '.') }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            @elseif($quote->deposit_amount > 0)
+                {{-- Retrocompatibilità: vecchio campo singolo --}}
                 <div class="flex justify-between py-2 text-sm border-b border-black mt-2">
                     <span>ACCONTO</span>
                     <span>- {{ number_format($quote->deposit_amount, 2, ',', '.') }} €</span>
@@ -280,7 +316,7 @@
                         <p class="text-xs font-bold mt-1">{{ \App\Models\Setting::get('company.iban') }}</p>
                     @endif
                 </div>
-                @if($quote->work_start_description || $quote->work_start_date || $quote->work_duration_description)
+                @if($quote->work_start_description || $quote->work_start_date || $quote->work_duration_description || $quote->work_end_date)
                     <div>
                         <div class="text-xs font-bold uppercase mb-2 border-b border-black">ESECUZIONE</div>
                         @if($quote->work_start_description || $quote->work_start_date)
@@ -307,11 +343,11 @@
         @if($quote->warrantyType)
             <div class="mb-8">
                 <div class="text-xs font-bold uppercase mb-2 border-b border-black inline-block">GARANZIA</div>
-                <p class="text-xs leading-relaxed">{{ $quote->warrantyType->name }}@if($quote->warrantyType->description)
+                <p class="text-xs leading-tight text-justify">{{ $quote->warrantyType->name }}@if($quote->warrantyType->description)
                         — {{ $quote->warrantyType->description }}
                     @endif</p>
                 @if($quote->warrantyType->exclusions && count($quote->warrantyType->exclusions) > 0)
-                    <ul class="text-xs mt-1 list-disc list-inside text-gray-600">
+                    <ul class="text-[10px] mt-1 list-disc list-inside text-gray-700">
                         @foreach($quote->warrantyType->exclusions as $exclusion)
                             <li>{{ $exclusion }}</li>
                         @endforeach

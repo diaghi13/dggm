@@ -145,7 +145,19 @@ class CodeGeneratorService
                 break;
         }
 
-        return $query->count() + 1;
+        // Use MAX of the trailing numeric sequence in the code field.
+        // count() + 1 breaks when records are deleted or codes have gaps (e.g. 0012, 0015 → count=2 → 0003).
+        $codes = $query->pluck('code');
+
+        if ($codes->isEmpty()) {
+            return 1;
+        }
+
+        $max = $codes->map(function (string $code): int {
+            return preg_match('/(\d+)$/', $code, $m) ? (int) $m[1] : 0;
+        })->max();
+
+        return $max + 1;
     }
 
     /**

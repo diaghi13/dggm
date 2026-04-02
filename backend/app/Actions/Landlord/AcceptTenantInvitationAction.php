@@ -15,7 +15,7 @@ class AcceptTenantInvitationAction
     /**
      * @return array{membership: TenantMembership, globalUser: GlobalUser}
      */
-    public function execute(string $token, ?string $password = null): array
+    public function execute(string $token, ?string $password = null, ?string $name = null): array
     {
         $membership = TenantMembership::where('invitation_token', $token)
             ->where('status', 'invited')
@@ -27,9 +27,15 @@ class AcceptTenantInvitationAction
             ]);
         }
 
-        return DB::connection('landlord')->transaction(function () use ($membership, $password) {
+        return DB::connection('landlord')->transaction(function () use ($membership, $password, $name) {
             $globalUser = GlobalUser::findOrFail($membership->global_user_id);
             $tenant = Tenant::findOrFail($membership->tenant_id);
+
+            // Update name if provided
+            if (! empty($name)) {
+                $globalUser->name = $name;
+                $globalUser->save();
+            }
 
             // Update password if provided (new users who didn't previously exist)
             if ($password) {

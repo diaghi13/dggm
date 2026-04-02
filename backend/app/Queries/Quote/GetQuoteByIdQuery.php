@@ -20,6 +20,7 @@ class GetQuoteByIdQuery
             'warrantyType',
             'project',
             'template',
+            'deposits',
             'items' => function ($query) {
                 $query->with(['product', 'priceListItem', 'children'])
                     ->orderBy('sort_order');

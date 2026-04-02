@@ -3,7 +3,22 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Quote } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Calendar, Eye, FileText, Trash2, User } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Calendar,
+  Copy,
+  Eye,
+  FileText,
+  Pencil,
+  Send,
+  Trash2,
+  User,
+} from "lucide-react";
 import {
   AvatarTextCell,
   IconTextCell,
@@ -38,6 +53,9 @@ const statusLabels: Record<string, string> = {
 export const createQuotesColumns = (
   onDelete: (quote: Quote) => void,
   onView: (quote: Quote) => void,
+  onDuplicate: (quote: Quote) => void,
+  onEdit: (quote: Quote) => void,
+  onSend: (quote: Quote) => void,
 ): ColumnDef<Quote>[] => [
   {
     accessorKey: "code",
@@ -94,36 +112,105 @@ export const createQuotesColumns = (
   {
     id: "actions",
     header: () => <div className="text-right">Azioni</div>,
-    size: 100,
+    size: 220,
     enableHiding: false,
     enableSorting: false,
     cell: ({ row }) => {
       const quote = row.original;
+      const canEdit = !["approved", "converted"].includes(quote.status);
       return (
-        <div className="flex justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-slate-100 dark:hover:bg-slate-800"
-            onClick={(e) => {
-              e.stopPropagation();
-              onView(quote);
-            }}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-red-600"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(quote);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        <TooltipProvider>
+          <div className="flex justify-end gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-slate-100 dark:hover:bg-slate-800"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onView(quote);
+                  }}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Visualizza</TooltipContent>
+            </Tooltip>
+
+            {canEdit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-slate-100 dark:hover:bg-slate-800"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(quote);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Modifica</TooltipContent>
+              </Tooltip>
+            )}
+
+            {quote.status === "draft" && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-slate-100 dark:hover:bg-slate-800"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSend(quote);
+                    }}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Invia al cliente</TooltipContent>
+              </Tooltip>
+            )}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-slate-100 dark:hover:bg-slate-800"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDuplicate(quote);
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Duplica preventivo</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(quote);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Elimina</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       );
     },
   },

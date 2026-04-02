@@ -281,6 +281,18 @@ export interface SupplierFormData {
   }>;
 }
 
+// Quote Deposit (piano pagamenti)
+export interface QuoteDeposit {
+  id?: number | null;
+  sort_order?: number;
+  description: string;
+  percentage?: number | null;
+  amount?: number | null;
+  is_fixed_amount: boolean;
+  due_date?: string | null;
+  due_event?: string | null;
+}
+
 // Quote Attachment
 export interface QuoteAttachment {
   id: number;
@@ -310,6 +322,7 @@ export type QuoteItemType = "section" | "item" | "labor" | "material";
 export type Quote = Omit<App.Data.QuoteData, "customer"> & {
   customer?: Customer;
   attachments?: QuoteAttachment[];
+  deposits?: QuoteDeposit[];
 };
 export type QuoteItem = App.Data.QuoteItemData;
 
@@ -332,6 +345,7 @@ export type QuoteFormData = Partial<
   items?: App.Data.QuoteItemData[];
   payment_method_id?: number | null;
   attachments?: QuoteAttachment[];
+  deposits?: QuoteDeposit[];
 };
 
 // DDT (Documento Di Trasporto) Types

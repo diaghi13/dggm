@@ -315,7 +315,43 @@
                 <span>Totale Documento</span>
                 <span>{{ number_format($quote->total_amount, 2, ',', '.') }} €</span>
             </div>
-            @if($quote->deposit_amount > 0)
+            @if($quote->deposits->isNotEmpty())
+                <div class="avoid-break mt-4 pt-4 border-t border-slate-200">
+                    <h4 class="font-bold text-slate-700 text-[10px] mb-2 uppercase tracking-wider">Piano Pagamenti</h4>
+                    <table class="w-full text-[10px]">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="text-left py-1 text-slate-500 font-medium">Descrizione</th>
+                                <th class="text-right py-1 text-slate-500 font-medium w-16">%</th>
+                                <th class="text-right py-1 text-slate-500 font-medium w-24">Importo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($quote->deposits as $deposit)
+                            <tr class="border-b border-slate-100">
+                                <td class="py-1 text-slate-700">
+                                    {{ $deposit->description }}
+                                    @if($deposit->due_event) <span class="text-slate-400"> — {{ $deposit->due_event }}</span>@endif
+                                    @if($deposit->due_date) <span class="text-slate-400"> ({{ $deposit->due_date->format('d/m/Y') }})</span>@endif
+                                </td>
+                                <td class="text-right py-1 text-slate-600">{{ $deposit->percentage ? number_format($deposit->percentage, 1).'%' : '—' }}</td>
+                                <td class="text-right py-1 text-slate-700 font-medium">€ {{ number_format($deposit->amount, 2, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                            <tr class="border-t-2 border-slate-300">
+                                <td class="py-1 font-bold text-slate-700">Saldo finale</td>
+                                <td class="text-right py-1 text-slate-500">
+                                    {{ number_format(100 - $quote->deposits->sum('percentage'), 1) }}%
+                                </td>
+                                <td class="text-right py-1 font-bold text-slate-700">
+                                    € {{ number_format($quote->total_amount - $quote->deposits->sum('amount'), 2, ',', '.') }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            @elseif($quote->deposit_amount > 0)
+                {{-- Retrocompatibilità: vecchio campo singolo --}}
                 <div class="mt-2 pt-2 border-t border-slate-300 flex justify-between text-sm">
                     <span>Acconto ({{ $quote->deposit_percentage > 0 ? number_format($quote->deposit_percentage, 0) . '%' : 'Fisso' }})</span>
                     <span>- {{ number_format($quote->deposit_amount, 2, ',', '.') }} €</span>
@@ -361,7 +397,7 @@
                         <p class="text-xs italic">{{ \App\Models\Setting::get('company.iban') }}</p>
                     @endif
                 </div>
-                @if($quote->work_start_description || $quote->work_start_date || $quote->work_duration_description)
+                @if($quote->work_start_description || $quote->work_start_date || $quote->work_duration_description || $quote->work_end_date)
                     <div class="flex-1">
                         <h4 class="font-bold uppercase text-xs mb-1 border-b border-emerald-800 inline-block">
                             Tempistiche</h4>
@@ -386,13 +422,13 @@
         @endif
 
         @if($quote->warrantyType)
-            <div>
-                <h4 class="font-bold uppercase text-xs mb-1 border-b border-emerald-800 inline-block">Garanzia</h4>
+            <div class="text-xs text-slate-800">
+                <h4 class="font-bold uppercase text-[10px] mb-1 border-b border-emerald-800 inline-block">Garanzia</h4>
                 <p>{{ $quote->warrantyType->name }}@if($quote->warrantyType->description)
                         — {{ $quote->warrantyType->description }}
                     @endif</p>
                 @if($quote->warrantyType->exclusions && count($quote->warrantyType->exclusions) > 0)
-                    <ul class="list-disc list-inside text-xs text-slate-600 mt-1">
+                    <ul class="list-disc list-inside text-[10px] text-slate-600 mt-1">
                         @foreach($quote->warrantyType->exclusions as $exclusion)
                             <li>{{ $exclusion }}</li>
                         @endforeach

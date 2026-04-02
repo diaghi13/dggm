@@ -72,6 +72,7 @@ export default function NewQuotePage() {
     total_amount: 0,
     deposit_percentage: null,
     deposit_amount: null,
+    deposits: [],
     work_start_description: null,
     work_start_date: null,
     work_duration_description: null,
@@ -106,10 +107,14 @@ export default function NewQuotePage() {
       router.push(`/quotes/${data.id}`);
     },
     onError: (error: any) => {
-      toast.error("Errore", {
-        description:
-          error.response?.data?.message || "Impossibile creare il preventivo",
-      });
+      const apiErrors = error.response?.data?.errors;
+      const description = apiErrors
+        ? (Object.values(apiErrors) as string[][])
+            .flat()
+            .slice(0, 4)
+            .join(" • ")
+        : (error.response?.data?.message ?? "Impossibile creare il preventivo");
+      toast.error("Errore di validazione", { description });
     },
   });
 

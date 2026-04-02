@@ -25,5 +25,6 @@ class CustomerData extends Data
         public ?float $discount_percentage,
         public ?string $notes,
         public ?bool $is_active,
+        public ?string $display_name,
     ) {}
 }

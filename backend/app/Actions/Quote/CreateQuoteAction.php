@@ -6,10 +6,15 @@ use App\Data\QuoteData;
 use App\Events\QuoteCreated;
 use App\Models\Quote;
 use App\Models\Setting;
+use App\Services\QuoteTermsService;
 use Illuminate\Support\Facades\DB;
 
 class CreateQuoteAction
 {
+    public function __construct(
+        private readonly QuoteTermsService $termsService
+    ) {}
+
     public function execute(QuoteData $data): Quote
     {
         return DB::transaction(function () use ($data) {
@@ -27,13 +32,33 @@ class CreateQuoteAction
             // Recalculate totals
             $quote->calculateTotals();
 
+            // Create deposits if provided
+            if ($data->deposits instanceof \Spatie\LaravelData\DataCollection) {
+                foreach ($data->deposits as $depositData) {
+                    $arr = $depositData->except('id')->toArray();
+                    if (! $depositData->is_fixed_amount && $depositData->percentage !== null) {
+                        $arr['amount'] = round(($quote->total_amount * $depositData->percentage) / 100, 2);
+                    }
+                    $quote->deposits()->create($arr);
+                }
+            }
+
+            // Resolve placeholders in terms_and_conditions now that totals are available
+            if (! empty($quote->terms_and_conditions)) {
+                $resolved = $this->termsService->resolvePlaceholders($quote->terms_and_conditions, $quote);
+                if ($resolved !== $quote->terms_and_conditions) {
+                    $quote->terms_and_conditions = $resolved;
+                    $quote->saveQuietly();
+                }
+            }
+
             // Dispatch event
             QuoteCreated::dispatch($quote, [
                 'user_id' => auth()->id(),
                 'ip_address' => request()->ip(),
             ]);
 
-            return $quote->fresh(['items.children', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType']);
+            return $quote->fresh(['items.children', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType', 'deposits']);
         });
     }
 

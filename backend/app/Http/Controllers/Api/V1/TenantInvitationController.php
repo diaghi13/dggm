@@ -57,11 +57,13 @@ class TenantInvitationController extends Controller
         $validated = $request->validate([
             'token' => ['required', 'string'],
             'password' => ['nullable', 'string', 'min:8'],
+            'name' => ['nullable', 'string', 'max:255'],
         ]);
 
         $result = app(AcceptTenantInvitationAction::class)->execute(
             $validated['token'],
-            $validated['password'] ?? null
+            $validated['password'] ?? null,
+            $validated['name'] ?? null
         );
 
         return response()->json([

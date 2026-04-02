@@ -9,6 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,7 +35,15 @@ import {
   XCircle,
   Edit,
   Loader2,
+  Copy,
+  RotateCcw,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { PdfViewer } from "@/components/features/pdf/pdf-viewer";
@@ -276,6 +294,7 @@ export default function QuoteDetailPage() {
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
 
   const { data: quote, isLoading } = useQuery({
     queryKey: ["quote", quoteId],
@@ -370,6 +389,38 @@ export default function QuoteDetailPage() {
         description:
           err.response?.data?.message ||
           "Impossibile convertire il preventivo in progetto",
+      });
+    },
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: () => quotesApi.duplicate(quoteId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      toast.success("Preventivo duplicato", {
+        description: `Creato nuovo preventivo ${data.code}`,
+      });
+      router.push(`/quotes/${data.id}/edit`);
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error("Errore", {
+        description: err.response?.data?.message || "Impossibile duplicare il preventivo",
+      });
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: () => quotesApi.changeStatus(quoteId, "draft"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      toast.success("Preventivo ripristinato a Bozza");
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error("Errore", {
+        description: err.response?.data?.message || "Impossibile ripristinare il preventivo",
       });
     },
   });
@@ -489,63 +540,140 @@ export default function QuoteDetailPage() {
         }
         description={quote.title}
         actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Indietro
-            </Button>
-            <Button variant="outline" onClick={handleEdit}>
-              <Edit className="h-4 w-4 mr-2" />
-              Modifica
-            </Button>
-            {quote.status === "draft" && (
-              <Button
-                variant="outline"
-                onClick={() => sendMutation.mutate()}
-                disabled={sendMutation.isPending}
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Invia
-              </Button>
-            )}
-            {quote.status === "sent" && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => approveMutation.mutate()}
-                  disabled={approveMutation.isPending}
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Approva
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => rejectMutation.mutate()}
-                  disabled={rejectMutation.isPending}
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Rifiuta
-                </Button>
-              </>
-            )}
-            {quote.status === "approved" && !quote.project_id && (
-              <Button
-                variant="outline"
-                onClick={() => convertToProjectMutation.mutate()}
-                disabled={convertToProjectMutation.isPending}
-              >
-                Converti in Progetto
-              </Button>
-            )}
-            <Button onClick={handleDownloadPdf} disabled={downloadingPdf}>
-              {downloadingPdf ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <FileDown className="mr-2 h-4 w-4" />
+          <TooltipProvider>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={handleBack}>
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Indietro</TooltipContent>
+              </Tooltip>
+
+              {!["approved", "converted"].includes(quote.status) && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={handleEdit}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Modifica</TooltipContent>
+                </Tooltip>
               )}
-              {downloadingPdf ? "Generazione..." : "PDF"}
-            </Button>
-          </div>
+
+              {quote.status === "draft" && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => sendMutation.mutate()}
+                      disabled={sendMutation.isPending}
+                    >
+                      <Mail className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Invia al cliente</TooltipContent>
+                </Tooltip>
+              )}
+
+              {(quote.status === "sent" || quote.status === "rejected") && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => approveMutation.mutate()}
+                      disabled={approveMutation.isPending}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Approva</TooltipContent>
+                </Tooltip>
+              )}
+
+              {quote.status === "sent" && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => rejectMutation.mutate()}
+                      disabled={rejectMutation.isPending}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Rifiuta</TooltipContent>
+                </Tooltip>
+              )}
+
+              {(quote.status === "rejected" || quote.status === "expired" || quote.status === "approved") && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowRestoreDialog(true)}
+                      disabled={restoreMutation.isPending}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Ripristina a Bozza</TooltipContent>
+                </Tooltip>
+              )}
+
+              {quote.status === "approved" && !quote.project_id && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => convertToProjectMutation.mutate()}
+                      disabled={convertToProjectMutation.isPending}
+                    >
+                      <Briefcase className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Converti in Progetto</TooltipContent>
+                </Tooltip>
+              )}
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => duplicateMutation.mutate()}
+                    disabled={duplicateMutation.isPending}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Duplica preventivo</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                  >
+                    {downloadingPdf ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Scarica PDF</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         }
       />
 
@@ -1027,7 +1155,59 @@ export default function QuoteDetailPage() {
                       <CurrencyDisplay value={quote.total_amount} />
                     </span>
                   </div>
-                  {(quote.deposit_percentage || quote.deposit_amount) && (
+                  {quote.deposits && quote.deposits.length > 0 ? (
+                    <div className="mt-4 space-y-1">
+                      <Label className="text-xs text-slate-500 uppercase tracking-wider">
+                        Piano Pagamenti
+                      </Label>
+                      {quote.deposits.map((dep, idx) => (
+                        <div
+                          key={dep.id ?? idx}
+                          className="flex items-center justify-between py-2 px-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 gap-2"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-amber-900 dark:text-amber-100 truncate">
+                              {dep.description}
+                            </p>
+                            {dep.due_event && (
+                              <p className="text-xs text-amber-700 dark:text-amber-400">
+                                {dep.due_event}
+                              </p>
+                            )}
+                            {dep.due_date && (
+                              <p className="text-xs text-amber-700 dark:text-amber-400">
+                                {new Date(dep.due_date).toLocaleDateString("it-IT")}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold text-amber-900 dark:text-amber-100">
+                              <CurrencyDisplay value={dep.amount ?? 0} />
+                            </p>
+                            {dep.percentage != null && (
+                              <p className="text-xs text-amber-700 dark:text-amber-400">
+                                {dep.percentage}%
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {(() => {
+                        const paid = quote.deposits.reduce((s, d) => s + (d.amount ?? 0), 0);
+                        const saldo = (quote.total_amount ?? 0) - paid;
+                        return saldo > 0.01 ? (
+                          <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600">
+                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                              Saldo finale
+                            </span>
+                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                              <CurrencyDisplay value={saldo} />
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  ) : (quote.deposit_percentage || quote.deposit_amount) ? (
                     <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
                       <Label className="text-xs text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                         Caparra Richiesta
@@ -1043,7 +1223,7 @@ export default function QuoteDetailPage() {
                         </span>
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </CardContent>
               </Card>
 
@@ -1205,6 +1385,82 @@ export default function QuoteDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-orange-500" />
+              Ripristina preventivo a Bozza
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
+                {quote.status === "approved" ? (
+                  <>
+                    <p>
+                      Stai per riportare in bozza il preventivo{" "}
+                      <strong className="text-slate-900 dark:text-slate-100">
+                        {quote.code}
+                      </strong>{" "}
+                      che è attualmente <strong>approvato</strong>.
+                    </p>
+                    <div className="rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30 p-3 space-y-1">
+                      <p className="font-medium text-orange-800 dark:text-orange-300">
+                        ⚠️ Attenzione
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 text-orange-700 dark:text-orange-400">
+                        <li>Il preventivo è già stato accettato dal cliente</li>
+                        {quote.sent_date && (
+                          <li>
+                            È stato inviato il{" "}
+                            {new Date(quote.sent_date).toLocaleDateString("it-IT")}
+                          </li>
+                        )}
+                        {quote.project_id && (
+                          <li>
+                            È associato al progetto{" "}
+                            <strong>{quote.project?.code}</strong> — il progetto
+                            non verrà eliminato
+                          </li>
+                        )}
+                        <li>
+                          Tornando a Bozza il preventivo potrà essere modificato
+                          e dovrà essere reinviato al cliente
+                        </li>
+                      </ul>
+                    </div>
+                    <p>Sei sicuro di voler procedere?</p>
+                  </>
+                ) : (
+                  <p>
+                    Il preventivo{" "}
+                    <strong className="text-slate-900 dark:text-slate-100">
+                      {quote.code}
+                    </strong>{" "}
+                    verrà ripristinato allo stato di{" "}
+                    <strong>Bozza</strong> e potrà essere modificato e reinviato.
+                    Continuare?
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => restoreMutation.mutate()}
+              className={
+                quote.status === "approved"
+                  ? "bg-orange-600 hover:bg-orange-700 text-white"
+                  : undefined
+              }
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Ripristina a Bozza
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

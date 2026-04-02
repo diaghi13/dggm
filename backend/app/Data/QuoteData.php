@@ -4,6 +4,7 @@ namespace App\Data;
 
 use App\Enums\QuoteType;
 use Illuminate\Validation\Rule;
+use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Required;
@@ -152,8 +153,11 @@ class QuoteData extends Data
 
         public ProjectData|Lazy|Optional $project = new Optional,
 
-        /** @var DataCollection<QuoteItemData>|Lazy|Optional */
+        #[DataCollectionOf(QuoteItemData::class)]
         public DataCollection|Lazy|Optional $items = new Optional,
+
+        #[DataCollectionOf(QuoteDepositData::class)]
+        public DataCollection|Lazy|Optional $deposits = new Optional,
 
         // Computed attributes
         public string|Optional $full_address = new Optional,

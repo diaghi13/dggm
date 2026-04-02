@@ -23,6 +23,7 @@ payment_terms: string | null;
 discount_percentage: number | null;
 notes: string | null;
 is_active: boolean | null;
+display_name: string | null;
 };
 export type DdtData = {
 id?: number;
@@ -637,7 +638,18 @@ financialResource?: App.Data.FinancialResourceData;
 warrantyType?: App.Data.WarrantyTypeData;
 project?: App.Data.ProjectData;
 items?: Array<App.Data.QuoteItemData>;
+deposits?: Array<App.Data.QuoteDepositData>;
 full_address?: string;
+};
+export type QuoteDepositData = {
+id?: number;
+sort_order: number;
+description: string;
+percentage: number | null;
+amount: number | null;
+is_fixed_amount: boolean;
+due_date: string | null;
+due_event: string | null;
 };
 export type QuoteItemData = {
 type: App.Enums.QuoteItemType;
@@ -896,6 +908,7 @@ postal_code: string | null;
 country: string | null;
 iban: string | null;
 is_landlord_admin: boolean | null;
+email_verified_at: string | null;
 created_at?: string;
 tenants_count?: number;
 };
@@ -973,7 +986,7 @@ price_at_purchase: number | null;
 };
 }
 declare namespace App.Enums {
-export type BootstrapStatus = 'pending' | 'bootstrapping' | 'ready' | 'failed';
+export type BootstrapStatus = 'pending' | 'database_created' | 'migrated' | 'storage_ready' | 'seeded' | 'bootstrapping' | 'ready' | 'failed';
 export type ContractType = 'permanent' | 'fixed_term' | 'seasonal' | 'project_based' | 'internship';
 export type ContractorType = 'cooperative' | 'subcontractor' | 'temporary_agency';
 export type DdtStatus = 'draft' | 'issued' | 'in_transit' | 'delivered' | 'cancelled';

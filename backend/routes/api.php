@@ -248,6 +248,8 @@ Route::prefix('v1')->group(function () {
         // Quote Actions
         Route::post('quotes/{quote}/convert-to-project', [QuoteController::class, 'convertToProject']);
         Route::post('quotes/{quote}/save-pdf', [QuoteController::class, 'savePdf']);
+        Route::post('quotes/{quote}/refresh-terms', [QuoteController::class, 'refreshTerms']);
+        Route::post('quotes/{quote}/duplicate', [QuoteController::class, 'duplicate']);
 
         // Quote PDF
         Route::get('quotes/{quote}/pdf/download', [QuoteController::class, 'downloadPdf']);

@@ -38,12 +38,36 @@ class UpdateQuoteAction
             // Recalculate totals
             $quote->calculateTotals();
 
+            // Update deposits if provided
+            if ($data->deposits instanceof \Spatie\LaravelData\DataCollection) {
+                $keepIds = $data->deposits->toCollection()
+                    ->filter(fn ($d) => ! ($d->id instanceof \Spatie\LaravelData\Optional) && $d->id)
+                    ->pluck('id')
+                    ->toArray();
+
+                $quote->deposits()->whereNotIn('id', $keepIds)->delete();
+
+                foreach ($data->deposits as $depositData) {
+                    $arr = $depositData->except('id')->toArray();
+                    if (! $depositData->is_fixed_amount && $depositData->percentage !== null) {
+                        $arr['amount'] = round(($quote->total_amount * $depositData->percentage) / 100, 2);
+                    }
+
+                    $depositId = ! ($depositData->id instanceof \Spatie\LaravelData\Optional) ? $depositData->id : null;
+                    if ($depositId) {
+                        $quote->deposits()->where('id', $depositId)->update($arr);
+                    } else {
+                        $quote->deposits()->create($arr);
+                    }
+                }
+            }
+
             QuoteUpdated::dispatch($quote, [
                 'user_id' => auth()->id(),
                 'changes' => $quote->getChanges(),
             ]);
 
-            return $quote->fresh(['items.children', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'financialResource', 'warrantyType']);
+            return $quote->fresh(['items.children', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'financialResource', 'warrantyType', 'deposits']);
         });
     }
 

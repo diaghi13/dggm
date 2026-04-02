@@ -282,7 +282,8 @@ export const landlordApi = {
 
   acceptTenantInvitation: async (
     token: string,
-    password?: string
+    password?: string,
+    name?: string
   ): Promise<{
     success: boolean;
     message: string;
@@ -291,6 +292,7 @@ export const landlordApi = {
     const response = await apiClient.post("/tenant-invitations/accept", {
       token,
       ...(password !== undefined ? { password } : {}),
+      ...(name !== undefined ? { name } : {}),
     });
     return response.data;
   },

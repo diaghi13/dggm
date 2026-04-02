@@ -6,7 +6,9 @@ use App\Actions\Quote\ApproveQuoteAction;
 use App\Actions\Quote\ConvertQuoteToProjectAction;
 use App\Actions\Quote\CreateQuoteAction;
 use App\Actions\Quote\DeleteQuoteAction;
+use App\Actions\Quote\DuplicateQuoteAction;
 use App\Actions\Quote\RejectQuoteAction;
+use App\Actions\Quote\RestoreQuoteAction;
 use App\Actions\Quote\SaveQuotePdfAction;
 use App\Actions\Quote\SendQuoteAction;
 use App\Actions\Quote\UpdateQuoteAction;
@@ -30,7 +32,9 @@ class QuoteController extends Controller
         private readonly RejectQuoteAction $rejectAction,
         private readonly SendQuoteAction $sendAction,
         private readonly ConvertQuoteToProjectAction $convertAction,
-        private readonly SaveQuotePdfAction $savePdfAction
+        private readonly SaveQuotePdfAction $savePdfAction,
+        private readonly DuplicateQuoteAction $duplicateAction,
+        private readonly RestoreQuoteAction $restoreAction
     ) {}
 
     /**
@@ -193,7 +197,7 @@ class QuoteController extends Controller
         // Convert paginated items to DTOs while preserving pagination meta
         return response()->json([
             'success' => true,
-            ...QuoteData::collect($quotes, PaginatedDataCollection::class)->toArray(),
+            ...QuoteData::collect($quotes, PaginatedDataCollection::class)->include('customer')->toArray(),
         ]);
     }
 
@@ -260,7 +264,7 @@ class QuoteController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => QuoteData::from($quote)->include('items', 'items.children'),
+            'data' => QuoteData::from($quote)->include('items', 'items.children', 'deposits'),
             'message' => 'Preventivo creato con successo',
         ], 201);
     }
@@ -340,7 +344,7 @@ class QuoteController extends Controller
         return response()->json([
             'success' => true,
             'data' => array_merge(
-                QuoteData::from($quote)->include('items', 'items.children')->toArray(),
+                QuoteData::from($quote)->include('items', 'items.children', 'deposits')->toArray(),
                 ['attachments' => $attachments]
             ),
         ]);
@@ -434,7 +438,7 @@ class QuoteController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => QuoteData::from($quote)->include('items', 'items.children'),
+            'data' => QuoteData::from($quote)->include('items', 'items.children', 'deposits'),
             'message' => 'Preventivo aggiornato con successo',
         ]);
     }
@@ -583,16 +587,22 @@ class QuoteController extends Controller
      */
     public function changeStatus(Request $request, Quote $quote): JsonResponse
     {
-        $this->authorize('update', $quote);
-
         $request->validate([
             'status' => 'required|string|in:draft,sent,approved,rejected,expired,converted',
         ]);
 
         $newStatus = $request->input('status');
 
+        // Authorization is status-specific: restore uses 'restore', all others use 'update'
+        if ($newStatus === 'draft') {
+            $this->authorize('restore', $quote);
+        } else {
+            $this->authorize('update', $quote);
+        }
+
         // Delegate to specific actions based on status
         $quote = match ($newStatus) {
+            'draft' => $this->restoreAction->execute($quote),
             'sent' => $this->sendAction->execute($quote),
             'approved' => $this->approveAction->execute($quote),
             'rejected' => $this->rejectAction->execute($quote),
@@ -607,6 +617,22 @@ class QuoteController extends Controller
             'data' => QuoteData::from($quote)->include('items', 'items.children'),
             'message' => "Stato preventivo aggiornato a '{$newStatus}'",
         ]);
+    }
+
+    /**
+     * Duplicate a quote
+     */
+    public function duplicate(Quote $quote): JsonResponse
+    {
+        $this->authorize('create', Quote::class);
+
+        $newQuote = $this->duplicateAction->execute($quote);
+
+        return response()->json([
+            'success' => true,
+            'data' => QuoteData::from($newQuote)->include('items', 'items.children'),
+            'message' => 'Preventivo duplicato con successo',
+        ], 201);
     }
 
     /**
@@ -1130,5 +1156,17 @@ class QuoteController extends Controller
 
         // Uses existing PdfService method
         return app(\App\Services\PdfService::class)->streamQuotePdf($quote);
+    }
+
+    public function refreshTerms(Quote $quote): JsonResponse
+    {
+        $this->authorize('update', $quote);
+
+        $resolved = app(\App\Services\QuoteTermsService::class)->refreshForQuote($quote);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['terms_and_conditions' => $resolved],
+        ]);
     }
 }

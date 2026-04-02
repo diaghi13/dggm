@@ -165,6 +165,11 @@ class Quote extends Model implements HasMedia
         return $this->belongsTo(WarrantyType::class);
     }
 
+    public function deposits(): HasMany
+    {
+        return $this->hasMany(QuoteDeposit::class)->orderBy('sort_order');
+    }
+
     // Scopes
     public function scopeOfStatus($query, string $status)
     {
@@ -236,6 +241,14 @@ class Quote extends Model implements HasMedia
         }
 
         $this->saveQuietly();
+
+        // Ricalcola amount dei deposit basati su percentuale
+        $this->deposits()->where('is_fixed_amount', false)->each(function (QuoteDeposit $deposit) {
+            if ($deposit->percentage !== null) {
+                $deposit->amount = round(($this->total_amount * $deposit->percentage) / 100, 2);
+                $deposit->saveQuietly();
+            }
+        });
     }
 
     public function canBeEdited(): bool
@@ -245,7 +258,7 @@ class Quote extends Model implements HasMedia
 
     public function canBeApproved(): bool
     {
-        return $this->status === 'sent';
+        return in_array($this->status, ['sent', 'rejected']);
     }
 
     public function approve(): void

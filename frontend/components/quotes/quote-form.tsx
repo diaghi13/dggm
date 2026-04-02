@@ -57,9 +57,12 @@ import {
   Clock,
   ShoppingCart,
   CalendarDays,
+  RefreshCw,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { QuoteFormData, QuoteItem } from "@/lib/types";
+import { QuoteDeposit, QuoteFormData, QuoteItem } from "@/lib/types";
 import { CustomerForm } from "@/components/customer-form";
 import { QuoteItemsBuilder } from "@/components/quote-items";
 import { ComboboxSelect } from "@/components/combobox-select";
@@ -103,6 +106,7 @@ export function QuoteForm({
   const [isEditingDiscountAmount, setIsEditingDiscountAmount] = useState(false);
   const [isWorkOpen, setIsWorkOpen] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [defaultVatRate, setDefaultVatRate] = useState(22);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
 
   // Settings
@@ -797,20 +801,42 @@ export function QuoteForm({
                     <Package className="h-5 w-5" />
                     Voci del Preventivo
                   </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Label
-                      htmlFor="vat_included_in_prices"
-                      className="text-sm font-normal text-slate-600 dark:text-slate-400 cursor-pointer"
-                    >
-                      Prezzi con IVA inclusa
-                    </Label>
-                    <Switch
-                      id="vat_included_in_prices"
-                      checked={formData.vat_included_in_prices || false}
-                      onCheckedChange={(checked) =>
-                        onChange("vat_included_in_prices", checked)
-                      }
-                    />
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-normal text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                        IVA default
+                      </Label>
+                      <Select
+                        value={defaultVatRate.toString()}
+                        onValueChange={(v) => setDefaultVatRate(parseFloat(v))}
+                      >
+                        <SelectTrigger className="h-8 w-24 text-sm border-slate-300 dark:border-slate-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0%</SelectItem>
+                          <SelectItem value="4">4%</SelectItem>
+                          <SelectItem value="5">5%</SelectItem>
+                          <SelectItem value="10">10%</SelectItem>
+                          <SelectItem value="22">22%</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label
+                        htmlFor="vat_included_in_prices"
+                        className="text-sm font-normal text-slate-600 dark:text-slate-400 cursor-pointer"
+                      >
+                        Prezzi con IVA inclusa
+                      </Label>
+                      <Switch
+                        id="vat_included_in_prices"
+                        checked={formData.vat_included_in_prices || false}
+                        onCheckedChange={(checked) =>
+                          onChange("vat_included_in_prices", checked)
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -820,6 +846,7 @@ export function QuoteForm({
                   onChange={onItemsChange as (items: QuoteItem[]) => void}
                   priceListId={formData.price_list_id}
                   quoteType={formData.quote_type}
+                  defaultVatRate={defaultVatRate}
                   effectiveEventDays={
                     formData.event_days ??
                     (formData.work_start_date && formData.work_end_date
@@ -1562,68 +1589,190 @@ export function QuoteForm({
             </Card>
           </Collapsible>
 
-          {/* Acconti */}
-          <Collapsible open={isDepositOpen} onOpenChange={setIsDepositOpen}>
-            <Card>
-              <CollapsibleTrigger className="w-full">
-                <CardHeader className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <CreditCard className="h-4 w-4" />
-                      Acconti
-                    </CardTitle>
-                    <ChevronDown
-                      className={`h-5 w-5 transition-transform ${isDepositOpen ? "rotate-180" : ""}`}
-                    />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="deposit_percentage">
-                        Percentuale Acconto (%)
-                      </Label>
-                      <Input
-                        id="deposit_percentage"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={formData.deposit_percentage || ""}
-                        onChange={(e) =>
-                          onChange(
-                            "deposit_percentage",
-                            e.target.value ? parseFloat(e.target.value) : null,
-                          )
-                        }
-                      />
-                    </div>
+          {/* Acconti / Piano Pagamenti */}
+          {(() => {
+            const total = formData.total_amount || 0;
+            const deposits: QuoteDeposit[] = formData.deposits || [];
+            const totalDepositAmount = deposits.reduce(
+              (s, d) => s + (d.amount || 0),
+              0,
+            );
+            const totalDepositPct = deposits.reduce(
+              (s, d) => s + (d.percentage || 0),
+              0,
+            );
+            const saldoFinale = total - totalDepositAmount;
+            const isOverLimit = totalDepositPct > 100;
 
-                    <div className="space-y-2">
-                      <Label htmlFor="deposit_amount">
-                        Importo Acconto (€)
-                      </Label>
-                      <Input
-                        id="deposit_amount"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.deposit_amount || ""}
-                        onChange={(e) =>
-                          onChange(
-                            "deposit_amount",
-                            e.target.value ? parseFloat(e.target.value) : null,
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+            const updateDeposit = (
+              index: number,
+              field: keyof QuoteDeposit,
+              value: unknown,
+            ) => {
+              const updated = [...deposits];
+              const dep = { ...updated[index], [field]: value };
+
+              if (field === "percentage") {
+                const pct = (value as number) || 0;
+                dep.is_fixed_amount = false;
+                dep.amount =
+                  Math.round((total * pct) / 100 * 100) / 100;
+              } else if (field === "amount") {
+                const amt = (value as number) || 0;
+                dep.is_fixed_amount = true;
+                dep.percentage =
+                  total > 0
+                    ? Math.round((amt / total) * 10000) / 100
+                    : 0;
+              }
+
+              updated[index] = dep;
+              onChange("deposits", updated);
+            };
+
+            const addDeposit = () => {
+              onChange("deposits", [
+                ...deposits,
+                {
+                  description: "",
+                  percentage: null,
+                  amount: null,
+                  is_fixed_amount: false,
+                  due_date: null,
+                  due_event: null,
+                },
+              ]);
+              setIsDepositOpen(true);
+            };
+
+            const removeDeposit = (index: number) => {
+              onChange(
+                "deposits",
+                deposits.filter((_, i) => i !== index),
+              );
+            };
+
+            return (
+              <Collapsible
+                open={isDepositOpen}
+                onOpenChange={setIsDepositOpen}
+              >
+                <Card>
+                  <CollapsibleTrigger className="w-full">
+                    <CardHeader className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <CreditCard className="h-4 w-4" />
+                          Piano Pagamenti
+                          {deposits.length > 0 && (
+                            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                              ({deposits.length}{" "}
+                              {deposits.length === 1 ? "acconto" : "acconti"})
+                            </span>
+                          )}
+                        </CardTitle>
+                        <ChevronDown
+                          className={`h-5 w-5 transition-transform ${isDepositOpen ? "rotate-180" : ""}`}
+                        />
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0 space-y-3">
+                      {deposits.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-[1fr_80px_110px_110px_110px_36px] gap-2 px-1">
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              Descrizione <span className="text-red-500">*</span>
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">%</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Importo (€)</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Scadenza</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Evento</span>
+                            <span />
+                          </div>
+
+                          {deposits.map((dep, index) => (
+                            <div
+                              key={index}
+                              className="grid grid-cols-[1fr_80px_110px_110px_110px_36px] gap-2 items-center p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"
+                            >
+                              <Input
+                                placeholder="es. Acconto alla firma"
+                                value={dep.description}
+                                onChange={(e) => updateDeposit(index, "description", e.target.value)}
+                                className="h-8 text-sm"
+                              />
+                              <Input
+                                type="number" min="0" max="100" step="0.01" placeholder="30"
+                                value={dep.percentage ?? ""}
+                                onChange={(e) => updateDeposit(index, "percentage", e.target.value ? parseFloat(e.target.value) : null)}
+                                className="h-8 text-sm"
+                              />
+                              <Input
+                                type="number" min="0" step="0.01" placeholder="0.00"
+                                value={dep.amount ?? ""}
+                                onChange={(e) => updateDeposit(index, "amount", e.target.value ? parseFloat(e.target.value) : null)}
+                                className="h-8 text-sm"
+                              />
+                              <Input
+                                type="date"
+                                value={dep.due_date ?? ""}
+                                onChange={(e) => updateDeposit(index, "due_date", e.target.value || null)}
+                                className="h-8 text-sm"
+                              />
+                              <Input
+                                placeholder="es. al collaudo"
+                                value={dep.due_event ?? ""}
+                                onChange={(e) => updateDeposit(index, "due_event", e.target.value || null)}
+                                className="h-8 text-sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeDeposit(index)}
+                                className="flex items-center justify-center h-8 w-8 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {isOverLimit && (
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+                          <AlertTriangle className="h-4 w-4 shrink-0" />
+                          <span>La somma delle percentuali ({totalDepositPct.toFixed(2)}%) supera il 100%.</span>
+                        </div>
+                      )}
+
+                      {deposits.length > 0 && (
+                        <div className="flex flex-col gap-1 pt-1 border-t border-slate-200 dark:border-slate-700">
+                          <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+                            <span>Totale acconti ({totalDepositPct.toFixed(1)}%)</span>
+                            <span className="font-medium">
+                              {totalDepositAmount.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            <span>Saldo finale</span>
+                            <span className={saldoFinale < 0 ? "text-red-600 dark:text-red-400" : ""}>
+                              {saldoFinale.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <Button type="button" variant="outline" size="sm" onClick={addDeposit} className="w-full border-dashed">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Aggiungi acconto
+                      </Button>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            );
+          })()}
 
           {/* Note e Testi */}
           <Collapsible open={isNotesOpen} onOpenChange={setIsNotesOpen}>

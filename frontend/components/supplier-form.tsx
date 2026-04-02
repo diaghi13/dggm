@@ -13,7 +13,7 @@ import { Factory, Mail, Phone, MapPin, Banknote, CreditCard, User, FileText, Glo
 
 const supplierSchema = z.object({
   company_name: z.string().min(1, 'Ragione sociale obbligatoria'),
-  supplier_type: z.enum(['products', 'personnel', 'both']),
+  supplier_type: z.enum(['materials', 'personnel', 'both']),
   personnel_type: z.enum(['cooperative', 'staffing_agency', 'rental_with_operator', 'subcontractor', 'technical_services']).optional().nullable(),
   vat_number: z.string().optional().nullable(),
   tax_code: z.string().optional().nullable(),
@@ -86,7 +86,7 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
           country: supplier.country || 'Italy',
           payment_terms: supplier.payment_terms,
           delivery_terms: supplier.delivery_terms,
-          discount_percentage: supplier.discount_percentage || undefined,
+          discount_percentage: supplier.discount_percentage ?? 0,
           iban: supplier.iban,
           bank_name: supplier.bank_name,
           contact_person: supplier.contact_person,
@@ -96,7 +96,7 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
           is_active: supplier.is_active,
         } as SupplierFormValues
       : {
-          supplier_type: 'products' as const,
+          supplier_type: 'materials' as const,
           country: 'Italy',
           is_active: true,
         },
@@ -144,7 +144,12 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
             </Label>
             <Select
               value={watch('supplier_type') || 'materials'}
-              onValueChange={(value: any) => setValue('supplier_type', value)}
+              onValueChange={(value: any) => {
+                setValue('supplier_type', value);
+                if (value === 'materials') {
+                  setValue('personnel_type', null);
+                }
+              }}
               disabled={isLoading}
             >
               <SelectTrigger className="h-11">
@@ -178,32 +183,34 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="personnel_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Tipo Personale {(supplierType === 'personnel' || supplierType === 'both') && <span className="text-red-500">*</span>}
-            </Label>
-            <Select
-              value={watch('personnel_type') || ''}
-              onValueChange={(value: any) => setValue('personnel_type', value || null)}
-              disabled={isLoading || supplierType === 'products'}
-            >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Seleziona tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cooperative">Cooperativa</SelectItem>
-                <SelectItem value="staffing_agency">Agenzia Interinale</SelectItem>
-                <SelectItem value="rental_with_operator">Noleggio con Operatore</SelectItem>
-                <SelectItem value="subcontractor">Subappaltatore</SelectItem>
-                <SelectItem value="technical_services">Servizi Tecnici</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.personnel_type && (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.personnel_type.message}
-              </p>
-            )}
-          </div>
+          {(supplierType === 'personnel' || supplierType === 'both') && (
+            <div className="space-y-2">
+              <Label htmlFor="personnel_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Tipo Personale <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={watch('personnel_type') || ''}
+                onValueChange={(value: any) => setValue('personnel_type', value || null)}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Seleziona tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cooperative">Cooperativa</SelectItem>
+                  <SelectItem value="staffing_agency">Agenzia Interinale</SelectItem>
+                  <SelectItem value="rental_with_operator">Noleggio con Operatore</SelectItem>
+                  <SelectItem value="subcontractor">Subappaltatore</SelectItem>
+                  <SelectItem value="technical_services">Servizi Tecnici</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.personnel_type && (
+                <p className="text-sm text-red-600 flex items-center gap-1">
+                  <span className="text-red-500">⚠</span> {errors.personnel_type.message}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -341,22 +348,22 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="province" className="text-sm font-medium text-slate-700">Provincia</Label>
-            <Input
-              id="province"
-              {...register('province')}
-              disabled={isLoading}
-              placeholder="MI"
-              className="h-11 "
-            />
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="postal_code" className="text-sm font-medium text-slate-700">CAP</Label>
             <Input
               id="postal_code"
               {...register('postal_code')}
               disabled={isLoading}
               placeholder="20100"
+              className="h-11 "
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="province" className="text-sm font-medium text-slate-700">Provincia</Label>
+            <Input
+              id="province"
+              {...register('province')}
+              disabled={isLoading}
+              placeholder="MI"
               className="h-11 "
             />
           </div>
@@ -412,7 +419,7 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
             id="discount_percentage"
             type="number"
             step="0.01"
-            {...register('discount_percentage', { valueAsNumber: true })}
+            {...register('discount_percentage', { setValueAs: (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; } })}
             disabled={isLoading}
             placeholder="0.00"
             className="h-11 "
@@ -543,24 +550,6 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
         </Label>
       </div>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-slate-200 dark:border-slate-800 bg-white -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="border-slate-300 hover:bg-slate-50"
-        >
-          Annulla
-        </Button>
-        <Button
-          type="submit"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Salvataggio...' : supplier ? 'Aggiorna Fornitore' : 'Crea Fornitore'}
-        </Button>
-      </div>
     </form>
   );
 }
