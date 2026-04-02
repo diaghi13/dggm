@@ -138,6 +138,7 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
         name: values.name,
         is_active: true,
         is_default: true,
+        sort_order: 0,
         details,
       });
     },
@@ -145,8 +146,13 @@ export function StepPayment({ onComplete, onSkip }: StepPaymentProps) {
       toast.success("Risorsa finanziaria creata con successo");
       onComplete();
     },
-    onError: () => {
-      toast.error("Errore nella creazione della risorsa finanziaria");
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
+      const apiErrors = err.response?.data?.errors;
+      const description = apiErrors
+        ? Object.values(apiErrors).flat().slice(0, 3).join(" • ")
+        : (err.response?.data?.message ?? "Riprova più tardi");
+      toast.error("Errore nella creazione della risorsa finanziaria", { description });
     },
   });
 

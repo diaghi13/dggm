@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, Component, type ReactNode } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import {
   Maximize2,
   Minimize2,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 
 // Configure PDF.js worker
@@ -186,5 +187,55 @@ export function PdfViewer({ url, file, onDownload, className = '' }: PdfViewerPr
         </div>
       </Card>
     </div>
+  );
+}
+
+class PdfViewerErrorBoundary extends Component<
+  { children: ReactNode; onDownload?: () => void },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; onDownload?: () => void }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card className="p-12">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <AlertCircle className="h-10 w-10 text-amber-500" />
+            <div>
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                Il tuo browser non supporta l&apos;anteprima PDF
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Aggiorna il browser all&apos;ultima versione oppure scarica il file per visualizzarlo.
+              </p>
+            </div>
+            {this.props.onDownload && (
+              <Button onClick={this.props.onDownload} variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Scarica PDF
+              </Button>
+            )}
+          </div>
+        </Card>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+export function SafePdfViewer(props: PdfViewerProps) {
+  return (
+    <PdfViewerErrorBoundary onDownload={props.onDownload}>
+      <PdfViewer {...props} />
+    </PdfViewerErrorBoundary>
   );
 }

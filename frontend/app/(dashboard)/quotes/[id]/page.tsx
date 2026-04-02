@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
-import { PdfViewer } from "@/components/features/pdf/pdf-viewer";
+import { SafePdfViewer } from "@/components/features/pdf/pdf-viewer";
 import { QuoteAttachmentsUpload } from "@/app/(dashboard)/quotes/_components/quote-attachments-upload";
 import type { QuoteItem } from "@/lib/types";
 import { CurrencyDisplay } from "@/components/ui/currency-input";
@@ -1355,7 +1355,7 @@ export default function QuoteDetailPage() {
 
         <TabsContent value="preview" className="mt-6" onFocus={handleLoadPdf}>
           {pdfBlob ? (
-            <PdfViewer file={pdfBlob} onDownload={handleDownloadPdf} />
+            <SafePdfViewer file={pdfBlob} onDownload={handleDownloadPdf} />
           ) : (
             <Card className="p-12">
               <div className="flex flex-col items-center gap-4">
