@@ -16,8 +16,14 @@ class PriceListItemData extends Data
         #[Required, Exists('price_lists', 'id')]
         public int $price_list_id,
 
-        #[Required, Exists('products', 'id')]
-        public int $product_id,
+        public ?int $product_id,
+
+        public ?string $item_type,
+
+        public ?string $name,
+        public ?string $code,
+        public ?string $unit,
+        public ?float $vat_rate,
 
         #[Required]
         public float $sale_price,
@@ -64,7 +70,12 @@ class PriceListItemData extends Data
     {
         return [
             'price_list_id' => ['required', 'exists:price_lists,id'],
-            'product_id' => ['required', 'exists:products,id'],
+            'product_id' => ['nullable', 'exists:products,id'],
+            'item_type' => ['nullable', 'string', 'in:article,service,composite,kit'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'code' => ['nullable', 'string', 'max:100'],
+            'unit' => ['nullable', 'string', 'max:50'],
+            'vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'sale_price' => ['required', 'numeric', 'min:0'],
             'is_manual_price' => ['nullable', 'boolean'],
             'rental_daily' => ['nullable', 'numeric', 'min:0'],

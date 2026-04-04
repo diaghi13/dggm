@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ProductAutocomplete } from "@/app/(dashboard)/products/_components/product-autocomplete";
+import { PriceListItemAutocomplete } from "./price-list-item-autocomplete";
 import { productsApi } from "@/lib/api/products";
 import { QuoteItem, ItemFormData } from "./types";
 import { calculateTotals, calculateDurationMultiplier } from "./utils";
@@ -156,6 +157,24 @@ function getPriceForBillingUnit(
   }
 }
 
+function getPriceForBillingUnitFromItem(
+  item: App.Data.PriceListItemData,
+  billingUnit: string,
+): number {
+  switch (billingUnit) {
+    case "hour":
+      return Number(item.rental_hourly ?? item.sale_price ?? 0);
+    case "day":
+      return Number(item.rental_daily ?? item.sale_price ?? 0);
+    case "week":
+      return Number(item.rental_weekly ?? item.sale_price ?? 0);
+    case "month":
+      return Number(item.rental_monthly ?? item.sale_price ?? 0);
+    default:
+      return Number(item.sale_price ?? 0);
+  }
+}
+
 function buildFormulaPreview(item: ItemFormData): string | null {
   if (item.type === "section") {
     return null;
@@ -261,6 +280,58 @@ export function ItemFormDialog({
       setFormData({ ...formData, ...updates });
     },
     [formData, setFormData],
+  );
+
+  const handlePriceListItemSelect = useCallback(
+    (item: App.Data.PriceListItemData | null) => {
+      if (!item) {
+        setFormData({
+          ...formData,
+          product_id: null,
+          price_list_item_id: null,
+          code: "",
+          description: "",
+        });
+        pricingRef.current = null;
+        return;
+      }
+
+      const autoBillingUnit = getAutoBillingUnit(
+        item.unit ?? undefined,
+        quoteType,
+        item.item_type ?? "article",
+        false,
+      );
+
+      const pricingData: EffectivePrice = {
+        sale_price: item.sale_price,
+        rental_hourly: item.rental_hourly,
+        rental_half_day: item.rental_half_day,
+        rental_daily: item.rental_daily,
+        rental_weekly: item.rental_weekly,
+        rental_monthly: item.rental_monthly,
+        rental_seasonal: item.rental_seasonal,
+        price_list_item_id: item.id,
+        source: "price_list",
+        price_list_name: null,
+      };
+      pricingRef.current = pricingData;
+
+      const unitPrice = getPriceForBillingUnitFromItem(item, autoBillingUnit);
+
+      setFormData({
+        ...formData,
+        product_id: item.product_id ?? null,
+        price_list_item_id: item.id ?? null,
+        code: item.code ?? "",
+        description: item.name ?? "",
+        unit: item.unit ?? "",
+        unit_price: unitPrice,
+        billing_unit: autoBillingUnit as ItemFormData["billing_unit"],
+        vat_rate: item.vat_rate ?? 22,
+      });
+    },
+    [formData, quoteType, setFormData],
   );
 
   const isRentalOrEvent = quoteType === "rental" || quoteType === "event";
@@ -390,119 +461,136 @@ export function ItemFormDialog({
             {/* ROW 2: Prodotto dal catalogo (solo type=item) */}
             {formData.type === "item" && (
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                  Prodotto dal Catalogo
-                </Label>
-                {!priceListId && (
-                  <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3">
-                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                      ⚠ Nessun listino selezionato
-                    </p>
-                    <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
-                      {quoteType === "rental" || quoteType === "event"
-                        ? "I prezzi di noleggio potrebbero non essere corretti. Configura un listino nel preventivo."
-                        : "I prezzi verranno calcolati dal costo prodotto."}
-                    </p>
-                  </div>
-                )}
-                <ProductAutocomplete
-                  value={formData.product_id}
-                  priceListId={priceListId}
-                  quoteType={quoteType}
-                  onSelect={async (product) => {
-                    if (product) {
-                      const productType = product.product_type ?? null;
-                      const isLaborRole = product.is_labor_role ?? false;
-                      setSelectedProductType(productType);
-                      setSelectedIsLaborRole(isLaborRole);
-                      // Auto-deriva billing_unit da tipo prodotto + tipologia preventivo
-                      const autoBillingUnit = getAutoBillingUnit(
-                        product.unit,
-                        quoteType,
-                        productType,
-                        isLaborRole,
-                      );
-                      try {
-                        const pricingData = await productsApi.getPricing(
-                          product.id!,
-                          priceListId != null
-                            ? { price_list_id: priceListId }
-                            : undefined,
-                        );
+                {priceListId ? (
+                  <>
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                      Cerca nel listino *
+                    </Label>
+                    <PriceListItemAutocomplete
+                      priceListId={priceListId}
+                      onSelect={handlePriceListItemSelect}
+                      value={formData.description || null}
+                      quoteType={quoteType}
+                      placeholder="Cerca per nome o codice..."
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                      Prodotto dal Catalogo
+                    </Label>
+                    <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3">
+                      <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                        ⚠ Nessun listino selezionato
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                        {quoteType === "rental" || quoteType === "event"
+                          ? "I prezzi di noleggio potrebbero non essere corretti. Configura un listino nel preventivo."
+                          : "I prezzi verranno calcolati dal costo prodotto."}
+                      </p>
+                    </div>
+                    <ProductAutocomplete
+                      value={formData.product_id}
+                      priceListId={priceListId}
+                      quoteType={quoteType}
+                      onSelect={async (product) => {
+                        if (product) {
+                          const productType = product.product_type ?? null;
+                          const isLaborRole = product.is_labor_role ?? false;
+                          setSelectedProductType(productType);
+                          setSelectedIsLaborRole(isLaborRole);
+                          // Auto-deriva billing_unit da tipo prodotto + tipologia preventivo
+                          const autoBillingUnit = getAutoBillingUnit(
+                            product.unit,
+                            quoteType,
+                            productType,
+                            isLaborRole,
+                          );
+                          try {
+                            const pricingData = await productsApi.getPricing(
+                              product.id!,
+                              priceListId != null
+                                ? { price_list_id: priceListId }
+                                : undefined,
+                            );
 
-                        const ep: EffectivePrice =
-                          pricingData.effective_price ?? {};
-                        pricingRef.current = ep;
-                        setPricingInfo({
-                          source: ep.source,
-                          priceListName: ep.price_list_name,
-                        });
+                            const ep: EffectivePrice =
+                              pricingData.effective_price ?? {};
+                            pricingRef.current = ep;
+                            setPricingInfo({
+                              source: ep.source,
+                              priceListName: ep.price_list_name,
+                            });
 
-                        const priceFromBillingUnit = getPriceForBillingUnit(
-                          ep,
-                          autoBillingUnit,
-                        );
-                        const fallbackPrice =
-                          quoteType === "rental" || quoteType === "event"
-                            ? Number(
-                                ep.rental_daily ||
-                                  ep.rental_hourly ||
-                                  ep.sale_price ||
-                                  0,
-                              )
-                            : Number(
-                                ep.sale_price || product.standard_cost || 0,
-                              );
-                        const unitPrice = priceFromBillingUnit || fallbackPrice;
+                            const priceFromBillingUnit = getPriceForBillingUnit(
+                              ep,
+                              autoBillingUnit,
+                            );
+                            const fallbackPrice =
+                              quoteType === "rental" || quoteType === "event"
+                                ? Number(
+                                    ep.rental_daily ||
+                                      ep.rental_hourly ||
+                                      ep.sale_price ||
+                                      0,
+                                  )
+                                : Number(
+                                    ep.sale_price || product.standard_cost || 0,
+                                  );
+                            const unitPrice =
+                              priceFromBillingUnit || fallbackPrice;
 
-                        setFormData({
-                          ...formData,
-                          product_id: product.id,
-                          price_list_item_id: ep.price_list_item_id ?? null,
-                          code: product.code || "",
-                          description: product.name || "",
-                          unit: product.unit || "",
-                          unit_price: unitPrice,
-                          billing_unit:
-                            autoBillingUnit as ItemFormData["billing_unit"],
-                          vat_rate: formData.vat_rate || 22,
-                        });
-                      } catch {
-                        pricingRef.current = null;
-                        setPricingInfo(null);
-                        setFormData({
-                          ...formData,
-                          product_id: product.id,
-                          price_list_item_id: null,
-                          code: product.code || "",
-                          description: product.name || "",
-                          unit: product.unit || "",
-                          unit_price: Number(product.standard_cost || 0),
-                          billing_unit:
-                            autoBillingUnit as ItemFormData["billing_unit"],
-                          vat_rate: formData.vat_rate || 22,
-                        });
-                      }
-                    } else {
-                      pricingRef.current = null;
-                      setSelectedProductType(null);
-                      setSelectedIsLaborRole(false);
-                      setPricingInfo(null);
-                      setFormData({
-                        ...formData,
-                        product_id: null,
-                        price_list_item_id: null,
-                      });
-                    }
-                  }}
-                  placeholder="Cerca prodotto nel catalogo..."
-                />
-                {selectedIsLaborRole && (
-                  <div className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
-                    <Users className="w-3.5 h-3.5 shrink-0" />
-                    Ruolo personale — verrà creato uno slot da assegnare quando
-                    il preventivo è convertito in progetto
-                  </div>
+                            setFormData({
+                              ...formData,
+                              product_id: product.id,
+                              price_list_item_id:
+                                ep.price_list_item_id ?? null,
+                              code: product.code || "",
+                              description: product.name || "",
+                              unit: product.unit || "",
+                              unit_price: unitPrice,
+                              billing_unit:
+                                autoBillingUnit as ItemFormData["billing_unit"],
+                              vat_rate: formData.vat_rate || 22,
+                            });
+                          } catch {
+                            pricingRef.current = null;
+                            setPricingInfo(null);
+                            setFormData({
+                              ...formData,
+                              product_id: product.id,
+                              price_list_item_id: null,
+                              code: product.code || "",
+                              description: product.name || "",
+                              unit: product.unit || "",
+                              unit_price: Number(product.standard_cost || 0),
+                              billing_unit:
+                                autoBillingUnit as ItemFormData["billing_unit"],
+                              vat_rate: formData.vat_rate || 22,
+                            });
+                          }
+                        } else {
+                          pricingRef.current = null;
+                          setSelectedProductType(null);
+                          setSelectedIsLaborRole(false);
+                          setPricingInfo(null);
+                          setFormData({
+                            ...formData,
+                            product_id: null,
+                            price_list_item_id: null,
+                          });
+                        }
+                      }}
+                      placeholder="Cerca prodotto nel catalogo..."
+                    />
+                    {selectedIsLaborRole && (
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
+                        <Users className="w-3.5 h-3.5 shrink-0" />
+                        Ruolo personale — verrà creato uno slot da assegnare
+                        quando il preventivo è convertito in progetto
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -890,7 +978,7 @@ export function ItemFormDialog({
                   <input
                     type="checkbox"
                     id="hide-price"
-                    checked={formData.hide_unit_price}
+                    checked={formData.hide_unit_price ?? false}
                     onChange={(e) =>
                       setFormData({
                         ...formData,

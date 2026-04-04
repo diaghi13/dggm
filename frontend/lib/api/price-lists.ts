@@ -110,6 +110,10 @@ export const priceListsApi = {
     priceListId: number,
     itemId: number,
     data: {
+      name?: string | null;
+      code?: string | null;
+      unit?: string | null;
+      vat_rate?: number | null;
       sale_price?: number | null;
       is_manual_price?: boolean | null;
       rental_hourly?: number | null;
@@ -137,7 +141,11 @@ export const priceListsApi = {
   addItem: async (
     priceListId: number,
     data: {
-      product_id: number;
+      product_id?: number | null;
+      name?: string | null;
+      code?: string | null;
+      unit?: string | null;
+      vat_rate?: number | null;
       sale_price?: number | null;
       is_manual_price?: boolean | null;
       rental_hourly?: number | null;

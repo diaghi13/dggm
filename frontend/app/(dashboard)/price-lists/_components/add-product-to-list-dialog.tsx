@@ -23,9 +23,10 @@ import { Save } from "lucide-react";
 interface AddProductToListDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (data: PriceListItemFormData & { product_id: number }) => void;
+  onAdd: (data: PriceListItemFormData & { product_id?: number }) => void;
   appliesTo: "sale" | "rental" | "both";
   isLoading?: boolean;
+  hasWarehouseModule?: boolean;
 }
 
 export function AddProductToListDialog({
@@ -34,18 +35,24 @@ export function AddProductToListDialog({
   onAdd,
   appliesTo,
   isLoading,
+  hasWarehouseModule = true,
 }: AddProductToListDialogProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const showProductSelector = hasWarehouseModule !== false;
 
   const { data: products } = useQuery({
     queryKey: ["products"],
     queryFn: () => productsApi.getAll(),
-    enabled: open,
+    enabled: open && showProductSelector,
   });
 
   const handleAdd = (data: PriceListItemFormData) => {
-    if (!selectedProduct?.id) return;
-    onAdd({ ...data, product_id: selectedProduct.id });
+    if (showProductSelector && !selectedProduct?.id) return;
+    onAdd({
+      ...data,
+      product_id: selectedProduct?.id ?? undefined,
+    });
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -68,74 +75,85 @@ export function AddProductToListDialog({
       <DialogContent className="max-w-3xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200 dark:border-slate-800">
           <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Aggiungi Prodotto al Listino
+            {showProductSelector
+              ? "Aggiungi Prodotto al Listino"
+              : "Aggiungi Voce al Listino"}
           </DialogTitle>
           <DialogDescription className="text-slate-600 dark:text-slate-400">
-            Seleziona un prodotto e imposta i prezzi per questo listino
+            {showProductSelector
+              ? "Seleziona un prodotto e imposta i prezzi per questo listino"
+              : "Compila i campi per aggiungere una nuova voce al listino"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="overflow-y-auto flex-1 px-6 py-6">
           <div className="space-y-6">
-            {/* Selezione Prodotto */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Prodotto *
-              </label>
-              <ComboboxSelect
-                options={productOptions}
-                value={selectedProduct?.id?.toString() || ""}
-                onValueChange={(value) => {
-                  const product = products?.data.find(
-                    (p: Product) => p.id?.toString() === value,
-                  );
-                  setSelectedProduct(product || null);
-                }}
-                placeholder="Seleziona un prodotto..."
-                emptyText="Nessun prodotto trovato"
-              />
-              {selectedProduct && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {selectedProduct.description || "Nessuna descrizione"}
-                </p>
-              )}
-              {selectedProduct &&
-                selectedProduct.product_type === "service" && (
-                  <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <span className="text-blue-600 dark:text-blue-400 text-xs">
-                      ℹ️
-                    </span>
-                    <p className="text-xs text-blue-700 dark:text-blue-300">
-                      Questo è un servizio. I servizi possono essere solo
-                      venduti, non noleggiati.
-                    </p>
-                  </div>
+            {/* Selezione Prodotto — solo se il modulo magazzino è attivo */}
+            {showProductSelector && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  Prodotto *
+                </label>
+                <ComboboxSelect
+                  options={productOptions}
+                  value={selectedProduct?.id?.toString() || ""}
+                  onValueChange={(value) => {
+                    const product = products?.data.find(
+                      (p: Product) => p.id?.toString() === value,
+                    );
+                    setSelectedProduct(product || null);
+                  }}
+                  placeholder="Seleziona un prodotto..."
+                  emptyText="Nessun prodotto trovato"
+                />
+                {selectedProduct && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {selectedProduct.description || "Nessuna descrizione"}
+                  </p>
                 )}
-              {selectedProduct &&
-                selectedProduct.product_type === "composite" && (
-                  <div className="flex items-start gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <span className="text-purple-600 dark:text-purple-400 text-xs">
-                      📦
-                    </span>
-                    <p className="text-xs text-purple-700 dark:text-purple-300">
-                      Questo è un prodotto composito. Il prezzo può essere
-                      calcolato dalla somma dei componenti.
-                    </p>
-                  </div>
-                )}
-            </div>
+                {selectedProduct &&
+                  selectedProduct.product_type === "service" && (
+                    <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <span className="text-blue-600 dark:text-blue-400 text-xs">
+                        ℹ️
+                      </span>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        Questo è un servizio. I servizi possono essere solo
+                        venduti, non noleggiati.
+                      </p>
+                    </div>
+                  )}
+                {selectedProduct &&
+                  selectedProduct.product_type === "composite" && (
+                    <div className="flex items-start gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                      <span className="text-purple-600 dark:text-purple-400 text-xs">
+                        📦
+                      </span>
+                      <p className="text-xs text-purple-700 dark:text-purple-300">
+                        Questo è un prodotto composito. Il prezzo può essere
+                        calcolato dalla somma dei componenti.
+                      </p>
+                    </div>
+                  )}
+              </div>
+            )}
 
-            {/* Form Prezzi */}
-            {selectedProduct && (
+            {/* Form Prezzi — visibile se c'è un prodotto selezionato oppure senza modulo magazzino */}
+            {(selectedProduct || !showProductSelector) && (
               <PriceListItemForm
                 id="add-item-form"
                 item={{
                   id: 0,
                   price_list_id: 0,
-                  product_id: selectedProduct.id || 0,
-                  product: selectedProduct,
+                  product_id: selectedProduct?.id ?? null,
+                  item_type: selectedProduct?.product_type ?? null,
+                  product: selectedProduct ?? undefined,
+                  name: selectedProduct?.name ?? null,
+                  code: selectedProduct?.code ?? null,
+                  unit: selectedProduct?.unit ?? null,
+                  vat_rate: null,
                   sale_price: 0,
-                  is_manual_price: false,
+                  is_manual_price: !showProductSelector,
                   rental_daily: null,
                   rental_hourly: null,
                   rental_half_day: null,
@@ -172,7 +190,7 @@ export function AddProductToListDialog({
           <Button
             type="submit"
             form="add-item-form"
-            disabled={!selectedProduct || isLoading}
+            disabled={(showProductSelector && !selectedProduct) || isLoading}
           >
             <Save className="h-4 w-4 mr-2" />
             {isLoading ? "Aggiunta..." : "Aggiungi"}

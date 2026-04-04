@@ -129,7 +129,7 @@ class QuoteItemData extends Data
             'vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'vat_amount' => ['nullable', 'numeric', 'min:0'],
             'total_with_vat' => ['nullable', 'numeric', 'min:0'],
-            'hide_unit_price' => ['nullable', 'boolean'],
+            'hide_unit_price' => ['boolean'],
             'include_image' => ['nullable', 'boolean'],
             'included_media_ids' => ['nullable', 'array'],
             'included_media_ids.*' => ['integer'],

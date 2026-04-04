@@ -233,7 +233,12 @@ items_count: number | null;
 export type PriceListItemData = {
 id: number | null;
 price_list_id: number;
-product_id: number;
+product_id: number | null;
+item_type: string | null;
+name: string | null;
+code: string | null;
+unit: string | null;
+vat_rate: number | null;
 sale_price: number;
 is_manual_price: boolean | null;
 rental_daily: number | null;

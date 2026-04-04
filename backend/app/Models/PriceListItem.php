@@ -35,6 +35,11 @@ class PriceListItem extends Model
     protected $fillable = [
         'price_list_id',
         'product_id',
+        'item_type',
+        'name',
+        'code',
+        'unit',
+        'vat_rate',
         'sale_price',
         'is_manual_price',
         'rental_daily',

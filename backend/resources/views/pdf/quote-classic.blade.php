@@ -116,6 +116,7 @@
             @php
                 $firstItem = $quote->items->whereNull('parent_id')->first();
                 $firstIsSection = $firstItem && $firstItem->type === \App\Enums\QuoteItemType::Section;
+
                 $totalTableColumns = 4; // Descrizione, UM, Qtà, Sc.% always
                 if($quote->show_product_codes) $totalTableColumns++;
                 if($quote->show_unit_prices) $totalTableColumns++;

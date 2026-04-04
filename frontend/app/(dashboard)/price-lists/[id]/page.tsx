@@ -54,16 +54,19 @@ import {
   PriceListItemsFilters,
 } from "../_components";
 import type { PriceListItem } from "@/lib/types";
+import { useFeatureFlag } from "@/hooks/use-settings";
 
 export default function PriceListDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = parseInt(params.id as string);
   const queryClient = useQueryClient();
+  const hasWarehouseModule = useFeatureFlag("warehouse");
 
   const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PriceListItem | null>(null);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [isAddManualItemDialogOpen, setIsAddManualItemDialogOpen] = useState(false);
   const [showAdvancedRentalColumns, setShowAdvancedRentalColumns] =
     useState(false);
   const [itemsPage, setItemsPage] = useState(1);
@@ -213,13 +216,14 @@ export default function PriceListDetailPage() {
   });
 
   const addItemMutation = useMutation({
-    mutationFn: (data: PriceListItemFormData & { product_id: number }) =>
+    mutationFn: (data: PriceListItemFormData & { product_id?: number }) =>
       priceListsApi.addItem(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["price-list", id] });
       queryClient.invalidateQueries({ queryKey: ["price-list-items", id] });
       queryClient.invalidateQueries({ queryKey: ["price-lists"] });
       setIsAddItemDialogOpen(false);
+      setIsAddManualItemDialogOpen(false);
       toast.success("Prodotto aggiunto al listino");
     },
     onError: (error: unknown) => {
@@ -642,10 +646,19 @@ export default function PriceListDetailPage() {
                       : "Mostra colonne noleggio avanzate"}
                   </Button>
                 )}
-                <Button onClick={() => setIsAddItemDialogOpen(true)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddManualItemDialogOpen(true)}
+                >
                   <Plus className="h-4 w-4 mr-2" />
-                  Aggiungi Prodotto
+                  Aggiungi elemento
                 </Button>
+                {hasWarehouseModule && (
+                  <Button onClick={() => setIsAddItemDialogOpen(true)}>
+                    <Package className="h-4 w-4 mr-2" />
+                    Aggiungi da catalogo
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -787,13 +800,24 @@ export default function PriceListDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Add Item Dialog */}
+      {/* Add Item from catalog Dialog */}
       <AddProductToListDialog
         open={isAddItemDialogOpen}
         onOpenChange={setIsAddItemDialogOpen}
         onAdd={(data) => addItemMutation.mutate(data)}
         appliesTo={priceList?.applies_to || "both"}
         isLoading={addItemMutation.isPending}
+        hasWarehouseModule={hasWarehouseModule}
+      />
+
+      {/* Add Manual Item Dialog */}
+      <AddProductToListDialog
+        open={isAddManualItemDialogOpen}
+        onOpenChange={setIsAddManualItemDialogOpen}
+        onAdd={(data) => addItemMutation.mutate(data)}
+        appliesTo={priceList?.applies_to || "both"}
+        isLoading={addItemMutation.isPending}
+        hasWarehouseModule={false}
       />
     </div>
   );

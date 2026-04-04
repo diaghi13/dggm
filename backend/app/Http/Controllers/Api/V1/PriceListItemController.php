@@ -32,14 +32,16 @@ class PriceListItemController extends Controller
         $productType = $request->input('product_type');
 
         $query = $priceList->items()
-            ->join('products', 'price_list_items.product_id', '=', 'products.id')
+            ->leftJoin('products', 'price_list_items.product_id', '=', 'products.id')
             ->select('price_list_items.*') // Select only price_list_items columns
             ->with(['product.category', 'product.brand'])
             // Search filter
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($searchQuery) use ($search) {
                     $searchQuery->where('products.name', 'like', "%{$search}%")
-                        ->orWhere('products.code', 'like', "%{$search}%");
+                        ->orWhere('products.code', 'like', "%{$search}%")
+                        ->orWhere('price_list_items.name', 'like', "%{$search}%")
+                        ->orWhere('price_list_items.code', 'like', "%{$search}%");
                 });
             })
             // Active/Inactive filter
@@ -54,7 +56,7 @@ class PriceListItemController extends Controller
             ->when($productType, function ($q) use ($productType) {
                 $q->where('products.product_type', $productType);
             })
-            ->orderBy('products.name');
+            ->orderByRaw('COALESCE(price_list_items.name, products.name) ASC');
 
         $items = $query->paginate($perPage);
 
@@ -84,8 +86,12 @@ class PriceListItemController extends Controller
         $this->authorize('update', $priceList);
 
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'sale_price' => 'required|numeric|min:0',
+            'product_id' => 'nullable|exists:products,id',
+            'name' => 'nullable|string|max:255',
+            'code' => 'nullable|string|max:100',
+            'unit' => 'nullable|string|max:50',
+            'vat_rate' => 'nullable|numeric|min:0|max:100',
+            'sale_price' => 'nullable|numeric|min:0',
             'is_manual_price' => 'nullable|boolean',
             'rental_hourly' => 'nullable|numeric|min:0',
             'rental_half_day' => 'nullable|numeric|min:0',
@@ -96,36 +102,91 @@ class PriceListItemController extends Controller
             'is_manual_rental' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'notes' => 'nullable|string',
+            'item_type' => 'nullable|string|in:article,service,composite,kit',
         ]);
 
-        // Check if item already exists
-        $existing = PriceListItem::where('price_list_id', $priceList->id)
-            ->where('product_id', $validated['product_id'])
-            ->first();
-
-        if ($existing) {
+        // Require either product_id OR (name + code)
+        if (empty($validated['product_id']) && (empty($validated['name']) || empty($validated['code']))) {
             return response()->json([
                 'success' => false,
-                'message' => 'Product already exists in this price list',
+                'message' => 'Specificare un prodotto oppure nome e codice dell\'elemento.',
+                'errors' => ['product_id' => ['Seleziona un prodotto o inserisci nome e codice manualmente.']],
             ], 422);
         }
 
-        // Set defaults for nullable boolean fields
         $validated['is_manual_price'] = $validated['is_manual_price'] ?? false;
         $validated['is_manual_rental'] = $validated['is_manual_rental'] ?? false;
         $validated['is_active'] = $validated['is_active'] ?? true;
 
-        // Services are not rentable — force all rental fields to null
-        $product = Product::findOrFail($validated['product_id']);
-        if ($product->product_type === ProductType::SERVICE) {
-            $validated['rental_hourly'] = null;
-            $validated['rental_half_day'] = null;
-            $validated['rental_daily'] = null;
-            $validated['rental_weekly'] = null;
-            $validated['rental_monthly'] = null;
-            $validated['rental_seasonal'] = null;
-            $validated['is_manual_rental'] = false;
+        $product = null;
+
+        if (! empty($validated['product_id'])) {
+            $product = Product::findOrFail($validated['product_id']);
+
+            // Check duplicate
+            $existing = PriceListItem::where('price_list_id', $priceList->id)
+                ->where('product_id', $validated['product_id'])
+                ->first();
+            if ($existing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Il prodotto è già presente in questo listino.',
+                ], 422);
+            }
+
+            // Populate name/code/unit from product (template)
+            $validated['name'] = $validated['name'] ?? $product->name;
+            $validated['code'] = $validated['code'] ?? $product->code;
+            $validated['unit'] = $validated['unit'] ?? ($product->unit ?? null);
+
+            // Populate item_type from product type (template)
+            $validated['item_type'] = $product->product_type->value;
+
+            // Auto-calculate price if not manual and no price provided
+            if (! $validated['is_manual_price'] && (empty($validated['sale_price']) || $validated['sale_price'] == 0)) {
+                $priceData = $priceList->calculation_mode->value === 'automatic'
+                    ? $this->pricingService->generateAutomaticPriceListItem($product, $priceList)
+                    : $this->pricingService->generateManualPriceListItem($product);
+
+                $validated['sale_price'] = $priceData['sale_price'] ?? 0;
+
+                // Auto-populate rental prices if not manual
+                if (! $validated['is_manual_rental']) {
+                    $validated['rental_hourly'] = $priceData['rental_hourly'] ?? null;
+                    $validated['rental_half_day'] = $priceData['rental_half_day'] ?? null;
+                    $validated['rental_daily'] = $priceData['rental_daily'] ?? null;
+                    $validated['rental_weekly'] = $priceData['rental_weekly'] ?? null;
+                    $validated['rental_monthly'] = $priceData['rental_monthly'] ?? null;
+                    $validated['rental_seasonal'] = $priceData['rental_seasonal'] ?? null;
+                }
+            }
+
+            // Services are not rentable
+            if ($product->product_type === ProductType::SERVICE) {
+                $validated['rental_hourly'] = null;
+                $validated['rental_half_day'] = null;
+                $validated['rental_daily'] = null;
+                $validated['rental_weekly'] = null;
+                $validated['rental_monthly'] = null;
+                $validated['rental_seasonal'] = null;
+                $validated['is_manual_rental'] = false;
+            }
+        } else {
+            // Manual item without product: check code uniqueness per price list
+            $existingCode = PriceListItem::where('price_list_id', $priceList->id)
+                ->whereNull('product_id')
+                ->where('code', $validated['code'])
+                ->first();
+            if ($existingCode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Un elemento con questo codice è già presente nel listino.',
+                    'errors' => ['code' => ['Codice già esistente in questo listino.']],
+                ], 422);
+            }
         }
+
+        $validated['sale_price'] = $validated['sale_price'] ?? 0;
 
         $item = PriceListItem::create([
             'price_list_id' => $priceList->id,
@@ -135,7 +196,7 @@ class PriceListItemController extends Controller
         return response()->json([
             'success' => true,
             'data' => PriceListItemData::from($item->load('product')),
-            'message' => 'Item added to price list successfully',
+            'message' => 'Elemento aggiunto al listino con successo.',
         ], 201);
     }
 
@@ -155,6 +216,10 @@ class PriceListItemController extends Controller
         }
 
         $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'code' => 'nullable|string|max:100',
+            'unit' => 'nullable|string|max:50',
+            'vat_rate' => 'nullable|numeric|min:0|max:100',
             'sale_price' => 'required|numeric|min:0',
             'is_manual_price' => 'nullable|boolean',
             'rental_hourly' => 'nullable|numeric|min:0',
@@ -166,6 +231,7 @@ class PriceListItemController extends Controller
             'is_manual_rental' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'notes' => 'nullable|string',
+            'item_type' => 'nullable|string|in:article,service,composite,kit',
         ]);
 
         // Set defaults for NOT NULL boolean fields to prevent constraint violations
@@ -180,7 +246,7 @@ class PriceListItemController extends Controller
 
         // Force rental fields to null for SERVICE products regardless of manual flag
         $item->loadMissing('product');
-        if ($item->product->product_type === ProductType::SERVICE) {
+        if ($item->product && $item->product->product_type === ProductType::SERVICE) {
             $item->update([
                 'rental_hourly' => null,
                 'rental_half_day' => null,
@@ -189,7 +255,7 @@ class PriceListItemController extends Controller
                 'rental_monthly' => null,
                 'rental_seasonal' => null,
             ]);
-        } elseif (! $wasManualRental && isset($validated['sale_price'])) {
+        } elseif ($item->product && ! $wasManualRental && isset($validated['sale_price'])) {
             // Ricalcola rental se non manuale e sale_price è cambiato
             $item->loadMissing('priceList');
             $itemData = $item->priceList->calculation_mode->value === 'automatic'
@@ -249,6 +315,13 @@ class PriceListItemController extends Controller
                 'success' => false,
                 'message' => 'Item does not belong to this price list',
             ], 404);
+        }
+
+        if (! $item->product_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non è possibile ricalcolare un elemento senza prodotto.',
+            ], 422);
         }
 
         $product = Product::findOrFail($item->product_id);

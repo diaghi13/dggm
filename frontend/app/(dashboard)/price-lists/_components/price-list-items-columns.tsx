@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { PriceListItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -17,49 +18,51 @@ export const createPriceListItemsColumns = (
 ): ColumnDef<PriceListItem>[] => {
   const columns: ColumnDef<PriceListItem>[] = [
     {
-      accessorKey: "product.code",
+      accessorKey: "code",
       header: "Codice",
       cell: ({ row }) => {
-        const productType = row.original.product?.product_type;
-        let badge = null;
+        const itemType = row.original.item_type ?? row.original.product?.product_type;
 
-        if (productType === "service") {
-          badge = (
-            <Badge
-              variant="outline"
-              className="ml-1 text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
-            >
+        const badgeMap: Record<string, React.ReactNode> = {
+          service: (
+            <Badge variant="outline" className="ml-1 text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">
               Servizio
             </Badge>
-          );
-        } else if (productType === "composite") {
-          badge = (
-            <Badge
-              variant="outline"
-              className="ml-1 text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"
-            >
+          ),
+          composite: (
+            <Badge variant="outline" className="ml-1 text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800">
               Composito
             </Badge>
-          );
-        }
+          ),
+          kit: (
+            <Badge variant="outline" className="ml-1 text-xs bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+              Kit
+            </Badge>
+          ),
+          article: (
+            <Badge variant="outline" className="ml-1 text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
+              Articolo
+            </Badge>
+          ),
+        };
 
         return (
           <div className="flex items-center gap-1">
             <AvatarTextCell
               icon={Package}
-              primaryText={row.original.product?.code || "-"}
-              secondaryText={row.original.product?.name || ""}
+              primaryText={row.original.code ?? row.original.product?.code ?? "-"}
+              secondaryText={row.original.name ?? row.original.product?.name ?? ""}
             />
-            {badge}
+            {itemType ? badgeMap[itemType] : null}
           </div>
         );
       },
     },
     {
-      accessorKey: "product.name",
+      accessorKey: "name",
       header: "Prodotto",
       cell: ({ row }) => (
-        <span className="font-medium">{row.original.product?.name || "-"}</span>
+        <span className="font-medium">{row.original.name ?? row.original.product?.name ?? "-"}</span>
       ),
     },
   ];
@@ -216,7 +219,7 @@ export const createPriceListItemsColumns = (
   columns.push({
     id: "actions",
     header: "Azioni",
-    size: 120,
+    size: 150,
     cell: ({ row }) => (
       <div className="flex items-center gap-1">
         <Button
@@ -227,14 +230,16 @@ export const createPriceListItemsColumns = (
         >
           <Edit className="h-4 w-4" />
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onRecalculate(row.original)}
-          title="Ricalcola prezzi"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        {row.original.product_id && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onRecalculate(row.original)}
+            title="Ricalcola prezzi"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"
