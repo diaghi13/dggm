@@ -1,8 +1,11 @@
-// Use generated types from backend
-export type QuoteItem = App.Data.QuoteItemData;
+// Use generated types from backend, extended with transient UI fields (never sent to API)
+export type QuoteItem = Omit<App.Data.QuoteItemData, "children"> & {
+  _price_explicit?: boolean;
+  children?: QuoteItem[];
+};
 
-// Form data is a partial of QuoteItemData with required fields
-export type ItemFormData = Partial<App.Data.QuoteItemData> & {
+// Form data is a partial of QuoteItem with required fields
+export type ItemFormData = Partial<QuoteItem> & {
   type: App.Enums.QuoteItemType;
   description: string;
 };

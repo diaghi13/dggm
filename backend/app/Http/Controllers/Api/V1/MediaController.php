@@ -16,7 +16,7 @@ class MediaController extends Controller
     public function upload(Request $request, string $modelType, int $modelId)
     {
         $request->validate([
-            'file' => 'required|file|max:10240', // Max 10MB
+            'file' => 'required|file|max:51200', // Max 50MB
             'collection' => 'string|in:attachments,contracts,certificates,safety_plans,photos,technical_drawings,documents,reports',
             'type' => 'nullable|string|in:document,image,drawing,other',
             'description' => 'nullable|string|max:500',

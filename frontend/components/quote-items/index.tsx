@@ -614,6 +614,7 @@ export function QuoteItemsBuilder({
         priceListId={priceListId}
         quoteType={quoteType}
         effectiveEventDays={effectiveEventDays}
+        showUnitPrices={showUnitPrices}
       />
 
       <AlertDialog

@@ -161,12 +161,6 @@ export function SortableItem({
                 >
                   {isSection ? "Sezione" : "Voce"}
                 </Badge>
-                {item.hide_unit_price && (
-                  <Badge variant="outline" className="text-xs gap-1">
-                    <EyeOff className="w-3 h-3" />
-                    Prezzo nascosto
-                  </Badge>
-                )}
               </div>
               <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1 whitespace-pre-wrap">
                 {item.description}
@@ -184,12 +178,13 @@ export function SortableItem({
                       {item.quantity}
                     </span>
                   </span>
-                  {showUnitPrices && !item.hide_unit_price && (
-                    <span>
+                  {showUnitPrices && (
+                    <span className="flex items-center gap-1">
                       Prezzo:{" "}
-                      <span className="font-medium text-slate-900">
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
                         <CurrencyDisplay value={parseFloat(String(item.unit_price))} />
                       </span>
+                      {item.hide_unit_price && <EyeOff className="w-3 h-3 text-slate-400" />}
                     </span>
                   )}
                   {item.unit && (
@@ -213,8 +208,9 @@ export function SortableItem({
             <div className="flex items-center gap-3">
               {!isSection && (
                 <div className="text-right">
-                  <p className="text-lg font-bold text-slate-900">
+                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center justify-end gap-1">
                     <CurrencyDisplay value={item.total} />
+                    {item.hide_unit_price && <EyeOff className="w-3 h-3 text-slate-400" />}
                   </p>
                   {item.discount_percentage > 0 && (
                     <p className="text-xs text-slate-500 line-through">

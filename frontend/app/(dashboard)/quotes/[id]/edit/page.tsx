@@ -13,6 +13,22 @@ import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { QuoteForm } from "@/components/quotes/quote-form";
 import { PageHeader } from "@/components/layout/page-header";
 
+function initItemPriceExplicit(item: QuoteItem, showUnitPrices: boolean): QuoteItem {
+  return {
+    ...item,
+    _price_explicit: item.hide_unit_price !== !showUnitPrices,
+    children: item.children?.map((child) => initItemPriceExplicit(child, showUnitPrices)),
+  };
+}
+
+function cleanItems(items: QuoteItem[]): QuoteItem[] {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  return items.map(({ _price_explicit, ...item }) => ({
+    ...item,
+    children: item.children ? cleanItems(item.children) : undefined,
+  }));
+}
+
 export default function EditQuotePage() {
   const params = useParams();
   const router = useRouter();
@@ -145,7 +161,9 @@ export default function EditQuotePage() {
       notes: quote.notes,
       terms_and_conditions: quote.terms_and_conditions,
       footer_text: quote.footer_text,
-      items: quote.items || [],
+      items: (quote.items || []).map((item) =>
+        initItemPriceExplicit(item as QuoteItem, quote.show_unit_prices ?? true)
+      ),
       deposits: quote.deposits || [],
     });
     // NON attiviamo hasUnsavedChanges al primo caricamento
@@ -187,7 +205,7 @@ export default function EditQuotePage() {
     }
 
     const sanitizedItems = sanitizeOrphanedChildren(formData.items || []);
-    updateMutation.mutate({ ...formData, items: sanitizedItems });
+    updateMutation.mutate({ ...formData, items: cleanItems(sanitizedItems) });
   }, [formData, updateMutation]);
 
   const handleBack = useCallback(() => {

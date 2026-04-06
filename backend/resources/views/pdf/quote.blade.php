@@ -162,6 +162,11 @@
                 // Controlla se il primo item è una sezione
                 $firstItem = $quote->items->whereNull('parent_id')->first();
                 $firstIsSection = $firstItem && $firstItem->type === \App\Enums\QuoteItemType::Section;
+
+                $showPriceCols = $quote->show_unit_prices
+                    || $quote->items->flatMap(fn ($item) => $item->children->isNotEmpty() ? $item->children : collect([$item]))
+                                    ->where('hide_unit_price', false)
+                                    ->isNotEmpty();
             @endphp
             @if(!$firstIsSection)
                 <thead>
@@ -172,13 +177,13 @@
                     <th class="py-1 font-bold">Descrizione</th>
                     <th class="py-1 font-bold w-10 text-center">U.M.</th>
                     <th class="py-1 font-bold w-10 text-center">Q.tà</th>
-                    @if($quote->show_unit_prices)
+                    @if($showPriceCols)
                         <th class="py-1 font-bold w-24 text-right">Prezzo</th>
                     @endif
                     @if($quote->show_vat || $quote->tax_included)
                         <th class="py-1 font-bold w-10 text-center">IVA</th>
                     @endif
-                    @if($quote->show_unit_prices)
+                    @if($showPriceCols)
                         <th class="py-1 font-bold w-24 text-right">
                             Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
                     @endif
@@ -192,9 +197,9 @@
                     @php
                         $totalTableColumns = 3;
                         if($quote->show_product_codes) $totalTableColumns++;
-                        if($quote->show_unit_prices) $totalTableColumns++;
+                        if($showPriceCols) $totalTableColumns++;
                         if($quote->show_vat || $quote->tax_included) $totalTableColumns++;
-                        if ($quote->show_unit_prices) $totalTableColumns++;
+                        if($showPriceCols) $totalTableColumns++;
                     @endphp
                     <tr class="bg-gray-300 border-b border-slate-400">
                         @if($quote->show_section_totals)
@@ -224,13 +229,13 @@
                         <th class="py-1 font-bold">Descrizione</th>
                         <th class="py-1 font-bold w-10 text-center">U.M.</th>
                         <th class="py-1 font-bold w-10 text-center">Q.tà</th>
-                        @if($quote->show_unit_prices)
+                        @if($showPriceCols)
                             <th class="py-1 font-bold w-24 text-right">Prezzo</th>
                         @endif
                         @if($quote->show_vat || $quote->tax_included)
                             <th class="py-1 font-bold w-10 text-center">IVA</th>
                         @endif
-                        @if($quote->show_unit_prices)
+                        @if($showPriceCols)
                             <th class="py-1 font-bold w-24 text-right">
                                 Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? ' (IVA incl.)' : '' }}</th>
                         @endif
@@ -259,7 +264,7 @@
                             </td>
                             <td class="py-1.5 text-center align-top text-[10px]">{{ $child->unit ?? 'pz' }}</td>
                             <td class="py-1.5 text-center align-top">{{ number_format($child->quantity, 0) }}</td>
-                            @if($quote->show_unit_prices)
+                            @if($showPriceCols)
                                 <td class="py-1.5 text-right align-top" style="white-space: nowrap;">
                                     @if(!$child->hide_unit_price)
                                         {{ number_format($child->unit_price, 2, ',', '.') }} €
@@ -271,9 +276,13 @@
                             @if($quote->show_vat || $quote->tax_included)
                                 <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($child->vat_rate ?? 0, 0) }}%</td>
                             @endif
-                            @if($quote->show_unit_prices)
+                            @if($showPriceCols)
                                 <td class="py-1.5 text-right font-semibold text-slate-900 align-top" style="white-space: nowrap;">
-                                    € {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }}
+                                    @if(!$child->hide_unit_price)
+                                        € {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }}
+                                    @else
+                                        <span class="text-slate-300">-</span>
+                                    @endif
                                 </td>
                             @endif
                         </tr>
@@ -303,7 +312,7 @@
                         </td>
                         <td class="py-1.5 text-center align-top text-[10px]">{{ $item->unit ?? 'pz' }}</td>
                         <td class="py-1.5 text-center align-top">{{ number_format($item->quantity, 0) }}</td>
-                        @if($quote->show_unit_prices)
+                        @if($showPriceCols)
                             <td class="py-1.5 text-right align-top" style="white-space: nowrap;">
                                 @if(!$item->hide_unit_price)
                                     {{ number_format($item->unit_price, 2, ',', '.') }} €
@@ -315,9 +324,13 @@
                         @if($quote->show_vat || $quote->tax_included)
                             <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($item->vat_rate ?? 0, 0) }}%</td>
                         @endif
-                        @if($quote->show_unit_prices)
+                        @if($showPriceCols)
                             <td class="py-1.5 text-right font-semibold text-slate-900 align-top" style="white-space: nowrap;">
-                                € {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }}
+                                @if(!$item->hide_unit_price)
+                                    € {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }}
+                                @else
+                                    <span class="text-slate-300">-</span>
+                                @endif
                             </td>
                         @endif
                     </tr>

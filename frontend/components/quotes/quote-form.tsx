@@ -845,6 +845,7 @@ export function QuoteForm({
                   items={(formData.items as QuoteItem[]) || []}
                   onChange={onItemsChange as (items: QuoteItem[]) => void}
                   priceListId={formData.price_list_id}
+                  showUnitPrices={formData.show_unit_prices ?? true}
                   quoteType={formData.quote_type}
                   defaultVatRate={defaultVatRate}
                   effectiveEventDays={
@@ -1424,9 +1425,16 @@ export function QuoteForm({
                   <Switch
                     id="show_unit_prices"
                     checked={formData.show_unit_prices || false}
-                    onCheckedChange={(checked) =>
-                      onChange("show_unit_prices", checked)
-                    }
+                    onCheckedChange={(checked) => {
+                      onChange("show_unit_prices", checked);
+                      const syncItemToGlobal = (item: QuoteItem, showUnitPrices: boolean): QuoteItem => ({
+                        ...item,
+                        hide_unit_price: item._price_explicit ? item.hide_unit_price : !showUnitPrices,
+                        children: item.children?.map((child) => syncItemToGlobal(child, showUnitPrices)),
+                      });
+                      const syncedItems = (formData.items || []).map((item) => syncItemToGlobal(item, checked));
+                      onChange("items", syncedItems);
+                    }}
                   />
                 </div>
 

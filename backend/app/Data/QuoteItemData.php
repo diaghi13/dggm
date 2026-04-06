@@ -55,7 +55,6 @@ class QuoteItemData extends Data
         #[Min(0)]
         public ?float $quantity = null,
 
-        #[Min(0)]
         public ?float $unit_price = null,
 
         #[Min(0)]
@@ -120,7 +119,7 @@ class QuoteItemData extends Data
             'billing_unit' => ['nullable', 'string', Rule::in(array_column(QuoteItemBillingUnit::cases(), 'value'))],
             'duration' => ['nullable', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'numeric', 'min:0'],
-            'unit_price' => ['nullable', 'numeric', 'min:0'],
+            'unit_price' => ['nullable', 'numeric'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'discount_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'subtotal' => ['nullable', 'numeric', 'min:0'],

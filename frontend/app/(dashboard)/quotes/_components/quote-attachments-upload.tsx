@@ -55,9 +55,9 @@ export function QuoteAttachmentsUpload({ quoteId, attachments, onAttachmentsChan
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     for (const file of acceptedFiles) {
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 50 * 1024 * 1024) {
         toast.error('File troppo grande', {
-          description: `${file.name} supera i 10MB`,
+          description: `${file.name} supera i 50 MB`,
         });
         continue;
       }
@@ -94,7 +94,7 @@ export function QuoteAttachmentsUpload({ quoteId, attachments, onAttachmentsChan
         errors.forEach((error) => {
           if (error.code === 'file-too-large') {
             toast.error('File troppo grande', {
-              description: `${file.name} supera i 10MB`,
+              description: `${file.name} supera i 50 MB`,
             });
           } else {
             toast.error('File non accettato', {
@@ -105,7 +105,22 @@ export function QuoteAttachmentsUpload({ quoteId, attachments, onAttachmentsChan
       });
     },
     disabled: readOnly || uploading,
-    maxSize: 10 * 1024 * 1024,
+    maxSize: 50 * 1024 * 1024,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.svg'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-powerpoint': ['.ppt'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'text/plain': ['.txt', '.csv'],
+      'application/zip': ['.zip'],
+      'image/vnd.dxf': ['.dxf'],
+      'application/acad': ['.dwg'],
+      'application/octet-stream': ['.dwg', '.dxf', '.step', '.stp', '.iges', '.igs'],
+    },
   });
 
   const handleDownload = useCallback(async (attachment: Attachment) => {
@@ -177,7 +192,7 @@ export function QuoteAttachmentsUpload({ quoteId, attachments, onAttachmentsChan
                   Trascina file qui o clicca per selezionare
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Dimensione massima: 10MB
+                  PDF, immagini, Excel, Word, DWG e altri (max 50 MB)
                 </p>
               </>
             )}

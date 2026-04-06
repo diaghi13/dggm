@@ -324,7 +324,11 @@ export type Quote = Omit<App.Data.QuoteData, "customer"> & {
   attachments?: QuoteAttachment[];
   deposits?: QuoteDeposit[];
 };
-export type QuoteItem = App.Data.QuoteItemData;
+// Extend QuoteItemData with transient UI fields (never sent to API)
+export type QuoteItem = Omit<App.Data.QuoteItemData, "children"> & {
+  _price_explicit?: boolean;
+  children?: QuoteItem[];
+};
 
 // Form data per la creazione/modifica (campi opzionali)
 export type QuoteFormData = Partial<
@@ -342,7 +346,7 @@ export type QuoteFormData = Partial<
 > & {
   title: string;
   customer_id: number;
-  items?: App.Data.QuoteItemData[];
+  items?: QuoteItem[];
   payment_method_id?: number | null;
   attachments?: QuoteAttachment[];
   deposits?: QuoteDeposit[];

@@ -211,6 +211,7 @@ interface ItemFormDialogProps {
   priceListId?: number | null;
   quoteType?: string | null;
   effectiveEventDays?: number | null;
+  showUnitPrices?: boolean;
 }
 
 /** Auto-deriva billing_unit da tipo prodotto + tipologia preventivo */
@@ -238,6 +239,7 @@ export function ItemFormDialog({
   priceListId,
   quoteType,
   effectiveEventDays,
+  showUnitPrices,
 }: ItemFormDialogProps) {
   // Persist the last fetched pricing data so we can re-price on billing_unit change
   const pricingRef = useRef<EffectivePrice | null>(null);
@@ -258,6 +260,13 @@ export function ItemFormDialog({
       setSelectedIsLaborRole(editingItem?.product?.is_labor_role ?? false); // eslint-disable-line react-hooks/set-state-in-effect
       setPricingInfo(null);
       setMediaOpen(false);
+      // Sync hide_unit_price with global default when not explicitly set per-item
+      if (!editingItem?._price_explicit) {
+        setFormData({
+          ...formData,
+          hide_unit_price: !(showUnitPrices ?? true),
+        });
+      }
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -698,6 +707,7 @@ export function ItemFormDialog({
                             unit_price: v ?? 0,
                           })
                         }
+                        allowNegative
                         className="border-slate-300 dark:border-slate-600"
                       />
                     </div>
@@ -983,6 +993,7 @@ export function ItemFormDialog({
                       setFormData({
                         ...formData,
                         hide_unit_price: e.target.checked,
+                        _price_explicit: true,
                       })
                     }
                     className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
@@ -992,11 +1003,11 @@ export function ItemFormDialog({
                       htmlFor="hide-price"
                       className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer font-medium"
                     >
-                      Nascondi prezzo unitario nel preventivo
+                      Nascondi prezzo e totale riga nel preventivo
                     </Label>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Il totale riga rimane visibile, ma il prezzo unitario non
-                      viene stampato
+                      Il prezzo unitario e il totale di riga non saranno visibili
+                      nel preventivo
                     </p>
                   </div>
                 </div>

@@ -90,6 +90,12 @@
 
     <!-- Table: flex-based (not <table>) -->
     <div class="mb-12">
+        @php
+            $showPriceCols = $quote->show_unit_prices
+                || $quote->items->flatMap(fn ($item) => $item->children->isNotEmpty() ? $item->children : collect([$item]))
+                                ->where('hide_unit_price', false)
+                                ->isNotEmpty();
+        @endphp
         <!-- Header row -->
         <div class="border-b-2 border-black mb-2 pb-1 flex font-bold text-xs uppercase">
             @if($quote->show_product_codes)
@@ -97,13 +103,13 @@
             @endif
             <div class="flex-1">Descrizione</div>
             <div style="width: 48px; flex-shrink: 0; text-align: center;">Qtà</div>
-            @if($quote->show_unit_prices)
+            @if($showPriceCols)
                 <div style="width: 96px; flex-shrink: 0; text-align: right;">Prezzo</div>
             @endif
             @if($quote->show_vat || $quote->tax_included)
                 <div style="width: 48px; flex-shrink: 0; text-align: center;">IVA</div>
             @endif
-            @if($quote->show_unit_prices)
+            @if($showPriceCols)
                 <div style="width: 96px; flex-shrink: 0; text-align: right;">
                     Totale{{ ($quote->vat_included_in_prices || $quote->tax_included) ? '*' : '' }}</div>
             @endif
@@ -114,7 +120,7 @@
                 <!-- Section row -->
                 <div class="py-4 border-b border-black flex justify-between items-end bg-gray-50 -mx-2 px-2">
                     <div class="font-bold uppercase text-sm">{{ $item->description }}</div>
-                    @if($quote->show_section_totals && $quote->show_unit_prices)
+                    @if($quote->show_section_totals && $showPriceCols)
                         <div class="font-bold text-sm">
                             {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }}
                             €
@@ -147,7 +153,7 @@
                         </div>
                         <div style="width: 48px; flex-shrink: 0; text-align: center;"
                              class="py-1">{{ number_format($child->quantity, 0) }}</div>
-                        @if($quote->show_unit_prices)
+                        @if($showPriceCols)
                             <div style="width: 96px; flex-shrink: 0; text-align: right;" class="py-1">
                                 @if(!$child->hide_unit_price)
                                     {{ number_format($child->unit_price, 2, ',', '.') }} €
@@ -159,10 +165,12 @@
                                  class="py-1 text-xs">{{ number_format($child->vat_rate ?? 0, 0) }}%
                             </div>
                         @endif
-                        @if($quote->show_unit_prices)
+                        @if($showPriceCols)
                             <div style="width: 96px; flex-shrink: 0; text-align: right;" class="py-1 font-bold">
-                                {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }}
-                                €
+                                @if(!$child->hide_unit_price)
+                                    {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }}
+                                    €
+                                @endif
                             </div>
                         @endif
                     </div>
@@ -192,7 +200,7 @@
                     </div>
                     <div style="width: 48px; flex-shrink: 0; text-align: center;"
                          class="py-1">{{ number_format($item->quantity, 0) }}</div>
-                    @if($quote->show_unit_prices)
+                    @if($showPriceCols)
                         <div style="width: 96px; flex-shrink: 0; text-align: right;" class="py-1">
                             @if(!$item->hide_unit_price)
                                 {{ number_format($item->unit_price, 2, ',', '.') }} €
@@ -204,10 +212,12 @@
                              class="py-1 text-xs">{{ number_format($item->vat_rate ?? 0, 0) }}%
                         </div>
                     @endif
-                    @if($quote->show_unit_prices)
+                    @if($showPriceCols)
                         <div style="width: 96px; flex-shrink: 0; text-align: right;" class="py-1 font-bold">
-                            {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }}
-                            €
+                            @if(!$item->hide_unit_price)
+                                {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }}
+                                €
+                            @endif
                         </div>
                     @endif
                 </div>

@@ -16,6 +16,14 @@ import { QuoteForm } from "@/components/quotes/quote-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { QuoteTypeSelectionDialog } from "@/components/quotes/quote-type-selection-dialog";
 
+function cleanItems(items: QuoteItem[]): QuoteItem[] {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  return items.map(({ _price_explicit, ...item }) => ({
+    ...item,
+    children: item.children ? cleanItems(item.children) : undefined,
+  }));
+}
+
 export default function NewQuotePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -163,7 +171,7 @@ export default function NewQuotePage() {
     }
 
     const sanitizedItems = sanitizeOrphanedChildren(formData.items || []);
-    createMutation.mutate({ ...formData, items: sanitizedItems });
+    createMutation.mutate({ ...formData, items: cleanItems(sanitizedItems) });
   }, [formData, createMutation]);
 
   const handleBack = useCallback(() => {

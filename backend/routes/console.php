@@ -47,3 +47,8 @@ Schedule::command('backup:monitor')
 // Proactively refresh OAuth access tokens for all tenant email accounts
 // before they expire, to avoid send failures during the token window.
 Schedule::job(RefreshOAuthEmailTokensJob::class)->hourly();
+
+// Remove expired quote tokens from the central lookup table.
+// A 7-day grace period is applied so recently-expired tokens are not
+// deleted immediately, giving in-flight requests time to complete.
+Schedule::command('quotes:prune-tokens')->weekly();
