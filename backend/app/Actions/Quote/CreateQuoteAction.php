@@ -32,12 +32,26 @@ class CreateQuoteAction
             // Recalculate totals
             $quote->calculateTotals();
 
-            // Create deposits if provided
+            // Create deposits if provided (last percentage deposit absorbs rounding remainder)
             if ($data->deposits instanceof \Spatie\LaravelData\DataCollection) {
-                foreach ($data->deposits as $depositData) {
+                $deposits = $data->deposits->toCollection();
+                $pctDeposits = $deposits->filter(fn ($d) => ! $d->is_fixed_amount && $d->percentage !== null);
+                $totalPct = $pctDeposits->sum('percentage');
+                $isFullSchedule = abs($totalPct - 100) < 0.01;
+                $runningSum = 0.0;
+                $pctProcessed = 0;
+                $pctTotal = $pctDeposits->count();
+
+                foreach ($deposits as $depositData) {
                     $arr = $depositData->except('id')->toArray();
                     if (! $depositData->is_fixed_amount && $depositData->percentage !== null) {
-                        $arr['amount'] = round(($quote->total_amount * $depositData->percentage) / 100, 2);
+                        $pctProcessed++;
+                        if ($isFullSchedule && $pctProcessed === $pctTotal) {
+                            $arr['amount'] = round($quote->total_amount - $runningSum, 2);
+                        } else {
+                            $arr['amount'] = round(($quote->total_amount * $depositData->percentage) / 100, 2);
+                            $runningSum += $arr['amount'];
+                        }
                     }
                     $quote->deposits()->create($arr);
                 }

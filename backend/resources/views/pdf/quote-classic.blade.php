@@ -340,7 +340,7 @@
                             </tr>
                             @endforeach
                             <tr class="border-t-2 border-slate-300">
-                                <td class="py-1 font-bold text-slate-700">Saldo finale</td>
+                                <td class="py-1 font-bold text-slate-700">{{ $quote->balance_label ?? 'Saldo finale' }}</td>
                                 <td class="text-right py-1 text-slate-500">
                                     {{ number_format(100 - $quote->deposits->sum('percentage'), 1) }}%
                                 </td>

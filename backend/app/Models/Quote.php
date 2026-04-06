@@ -56,6 +56,7 @@ class Quote extends Model implements HasMedia
         'financial_resource_id',
         'deposit_percentage',
         'deposit_amount',
+        'balance_label',
         // NEW: Work timeline
         'work_start_description',
         'work_start_date',
@@ -68,6 +69,8 @@ class Quote extends Model implements HasMedia
         'show_section_totals',
         'vat_included_in_prices',
         'include_terms_and_conditions',
+        'customer_token',
+        'customer_token_expires_at',
     ];
 
     protected function casts(): array
@@ -97,7 +100,14 @@ class Quote extends Model implements HasMedia
             'show_section_totals' => 'boolean',
             'vat_included_in_prices' => 'boolean',
             'include_terms_and_conditions' => 'boolean',
+            'customer_token_expires_at' => 'datetime',
         ];
+    }
+
+    public function isCustomerTokenValid(): bool
+    {
+        return $this->customer_token !== null
+            && ($this->customer_token_expires_at === null || $this->customer_token_expires_at->isFuture());
     }
 
     /**
@@ -242,13 +252,29 @@ class Quote extends Model implements HasMedia
 
         $this->saveQuietly();
 
-        // Ricalcola amount dei deposit basati su percentuale
-        $this->deposits()->where('is_fixed_amount', false)->each(function (QuoteDeposit $deposit) {
-            if ($deposit->percentage !== null) {
-                $deposit->amount = round(($this->total_amount * $deposit->percentage) / 100, 2);
+        // Ricalcola amount dei deposit basati su percentuale (l'ultimo assorbe il resto dell'arrotondamento)
+        $percentageDeposits = $this->deposits()
+            ->where('is_fixed_amount', false)
+            ->whereNotNull('percentage')
+            ->orderBy('sort_order')
+            ->get();
+
+        if ($percentageDeposits->isNotEmpty()) {
+            $totalPct = $percentageDeposits->sum('percentage');
+            $isFullSchedule = abs($totalPct - 100) < 0.01;
+            $runningSum = 0.0;
+            $lastIndex = $percentageDeposits->count() - 1;
+
+            foreach ($percentageDeposits as $i => $deposit) {
+                if ($isFullSchedule && $i === $lastIndex) {
+                    $deposit->amount = round($this->total_amount - $runningSum, 2);
+                } else {
+                    $deposit->amount = round(($this->total_amount * $deposit->percentage) / 100, 2);
+                    $runningSum += $deposit->amount;
+                }
                 $deposit->saveQuietly();
             }
-        });
+        }
     }
 
     public function canBeEdited(): bool

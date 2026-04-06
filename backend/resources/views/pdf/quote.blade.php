@@ -411,7 +411,7 @@
                             </tr>
                             @endforeach
                             <tr class="border-t-2 border-slate-300">
-                                <td class="py-1 font-bold text-slate-700">Saldo finale</td>
+                                <td class="py-1 font-bold text-slate-700">{{ $quote->balance_label ?? 'Saldo finale' }}</td>
                                 <td class="text-right py-1 text-slate-500">
                                     {{ number_format(100 - $quote->deposits->sum('percentage'), 1) }}%
                                 </td>
@@ -429,7 +429,7 @@
                     <span>- {{ number_format($quote->deposit_amount, 2, ',', '.') }} €</span>
                 </div>
                 <div class="flex justify-between py-2 font-bold text-primary bg-blue-50 px-2 rounded mt-2">
-                    <span>Saldo a Finire</span>
+                    <span>{{ $quote->balance_label ?? 'Saldo a Finire' }}</span>
                     @if($quote->tax_included)
                         <span>{{ number_format($quote->total_amount - $quote->deposit_amount, 2, ',', '.') }} €</span>
                     @else

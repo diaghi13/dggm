@@ -361,9 +361,14 @@ export default function QuoteDetailPage() {
 
   const sendMutation = useMutation({
     mutationFn: () => quotesApi.send(quoteId),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
-      toast.success("Preventivo inviato al cliente");
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      if (result.warning) {
+        toast.warning(result.warning);
+      } else {
+        toast.success("Preventivo inviato al cliente");
+      }
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
@@ -1195,10 +1200,14 @@ export default function QuoteDetailPage() {
                       {(() => {
                         const paid = quote.deposits.reduce((s, d) => s + (d.amount ?? 0), 0);
                         const saldo = (quote.total_amount ?? 0) - paid;
+                        const totalDepositPct = quote.deposits.reduce((s, d) => s + (d.percentage ?? 0), 0);
                         return saldo > 0.01 ? (
                           <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600">
                             <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                              Saldo finale
+                              {quote.balance_label || "Saldo finale"}
+                              {totalDepositPct > 0 && totalDepositPct <= 100 && (
+                                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 ml-1">({(100 - totalDepositPct).toFixed(1)}%)</span>
+                              )}
                             </span>
                             <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
                               <CurrencyDisplay value={saldo} />

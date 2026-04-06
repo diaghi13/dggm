@@ -72,6 +72,7 @@ export default function NewQuotePage() {
     total_amount: 0,
     deposit_percentage: null,
     deposit_amount: null,
+    balance_label: null,
     deposits: [],
     work_start_description: null,
     work_start_date: null,

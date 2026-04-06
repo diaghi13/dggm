@@ -19,6 +19,11 @@ export function proxy(request: NextRequest) {
   const authToken = request.cookies.get('auth_token');
   const isAuthenticated = !!authToken;
 
+  // Public routes — always allow without auth checks
+  if (pathname.startsWith('/quotes/confirm/')) {
+    return NextResponse.next();
+  }
+
   // If accessing login page while authenticated, redirect to dashboard
   if (pathname === '/login' && isAuthenticated) {
     return NextResponse.redirect(new URL('/dashboard', request.url));

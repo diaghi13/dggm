@@ -105,6 +105,8 @@ class QuoteData extends Data
 
         public ?float $deposit_amount = null,
 
+        public ?string $balance_label = null,
+
         // Lavori
         public ?string $work_start_description = null,
 

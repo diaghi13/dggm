@@ -130,6 +130,7 @@ export default function EditQuotePage() {
       total_amount: quote.total_amount,
       deposit_percentage: quote.deposit_percentage,
       deposit_amount: quote.deposit_amount,
+      balance_label: quote.balance_label ?? null,
       work_start_description: quote.work_start_description,
       work_start_date: quote.work_start_date,
       work_duration_description: quote.work_duration_description,

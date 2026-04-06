@@ -50,4 +50,17 @@ return [
     'libreoffice' => [
         'binary' => env('LIBREOFFICE_BINARY', 'libreoffice'),
     ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/api/v1/email-accounts/oauth/google/callback'),
+    ],
+
+    'microsoft' => [
+        'client_id' => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'redirect' => env('MICROSOFT_REDIRECT_URI', '/api/v1/email-accounts/oauth/microsoft/callback'),
+        'tenant' => env('MICROSOFT_TENANT_ID', 'common'),
+    ],
 ];

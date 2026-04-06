@@ -55,6 +55,7 @@ use App\Listeners\NotifyProjectManagerOfQuoteApproval;
 use App\Listeners\NotifyWarehouseManagerListener;
 use App\Listeners\ReverseStockMovementsListener;
 use App\Listeners\SendLowStockAlert;
+use App\Listeners\SendQuoteEmailListener;
 use App\Listeners\SendTenantActivationEmailListener;
 use App\Listeners\SyncTenantUsersListener;
 use App\Listeners\SyncWorkerProfileListener;
@@ -193,6 +194,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         QuoteSent::class => [
             LogQuoteActivity::class,
+            SendQuoteEmailListener::class,
         ],
         QuoteApproved::class => [
             LogQuoteActivity::class,

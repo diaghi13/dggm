@@ -1591,7 +1591,17 @@ export function QuoteForm({
 
           {/* Acconti / Piano Pagamenti */}
           {(() => {
-            const total = formData.total_amount || 0;
+            // Calcola il totale live dagli items per i preventivi non ancora salvati (total_amount = 0)
+            const itemsSubtotal = (formData.items || [])
+              .filter((item) => item.type !== "section")
+              .reduce((sum, item) => sum + (item.total || 0), 0);
+            const itemsVat = (formData.items || [])
+              .filter((item) => item.type !== "section")
+              .reduce((sum, item) => sum + (item.vat_amount || 0), 0);
+            const discountAmt = formData.discount_amount || 0;
+            const discountRatio = itemsSubtotal > 0 ? (itemsSubtotal - discountAmt) / itemsSubtotal : 1;
+            const liveTotal = itemsSubtotal - discountAmt + itemsVat * discountRatio;
+            const total = (formData.total_amount || 0) > 0 ? formData.total_amount! : liveTotal;
             const deposits: QuoteDeposit[] = formData.deposits || [];
             const totalDepositAmount = deposits.reduce(
               (s, d) => s + (d.amount || 0),
@@ -1755,13 +1765,25 @@ export function QuoteForm({
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            <span>Saldo finale</span>
+                            <span>{formData.balance_label || "Saldo finale"} {totalDepositPct <= 100 && <span className="text-xs font-normal text-slate-500 dark:text-slate-400">({(100 - totalDepositPct).toFixed(1)}%)</span>}</span>
                             <span className={saldoFinale < 0 ? "text-red-600 dark:text-red-400" : ""}>
                               {saldoFinale.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                             </span>
                           </div>
                         </div>
                       )}
+
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap">
+                          Dicitura saldo:
+                        </Label>
+                        <Input
+                          value={formData.balance_label || ""}
+                          onChange={(e) => onChange("balance_label", e.target.value || null)}
+                          placeholder="Saldo finale"
+                          className="h-7 text-xs"
+                        />
+                      </div>
 
                       <Button type="button" variant="outline" size="sm" onClick={addDeposit} className="w-full border-dashed">
                         <Plus className="h-4 w-4 mr-2" />

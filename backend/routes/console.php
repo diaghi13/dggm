@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\RefreshOAuthEmailTokensJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -42,3 +43,7 @@ Schedule::command('backup:clean')
 // Monitor backup health and send alerts if backups are stale or too large.
 Schedule::command('backup:monitor')
     ->dailyAt('05:00');
+
+// Proactively refresh OAuth access tokens for all tenant email accounts
+// before they expire, to avoid send failures during the token window.
+Schedule::job(RefreshOAuthEmailTokensJob::class)->hourly();

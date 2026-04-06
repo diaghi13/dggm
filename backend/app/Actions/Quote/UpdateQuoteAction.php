@@ -38,7 +38,7 @@ class UpdateQuoteAction
             // Recalculate totals
             $quote->calculateTotals();
 
-            // Update deposits if provided
+            // Update deposits if provided (last percentage deposit absorbs rounding remainder)
             if ($data->deposits instanceof \Spatie\LaravelData\DataCollection) {
                 $keepIds = $data->deposits->toCollection()
                     ->filter(fn ($d) => ! ($d->id instanceof \Spatie\LaravelData\Optional) && $d->id)
@@ -47,10 +47,24 @@ class UpdateQuoteAction
 
                 $quote->deposits()->whereNotIn('id', $keepIds)->delete();
 
-                foreach ($data->deposits as $depositData) {
+                $deposits = $data->deposits->toCollection();
+                $pctDeposits = $deposits->filter(fn ($d) => ! $d->is_fixed_amount && $d->percentage !== null);
+                $totalPct = $pctDeposits->sum('percentage');
+                $isFullSchedule = abs($totalPct - 100) < 0.01;
+                $runningSum = 0.0;
+                $pctProcessed = 0;
+                $pctTotal = $pctDeposits->count();
+
+                foreach ($deposits as $depositData) {
                     $arr = $depositData->except('id')->toArray();
                     if (! $depositData->is_fixed_amount && $depositData->percentage !== null) {
-                        $arr['amount'] = round(($quote->total_amount * $depositData->percentage) / 100, 2);
+                        $pctProcessed++;
+                        if ($isFullSchedule && $pctProcessed === $pctTotal) {
+                            $arr['amount'] = round($quote->total_amount - $runningSum, 2);
+                        } else {
+                            $arr['amount'] = round(($quote->total_amount * $depositData->percentage) / 100, 2);
+                            $runningSum += $arr['amount'];
+                        }
                     }
 
                     $depositId = ! ($depositData->id instanceof \Spatie\LaravelData\Optional) ? $depositData->id : null;

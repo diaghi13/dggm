@@ -13,10 +13,12 @@ use App\Actions\Quote\SaveQuotePdfAction;
 use App\Actions\Quote\SendQuoteAction;
 use App\Actions\Quote\UpdateQuoteAction;
 use App\Data\QuoteData;
+use App\Enums\DocumentType;
 use App\Http\Controllers\Controller;
 use App\Models\Quote;
 use App\Queries\Quote\GetQuoteByIdQuery;
 use App\Queries\Quote\GetQuotesQuery;
+use App\Services\TenantMailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -838,10 +840,23 @@ class QuoteController extends Controller
         // Reload with all relationships using Query
         $quote = GetQuoteByIdQuery::execute($quote->id);
 
+        // Check if email will actually be delivered
+        $warning = null;
+        if (empty($quote->customer?->email)) {
+            $warning = 'Il cliente non ha un indirizzo email — il preventivo non verrà inviato per email.';
+        } else {
+            $emailAccount = app(TenantMailService::class)
+                ->resolveAccountForDocumentType(DocumentType::Quote);
+            if (! $emailAccount) {
+                $warning = 'Nessun account email configurato per i preventivi — il cliente non riceverà la mail. Configura un account email nelle impostazioni.';
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data' => QuoteData::from($quote)->include('items', 'items.children'),
             'message' => 'Preventivo inviato al cliente',
+            'warning' => $warning,
         ]);
     }
 

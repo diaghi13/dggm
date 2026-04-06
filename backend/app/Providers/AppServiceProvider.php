@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Auth\GlobalSanctumGuard;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Permission;
@@ -58,5 +59,13 @@ class AppServiceProvider extends ServiceProvider
         // Register policies for Spatie Permission models
         Gate::policy(Role::class, \App\Policies\RolePolicy::class);
         Gate::policy(Permission::class, \App\Policies\PermissionPolicy::class);
+
+        // Email
+        Gate::policy(\App\Models\EmailAccount::class, \App\Policies\EmailAccountPolicy::class);
+
+        // Register Microsoft Azure Socialite provider
+        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
+            $event->extendSocialite('microsoft', \SocialiteProviders\Azure\Provider::class);
+        });
     }
 }

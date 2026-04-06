@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\CodeController;
 use App\Http\Controllers\Api\V1\ContractorController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DdtController;
+use App\Http\Controllers\Api\V1\EmailAccountOAuthController;
 use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\InvitationController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Api\V1\MaterialCategoryController;
 use App\Http\Controllers\Api\V1\MaterialDependencyTypeController;
 use App\Http\Controllers\Api\V1\MaterialRequestController;
 use App\Http\Controllers\Api\V1\MediaController;
+use App\Http\Controllers\Api\V1\MediaUploadController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\PriceListController;
@@ -33,6 +35,7 @@ use App\Http\Controllers\Api\V1\ProjectMaterialController;
 use App\Http\Controllers\Api\V1\ProjectRoleController;
 use App\Http\Controllers\Api\V1\ProjectWorkerController;
 use App\Http\Controllers\Api\V1\ProjectWorkerScheduleController;
+use App\Http\Controllers\Api\V1\PublicQuoteActionController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\RentalAnalyticsController;
 use App\Http\Controllers\Api\V1\RentalProfileController;
@@ -162,6 +165,18 @@ Route::prefix('v1')->group(function () {
     Route::post('tenant-invitations/accept', [TenantInvitationController::class, 'accept']);
     Route::get('tenant-invitations/preview/{token}', [TenantInvitationController::class, 'preview']);
 
+    // OAuth callback — public, tenant context recovered from encrypted state
+    Route::get('email-accounts/oauth/{provider}/callback', [EmailAccountOAuthController::class, 'callback'])
+        ->name('email-accounts.oauth.callback');
+
+    // Public quote actions (no auth — customer clicks link in email)
+    Route::get('public/quotes/{token}', [PublicQuoteActionController::class, 'show'])
+        ->name('public.quotes.show');
+    Route::get('public/quotes/{token}/accept', [PublicQuoteActionController::class, 'accept'])
+        ->name('public.quotes.accept');
+    Route::get('public/quotes/{token}/reject', [PublicQuoteActionController::class, 'reject'])
+        ->name('public.quotes.reject');
+
     // Protected routes (require authentication)
     Route::middleware('auth:sanctum')->group(function () {
         // Auth routes
@@ -256,6 +271,7 @@ Route::prefix('v1')->group(function () {
         Route::get('quotes/{quote}/pdf/preview', [QuoteController::class, 'previewPdf']);
 
         // Media Library (generico per tutti i modelli)
+        Route::post('media/upload-image', [MediaUploadController::class, 'uploadImage']);
         Route::post('media/{modelType}/{modelId}', [MediaController::class, 'upload']);
         Route::get('media/{media}/download', [MediaController::class, 'download']);
         Route::delete('media/{media}', [MediaController::class, 'destroy']);
@@ -555,5 +571,17 @@ Route::prefix('v1')->group(function () {
 
         // Tenant invitations — authenticated (admin invites a user to this tenant)
         Route::post('tenant-invitations', [TenantInvitationController::class, 'invite']);
+
+        // Email Accounts
+        Route::apiResource('email-accounts', \App\Http\Controllers\Api\V1\EmailAccountController::class);
+        Route::post('email-accounts/{emailAccount}/test', [\App\Http\Controllers\Api\V1\EmailAccountController::class, 'test']);
+        Route::post('email-accounts/{emailAccount}/set-default', [\App\Http\Controllers\Api\V1\EmailAccountController::class, 'setDefault']);
+
+        // OAuth redirect — authenticated, returns the provider authorization URL
+        Route::get('email-accounts/oauth/{provider}/redirect', [EmailAccountOAuthController::class, 'redirect']);
+
+        // Email Logs
+        Route::get('email-logs', [\App\Http\Controllers\Api\V1\EmailLogController::class, 'index']);
+        Route::get('email-logs/{emailLog}', [\App\Http\Controllers\Api\V1\EmailLogController::class, 'show']);
     });
 });

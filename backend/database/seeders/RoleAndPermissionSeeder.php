@@ -245,6 +245,7 @@ class RoleAndPermissionSeeder extends Seeder
             'settings.create',
             'settings.edit',
             'settings.delete',
+            'settings.manage', // Full settings management (email accounts, etc.)
             'settings.view-global', // View global settings
             'settings.edit-global', // Edit global settings (admin only)
         ];

@@ -75,6 +75,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmailAccountsSection } from "@/components/settings/email-accounts-section";
 
 const iconMap = {
   Settings,
@@ -2869,13 +2870,17 @@ export default function AdminSettingsPage() {
               </div>
             </TabsContent>
 
+            {/* Email Tab - Custom implementation */}
+            <TabsContent value="email" className="space-y-4 mt-0">
+              <EmailAccountsSection />
+            </TabsContent>
+
             {/* Other Settings Tabs - Generated dynamically */}
             {[
               "general",
               "theme",
               "ui",
               "warehouse",
-              "email",
               "notifications",
               "files",
             ].map((groupKey) => {

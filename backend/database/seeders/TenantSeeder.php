@@ -40,6 +40,7 @@ class TenantSeeder extends Seeder
             ProjectRoleSeeder::class,
             WarrantyTypeSeeder::class,
             RentalProfileSeeder::class,
+            EmailSettingsSeeder::class,
         ] as $class) {
             (new $class)->setContainer($container)->run();
         }
