@@ -1,6 +1,8 @@
 <?php
 
+use App\Jobs\ProcessSubscriptionRemindersJob;
 use App\Jobs\RefreshOAuthEmailTokensJob;
+use App\Jobs\SuspendExpiredSubscriptionsJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -58,3 +60,10 @@ Schedule::command('broadcasts:process-scheduled')->everyMinute();
 
 // Prune obsolete logs (system errors, email logs, failed jobs) across all tenants.
 Schedule::command('logs:prune')->dailyAt('02:30');
+
+// Subscription lifecycle jobs.
+// Suspensions run at midnight so access is cut as early as possible once the
+// grace period expires. Reminders run at 08:00 so users see them at the start
+// of their working day.
+Schedule::job(new SuspendExpiredSubscriptionsJob)->dailyAt('00:00');
+Schedule::job(new ProcessSubscriptionRemindersJob)->dailyAt('08:00');

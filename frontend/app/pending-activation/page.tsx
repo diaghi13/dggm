@@ -19,6 +19,8 @@ import type { ApiResponse } from "@/lib/types";
 
 const POLL_INTERVAL_SECONDS = 30;
 
+type PollingState = "waiting_payment" | "waiting_activation";
+
 interface TenantStatusResponse {
   subscription_status: string;
   tenant_id: string;
@@ -30,6 +32,7 @@ export default function PendingActivationPage() {
     useAuthStore();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);
+  const [pollingState, setPollingState] = useState<PollingState>("waiting_payment");
   const [countdown, setCountdown] = useState(POLL_INTERVAL_SECONDS);
   const countdownRef = useRef(POLL_INTERVAL_SECONDS);
   const isMountedRef = useRef(true);
@@ -51,10 +54,9 @@ export default function PendingActivationPage() {
       );
       const { subscription_status } = response.data.data;
 
-      if (subscription_status === "active") {
-        // Refresh user data so availableTenants is updated with the now-active tenant
+      if (subscription_status === "active" || subscription_status === "trial") {
+        // Trial and active tenants get direct access — no need to wait for manual activation
         await refreshUser();
-        // Read fresh state after refresh to find the active tenant
         const freshTenants = useAuthStore.getState().availableTenants;
         const activatedTenant =
           freshTenants.find(
@@ -64,11 +66,21 @@ export default function PendingActivationPage() {
           ) ?? freshTenants.find((t) => t.id === tenantId);
         if (activatedTenant) {
           setCurrentTenant(activatedTenant);
-          toast.success("Abbonamento attivo! Accesso al sistema...");
+          const msg = subscription_status === "trial"
+            ? "Periodo di prova attivo! Accesso al sistema..."
+            : "Abbonamento attivo! Accesso al sistema...";
+          toast.success(msg);
           router.push("/dashboard");
         } else {
-          toast.success("Abbonamento attivo! Effettua di nuovo il login.");
+          toast.success("Account attivo! Effettua di nuovo il login.");
           router.push("/login");
+        }
+      } else if (subscription_status === "pending_payment") {
+        // Account awaiting manual activation after payment — show waiting UI
+        if (isMountedRef.current) {
+          setPollingState("waiting_activation");
+          countdownRef.current = POLL_INTERVAL_SECONDS;
+          setCountdown(POLL_INTERVAL_SECONDS);
         }
       } else if (subscription_status === "suspended") {
         toast.error("Account sospeso. Contatta il supporto.");
@@ -147,7 +159,62 @@ export default function PendingActivationPage() {
       {/* Content */}
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-lg space-y-6">
-          {/* Status card */}
+
+          {/* Waiting activation — shown after payment is confirmed but team hasn't activated yet */}
+          {pollingState === "waiting_activation" ? (
+            <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mb-4">
+                  <Clock className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                </div>
+                <CardTitle className="text-xl text-slate-900 dark:text-slate-100">
+                  In attesa di attivazione
+                </CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400">
+                  La tua richiesta è in elaborazione. Riceverai una email quando il tuo account sarà attivato.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Il nostro team attiverà il tuo account entro{" "}
+                  <strong>1-2 giorni lavorativi</strong>. Tieni d&apos;occhio la tua email.
+                </p>
+                {tenantId && (
+                  <>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      {isChecking ? (
+                        <span className="flex items-center justify-center gap-1.5">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Verifica in corso...
+                        </span>
+                      ) : (
+                        <>Prossimo controllo in {countdown} secondi</>
+                      )}
+                    </p>
+                    <Button
+                      onClick={handleCheckNow}
+                      disabled={isChecking}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {isChecking ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Verifica in corso...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Controlla ora
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+          /* Status card — waiting for payment */
           <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
             <CardHeader className="text-center pb-4">
               <div className="mx-auto w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mb-4">
@@ -213,6 +280,7 @@ export default function PendingActivationPage() {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Payment instructions */}
           <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">

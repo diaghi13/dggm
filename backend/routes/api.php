@@ -139,6 +139,15 @@ Route::prefix('v1')->group(function () {
         // Landlord-level settings (e.g. log retention)
         Route::get('settings', [\App\Http\Controllers\Landlord\LandlordSettingsController::class, 'index']);
         Route::put('settings/{key}', [\App\Http\Controllers\Landlord\LandlordSettingsController::class, 'update']);
+
+        // Renewal requests management
+        Route::prefix('renewal-requests')->group(function () {
+            Route::get('pending-count', [\App\Http\Controllers\Landlord\LandlordRenewalRequestController::class, 'pendingCount']);
+            Route::get('/', [\App\Http\Controllers\Landlord\LandlordRenewalRequestController::class, 'index']);
+            Route::get('{renewalRequest}', [\App\Http\Controllers\Landlord\LandlordRenewalRequestController::class, 'show']);
+            Route::post('{renewalRequest}/approve', [\App\Http\Controllers\Landlord\LandlordRenewalRequestController::class, 'approve']);
+            Route::post('{renewalRequest}/reject', [\App\Http\Controllers\Landlord\LandlordRenewalRequestController::class, 'reject']);
+        });
     });
 
     // Plans — public (registration page needs to show plans before the user has a token)
@@ -161,6 +170,16 @@ Route::prefix('v1')->group(function () {
         Route::get('/me', [GlobalAuthController::class, 'me']);
         Route::get('/tenants', [GlobalAuthController::class, 'tenants']);
         Route::post('/logout', [GlobalAuthController::class, 'logout']);
+    });
+
+    // Tenant subscription management (requires global auth + active tenant membership)
+    Route::prefix('tenant/subscription')->middleware(['auth:global', 'tenant.member'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V1\TenantSubscriptionController::class, 'show']);
+        Route::post('/renew', [\App\Http\Controllers\Api\V1\TenantSubscriptionController::class, 'requestRenewal']);
+        Route::post('/addons', [\App\Http\Controllers\Api\V1\TenantSubscriptionController::class, 'requestAddon']);
+        Route::get('/requests', [\App\Http\Controllers\Api\V1\TenantSubscriptionController::class, 'getRequests']);
+        Route::get('/available-addons', [\App\Http\Controllers\Api\V1\TenantSubscriptionController::class, 'getAvailableAddons']);
+        Route::post('/change-plan', [\App\Http\Controllers\Api\V1\TenantSubscriptionController::class, 'changePlan']);
     });
 
     // Worker global view — landlord context, no x-tenant required.

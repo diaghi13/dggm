@@ -194,16 +194,35 @@ class TenantManagementController extends Controller
             ->orderBy('created_at', 'desc')
             ->firstOrFail();
 
-        $renewsAt = $subscription->billing_cycle === 'yearly'
-            ? now()->addYear()
-            : now()->addMonth();
+        $currentStatus = $subscription->status;
 
-        $subscription->update([
+        $updateData = [
             'status' => 'active',
-            'starts_at' => now(),
             'ends_at' => null,
-            'renews_at' => $renewsAt,
-        ]);
+        ];
+
+        if ($currentStatus === 'trial') {
+            // Trial was already running — preserve starts_at, calculate renews_at from now
+            $updateData['renews_at'] = $subscription->billing_cycle === 'yearly'
+                ? now()->addYear()
+                : now()->addMonth();
+        } elseif ($currentStatus === 'active') {
+            // Manual renewal — extend renews_at from the current renews_at (or now if past)
+            $baseDate = ($subscription->renews_at === null || $subscription->renews_at->isPast())
+                ? now()
+                : $subscription->renews_at;
+            $updateData['renews_at'] = $subscription->billing_cycle === 'yearly'
+                ? $baseDate->copy()->addYear()
+                : $baseDate->copy()->addMonth();
+        } else {
+            // pending_payment or any other status — fresh activation
+            $updateData['starts_at'] = now();
+            $updateData['renews_at'] = $subscription->billing_cycle === 'yearly'
+                ? now()->addYear()
+                : now()->addMonth();
+        }
+
+        $subscription->update($updateData);
 
         // Invalida cache feature per il tenant appena attivato
         app(FeatureService::class)->clearCache($id);

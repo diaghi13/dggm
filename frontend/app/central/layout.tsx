@@ -16,11 +16,14 @@ import {
   LogOut,
   ArrowLeft,
   Megaphone,
+  RefreshCw,
   Settings,
   Shield,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { landlordRenewalApi } from "@/lib/api/landlord-renewals";
 
 const navItems = [
   { href: "/central", label: "Panoramica", icon: LayoutDashboard, exact: true },
@@ -31,6 +34,7 @@ const navItems = [
   { href: "/central/monitoring", label: "Monitoring", icon: Activity, exact: false },
   { href: "/central/error-logs", label: "Log Errori", icon: AlertCircle, exact: false },
   { href: "/central/broadcasts", label: "Comunicazioni", icon: Megaphone, exact: false },
+  { href: "/central/renewal-requests", label: "Richieste Rinnovo", icon: RefreshCw, exact: false },
   { href: "/central/settings", label: "Impostazioni", icon: Settings, exact: false },
 ];
 
@@ -42,6 +46,15 @@ export default function CentralLayout({
   const { user, globalUser, isAuthenticated, hasHydrated, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
+
+  const { data: pendingCountData } = useQuery({
+    queryKey: ["landlord-renewal-requests-pending-count"],
+    queryFn: () => landlordRenewalApi.getPendingCount(),
+    refetchInterval: 60_000,
+    enabled: isAuthenticated && hasHydrated,
+  });
+
+  const pendingRenewalCount = pendingCountData?.data?.count ?? 0;
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -100,6 +113,8 @@ export default function CentralLayout({
               : pathname.startsWith(item.href) &&
                 (item.href !== "/central" || pathname === "/central");
             const Icon = item.icon;
+            const isRenewal = item.href === "/central/renewal-requests";
+            const showBadge = isRenewal && pendingRenewalCount > 0;
 
             return (
               <Link
@@ -113,7 +128,12 @@ export default function CentralLayout({
                 )}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="inline-flex items-center justify-center rounded-full bg-yellow-500 text-white text-xs font-bold px-1.5 py-0.5 min-w-[1.25rem] leading-none">
+                    {pendingRenewalCount}
+                  </span>
+                )}
               </Link>
             );
           })}

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useThemeSettings } from "@/hooks/use-settings";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   Sheet,
   SheetContent,
@@ -14,37 +15,53 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { User, Settings, LogOut, ChevronRight } from "lucide-react";
+import { User, Settings, LogOut, ChevronRight, CreditCard } from "lucide-react";
 
 export function UserMenuMobile() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { primaryColor } = useThemeSettings();
+  const { isAdmin } = usePermissions();
 
   const handleLogout = async () => {
     await logout();
     router.push("/login");
   };
 
-  const menuItems = [
-    {
-      label: "Account",
-      icon: User,
-      onClick: () => {
-        setOpen(false);
-        router.push("/profile");
+  const menuItems = useMemo(() => {
+    const items = [
+      {
+        label: "Account",
+        icon: User,
+        onClick: () => {
+          setOpen(false);
+          router.push("/profile");
+        },
       },
-    },
-    {
-      label: "Impostazioni",
-      icon: Settings,
-      onClick: () => {
-        setOpen(false);
-        router.push("/settings-index");
+      {
+        label: "Impostazioni",
+        icon: Settings,
+        onClick: () => {
+          setOpen(false);
+          router.push("/settings-index");
+        },
       },
-    },
-  ];
+    ];
+
+    if (isAdmin()) {
+      items.push({
+        label: "Abbonamento",
+        icon: CreditCard,
+        onClick: () => {
+          setOpen(false);
+          router.push("/dashboard/subscription");
+        },
+      });
+    }
+
+    return items;
+  }, [isAdmin, router]);
 
   const initials =
     user?.name

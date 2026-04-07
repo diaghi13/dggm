@@ -46,6 +46,7 @@ import {
   ChevronsUpDown,
   Check,
   Shield,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -56,6 +57,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useMemo } from "react";
 import { LucideIcon } from "lucide-react";
 import { OfflineIndicator } from "@/components/offline-indicator";
+import { SubscriptionBanner } from "@/components/subscription-banner";
 import { useQueryClient } from "@tanstack/react-query";
 import type { TenantInfo } from "@/lib/types";
 
@@ -753,6 +755,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         Impostazioni
                       </Link>
                     </DropdownMenuItem>
+                    {isAdmin() && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/dashboard/subscription"
+                          className="flex items-center cursor-pointer"
+                        >
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Abbonamento
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -809,6 +822,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         Impostazioni
                       </Link>
                     </DropdownMenuItem>
+                    {isAdmin() && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/dashboard/subscription"
+                          className="flex items-center cursor-pointer"
+                        >
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Abbonamento
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -894,6 +918,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <UserMenuMobile />
           </div>
         </header>
+
+        {/* Subscription warning banner */}
+        <SubscriptionBanner />
 
         {/* Page content */}
         <main className="p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">

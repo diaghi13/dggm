@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Link from "next/link";
 import {
+  Bell,
   CreditCard,
   DatabaseZap,
   Globe,
@@ -26,7 +27,7 @@ import { Label } from "@/components/ui/label";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SectionId = "general" | "log-maintenance" | "plans" | "payments" | "oauth-api";
+type SectionId = "general" | "log-maintenance" | "plans" | "payments" | "oauth-api" | "subscription-config";
 
 interface SectionDef {
   id: SectionId;
@@ -50,6 +51,7 @@ const groups: Array<{ title: string; items: SectionDef[] }> = [
     title: "Abbonamenti",
     items: [
       { id: "plans", label: "Piani", icon: CreditCard, type: "link", href: "/central/plans" },
+      { id: "subscription-config", label: "Configurazione", icon: Bell, type: "implemented" },
       { id: "payments", label: "Pagamenti", icon: Wallet, type: "placeholder" },
     ],
   },
@@ -216,6 +218,183 @@ function LogMaintenanceSection() {
   );
 }
 
+// ─── Subscription Config section ─────────────────────────────────────────────
+
+const SUBSCRIPTION_FIELDS: Array<{
+  key: string;
+  label: string;
+  description: string;
+  defaultVal: string;
+  type: "number" | "text";
+  suffix?: string;
+}> = [
+  {
+    key: "subscription.grace_period_days",
+    label: "Giorni di grazia dopo scadenza",
+    description: "Numero di giorni concessi dopo la scadenza prima della sospensione",
+    defaultVal: "7",
+    type: "number",
+    suffix: "giorni",
+  },
+  {
+    key: "subscription.banner_days_before",
+    label: "Mostra avviso N giorni prima",
+    description: "Quanti giorni prima della scadenza mostrare il banner di rinnovo",
+    defaultVal: "14",
+    type: "number",
+    suffix: "giorni",
+  },
+  {
+    key: "subscription.reminder_days_monthly",
+    label: "Reminder abbonamento mensile",
+    description: "Giorni prima della scadenza in cui inviare reminder (separati da virgola)",
+    defaultVal: "7,3,2,1",
+    type: "text",
+  },
+  {
+    key: "subscription.reminder_days_yearly",
+    label: "Reminder abbonamento annuale",
+    description: "Giorni prima della scadenza in cui inviare reminder (separati da virgola)",
+    defaultVal: "30,14,7,3,1",
+    type: "text",
+  },
+  {
+    key: "subscription.reminder_days_trial",
+    label: "Reminder periodo trial",
+    description: "Giorni prima della scadenza del trial in cui inviare reminder (separati da virgola)",
+    defaultVal: "3,1",
+    type: "text",
+  },
+];
+
+function SubscriptionConfigSection() {
+  const queryClient = useQueryClient();
+
+  const { data: settingsData, isLoading } = useQuery({
+    queryKey: ["landlord-settings"],
+    queryFn: () => landlordApi.getSettings(),
+  });
+
+  const [localValues, setLocalValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(SUBSCRIPTION_FIELDS.map((f) => [f.key, f.defaultVal]))
+  );
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!settingsData?.data) return;
+    setLocalValues((prev) => {
+      const next = { ...prev };
+      for (const field of SUBSCRIPTION_FIELDS) {
+        const remote = settingsData.data.find((s) => s.key === field.key)?.value;
+        if (remote != null) next[field.key] = remote;
+      }
+      return next;
+    });
+  }, [settingsData]);
+
+  const updateMutation = useMutation({
+    mutationFn: ({ key, value }: { key: string; value: string }) =>
+      landlordApi.updateSetting(key, value),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["landlord-settings"] });
+      toast.success("Impostazione salvata");
+    },
+    onError: () => toast.error("Errore durante il salvataggio"),
+  });
+
+  const handleBlur = (key: string, field: (typeof SUBSCRIPTION_FIELDS)[number]) => {
+    const val = localValues[key].trim();
+
+    if (field.type === "number") {
+      if (val === "" || !/^\d+$/.test(val) || parseInt(val) < 0) {
+        setErrors((e) => ({ ...e, [key]: "Inserisci un numero intero non negativo" }));
+        const saved = settingsData?.data?.find((s) => s.key === key)?.value ?? field.defaultVal;
+        setLocalValues((v) => ({ ...v, [key]: saved }));
+        return;
+      }
+    } else {
+      // text: validate comma-separated integers
+      const parts = val.split(",").map((p) => p.trim());
+      const valid = parts.every((p) => /^\d+$/.test(p) && parseInt(p) > 0);
+      if (!valid || val === "") {
+        setErrors((e) => ({
+          ...e,
+          [key]: "Inserisci numeri interi positivi separati da virgola (es: 7,3,1)",
+        }));
+        const saved = settingsData?.data?.find((s) => s.key === key)?.value ?? field.defaultVal;
+        setLocalValues((v) => ({ ...v, [key]: saved }));
+        return;
+      }
+    }
+
+    setErrors((e) => ({ ...e, [key]: "" }));
+
+    const saved = settingsData?.data?.find((s) => s.key === key)?.value ?? field.defaultVal;
+    if (val !== saved) {
+      updateMutation.mutate({ key, value: val });
+    }
+  };
+
+  return (
+    <Card className="border-slate-200 dark:border-slate-800">
+      <CardHeader>
+        <CardTitle className="text-slate-900 dark:text-slate-100">
+          Configurazione Abbonamenti
+        </CardTitle>
+        <CardDescription className="text-slate-500 dark:text-slate-400">
+          Parametri per la gestione dei rinnovi, grace period e notifiche di scadenza.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {isLoading ? (
+          <div className="space-y-6">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="space-y-2">
+                <div className="h-4 w-48 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                <div className="h-9 w-64 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          SUBSCRIPTION_FIELDS.map((field) => (
+            <div key={field.key} className="space-y-1.5">
+              <Label
+                htmlFor={field.key}
+                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
+                {field.label}
+              </Label>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{field.description}</p>
+              <div className="flex items-center gap-2 max-w-xs">
+                <Input
+                  id={field.key}
+                  type="text"
+                  inputMode={field.type === "number" ? "numeric" : "text"}
+                  value={localValues[field.key] ?? ""}
+                  disabled={updateMutation.isPending}
+                  onChange={(e) =>
+                    setLocalValues((v) => ({ ...v, [field.key]: e.target.value }))
+                  }
+                  onBlur={() => handleBlur(field.key, field)}
+                  className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                />
+                {field.suffix && (
+                  <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">
+                    {field.suffix}
+                  </span>
+                )}
+              </div>
+              {errors[field.key] && (
+                <p className="text-xs text-red-500 dark:text-red-400">{errors[field.key]}</p>
+              )}
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CentralSettingsPage() {
@@ -296,6 +475,7 @@ export default function CentralSettingsPage() {
         {/* Content */}
         <div className="flex-1 min-w-0">
           {activeSection === "log-maintenance" && <LogMaintenanceSection />}
+          {activeSection === "subscription-config" && <SubscriptionConfigSection />}
           {activeSection === "general" && <PlaceholderSection icon={activeDef.icon} />}
           {activeSection === "payments" && <PlaceholderSection icon={activeDef.icon} />}
           {activeSection === "oauth-api" && <PlaceholderSection icon={activeDef.icon} />}

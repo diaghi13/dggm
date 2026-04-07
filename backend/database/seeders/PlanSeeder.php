@@ -17,6 +17,7 @@ class PlanSeeder extends Seeder
                 'description' => 'Anagrafiche, preventivi e cantieri',
                 'price' => null,
                 'sort_order' => 1,
+                'trial_days' => 14,
                 'features' => ['customers', 'suppliers', 'quotes', 'projects'],
             ],
             [
@@ -25,6 +26,7 @@ class PlanSeeder extends Seeder
                 'description' => 'Base + gestione magazzino, DDT e movimenti',
                 'price' => null,
                 'sort_order' => 2,
+                'trial_days' => 14,
                 'features' => ['customers', 'suppliers', 'quotes', 'projects', 'warehouse'],
             ],
             [
@@ -33,6 +35,7 @@ class PlanSeeder extends Seeder
                 'description' => 'Base + gestione personale, presenze e costi',
                 'price' => null,
                 'sort_order' => 3,
+                'trial_days' => 14,
                 'features' => ['customers', 'suppliers', 'quotes', 'projects', 'workers'],
             ],
             [
@@ -41,6 +44,7 @@ class PlanSeeder extends Seeder
                 'description' => 'Tutte le funzionalità incluse',
                 'price' => null,
                 'sort_order' => 4,
+                'trial_days' => 30,
                 'features' => ['customers', 'suppliers', 'quotes', 'projects', 'warehouse', 'workers', 'rental'],
             ],
         ];
@@ -49,7 +53,10 @@ class PlanSeeder extends Seeder
             $features = $planData['features'];
             unset($planData['features']);
 
-            $plan = Plan::firstOrCreate(['slug' => $planData['slug']], $planData);
+            $plan = Plan::updateOrCreate(
+                ['slug' => $planData['slug']],
+                $planData
+            );
 
             foreach ($features as $featureKey) {
                 PlanFeature::firstOrCreate(

@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             //            WarrantyTypeSeeder::class,
             //            RentalProfileSeeder::class,
             //            LogRetentionSettingsSeeder::class,
+            //            SubscriptionSettingsSeeder::class,
         ]);
 
         $superAdmin = GlobalUser::firstOrCreate(

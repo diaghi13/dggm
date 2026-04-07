@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Auth\GlobalSanctumGuard;
+use App\Contracts\PaymentGatewayInterface;
+use App\Services\Payment\NullPaymentGateway;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PaymentGatewayInterface::class, NullPaymentGateway::class);
     }
 
     /**
