@@ -62,9 +62,7 @@
             <div
                 class="text-lg leading-tight font-bold">{{ $quote->customer->business_name ?? $quote->customer->display_name }}</div>
             <div class="text-sm mt-1 text-gray-600">
-                @if($quote->address)
-                    {{ $quote->address }}, {{ $quote->city }}
-                @elseif($quote->customer->address)
+                @if($quote->customer->address)
                     {{ $quote->customer->address }}, {{ $quote->customer->city }}
                 @endif
                 @if($quote->customer->vat)

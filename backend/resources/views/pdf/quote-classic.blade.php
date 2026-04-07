@@ -80,9 +80,7 @@
                     @if($quote->customer->contact_person)
                         {{ $quote->customer->contact_person }}<br>
                     @endif
-                    @if($quote->address)
-                        {{ $quote->address }}, {{ $quote->city }}
-                    @elseif($quote->customer->address)
+                    @if($quote->customer->address)
                         {{ $quote->customer->address }}, {{ $quote->customer->city }}
                     @endif
                     @if($quote->customer->vat)

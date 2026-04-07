@@ -117,14 +117,10 @@
                 @if($quote->customer->contact_person)
                     <div class="font-medium">{{ $quote->customer->contact_person }}</div>
                 @endif
-                @if($quote->address)
-                    {{ $quote->address }}<br>
-                @elseif($quote->customer->address)
+                @if($quote->customer->address)
                     {{ $quote->customer->address }}<br>
                 @endif
-                @if($quote->city)
-                    {{ $quote->postal_code }} {{ $quote->city }}<br>
-                @elseif($quote->customer->city)
+                @if($quote->customer->city)
                     {{ $quote->customer->postal_code }} {{ $quote->customer->city }}<br>
                 @endif
                 @if($quote->customer->vat)
