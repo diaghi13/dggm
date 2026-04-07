@@ -135,6 +135,10 @@ Route::prefix('v1')->group(function () {
         Route::post('broadcasts', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'store']);
         Route::get('broadcasts/{broadcast}', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'show']);
         Route::patch('broadcasts/{broadcast}/cancel', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'cancel']);
+
+        // Landlord-level settings (e.g. log retention)
+        Route::get('settings', [\App\Http\Controllers\Landlord\LandlordSettingsController::class, 'index']);
+        Route::put('settings/{key}', [\App\Http\Controllers\Landlord\LandlordSettingsController::class, 'update']);
     });
 
     // Plans — public (registration page needs to show plans before the user has a token)

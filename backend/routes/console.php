@@ -55,3 +55,6 @@ Schedule::command('quotes:prune-tokens')->weekly();
 
 // Dispatch scheduled service broadcasts that have reached their send time.
 Schedule::command('broadcasts:process-scheduled')->everyMinute();
+
+// Prune obsolete logs (system errors, email logs, failed jobs) across all tenants.
+Schedule::command('logs:prune')->dailyAt('02:30');

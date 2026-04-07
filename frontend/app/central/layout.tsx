@@ -16,6 +16,7 @@ import {
   LogOut,
   ArrowLeft,
   Megaphone,
+  Settings,
   Shield,
   Users,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/central/monitoring", label: "Monitoring", icon: Activity, exact: false },
   { href: "/central/error-logs", label: "Log Errori", icon: AlertCircle, exact: false },
   { href: "/central/broadcasts", label: "Comunicazioni", icon: Megaphone, exact: false },
+  { href: "/central/settings", label: "Impostazioni", icon: Settings, exact: false },
 ];
 
 export default function CentralLayout({

@@ -258,6 +258,12 @@ export interface TenantErrorLogsResponse {
   data: TenantErrorLogsData;
 }
 
+export interface LandlordSetting {
+  key: string;
+  value: string | null;
+  description: string | null;
+}
+
 export const landlordApi = {
   // Tenants
   getTenants: async (params?: LandlordTenantsParams): Promise<LandlordTenantsResponse> => {
@@ -479,6 +485,21 @@ export const landlordApi = {
     data: { id: number; email: string; role: string };
   }> => {
     const response = await apiClient.post("/tenant-invitations", data);
+    return response.data;
+  },
+
+  // Landlord Settings
+  getSettings: async (): Promise<{ success: boolean; data: LandlordSetting[] }> => {
+    const response = await apiClient.get("/landlord/settings", {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  updateSetting: async (key: string, value: string): Promise<{ success: boolean; data: LandlordSetting }> => {
+    const response = await apiClient.put(`/landlord/settings/${encodeURIComponent(key)}`, { value }, {
+      headers: getGlobalAuthHeader(),
+    });
     return response.data;
   },
 };
