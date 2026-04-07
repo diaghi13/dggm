@@ -140,10 +140,10 @@ const SMTP_PROVIDERS = ["smtp", "gmail", "outlook"];
 const OAUTH_PROVIDERS = ["gmail", "outlook"];
 
 const DOCUMENT_SENDERS = [
-  { key: "email.sender_quote", label: "Preventivi" },
-  { key: "email.sender_invoice", label: "Fatture" },
-  { key: "email.sender_ddt", label: "DDT" },
-  { key: "email.sender_invitation", label: "Inviti" },
+  { key: "email.document_sender.quote", label: "Preventivi" },
+  { key: "email.document_sender.invoice", label: "Fatture" },
+  { key: "email.document_sender.ddt", label: "DDT" },
+  { key: "email.document_sender.invitation", label: "Inviti" },
 ];
 
 // ─── Email Logs Card ──────────────────────────────────────────────────────────

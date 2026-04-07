@@ -36,7 +36,7 @@ class RoleData extends Data
 
         // Display name (auto-generated from name if not provided)
         #[Max(255)]
-        public string|Optional $display_name,
+        public string|null|Optional $display_name,
 
         // Description
         #[Max(1000)]
