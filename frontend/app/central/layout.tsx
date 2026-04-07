@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LogOut,
   ArrowLeft,
+  Megaphone,
   Shield,
   Users,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/central/plans", label: "Piani", icon: CreditCard, exact: false },
   { href: "/central/backups", label: "Backup", icon: Archive, exact: false },
   { href: "/central/monitoring", label: "Monitoring", icon: Activity, exact: false },
+  { href: "/central/broadcasts", label: "Comunicazioni", icon: Megaphone, exact: false },
 ];
 
 export default function CentralLayout({

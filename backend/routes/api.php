@@ -126,6 +126,11 @@ Route::prefix('v1')->group(function () {
 
         // Tenant monitoring dashboard
         Route::get('monitoring', [\App\Http\Controllers\Landlord\TenantMonitoringController::class, 'index']);
+
+        // Service broadcast notifications
+        Route::get('broadcasts', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'index']);
+        Route::post('broadcasts', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'store']);
+        Route::get('broadcasts/{broadcast}', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'show']);
     });
 
     // Plans — public (registration page needs to show plans before the user has a token)

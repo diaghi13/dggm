@@ -110,6 +110,7 @@ export function NotificationCenter() {
         warning: "⚠️",
         error: "❌",
         bell: "🔔",
+        megaphone: "📢",
       };
       return iconMap[data.icon] || "🔔";
     }

@@ -201,6 +201,34 @@ export interface TenantMonitoringResponse {
   data: TenantMonitoringData;
 }
 
+export interface ServiceBroadcast {
+  id: number;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'announcement';
+  target_roles: string[] | null;
+  created_by_global_user_id: string | null;
+  status: 'pending' | 'dispatched' | 'failed';
+  dispatched_at: string | null;
+  tenant_count: number;
+  user_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceBroadcastsResponse {
+  success: boolean;
+  data: ServiceBroadcast[];
+  meta: { current_page: number; last_page: number; per_page: number; total: number };
+}
+
+export interface CreateBroadcastPayload {
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'announcement';
+  target_roles: string[] | null;
+}
+
 export const landlordApi = {
   // Tenants
   getTenants: async (params?: LandlordTenantsParams): Promise<LandlordTenantsResponse> => {
@@ -368,6 +396,21 @@ export const landlordApi = {
   // Monitoring
   getMonitoring: async (): Promise<TenantMonitoringResponse> => {
     const response = await apiClient.get("/landlord/monitoring", {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  // Broadcasts
+  getBroadcasts: async (page = 1): Promise<ServiceBroadcastsResponse> => {
+    const response = await apiClient.get(`/landlord/broadcasts?page=${page}`, {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  createBroadcast: async (data: CreateBroadcastPayload): Promise<{ success: boolean; data: ServiceBroadcast }> => {
+    const response = await apiClient.post('/landlord/broadcasts', data, {
       headers: getGlobalAuthHeader(),
     });
     return response.data;
