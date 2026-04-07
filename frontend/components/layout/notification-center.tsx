@@ -240,14 +240,14 @@ export function NotificationCenter() {
                       onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 break-words min-w-0">
                           {getNotificationTitle(notification)}
                         </p>
                         {!notification.read_at && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1" />
                         )}
                       </div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 break-words whitespace-pre-wrap">
                         {getNotificationMessage(notification)}
                       </p>
                       <p className="text-xs text-slate-500 mt-2">
