@@ -123,6 +123,9 @@ Route::prefix('v1')->group(function () {
             Route::get('status', [\App\Http\Controllers\Api\V1\BackupStatusController::class, 'status']);
             Route::post('run', [\App\Http\Controllers\Api\V1\BackupStatusController::class, 'runBackup']);
         });
+
+        // Tenant monitoring dashboard
+        Route::get('monitoring', [\App\Http\Controllers\Landlord\TenantMonitoringController::class, 'index']);
     });
 
     // Plans — public (registration page needs to show plans before the user has a token)

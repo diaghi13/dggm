@@ -7,6 +7,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
+  Activity,
   Archive,
   Building2,
   CreditCard,
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/central/users", label: "Utenti Globali", icon: Users, exact: false },
   { href: "/central/plans", label: "Piani", icon: CreditCard, exact: false },
   { href: "/central/backups", label: "Backup", icon: Archive, exact: false },
+  { href: "/central/monitoring", label: "Monitoring", icon: Activity, exact: false },
 ];
 
 export default function CentralLayout({
@@ -68,11 +70,11 @@ export default function CentralLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
+    <div className="h-screen flex overflow-hidden bg-slate-50 dark:bg-slate-950">
       {/* Sidebar */}
       <aside className="w-64 flex-shrink-0 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
         {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-5 border-b border-slate-200 dark:border-slate-800">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
             <Shield className="h-5 w-5" />
           </div>
@@ -112,7 +114,7 @@ export default function CentralLayout({
         </nav>
 
         {/* Footer */}
-        <div className="px-3 py-4 border-t border-slate-200 dark:border-slate-800 space-y-1">
+        <div className="flex-shrink-0 px-3 py-4 border-t border-slate-200 dark:border-slate-800 space-y-1">
           <Link
             href="/dashboard"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors"
@@ -133,9 +135,9 @@ export default function CentralLayout({
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
-        <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <header className="flex-shrink-0 flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
           <div>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Accesso come:{" "}
@@ -148,7 +150,7 @@ export default function CentralLayout({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );

@@ -133,6 +133,74 @@ export interface SendTenantInvitationPayload {
   role: string;
 }
 
+export interface TenantMonitoringAlert {
+  type: string;
+  severity: "warning" | "critical";
+  message: string;
+}
+
+export interface TenantMonitoringItem {
+  id: string;
+  name: string;
+  slug: string | null;
+  created_at: string | null;
+  bootstrap_status: string | null;
+  db: {
+    size_mb: number;
+    table_count: number;
+    db_name: string;
+  };
+  storage: {
+    size_mb: number;
+  };
+  backup: {
+    status: "healthy" | "warning" | "missing";
+    last_backup_at: string | null;
+    backup_count: number;
+    total_size_mb: number;
+  };
+  subscription: {
+    status: string;
+    plan_name: string | null;
+    billing_cycle: string | null;
+    renews_at: string | null;
+    ends_at: string | null;
+    trial_ends_at: string | null;
+  };
+  health: "healthy" | "warning" | "critical";
+  alerts: TenantMonitoringAlert[];
+}
+
+export interface TenantMonitoringData {
+  summary: {
+    total_tenants: number;
+    active_tenants: number;
+    total_db_size_mb: number;
+    total_storage_size_mb: number;
+    alerts_count: number;
+    healthy_count: number;
+  };
+  system: {
+    disk_total_gb: number;
+    disk_free_gb: number;
+    disk_used_gb: number;
+    disk_used_percent: number;
+  };
+  tenants: TenantMonitoringItem[];
+  backup_summary: {
+    total_tenants: number;
+    tenants_with_backup: number;
+    tenants_missing: number;
+    last_backup_at: string | null;
+    total_size_mb: number;
+  };
+}
+
+export interface TenantMonitoringResponse {
+  success: boolean;
+  data: TenantMonitoringData;
+}
+
 export const landlordApi = {
   // Tenants
   getTenants: async (params?: LandlordTenantsParams): Promise<LandlordTenantsResponse> => {
@@ -293,6 +361,14 @@ export const landlordApi = {
       token,
       ...(password !== undefined ? { password } : {}),
       ...(name !== undefined ? { name } : {}),
+    });
+    return response.data;
+  },
+
+  // Monitoring
+  getMonitoring: async (): Promise<TenantMonitoringResponse> => {
+    const response = await apiClient.get("/landlord/monitoring", {
+      headers: getGlobalAuthHeader(),
     });
     return response.data;
   },
