@@ -127,6 +127,9 @@ Route::prefix('v1')->group(function () {
         // Tenant monitoring dashboard
         Route::get('monitoring', [\App\Http\Controllers\Landlord\TenantMonitoringController::class, 'index']);
 
+        // Aggregated error logs (email + failed jobs) across all tenants
+        Route::get('error-logs', [\App\Http\Controllers\Landlord\TenantErrorLogController::class, 'index']);
+
         // Service broadcast notifications
         Route::get('broadcasts', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'index']);
         Route::post('broadcasts', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'store']);

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Activity,
+  AlertCircle,
   Archive,
   Building2,
   CreditCard,
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/central/plans", label: "Piani", icon: CreditCard, exact: false },
   { href: "/central/backups", label: "Backup", icon: Archive, exact: false },
   { href: "/central/monitoring", label: "Monitoring", icon: Activity, exact: false },
+  { href: "/central/error-logs", label: "Log Errori", icon: AlertCircle, exact: false },
   { href: "/central/broadcasts", label: "Comunicazioni", icon: Megaphone, exact: false },
 ];
 

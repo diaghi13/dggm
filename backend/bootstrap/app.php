@@ -31,6 +31,65 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->report(function (\Throwable $e): false {
+            // Only log within an initialized tenant context
+            if (! app()->bound('tenancy') || ! tenancy()->initialized()) {
+                return false;
+            }
+
+            // Skip "normal" HTTP exceptions that are not bugs
+            $skipClasses = [
+                \Illuminate\Validation\ValidationException::class,
+                \Illuminate\Auth\AuthenticationException::class,
+                \Illuminate\Auth\Access\AuthorizationException::class,
+                \Illuminate\Database\Eloquent\ModelNotFoundException::class,
+                \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
+                \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class,
+                \Illuminate\Http\Exceptions\ThrottleRequestsException::class,
+            ];
+
+            foreach ($skipClasses as $class) {
+                if ($e instanceof $class) {
+                    return false;
+                }
+            }
+
+            // Determine severity
+            $severity = 'error';
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                $severity = $e->getStatusCode() >= 500 ? 'error' : 'error';
+            }
+
+            // Build sanitized context
+            $context = [];
+            try {
+                $request = request();
+                $context = [
+                    'ip' => $request->ip(),
+                    'user_agent' => substr($request->userAgent() ?? '', 0, 200),
+                ];
+            } catch (\Throwable) {
+                // ignore
+            }
+
+            // Write to tenant DB — must never throw
+            try {
+                \App\Models\SystemErrorLog::create([
+                    'exception_class' => get_class($e),
+                    'message' => substr($e->getMessage(), 0, 1000),
+                    'stack_trace' => substr($e->getTraceAsString(), 0, 8000),
+                    'severity' => $severity,
+                    'url' => rescue(fn () => substr(request()->fullUrl(), 0, 500), null),
+                    'method' => rescue(fn () => request()->method(), null),
+                    'user_id' => rescue(fn () => auth()->id(), null),
+                    'context' => $context ?: null,
+                    'occurred_at' => now(),
+                ]);
+            } catch (\Throwable) {
+                // Never throw from exception handler
+            }
+
+            return false;
+        });
     })
     ->create();

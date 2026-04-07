@@ -231,6 +231,33 @@ export interface CreateBroadcastPayload {
   scheduled_at?: string | null;  // ISO datetime string or null for immediate
 }
 
+export interface TenantErrorLogItem {
+  id: string;
+  type: "email" | "job" | "system";
+  tenant_id: string | null;
+  tenant_name: string;
+  severity: "error" | "warning" | "critical";
+  title: string;
+  message: string;
+  details: Record<string, unknown>;
+  occurred_at: string;
+}
+
+export interface TenantErrorLogsData {
+  items: TenantErrorLogItem[];
+  total: number;
+  types: {
+    email: number;
+    job: number;
+    system: number;
+  };
+}
+
+export interface TenantErrorLogsResponse {
+  success: boolean;
+  data: TenantErrorLogsData;
+}
+
 export const landlordApi = {
   // Tenants
   getTenants: async (params?: LandlordTenantsParams): Promise<LandlordTenantsResponse> => {
@@ -422,6 +449,24 @@ export const landlordApi = {
     const response = await apiClient.patch(`/landlord/broadcasts/${id}/cancel`, undefined, {
       headers: getGlobalAuthHeader(),
     });
+    return response.data;
+  },
+
+  // Error Logs
+  getErrorLogs: async (params?: {
+    tenant_id?: string;
+    type?: "email" | "job" | "system";
+    date_from?: string;
+  }): Promise<TenantErrorLogsResponse> => {
+    const query = new URLSearchParams();
+    if (params?.tenant_id) query.set("tenant_id", params.tenant_id);
+    if (params?.type) query.set("type", params.type);
+    if (params?.date_from) query.set("date_from", params.date_from);
+    const qs = query.toString();
+    const response = await apiClient.get(
+      `/landlord/error-logs${qs ? `?${qs}` : ""}`,
+      { headers: getGlobalAuthHeader() }
+    );
     return response.data;
   },
 
