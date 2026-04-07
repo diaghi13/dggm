@@ -413,14 +413,14 @@ function NotificationRow({
         onClick={() => onRowClick(notification)}
       >
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+          <p className="text-sm font-medium text-slate-900 dark:text-slate-100 break-words min-w-0">
             {getNotificationTitle(notification)}
           </p>
           {isUnread && (
             <span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
           )}
         </div>
-        <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+        <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400 break-words whitespace-pre-wrap">
           {getNotificationMessage(notification)}
         </p>
         <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
