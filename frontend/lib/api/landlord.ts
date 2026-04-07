@@ -208,7 +208,8 @@ export interface ServiceBroadcast {
   type: 'info' | 'success' | 'warning' | 'announcement';
   target_roles: string[] | null;
   created_by_global_user_id: string | null;
-  status: 'pending' | 'dispatched' | 'failed';
+  status: 'pending' | 'scheduled' | 'dispatched' | 'failed' | 'cancelled';
+  scheduled_at: string | null;
   dispatched_at: string | null;
   tenant_count: number;
   user_count: number;
@@ -227,6 +228,7 @@ export interface CreateBroadcastPayload {
   message: string;
   type: 'info' | 'success' | 'warning' | 'announcement';
   target_roles: string[] | null;
+  scheduled_at?: string | null;  // ISO datetime string or null for immediate
 }
 
 export const landlordApi = {
@@ -411,6 +413,13 @@ export const landlordApi = {
 
   createBroadcast: async (data: CreateBroadcastPayload): Promise<{ success: boolean; data: ServiceBroadcast }> => {
     const response = await apiClient.post('/landlord/broadcasts', data, {
+      headers: getGlobalAuthHeader(),
+    });
+    return response.data;
+  },
+
+  cancelBroadcast: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.patch(`/landlord/broadcasts/${id}/cancel`, undefined, {
       headers: getGlobalAuthHeader(),
     });
     return response.data;

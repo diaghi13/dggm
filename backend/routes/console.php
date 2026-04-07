@@ -52,3 +52,6 @@ Schedule::job(RefreshOAuthEmailTokensJob::class)->hourly();
 // A 7-day grace period is applied so recently-expired tokens are not
 // deleted immediately, giving in-flight requests time to complete.
 Schedule::command('quotes:prune-tokens')->weekly();
+
+// Dispatch scheduled service broadcasts that have reached their send time.
+Schedule::command('broadcasts:process-scheduled')->everyMinute();

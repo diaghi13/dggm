@@ -12,6 +12,8 @@ class ServiceBroadcast extends Model
 
     protected $table = 'service_broadcasts';
 
+    // Possible status values: pending | dispatched | failed | scheduled | cancelled
+
     protected $fillable = [
         'title',
         'message',
@@ -20,6 +22,7 @@ class ServiceBroadcast extends Model
         'created_by_global_user_id',
         'status',
         'dispatched_at',
+        'scheduled_at',
         'tenant_count',
         'user_count',
     ];
@@ -29,6 +32,7 @@ class ServiceBroadcast extends Model
         return [
             'target_roles' => 'array',
             'dispatched_at' => 'datetime',
+            'scheduled_at' => 'datetime',
         ];
     }
 }

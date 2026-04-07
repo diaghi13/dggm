@@ -131,6 +131,7 @@ Route::prefix('v1')->group(function () {
         Route::get('broadcasts', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'index']);
         Route::post('broadcasts', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'store']);
         Route::get('broadcasts/{broadcast}', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'show']);
+        Route::patch('broadcasts/{broadcast}/cancel', [\App\Http\Controllers\Landlord\ServiceBroadcastController::class, 'cancel']);
     });
 
     // Plans — public (registration page needs to show plans before the user has a token)

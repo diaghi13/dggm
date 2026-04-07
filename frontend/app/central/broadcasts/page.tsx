@@ -98,6 +98,13 @@ function getStatusBadge(status: ServiceBroadcast["status"]) {
           In invio
         </Badge>
       );
+    case "scheduled":
+      return (
+        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800 flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          Programmata
+        </Badge>
+      );
     case "dispatched":
       return (
         <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800">
@@ -108,6 +115,12 @@ function getStatusBadge(status: ServiceBroadcast["status"]) {
       return (
         <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800">
           Errore
+        </Badge>
+      );
+    case "cancelled":
+      return (
+        <Badge className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700">
+          Annullata
         </Badge>
       );
   }
@@ -128,6 +141,7 @@ export default function BroadcastsPage() {
     useState<CreateBroadcastPayload["type"]>("info");
   const [allUsers, setAllUsers] = useState(true);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [scheduledAt, setScheduledAt] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Fetch broadcasts history
@@ -146,9 +160,19 @@ export default function BroadcastsPage() {
       setType("info");
       setAllUsers(true);
       setSelectedRoles([]);
-      setSuccessMessage("Comunicazione inviata con successo!");
+      setScheduledAt("");
+      setSuccessMessage(
+        scheduledAt
+          ? "Comunicazione programmata con successo!"
+          : "Comunicazione inviata con successo!",
+      );
       setTimeout(() => setSuccessMessage(null), 5000);
     },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (id: number) => landlordApi.cancelBroadcast(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["landlord-broadcasts"] }),
   });
 
   const handleRoleToggle = (role: string) => {
@@ -166,6 +190,7 @@ export default function BroadcastsPage() {
       message: message.trim(),
       type,
       target_roles: allUsers ? null : selectedRoles,
+      scheduled_at: scheduledAt ? scheduledAt : null,
     });
   };
 
@@ -332,6 +357,36 @@ export default function BroadcastsPage() {
                 </div>
               </div>
 
+              {/* Programmazione invio */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Programmazione invio
+                  <span className="ml-1 text-xs text-slate-400 font-normal">
+                    (opzionale — lascia vuoto per inviare subito)
+                  </span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  min={(() => {
+                    const d = new Date(Date.now() + 60000);
+                    const pad = (n: number) => String(n).padStart(2, "0");
+                    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  })()}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                />
+                {scheduledAt && (
+                  <button
+                    type="button"
+                    onClick={() => setScheduledAt("")}
+                    className="mt-1 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    × Rimuovi programmazione
+                  </button>
+                )}
+              </div>
+
               {/* Submit */}
               <Button
                 type="submit"
@@ -346,7 +401,12 @@ export default function BroadcastsPage() {
                 {createMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Invio in corso...
+                    {scheduledAt ? "Programmazione in corso..." : "Invio in corso..."}
+                  </>
+                ) : scheduledAt ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Programma invio
                   </>
                 ) : (
                   <>
@@ -448,6 +508,32 @@ export default function BroadcastsPage() {
                               {broadcast.tenant_count} tenant ·{" "}
                               {broadcast.user_count} utenti
                             </span>
+                          )}
+
+                          {/* Scheduled info */}
+                          {broadcast.status === "scheduled" && broadcast.scheduled_at && (
+                            <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                              <Clock className="h-3 w-3" />
+                              Programmata per il{" "}
+                              {new Date(broadcast.scheduled_at).toLocaleString("it-IT", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
+
+                          {/* Cancel button for scheduled broadcasts */}
+                          {broadcast.status === "scheduled" && (
+                            <button
+                              onClick={() => cancelMutation.mutate(broadcast.id)}
+                              className="text-xs text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                              title="Annulla invio programmato"
+                            >
+                              Annulla
+                            </button>
                           )}
 
                           {/* Date */}
