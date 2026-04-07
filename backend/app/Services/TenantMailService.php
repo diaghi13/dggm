@@ -67,6 +67,19 @@ class TenantMailService
     }
 
     /**
+     * Detect if a throwable is an SMTP authentication error (e.g. XOAUTH2 400/535).
+     */
+    private function isOAuthAuthError(\Throwable $e): bool
+    {
+        $message = $e->getMessage();
+
+        return str_contains($message, 'Failed to authenticate')
+            || str_contains($message, 'XOAUTH2')
+            || str_contains($message, '535')
+            || str_contains($message, '"status":"400"');
+    }
+
+    /**
      * Build a Mailer using XOAUTH2 (required for Gmail and Outlook modern auth).
      * Uses Symfony's XOAuth2Authenticator — no external packages needed.
      */
@@ -134,6 +147,43 @@ class TenantMailService
                 'attempts' => $log->attempts + 1,
             ]);
         } catch (\Throwable $e) {
+            // If XOAUTH2 auth failed (Google/Microsoft token rejected), force a refresh and retry once.
+            // This covers tokens invalidated early by the provider (different from wrong-scope issues).
+            if ($this->isOAuthAuthError($e) && in_array($account->provider, ['google', 'gmail', 'microsoft', 'outlook'])) {
+                $refreshed = app(OAuthTokenRefreshService::class)->refresh($account);
+
+                if ($refreshed) {
+                    $account->refresh();
+
+                    try {
+                        $mailer = $this->buildOAuthMailer($account);
+                        $mailer->to($toEmail, $toName)->send($mailable);
+
+                        $log->update([
+                            'status' => 'sent',
+                            'sent_at' => now(),
+                            'attempts' => $log->attempts + 2,
+                        ]);
+
+                        return $log->fresh();
+                    } catch (\Throwable $retryException) {
+                        $e = new \RuntimeException(
+                            'Autenticazione OAuth fallita anche dopo il refresh del token. '.
+                            'Ricollega l\'account email tramite OAuth nelle impostazioni.',
+                            0,
+                            $retryException
+                        );
+                    }
+                } else {
+                    $e = new \RuntimeException(
+                        'Token OAuth non valido e impossibile rinnovarlo. '.
+                        'Ricollega l\'account email tramite OAuth nelle impostazioni.',
+                        0,
+                        $e
+                    );
+                }
+            }
+
             $log->update([
                 'status' => 'failed',
                 'failed_at' => now(),
