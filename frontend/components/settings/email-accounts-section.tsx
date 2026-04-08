@@ -671,14 +671,26 @@ export function EmailAccountsSection() {
     },
   });
 
-  const companyLogoUrl = companySettings?.["company.logo"] ?? null;
+  // Build absolute URL for company logo (stored as relative path like /storage/tenants/…)
+  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(
+    /\/api\/v1\/?$/,
+    "",
+  );
+  const rawLogoPath = companySettings?.["company.logo"] ?? null;
+  const companyLogoUrl = rawLogoPath
+    ? rawLogoPath.startsWith("http")
+      ? rawLogoPath
+      : `${apiBaseUrl}${rawLogoPath}`
+    : null;
 
   // ── Image upload for WYSIWYG editor ──
   const handleImageUpload = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("image", file);
+    // Pass Content-Type: undefined so axios removes the global 'application/json'
+    // default and lets the browser set the correct multipart/form-data boundary.
     const response = await apiClient.post("/media/upload-image", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+      headers: { "Content-Type": undefined },
     });
     return response.data.data?.url ?? response.data.url;
   };
