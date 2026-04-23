@@ -1,5 +1,20 @@
 import apiClient from './client';
-import { Project, ProjectFormData, ApiResponse, PaginatedResponse, FinalBalance } from '@/lib/types';
+import { Project, ProjectFormData, ApiResponse, PaginatedResponse, FinalBalance, ProjectScheduleDayStatus } from '@/lib/types';
+
+export interface ConvocazioneEntry {
+  id: number;
+  project_worker_id: number;
+  worker_id: number | null;
+  worker_name: string | null;
+  role_name: string | null;
+  scheduled_date: string;
+  planned_start_time: string | null;
+  planned_end_time: string | null;
+  planned_hours: number | null;
+  effective_planned_hours: number;
+  status: ProjectScheduleDayStatus;
+  notes: string | null;
+}
 
 export interface ProjectsParams {
   page?: number;
@@ -78,6 +93,27 @@ export const projectsApi = {
   getFinalBalance: async (projectId: number): Promise<FinalBalance> => {
     const { data } = await apiClient.get<ApiResponse<FinalBalance>>(
       `/projects/${projectId}/final-balance`
+    );
+    return data.data;
+  },
+
+  getOvertimeSummary: async (projectId: number): Promise<import('@/lib/types').OvertimeSummary> => {
+    const { data } = await apiClient.get<ApiResponse<import('@/lib/types').OvertimeSummary>>(
+      `/projects/${projectId}/overtime-summary`
+    );
+    return data.data;
+  },
+
+  getProjectServices: async (projectId: number): Promise<import('@/lib/types').ProjectService[]> => {
+    const { data } = await apiClient.get<ApiResponse<import('@/lib/types').ProjectService[]>>(
+      `/projects/${projectId}/services`
+    );
+    return data.data;
+  },
+
+  getWorkerSchedules: async (projectId: number): Promise<ConvocazioneEntry[]> => {
+    const { data } = await apiClient.get<ApiResponse<ConvocazioneEntry[]>>(
+      `/projects/${projectId}/schedules`
     );
     return data.data;
   },

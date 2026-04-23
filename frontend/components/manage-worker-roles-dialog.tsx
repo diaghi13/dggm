@@ -63,10 +63,6 @@ export function ManageWorkerRolesDialog({
   };
 
   const handleSave = () => {
-    if (selectedRoles.length === 0) {
-      toast.error('Seleziona almeno un ruolo');
-      return;
-    }
     updateRolesMutation.mutate(selectedRoles);
   };
 
@@ -79,6 +75,30 @@ export function ManageWorkerRolesDialog({
       setSelectedRoles([]);
     }
   }, [open, assignment]);
+
+  // Auto-match role_name to project_roles when roles are loaded
+  useEffect(() => {
+    if (!open || !assignment || !roles || roles.length === 0) return;
+    // Only auto-match if no roles are currently selected from pivot
+    const existingRoleIds = assignment.roles?.map((r) => r.id) ?? [];
+    if (existingRoleIds.length > 0) return; // already have pivot roles, don't override
+
+    // Try to match role_name against project_roles names (case-insensitive substring)
+    const roleName = assignment.role_name;
+    if (!roleName) return;
+
+    const matched = roles
+      .filter(
+        (r) =>
+          roleName.toLowerCase().includes(r.name.toLowerCase()) ||
+          r.name.toLowerCase().includes(roleName.toLowerCase())
+      )
+      .map((r) => r.id);
+
+    if (matched.length > 0) {
+      setSelectedRoles(matched);
+    }
+  }, [open, assignment, roles]);
 
   if (!assignment) return null;
 
@@ -98,7 +118,7 @@ export function ManageWorkerRolesDialog({
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium mb-3 block">
-              Ruoli assegnati ({selectedRoles.length})
+              Ruoli (opzionale){selectedRoles.length > 0 ? ` — ${selectedRoles.length} selezionati` : ''}
             </label>
             {loadingRoles ? (
               <div className="flex items-center justify-center py-8">
@@ -131,8 +151,8 @@ export function ManageWorkerRolesDialog({
           </div>
 
           {selectedRoles.length === 0 && (
-            <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-md p-3">
-              ⚠️ Seleziona almeno un ruolo per il lavoratore
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Nessun ruolo selezionato — il lavoratore sarà salvato senza ruoli specifici.
             </p>
           )}
         </div>
@@ -148,7 +168,7 @@ export function ManageWorkerRolesDialog({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={updateRolesMutation.isPending || selectedRoles.length === 0}
+            disabled={updateRolesMutation.isPending}
           >
             {updateRolesMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Salva Ruoli

@@ -32,7 +32,7 @@ class WorkerResource extends JsonResource
             'is_active' => $this->is_active,
             'has_safety_training' => $this->has_safety_training,
             'safety_training_valid' => $this->safety_training_valid,
-            'contractor_company' => $this->whenLoaded('contractorCompany'),
+            'supplier' => $this->whenLoaded('supplier'),
             'user' => $this->whenLoaded('user'),
             'payroll_data' => $this->when($canViewPayroll, $this->whenLoaded('payrollData')),
             'rates' => $this->whenLoaded('rates'),

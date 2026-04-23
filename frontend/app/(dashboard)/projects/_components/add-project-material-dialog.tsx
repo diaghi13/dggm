@@ -52,6 +52,8 @@ export function AddProjectMaterialDialog({
     is_extra: true,
     extra_reason: '',
     notes: '',
+    is_consumable: false,
+    include_in_final_balance: true,
   });
 
   // Fetch materials for selection
@@ -98,6 +100,8 @@ export function AddProjectMaterialDialog({
       is_extra: true,
       extra_reason: '',
       notes: '',
+      is_consumable: false,
+      include_in_final_balance: true,
     });
     setMaterialSearch('');
     setKitAssemblyId(null);
@@ -120,6 +124,8 @@ export function AddProjectMaterialDialog({
       extra_reason: formData.extra_reason || undefined,
       notes: formData.notes || undefined,
       kit_assembly_id: kitAssemblyId || undefined,
+      is_consumable: formData.is_consumable,
+      include_in_final_balance: formData.include_in_final_balance,
     });
   };
 
@@ -287,6 +293,45 @@ export function AddProjectMaterialDialog({
                 />
               </div>
             )}
+
+            <div className="flex items-center space-x-2 rounded-lg border p-3 border-slate-200 dark:border-slate-700">
+              <Checkbox
+                id="is_consumable"
+                checked={formData.is_consumable}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, is_consumable: checked as boolean })
+                }
+              />
+              <div className="flex-1">
+                <Label
+                  htmlFor="is_consumable"
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Materiale Consumabile
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  I consumabili non vengono conteggiati nei rientri
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 rounded-lg border p-3 border-slate-200 dark:border-slate-700">
+              <Checkbox
+                id="include_in_final_balance"
+                checked={formData.include_in_final_balance}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, include_in_final_balance: checked as boolean })
+                }
+              />
+              <div className="flex-1">
+                <Label
+                  htmlFor="include_in_final_balance"
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Includi in Final Balance
+                </Label>
+              </div>
+            </div>
 
             <div className="grid gap-2">
               <Label htmlFor="notes">Note</Label>

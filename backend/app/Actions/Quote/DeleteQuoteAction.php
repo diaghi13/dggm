@@ -10,17 +10,21 @@ class DeleteQuoteAction
 {
     public function execute(Quote $quote): bool
     {
+        if (! $quote->canBeHardDeleted()) {
+            throw new \RuntimeException($quote->deletionBlockReason());
+        }
+
         return DB::transaction(function () use ($quote) {
-            // Soft delete items
-            $quote->items()->delete();
+            // Hard delete items
+            $quote->items()->forceDelete();
 
             // Dispatch event before deletion
             QuoteDeleted::dispatch($quote, [
                 'user_id' => auth()->id(),
             ]);
 
-            // Soft delete quote
-            return $quote->delete();
+            // Hard delete quote
+            return $quote->forceDelete();
         });
     }
 }

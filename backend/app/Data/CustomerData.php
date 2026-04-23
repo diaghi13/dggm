@@ -7,6 +7,7 @@ use Spatie\LaravelData\Data;
 class CustomerData extends Data
 {
     public function __construct(
+        public ?int $id,
         public ?string $type,
         public ?string $first_name,
         public ?string $last_name,

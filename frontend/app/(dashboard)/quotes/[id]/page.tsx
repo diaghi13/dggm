@@ -48,6 +48,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { SafePdfViewer } from "@/components/features/pdf/pdf-viewer";
 import { QuoteAttachmentsUpload } from "@/app/(dashboard)/quotes/_components/quote-attachments-upload";
+import { SendQuoteModal } from "@/components/quotes/send-quote-modal";
 import type { QuoteItem } from "@/lib/types";
 import { CurrencyDisplay } from "@/components/ui/currency-input";
 
@@ -295,6 +296,7 @@ export default function QuoteDetailPage() {
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
 
   const { data: quote, isLoading } = useQuery({
     queryKey: ["quote", quoteId],
@@ -355,26 +357,6 @@ export default function QuoteDetailPage() {
       toast.error("Errore", {
         description:
           err.response?.data?.message || "Impossibile rifiutare il preventivo",
-      });
-    },
-  });
-
-  const sendMutation = useMutation({
-    mutationFn: () => quotesApi.send(quoteId),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
-      queryClient.invalidateQueries({ queryKey: ["quotes"] });
-      if (result.warning) {
-        toast.warning(result.warning);
-      } else {
-        toast.success("Preventivo inviato al cliente");
-      }
-    },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore", {
-        description:
-          err.response?.data?.message || "Impossibile inviare il preventivo",
       });
     },
   });
@@ -573,8 +555,7 @@ export default function QuoteDetailPage() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => sendMutation.mutate()}
-                      disabled={sendMutation.isPending}
+                      onClick={() => setIsSendModalOpen(true)}
                     >
                       <Mail className="h-4 w-4" />
                     </Button>
@@ -1470,6 +1451,16 @@ export default function QuoteDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SendQuoteModal
+        quote={quote}
+        open={isSendModalOpen}
+        onOpenChange={setIsSendModalOpen}
+        onSent={() => {
+          queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
+          queryClient.invalidateQueries({ queryKey: ["quotes"] });
+        }}
+      />
     </div>
   );
 }

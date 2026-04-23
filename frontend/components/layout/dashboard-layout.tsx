@@ -47,6 +47,8 @@ import {
   Check,
   Shield,
   CreditCard,
+  ShieldAlert,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -145,6 +147,12 @@ const navigationConfig: NavigationItem[] = [
         icon: DollarSign,
         permissions: ["price-lists.view"],
       },
+      {
+        name: "Final Balance",
+        href: "/final-balances",
+        icon: FileCheck,
+        permissions: ["projects.view"],
+      },
     ],
   },
   // {
@@ -211,6 +219,18 @@ const navigationConfig: NavigationItem[] = [
         href: "/ddts",
         icon: FileCheck,
         permissions: ["ddts.view"],
+      },
+      {
+        name: "Quarantena",
+        href: "/warehouse/quarantine",
+        icon: ShieldAlert,
+        permissions: ["warehouse.view"],
+      },
+      {
+        name: "Riparazioni",
+        href: "/warehouse/repair-orders",
+        icon: Wrench,
+        permissions: ["warehouse.view"],
       },
     ],
   },

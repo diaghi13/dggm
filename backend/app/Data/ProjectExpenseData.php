@@ -24,10 +24,15 @@ class ProjectExpenseData extends Data
         public ?string $approved_at = null,
         public ?string $rejection_reason = null,
         public ?string $notes = null,
+        public ?bool $is_budgeted = null,
+        public ?float $budgeted_amount = null,
+        public ?bool $billable_to_final_balance = null,
 
         // Computed (output only)
         public readonly ?string $submitted_by_name = null,
         public readonly ?string $category_label = null,
+        public readonly ?float $variance = null,
+        public readonly ?string $receipt_url = null,
     ) {}
 
     public static function rules(): array
@@ -43,6 +48,9 @@ class ProjectExpenseData extends Data
             'receipt_media_id' => ['nullable', 'integer'],
             'rejection_reason' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'is_budgeted' => ['nullable', 'boolean'],
+            'budgeted_amount' => ['nullable', 'numeric', 'min:0'],
+            'billable_to_final_balance' => ['nullable', 'boolean'],
         ];
     }
 
@@ -64,8 +72,13 @@ class ProjectExpenseData extends Data
             approved_at: $expense->approved_at?->toIso8601String(),
             rejection_reason: $expense->rejection_reason,
             notes: $expense->notes,
+            is_budgeted: $expense->is_budgeted,
+            budgeted_amount: $expense->budgeted_amount !== null ? (float) $expense->budgeted_amount : null,
+            billable_to_final_balance: $expense->billable_to_final_balance,
             submitted_by_name: $expense->relationLoaded('submittedBy') ? $expense->submittedBy?->name : null,
             category_label: $expense->category->name,
+            variance: $expense->variance,
+            receipt_url: $expense->receipt_url,
         );
     }
 }

@@ -6,6 +6,7 @@ use App\Actions\Project\AcceptWorkerAssignmentAction;
 use App\Actions\Project\AssignWorkerToProjectAction;
 use App\Actions\Project\ChangeWorkerStatusAction;
 use App\Actions\Project\RejectWorkerAssignmentAction;
+use App\Actions\Project\ResendWorkerInviteAction;
 use App\Actions\Project\UpdateWorkerAssignmentAction;
 use App\Data\ProjectWorkerData;
 use App\Enums\ProjectWorkerStatus;
@@ -35,8 +36,50 @@ class ProjectWorkerController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => ProjectWorkerData::collect($workers),
+            'data' => $workers->map(fn (ProjectWorker $pw) => ProjectWorkerData::fromModel($pw))->values(),
         ]);
+    }
+
+    /**
+     * Create an empty labor slot manually (without a worker).
+     * POST /projects/{project}/workers/slot
+     */
+    public function storeSlot(Request $request, Project $project): JsonResponse
+    {
+        $this->authorize('update', $project);
+
+        $validated = $request->validate([
+            'role_name' => 'required|string|max:255',
+            'estimated_days' => 'nullable|numeric|min:0',
+            'budget_cost_rate' => 'nullable|numeric|min:0',
+            'customer_rate' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $slotIndex = ProjectWorker::where('project_id', $project->id)
+            ->where('status', ProjectWorkerStatus::Slot)
+            ->count() + 1;
+
+        $slot = ProjectWorker::create([
+            'project_id' => $project->id,
+            'worker_id' => null,
+            'status' => ProjectWorkerStatus::Slot,
+            'assigned_by_user_id' => auth()->id(),
+            'role_name' => $validated['role_name'],
+            'slot_index' => $slotIndex,
+            'estimated_days' => $validated['estimated_days'] ?? null,
+            'budget_cost_rate' => $validated['budget_cost_rate'] ?? null,
+            'customer_rate' => $validated['customer_rate'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'is_active' => true,
+            'is_external' => false,
+            'is_scheduled' => false,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => ProjectWorkerData::fromModel($slot),
+        ], 201);
     }
 
     /**
@@ -88,9 +131,11 @@ class ProjectWorkerController extends Controller
             auth()->id()
         );
 
+        $projectWorker->load(['worker.user', 'project', 'assignedBy', 'roles']);
+
         return response()->json([
             'success' => true,
-            'data' => ProjectWorkerData::from($projectWorker),
+            'data' => ProjectWorkerData::fromModel($projectWorker),
         ], 201);
     }
 
@@ -268,6 +313,27 @@ class ProjectWorkerController extends Controller
         return response()->json([
             'success' => true,
             'data' => ProjectWorkerData::from($projectWorker),
+        ]);
+    }
+
+    /**
+     * Re-send assignment invite notification to a worker in pending status.
+     */
+    public function resendInvite(ProjectWorker $projectWorker): JsonResponse
+    {
+        $this->authorize('update', $projectWorker);
+
+        abort_if(
+            $projectWorker->status->value !== 'pending',
+            422,
+            'Cannot resend invite: worker is not in pending status.'
+        );
+
+        app(ResendWorkerInviteAction::class)->execute($projectWorker);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Invitation resent successfully.',
         ]);
     }
 

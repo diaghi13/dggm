@@ -39,6 +39,7 @@ class ProjectWorkerData extends Data
         // Computed (output only)
         public readonly ?string $worker_name = null,
         public readonly ?string $worker_code = null,
+        public readonly ?array $roles = null,
     ) {}
 
     public static function rules(): array
@@ -90,7 +91,7 @@ class ProjectWorkerData extends Data
             fixed_rate_override: $worker->fixed_rate_override,
             rate_override_notes: $worker->rate_override_notes,
             estimated_hours: $worker->estimated_hours,
-            is_active: $worker->is_active,
+            is_active: $worker->is_active ?? true,
             notes: $worker->notes,
             role_name: $worker->role_name,
             slot_index: $worker->slot_index ?? 1,
@@ -103,6 +104,7 @@ class ProjectWorkerData extends Data
             is_scheduled: $worker->is_scheduled ?? false,
             worker_name: $worker->relationLoaded('worker') ? $worker->worker?->full_name : null,
             worker_code: $worker->relationLoaded('worker') ? $worker->worker?->code : null,
+            roles: $worker->relationLoaded('roles') ? $worker->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'slug' => $r->slug, 'color' => $r->color])->toArray() : null,
         );
     }
 }

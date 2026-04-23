@@ -24,9 +24,8 @@ class ProductSubrentalSupplierData extends Data
         #[Exists('suppliers', 'id')]
         public int $supplier_id,
 
-        #[Required]
         #[Min(0)]
-        public float $day_rate,
+        public ?float $day_rate,
 
         #[Min(0)]
         #[Max(5)]
@@ -56,7 +55,7 @@ class ProductSubrentalSupplierData extends Data
             id: $record->id,
             product_id: $record->product_id,
             supplier_id: $record->supplier_id,
-            day_rate: (float) $record->day_rate,
+            day_rate: $record->day_rate !== null ? (float) $record->day_rate : null,
             reliability_score: (float) $record->reliability_score,
             is_preferred: $record->is_preferred,
             last_updated: $record->last_updated?->toDateString(),

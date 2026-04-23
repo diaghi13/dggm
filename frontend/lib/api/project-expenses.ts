@@ -18,6 +18,13 @@ export const projectExpensesApi = {
     return response.data;
   },
 
+  getSummary: async (projectId: number): Promise<{ total_actual: number; total_budgeted: number }> => {
+    const response = await apiClient.get<ApiResponse<{ total_actual: number; total_budgeted: number }>>(
+      `/projects/${projectId}/expenses/summary`
+    );
+    return response.data.data;
+  },
+
   create: async (projectId: number, data: {
     project_worker_id?: number | null;
     category: string;
@@ -27,6 +34,9 @@ export const projectExpensesApi = {
     is_billable_to_client?: boolean;
     receipt_media_id?: number | null;
     notes?: string | null;
+    is_budgeted?: boolean;
+    budgeted_amount?: number | null;
+    billable_to_final_balance?: boolean;
   }): Promise<ProjectExpense> => {
     const response = await apiClient.post<ApiResponse<ProjectExpense>>(
       `/projects/${projectId}/expenses`,
@@ -74,5 +84,20 @@ export const projectExpensesApi = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/project-expenses/${id}`);
+  },
+
+  uploadReceipt: async (expenseId: number, file: File): Promise<{ media_id: number; receipt_url: string; file_name: string }> => {
+    const formData = new FormData();
+    formData.append('receipt', file);
+    const response = await apiClient.post(
+      `/project-expenses/${expenseId}/receipt`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+    return response.data.data;
+  },
+
+  deleteReceipt: async (expenseId: number): Promise<void> => {
+    await apiClient.delete(`/project-expenses/${expenseId}/receipt`);
   },
 };

@@ -65,6 +65,24 @@ class AppServiceProvider extends ServiceProvider
         // Email
         Gate::policy(\App\Models\EmailAccount::class, \App\Policies\EmailAccountPolicy::class);
 
+        // Project Availability Check
+        Gate::policy(\App\Models\ProjectAvailabilityCheck::class, \App\Policies\ProjectAvailabilityCheckPolicy::class);
+
+        // Project Services
+        Gate::policy(\App\Models\ProjectService::class, \App\Policies\ProjectServicePolicy::class);
+
+        // Project Material Incidents
+        Gate::policy(\App\Models\ProjectMaterialIncident::class, \App\Policies\ProjectMaterialIncidentPolicy::class);
+
+        // Rental Return Inspections
+        Gate::policy(\App\Models\RentalReturnInspection::class, \App\Policies\RentalReturnInspectionPolicy::class);
+
+        // Repair Orders
+        Gate::policy(\App\Models\RepairOrder::class, \App\Policies\RepairOrderPolicy::class);
+
+        // Final Balances
+        Gate::policy(\App\Models\FinalBalance::class, \App\Policies\FinalBalancePolicy::class);
+
         // Register Microsoft Azure Socialite provider
         Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
             $event->extendSocialite('microsoft', \SocialiteProviders\Azure\Provider::class);

@@ -124,6 +124,7 @@ class RoleAndPermissionSeeder extends Seeder
             'warehouse.edit',
             'warehouse.delete',
             'warehouse.inventory',
+            'warehouse.manage',
 
             // Materials management (deprecated - use products)
             'materials.view',
@@ -240,6 +241,48 @@ class RoleAndPermissionSeeder extends Seeder
             'reports.projects',
             'reports.time-tracking',
 
+            // Project Services
+            'project-services.view',
+            'project-services.create',
+            'project-services.update',
+            'project-services.delete',
+
+            // Project Availability Checks
+            'project-availability-checks.view',
+            'project-availability-checks.run',
+            'project-availability-checks.resolve',
+
+            // Project Material Incidents
+            'project-material-incidents.view',
+            'project-material-incidents.report',
+            'project-material-incidents.update',
+            'project-material-incidents.resolve',
+
+            // Rental Return Inspections
+            'rental-return-inspections.view',
+            'rental-return-inspections.create',
+            'rental-return-inspections.update',
+            'rental-return-inspections.finalize',
+
+            // Repair Orders
+            'repair-orders.view',
+            'repair-orders.create',
+            'repair-orders.update',
+            'repair-orders.update-status',
+
+            // Final Balance
+            'final-balances.view',
+            'final-balances.create',
+            'final-balances.update',
+            'final-balances.finalize',
+            'final-balances.approve',
+            'final-balances.delete',
+            'final-balances.generate',
+
+            // Quarantine
+            'quarantine.view',
+            'quarantine.manage',
+
             // Settings (key-value system)
             'settings.view',
             'settings.create',
@@ -298,6 +341,10 @@ class RoleAndPermissionSeeder extends Seeder
             'contractors.view', 'contractors.create', 'contractors.edit',
             'labor-costs.view', 'labor-costs.create', 'labor-costs.edit', 'labor-costs.delete',
             'reports.view', 'reports.projects', 'reports.time-tracking',
+            'project-services.view', 'project-services.create', 'project-services.update', 'project-services.delete',
+            'project-availability-checks.view', 'project-availability-checks.run', 'project-availability-checks.resolve',
+            'project-material-incidents.view', 'project-material-incidents.report', 'project-material-incidents.update', 'project-material-incidents.resolve',
+            'final-balances.view', 'final-balances.create', 'final-balances.update', 'final-balances.generate',
         ]);
 
         // Team Leader (Caposquadra) - manages assigned projects and team
@@ -311,6 +358,10 @@ class RoleAndPermissionSeeder extends Seeder
             'warehouse.view',
             'vehicles.view',
             'workers.view', // Can see workers on their projects
+            'project-services.view',
+            'project-availability-checks.view', 'project-availability-checks.run',
+            'project-material-incidents.view', 'project-material-incidents.report',
+            'final-balances.view',
         ]);
 
         // Worker (Operaio) - time tracking and material requests
@@ -321,6 +372,7 @@ class RoleAndPermissionSeeder extends Seeder
             'project_materials.view',
             'material_requests.view', 'material_requests.create', 'material_requests.update', 'material_requests.delete',
             'time-trackings.view-own', 'time-trackings.create',
+            'project-material-incidents.report',
         ]);
 
         // Accountant (Contabile) - manages invoices, reports
@@ -334,6 +386,7 @@ class RoleAndPermissionSeeder extends Seeder
             'contractors.view',
             'labor-costs.view', 'labor-costs.approve', // Approve contractor invoices
             'reports.view', 'reports.financial',
+            'final-balances.view', 'final-balances.approve',
         ]);
 
         // Warehousekeeper (Magazziniere) - manages warehouse
@@ -356,6 +409,10 @@ class RoleAndPermissionSeeder extends Seeder
             'discount-families.view', 'discount-families.create', 'discount-families.edit', 'discount-families.delete',
             'price-lists.view', 'price-lists.create', 'price-lists.edit', 'price-lists.delete', 'price-lists.regenerate',
             'vehicles.view',
+            'warehouse.manage',
+            'rental-return-inspections.view', 'rental-return-inspections.create', 'rental-return-inspections.update', 'rental-return-inspections.finalize',
+            'repair-orders.view', 'repair-orders.create', 'repair-orders.update', 'repair-orders.update-status',
+            'quarantine.view', 'quarantine.manage',
         ]);
 
         // Customer - view only (future portal)

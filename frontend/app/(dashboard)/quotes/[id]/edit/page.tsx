@@ -103,7 +103,7 @@ export default function EditQuotePage() {
       router.push(`/quotes/${quoteId}`);
     },
     onError: (error: any) => {
-      // eslint-disable-line @typescript-eslint/no-explicit-any
+       
       const apiErrors = error.response?.data?.errors;
       const description = apiErrors
         ? (Object.values(apiErrors) as string[][])
@@ -116,7 +116,7 @@ export default function EditQuotePage() {
   });
 
   // Inizializza formData quando il preventivo viene caricato
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     if (!quote) return;
 
@@ -180,7 +180,7 @@ export default function EditQuotePage() {
 
   const handleInputChange = useCallback(
     (field: keyof QuoteFormData, value: any) => {
-      // eslint-disable-line @typescript-eslint/no-explicit-any
+       
       setFormData((prev) => ({ ...prev, [field]: value }));
       if (isMounted.current) {
         setHasUnsavedChanges(true);

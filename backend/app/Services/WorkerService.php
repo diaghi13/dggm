@@ -64,7 +64,7 @@ class WorkerService
                 }
             }
 
-            return $worker->load(['user', 'contractorCompany', 'payrollData', 'rates']);
+            return $worker->load(['user', 'supplier', 'payrollData', 'rates']);
         });
     }
 
@@ -89,7 +89,7 @@ class WorkerService
                 );
             }
 
-            return $worker->load(['user', 'contractorCompany', 'payrollData', 'rates']);
+            return $worker->load(['user', 'supplier', 'payrollData', 'rates']);
         });
     }
 
@@ -192,7 +192,7 @@ class WorkerService
     public function getAvailableWorkers(array $filters = []): Collection
     {
         $query = Worker::query()
-            ->with(['contractorCompany', 'rates'])
+            ->with(['supplier', 'rates'])
             ->available();
 
         $this->applyFilters($query, $filters);
@@ -206,7 +206,7 @@ class WorkerService
     public function getWorkersByProject(int $projectId, bool $onlyActive = true): Collection
     {
         $query = Worker::query()
-            ->with(['user', 'contractorCompany', 'projectAssignments' => function ($q) use ($projectId) {
+            ->with(['user', 'supplier', 'projectAssignments' => function ($q) use ($projectId) {
                 $q->where('project_id', $projectId);
             }])
             ->whereHas('projects', function ($q) use ($projectId, $onlyActive) {

@@ -35,6 +35,7 @@ class CodeGeneratorService
             'ddt' => $this->settingService->get('warehouse.ddt_code_prefix', 'DDT'),
             'movement' => $this->settingService->get('warehouse.movement_code_prefix', 'MOV'),
             'project' => $this->settingService->get('projects.code_prefix', 'PROG'),
+            'final_balance' => strtoupper((string) ($this->settingService->get('final_balance.code_prefix', 'FINBAL') ?: 'FINBAL')),
             'supplier' => $this->settingService->get('codes.supplier_prefix', 'FOR'),
             'worker' => $this->settingService->get('codes.worker_prefix', 'LAV'),
             'contractor' => $this->settingService->get('codes.contractor_prefix', 'CON'),
@@ -53,6 +54,7 @@ class CodeGeneratorService
             'ddt' => $this->settingService->get('warehouse.ddt_code_format', '{prefix}-{year}-{number:4}'),
             'movement' => $this->settingService->get('warehouse.movement_code_format', '{prefix}-{date}-{number:3}'),
             'project' => $this->settingService->get('projects.code_format', '{prefix}-{number:4}'),
+            'final_balance' => $this->settingService->get('final_balance.code_format', '{prefix}-{year}-{number:3}'),
             'supplier' => $this->settingService->get('codes.supplier_format', '{prefix}-{number:5}'),
             'worker' => $this->settingService->get('codes.worker_format', '{prefix}-{number:5}'),
             'contractor' => $this->settingService->get('codes.contractor_format', '{prefix}-{number:5}'),
@@ -120,7 +122,13 @@ class CodeGeneratorService
             return 1;
         }
 
-        $query = $modelClass::query();
+        // Include soft-deleted records so codes from deleted entities are never reused.
+        $usesSoftDeletes = in_array(
+            \Illuminate\Database\Eloquent\SoftDeletes::class,
+            class_uses_recursive($modelClass)
+        );
+
+        $query = $usesSoftDeletes ? $modelClass::withTrashed() : $modelClass::query();
         $now = now();
         $reset = $context['reset'] ?? 'yearly';
 
@@ -171,6 +179,7 @@ class CodeGeneratorService
             'ddt' => \App\Models\Ddt::class,
             'movement' => \App\Models\StockMovement::class,
             'project' => \App\Models\Project::class,
+            'final_balance' => \App\Models\FinalBalance::class,
             'supplier' => \App\Models\Supplier::class,
             'worker' => \App\Models\Worker::class,
             'contractor' => \App\Models\Contractor::class,

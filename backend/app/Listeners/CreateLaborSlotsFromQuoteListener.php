@@ -9,11 +9,9 @@ class CreateLaborSlotsFromQuoteListener
 {
     public function handle(QuoteConvertedToProject $event): void
     {
-        if ($event->quote->items()->where('type', 'labor')->exists()) {
-            app(CreateProjectWorkerSlotsAction::class)->execute(
-                $event->quote,
-                $event->project
-            );
-        }
+        app(CreateProjectWorkerSlotsAction::class)->execute(
+            $event->quote,
+            $event->project
+        );
     }
 }

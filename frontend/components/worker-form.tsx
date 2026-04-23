@@ -1,63 +1,98 @@
-'use client';
+"use client";
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useQuery } from '@tanstack/react-query';
-import { Worker, WorkerFormData } from '@/lib/types';
-import { suppliersApi } from '@/lib/api/suppliers';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { Worker, WorkerFormData } from "@/lib/types";
+import { suppliersApi } from "@/lib/api/suppliers";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { UserCheck, Mail, Phone, MapPin, Briefcase, Calendar, FileText } from 'lucide-react';
+} from "@/components/ui/select";
+import {
+  UserCheck,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Calendar,
+  FileText,
+} from "lucide-react";
 
-const workerSchema = z.object({
-  worker_type: z.enum(['employee', 'freelancer', 'external']),
-  contract_type: z.enum(['permanent', 'fixed_term', 'seasonal', 'project_based', 'internship']).optional().nullable(),
-  first_name: z.string().min(1, 'Nome è obbligatorio'),
-  last_name: z.string().min(1, 'Cognome è obbligatorio'),
-  tax_code: z.string().optional().nullable(),
-  vat_number: z.string().optional().nullable(),
-  birth_date: z.string().optional().nullable(),
-  birth_place: z.string().optional().nullable(),
-  email: z.string().email('Email non valida').optional().nullable().or(z.literal('')),
-  phone: z.string().optional().nullable(),
-  mobile: z.string().optional().nullable(),
-  address: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  province: z.string().optional().nullable(),
-  postal_code: z.string().optional().nullable(),
-  country: z.string().optional().nullable(),
-  job_title: z.string().optional().nullable(),
-  job_level: z.string().optional().nullable(),
-  hire_date: z.string().optional().nullable(),
-  contract_end_date: z.string().optional().nullable(),
-  supplier_id: z.number().optional().nullable(),
-  payment_notes: z.string().optional().nullable(),
-  has_safety_training: z.boolean().optional(),
-  safety_training_expires_at: z.string().optional().nullable(),
-  can_drive_company_vehicles: z.boolean().optional(),
-  notes: z.string().optional().nullable(),
-  is_active: z.boolean().optional(),
-}).refine(
-  (data) => {
-    if (data.worker_type === 'external') {
-      return !!data.supplier_id;
+const workerSchema = z
+  .object({
+    worker_type: z.enum(["employee", "freelancer", "external"]),
+    contract_type: z
+      .enum([
+        "permanent",
+        "fixed_term",
+        "seasonal",
+        "project_based",
+        "internship",
+      ])
+      .optional()
+      .nullable(),
+    first_name: z.string().min(1, "Nome è obbligatorio"),
+    last_name: z.string().min(1, "Cognome è obbligatorio"),
+    tax_code: z.string().optional().nullable(),
+    vat_number: z.string().optional().nullable(),
+    birth_date: z.string().optional().nullable(),
+    birth_place: z.string().optional().nullable(),
+    email: z
+      .string()
+      .email("Email non valida")
+      .optional()
+      .nullable()
+      .or(z.literal("")),
+    phone: z.string().optional().nullable(),
+    mobile: z.string().optional().nullable(),
+    address: z.string().optional().nullable(),
+    city: z.string().optional().nullable(),
+    province: z.string().optional().nullable(),
+    postal_code: z.string().optional().nullable(),
+    country: z.string().optional().nullable(),
+    job_title: z.string().optional().nullable(),
+    job_level: z.string().optional().nullable(),
+    hire_date: z.string().min(1, "Data assunzione obbligatoria"),
+    contract_end_date: z.string().optional().nullable(),
+    supplier_id: z.number().optional().nullable(),
+    payment_notes: z.string().optional().nullable(),
+    has_safety_training: z.boolean().optional(),
+    safety_training_expires_at: z.string().optional().nullable(),
+    can_drive_company_vehicles: z.boolean().optional(),
+    notes: z.string().optional().nullable(),
+    is_active: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.worker_type === "external" && !data.supplier_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Fornitore obbligatorio per lavoratori esterni",
+        path: ["supplier_id"],
+      });
     }
-    return true;
-  },
-  {
-    message: 'Fornitore obbligatorio per lavoratori esterni',
-    path: ['supplier_id'],
-  }
-);
+    if (data.worker_type === "freelancer" && !data.vat_number) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Partita IVA obbligatoria per i freelance",
+        path: ["vat_number"],
+      });
+    }
+    if (data.worker_type === "employee" && !data.contract_type) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Tipo contratto obbligatorio per i dipendenti",
+        path: ["contract_type"],
+      });
+    }
+  });
 
 type WorkerFormValues = z.infer<typeof workerSchema>;
 
@@ -68,7 +103,12 @@ interface WorkerFormProps {
   isLoading?: boolean;
 }
 
-export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerFormProps) {
+export function WorkerForm({
+  worker,
+  onSubmit,
+  onCancel,
+  isLoading,
+}: WorkerFormProps) {
   const {
     register,
     handleSubmit,
@@ -85,7 +125,7 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           last_name: worker.last_name,
           tax_code: worker.tax_code,
           vat_number: worker.vat_number,
-          birth_date: worker.birth_date || null,
+          birth_date: worker.birth_date || undefined,
           birth_place: worker.birth_place,
           email: worker.email,
           phone: worker.phone,
@@ -94,35 +134,37 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           city: worker.city,
           province: worker.province,
           postal_code: worker.postal_code,
-          country: worker.country || 'Italia',
+          country: worker.country || "IT",
           job_title: worker.job_title,
           job_level: worker.job_level,
-          hire_date: worker.hire_date || null,
-          contract_end_date: worker.contract_end_date || null,
+          hire_date: worker.hire_date || undefined,
+          contract_end_date: worker.contract_end_date || undefined,
           supplier_id: worker.supplier?.id,
           payment_notes: worker.payment_notes,
           has_safety_training: worker.has_safety_training,
-          safety_training_expires_at: worker.safety_training_expires_at || null,
+          safety_training_expires_at:
+            worker.safety_training_expires_at || undefined,
           can_drive_company_vehicles: worker.can_drive_company_vehicles,
           notes: worker.notes,
           is_active: worker.is_active,
         }
       : {
-          worker_type: 'employee' as const,
-          country: 'Italia',
+          worker_type: "employee" as const,
+          country: "IT",
           is_active: true,
           has_safety_training: false,
           can_drive_company_vehicles: false,
         },
   });
 
-  const workerType = watch('worker_type');
+  const workerType = watch("worker_type");
 
   // Fetch suppliers for external workers (only personnel providers)
   const { data: suppliersData } = useQuery({
-    queryKey: ['suppliers', { supplier_type: 'personnel' }],
-    queryFn: () => suppliersApi.getAll({ supplier_type: 'personnel', per_page: 999 }),
-    enabled: workerType === 'external',
+    queryKey: ["suppliers", { supplier_type: "personnel" }],
+    queryFn: () =>
+      suppliersApi.getAll({ supplier_type: "personnel", per_page: 999 }),
+    enabled: workerType === "external",
   });
 
   const suppliers = suppliersData?.data || [];
@@ -161,23 +203,32 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
   };
 
   return (
-    <form id="worker-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form
+      id="worker-form"
+      onSubmit={handleSubmit(handleFormSubmit)}
+      className="space-y-6"
+    >
       {/* Worker Type */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-200 dark:border-slate-800">
           <div className="w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             <UserCheck className="w-4 h-4 text-slate-600 dark:text-slate-400" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Tipo Collaboratore</h3>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">
+            Tipo Collaboratore
+          </h3>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="worker_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label
+              htmlFor="worker_type"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
               Tipo <span className="text-red-500">*</span>
             </Label>
             <Select
               value={workerType}
-              onValueChange={(value) => setValue('worker_type', value as any)}
+              onValueChange={(value) => setValue("worker_type", value as any)}
               disabled={isLoading}
             >
               <SelectTrigger className="h-11">
@@ -191,17 +242,28 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
             </Select>
             {errors.worker_type && (
               <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.worker_type.message}
+                <span className="text-red-500">⚠</span>{" "}
+                {errors.worker_type.message}
               </p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="contract_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Tipo Contratto
+            <Label
+              htmlFor="contract_type"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Tipo Contratto{" "}
+              {workerType === "employee" && (
+                <span className="text-red-500">*</span>
+              )}
             </Label>
             <Select
-              value={watch('contract_type') || ''}
-              onValueChange={(value) => setValue('contract_type', value as any)}
+              value={watch("contract_type") || ""}
+              onValueChange={(value) =>
+                setValue("contract_type", value as any, {
+                  shouldValidate: true,
+                })
+              }
               disabled={isLoading}
             >
               <SelectTrigger className="h-11">
@@ -215,18 +277,29 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
                 <SelectItem value="internship">Stage</SelectItem>
               </SelectContent>
             </Select>
+            {errors.contract_type && (
+              <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                <span className="text-red-500">⚠</span>{" "}
+                {errors.contract_type.message}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Supplier Selector - Only for external workers */}
-        {workerType === 'external' && (
+        {workerType === "external" && (
           <div className="space-y-2">
-            <Label htmlFor="supplier_id" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label
+              htmlFor="supplier_id"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
               Fornitore <span className="text-red-500">*</span>
             </Label>
             <Select
-              value={watch('supplier_id')?.toString() || ''}
-              onValueChange={(value) => setValue('supplier_id', parseInt(value))}
+              value={watch("supplier_id")?.toString() || ""}
+              onValueChange={(value) =>
+                setValue("supplier_id", parseInt(value))
+              }
               disabled={isLoading}
             >
               <SelectTrigger className="h-11">
@@ -242,7 +315,8 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
             </Select>
             {errors.supplier_id && (
               <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.supplier_id.message}
+                <span className="text-red-500">⚠</span>{" "}
+                {errors.supplier_id.message}
               </p>
             )}
           </div>
@@ -255,84 +329,120 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           <div className="w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             <UserCheck className="w-4 h-4 text-slate-600 dark:text-slate-400" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Dati Anagrafici</h3>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">
+            Dati Anagrafici
+          </h3>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="first_name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label
+              htmlFor="first_name"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
               Nome <span className="text-red-500">*</span>
             </Label>
             <Input
               id="first_name"
-              {...register('first_name')}
+              {...register("first_name")}
               disabled={isLoading}
               placeholder="Mario"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
             />
             {errors.first_name && (
               <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.first_name.message}
+                <span className="text-red-500">⚠</span>{" "}
+                {errors.first_name.message}
               </p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="last_name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label
+              htmlFor="last_name"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
               Cognome <span className="text-red-500">*</span>
             </Label>
             <Input
               id="last_name"
-              {...register('last_name')}
+              {...register("last_name")}
               disabled={isLoading}
               placeholder="Rossi"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
             />
             {errors.last_name && (
               <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.last_name.message}
+                <span className="text-red-500">⚠</span>{" "}
+                {errors.last_name.message}
               </p>
             )}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="tax_code" className="text-sm font-medium text-slate-700 dark:text-slate-300">Codice Fiscale</Label>
+            <Label
+              htmlFor="tax_code"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Codice Fiscale
+            </Label>
             <Input
               id="tax_code"
-              {...register('tax_code')}
+              {...register("tax_code")}
               disabled={isLoading}
               placeholder="RSSMRA80A01H501A"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500 font-mono"
             />
           </div>
-          {workerType === 'freelancer' && (
+          {workerType === "freelancer" && (
             <div className="space-y-2">
-              <Label htmlFor="vat_number" className="text-sm font-medium text-slate-700 dark:text-slate-300">Partita IVA</Label>
+              <Label
+                htmlFor="vat_number"
+                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
+                Partita IVA <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="vat_number"
-                {...register('vat_number')}
+                {...register("vat_number")}
                 disabled={isLoading}
                 placeholder="IT12345678901"
                 className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500 font-mono"
               />
+              {errors.vat_number && (
+                <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <span className="text-red-500">⚠</span>{" "}
+                  {errors.vat_number.message}
+                </p>
+              )}
             </div>
           )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="birth_date" className="text-sm font-medium text-slate-700 dark:text-slate-300">Data di Nascita</Label>
+            <Label
+              htmlFor="birth_date"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Data di Nascita
+            </Label>
             <Input
               id="birth_date"
               type="date"
-              {...register('birth_date')}
+              {...register("birth_date")}
               disabled={isLoading}
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="birth_place" className="text-sm font-medium text-slate-700 dark:text-slate-300">Luogo di Nascita</Label>
+            <Label
+              htmlFor="birth_place"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Luogo di Nascita
+            </Label>
             <Input
               id="birth_place"
-              {...register('birth_place')}
+              {...register("birth_place")}
               disabled={isLoading}
               placeholder="Milano"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
@@ -347,24 +457,36 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           <div className="w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             <Briefcase className="w-4 h-4 text-slate-600 dark:text-slate-400" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Informazioni Contratto</h3>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">
+            Informazioni Contratto
+          </h3>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="job_title" className="text-sm font-medium text-slate-700 dark:text-slate-300">Ruolo</Label>
+            <Label
+              htmlFor="job_title"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Ruolo
+            </Label>
             <Input
               id="job_title"
-              {...register('job_title')}
+              {...register("job_title")}
               disabled={isLoading}
               placeholder="Operaio Specializzato"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="job_level" className="text-sm font-medium text-slate-700 dark:text-slate-300">Livello</Label>
+            <Label
+              htmlFor="job_level"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Livello
+            </Label>
             <Input
               id="job_level"
-              {...register('job_level')}
+              {...register("job_level")}
               disabled={isLoading}
               placeholder="3"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
@@ -373,22 +495,38 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="hire_date" className="text-sm font-medium text-slate-700 dark:text-slate-300">Data Assunzione</Label>
+            <Label
+              htmlFor="hire_date"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Data Assunzione <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="hire_date"
               type="date"
-              {...register('hire_date')}
+              {...register("hire_date")}
               disabled={isLoading}
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
             />
+            {errors.hire_date && (
+              <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                <span className="text-red-500">⚠</span>{" "}
+                {errors.hire_date.message}
+              </p>
+            )}
           </div>
-          {watch('contract_type') === 'fixed_term' && (
+          {watch("contract_type") === "fixed_term" && (
             <div className="space-y-2">
-              <Label htmlFor="contract_end_date" className="text-sm font-medium text-slate-700 dark:text-slate-300">Fine Contratto</Label>
+              <Label
+                htmlFor="contract_end_date"
+                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
+                Fine Contratto
+              </Label>
               <Input
                 id="contract_end_date"
                 type="date"
-                {...register('contract_end_date')}
+                {...register("contract_end_date")}
                 disabled={isLoading}
                 className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
               />
@@ -403,17 +541,24 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           <div className="w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             <Mail className="w-4 h-4 text-slate-600 dark:text-slate-400" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Contatti</h3>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">
+            Contatti
+          </h3>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">Email</Label>
+            <Label
+              htmlFor="email"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Email
+            </Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none z-10" />
               <Input
                 id="email"
                 type="email"
-                {...register('email')}
+                {...register("email")}
                 disabled={isLoading}
                 placeholder="email@esempio.it"
                 className="h-11 pl-10 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
@@ -426,12 +571,17 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone" className="text-sm font-medium text-slate-700 dark:text-slate-300">Telefono</Label>
+            <Label
+              htmlFor="phone"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Telefono
+            </Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none z-10" />
               <Input
                 id="phone"
-                {...register('phone')}
+                {...register("phone")}
                 disabled={isLoading}
                 placeholder="+39 02 1234567"
                 className="h-11 pl-10 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
@@ -440,12 +590,17 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="mobile" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cellulare</Label>
+          <Label
+            htmlFor="mobile"
+            className="text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Cellulare
+          </Label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none z-10" />
             <Input
               id="mobile"
-              {...register('mobile')}
+              {...register("mobile")}
               disabled={isLoading}
               placeholder="+39 333 1234567"
               className="h-11 pl-10 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
@@ -460,13 +615,20 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           <div className="w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             <MapPin className="w-4 h-4 text-slate-600 dark:text-slate-400" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Indirizzo</h3>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">
+            Indirizzo
+          </h3>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="address" className="text-sm font-medium text-slate-700 dark:text-slate-300">Via</Label>
+          <Label
+            htmlFor="address"
+            className="text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Via
+          </Label>
           <Input
             id="address"
-            {...register('address')}
+            {...register("address")}
             disabled={isLoading}
             placeholder="Via Roma 123"
             className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
@@ -474,30 +636,45 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="city" className="text-sm font-medium text-slate-700 dark:text-slate-300">Città</Label>
+            <Label
+              htmlFor="city"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Città
+            </Label>
             <Input
               id="city"
-              {...register('city')}
+              {...register("city")}
               disabled={isLoading}
               placeholder="Milano"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="province" className="text-sm font-medium text-slate-700 dark:text-slate-300">Provincia</Label>
+            <Label
+              htmlFor="province"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Provincia
+            </Label>
             <Input
               id="province"
-              {...register('province')}
+              {...register("province")}
               disabled={isLoading}
               placeholder="MI"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="postal_code" className="text-sm font-medium text-slate-700 dark:text-slate-300">CAP</Label>
+            <Label
+              htmlFor="postal_code"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              CAP
+            </Label>
             <Input
               id="postal_code"
-              {...register('postal_code')}
+              {...register("postal_code")}
               disabled={isLoading}
               placeholder="20100"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
@@ -512,15 +689,20 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           <div className="w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             <FileText className="w-4 h-4 text-slate-600 dark:text-slate-400" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Note</h3>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">
+            Note
+          </h3>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="notes" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <Label
+            htmlFor="notes"
+            className="text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Note
           </Label>
           <Textarea
             id="notes"
-            {...register('notes')}
+            {...register("notes")}
             disabled={isLoading}
             placeholder="Note aggiuntive..."
             rows={4}
@@ -528,19 +710,23 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="payment_notes" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <Label
+            htmlFor="payment_notes"
+            className="text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Note Pagamento
           </Label>
           <Textarea
             id="payment_notes"
-            {...register('payment_notes')}
+            {...register("payment_notes")}
             disabled={isLoading}
             placeholder="Es: 50% busta paga, 50% contanti..."
             rows={3}
             className="resize-none border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
           />
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Annotazioni su accordi di pagamento personalizzati (busta/contanti, bonifico, etc.)
+            Annotazioni su accordi di pagamento personalizzati (busta/contanti,
+            bonifico, etc.)
           </p>
         </div>
       </div>
@@ -551,11 +737,14 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           <input
             type="checkbox"
             id="is_active"
-            {...register('is_active')}
+            {...register("is_active")}
             disabled={isLoading}
             className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
           />
-          <Label htmlFor="is_active" className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300">
+          <Label
+            htmlFor="is_active"
+            className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Collaboratore attivo
           </Label>
         </div>
@@ -563,11 +752,14 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           <input
             type="checkbox"
             id="has_safety_training"
-            {...register('has_safety_training')}
+            {...register("has_safety_training")}
             disabled={isLoading}
             className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
           />
-          <Label htmlFor="has_safety_training" className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300">
+          <Label
+            htmlFor="has_safety_training"
+            className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Formazione sicurezza completata
           </Label>
         </div>
@@ -575,11 +767,14 @@ export function WorkerForm({ worker, onSubmit, onCancel, isLoading }: WorkerForm
           <input
             type="checkbox"
             id="can_drive_company_vehicles"
-            {...register('can_drive_company_vehicles')}
+            {...register("can_drive_company_vehicles")}
             disabled={isLoading}
             className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
           />
-          <Label htmlFor="can_drive_company_vehicles" className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300">
+          <Label
+            htmlFor="can_drive_company_vehicles"
+            className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Autorizzato alla guida mezzi aziendali
           </Label>
         </div>

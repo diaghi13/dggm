@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -112,6 +113,11 @@ class Ddt extends Model implements HasMedia
     public function childrenDdts(): HasMany
     {
         return $this->hasMany(Ddt::class, 'parent_ddt_id');
+    }
+
+    public function inspection(): HasOne
+    {
+        return $this->hasOne(RentalReturnInspection::class);
     }
 
     // Scopes

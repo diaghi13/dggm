@@ -13,7 +13,8 @@ class ProjectWorkerSchedule extends Model
     use HasFactory;
 
     protected $fillable = [
-        'project_worker_id',
+        'project_id',
+        'worker_id',
         'scheduled_date',
         'planned_start_time',
         'planned_end_time',
@@ -23,13 +24,19 @@ class ProjectWorkerSchedule extends Model
         'rejected_at',
         'rejection_reason',
         'notes',
+        'cost_rate',
+        'customer_rate',
     ];
 
     protected function casts(): array
     {
         return [
+            'project_id' => 'integer',
+            'worker_id' => 'integer',
             'scheduled_date' => 'date',
             'planned_hours' => 'decimal:2',
+            'cost_rate' => 'decimal:2',
+            'customer_rate' => 'decimal:2',
             'status' => ProjectScheduleDayStatus::class,
             'accepted_at' => 'datetime',
             'rejected_at' => 'datetime',
@@ -38,9 +45,14 @@ class ProjectWorkerSchedule extends Model
 
     // ==================== RELATIONSHIPS ====================
 
-    public function projectWorker(): BelongsTo
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(ProjectWorker::class);
+        return $this->belongsTo(Project::class);
+    }
+
+    public function worker(): BelongsTo
+    {
+        return $this->belongsTo(Worker::class);
     }
 
     public function laborLogs(): HasMany

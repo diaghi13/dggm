@@ -77,6 +77,10 @@ class ProcessPriceListItemsJob implements ShouldQueue
                 PriceListItem::create([
                     'price_list_id' => $priceList->id,
                     'product_id' => $product->id,
+                    'name' => $product->name,
+                    'code' => $product->code,
+                    'unit' => $product->unit ?? null,
+                    'item_type' => $product->product_type->value,
                     ...$itemData,
                 ]);
 

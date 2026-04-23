@@ -24,7 +24,7 @@ import {
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface CompositeComponent {
+interface BomComponent {
   component_product_id: number;
   component_code: string;
   component_name: string;
@@ -32,8 +32,8 @@ interface CompositeComponent {
   quantity: number;
 }
 
-interface CompositeBreakdown {
-  components: CompositeComponent[];
+interface BomBreakdown {
+  components: BomComponent[];
 }
 
 /** A row in the hierarchical view */
@@ -79,9 +79,9 @@ export function ProjectMaterialOrderList({ materials }: ProjectMaterialOrderList
   const [groupByCategory, setGroupByCategory] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<Set<number>>(new Set());
 
-  // Ignore services, keep articles and composites
+  // Exclude services and package (logistica/peso/volume only) — keep article, composite, kit
   const physicalMaterials = useMemo(
-    () => materials.filter((m) => m.product?.product_type !== 'service'),
+    () => materials.filter((m) => m.product?.product_type !== 'service' && !m.product?.is_package),
     [materials],
   );
 
@@ -90,18 +90,36 @@ export function ProjectMaterialOrderList({ materials }: ProjectMaterialOrderList
     [physicalMaterials],
   );
 
+  const kits = useMemo(
+    () => physicalMaterials.filter((m) => m.product?.product_type === 'kit'),
+    [physicalMaterials],
+  );
+
   // Fetch composite breakdowns in parallel
-  const breakdownQueries = useQueries({
+  const compositeBreakdownQueries = useQueries({
     queries: composites.map((m) => ({
       queryKey: ['composite-breakdown', m.product_id],
-      queryFn: (): Promise<CompositeBreakdown> =>
+      queryFn: (): Promise<BomBreakdown> =>
         productsApi.getCompositeBreakdown(m.product_id!),
       enabled: !!m.product_id,
       staleTime: 5 * 60 * 1000,
     })),
   });
 
-  const isLoading = breakdownQueries.some((q) => q.isLoading);
+  // Fetch kit breakdowns in parallel
+  const kitBreakdownQueries = useQueries({
+    queries: kits.map((m) => ({
+      queryKey: ['kit-breakdown', m.product_id],
+      queryFn: (): Promise<BomBreakdown> =>
+        productsApi.getKitBreakdown(m.product_id!),
+      enabled: !!m.product_id,
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+
+  const isLoading =
+    compositeBreakdownQueries.some((q) => q.isLoading) ||
+    kitBreakdownQueries.some((q) => q.isLoading);
 
   // Build hierarchical rows (all, unfiltered)
   const allHierarchyRows = useMemo<HierarchyRow[]>(() => {
@@ -132,7 +150,7 @@ export function ProjectMaterialOrderList({ materials }: ProjectMaterialOrderList
         });
       } else if (type === 'composite') {
         const compositeIndex = composites.findIndex((c) => c.id === m.id);
-        const breakdown = breakdownQueries[compositeIndex]?.data as CompositeBreakdown | undefined;
+        const breakdown = compositeBreakdownQueries[compositeIndex]?.data as BomBreakdown | undefined;
         const components = breakdown?.components ?? [];
 
         rows.push({
@@ -158,7 +176,38 @@ export function ProjectMaterialOrderList({ materials }: ProjectMaterialOrderList
             unit: comp.component_unit,
             quantity: realQty,
             product_type: 'article',
-            // child inherits parent category
+            category_id: catId,
+            category_name: catName,
+          });
+        });
+      } else if (type === 'kit') {
+        const kitIndex = kits.findIndex((k) => k.id === m.id);
+        const breakdown = kitBreakdownQueries[kitIndex]?.data as BomBreakdown | undefined;
+        const components = breakdown?.components ?? [];
+
+        rows.push({
+          level: 0,
+          product_id: m.product_id!,
+          code,
+          name,
+          unit,
+          quantity: plannedQty,
+          product_type: 'kit',
+          category_id: catId,
+          category_name: catName,
+          component_count: components.length,
+        });
+
+        components.forEach((comp) => {
+          const realQty = Math.round(Number(comp.quantity) * plannedQty * 10000) / 10000;
+          rows.push({
+            level: 1,
+            product_id: comp.component_product_id,
+            code: comp.component_code,
+            name: comp.component_name,
+            unit: comp.component_unit,
+            quantity: realQty,
+            product_type: 'article',
             category_id: catId,
             category_name: catName,
           });
@@ -167,7 +216,7 @@ export function ProjectMaterialOrderList({ materials }: ProjectMaterialOrderList
     });
 
     return rows;
-  }, [physicalMaterials, composites, breakdownQueries, isLoading]);
+  }, [physicalMaterials, composites, kits, compositeBreakdownQueries, kitBreakdownQueries, isLoading]);
 
   // Build aggregated list (all, unfiltered)
   const allAggregatedItems = useMemo<AggregatedItem[]>(() => {
@@ -225,7 +274,26 @@ export function ProjectMaterialOrderList({ materials }: ProjectMaterialOrderList
         );
       } else if (type === 'composite') {
         const compositeIndex = composites.findIndex((c) => c.id === m.id);
-        const breakdown = breakdownQueries[compositeIndex]?.data as CompositeBreakdown | undefined;
+        const breakdown = compositeBreakdownQueries[compositeIndex]?.data as BomBreakdown | undefined;
+
+        if (breakdown?.components?.length) {
+          breakdown.components.forEach((comp) => {
+            const compQty = Math.round(Number(comp.quantity) * plannedQty * 10000) / 10000;
+            addItem(
+              comp.component_product_id,
+              comp.component_code,
+              comp.component_name,
+              comp.component_unit,
+              compQty,
+              `${productName} × ${plannedQty}`,
+              catId,
+              catName,
+            );
+          });
+        }
+      } else if (type === 'kit') {
+        const kitIndex = kits.findIndex((k) => k.id === m.id);
+        const breakdown = kitBreakdownQueries[kitIndex]?.data as BomBreakdown | undefined;
 
         if (breakdown?.components?.length) {
           breakdown.components.forEach((comp) => {
@@ -245,8 +313,8 @@ export function ProjectMaterialOrderList({ materials }: ProjectMaterialOrderList
       }
     });
 
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'it'));
-  }, [physicalMaterials, composites, breakdownQueries, isLoading]);
+    return Array.from(map.values()).sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'it'));
+  }, [physicalMaterials, composites, kits, compositeBreakdownQueries, kitBreakdownQueries, isLoading]);
 
   // All distinct categories (from level-0 rows only, to avoid duplicates)
   const allCategories = useMemo(() => {
@@ -316,7 +384,7 @@ export function ProjectMaterialOrderList({ materials }: ProjectMaterialOrderList
     return (
       <div className="flex items-center justify-center py-12 gap-3 text-slate-500 dark:text-slate-400">
         <Loader2 className="h-5 w-5 animate-spin" />
-        <span className="text-sm">Scomposizione materiali composti...</span>
+        <span className="text-sm">Scomposizione materiali composti e kit...</span>
       </div>
     );
   }
@@ -463,6 +531,8 @@ export function ProjectMaterialOrderList({ materials }: ProjectMaterialOrderList
           {composites.length > 0
             ? `${composites.length} composito${composites.length !== 1 ? 'i' : ''} espanso${composites.length !== 1 ? 'i' : ''}`
             : 'nessun composito'}
+          {kits.length > 0 &&
+            ` • ${kits.length} kit${kits.length !== 1 ? ' espansi' : ' espanso'}`}
           {isFiltered && ` • ${selectedCategories.size} categori${selectedCategories.size !== 1 ? 'e' : 'a'} filtrat${selectedCategories.size !== 1 ? 'e' : 'a'}`}
         </div>
       </div>
@@ -562,6 +632,7 @@ function CategoryGroup({
 
 function HierarchyTableRow({ row }: { row: HierarchyRow }) {
   const isComposite = row.product_type === 'composite';
+  const isKit = row.product_type === 'kit';
   const isChild = row.level === 1;
 
   return (
@@ -590,6 +661,9 @@ function HierarchyTableRow({ row }: { row: HierarchyRow }) {
         {isComposite && !isChild && (
           <div className="w-0.5 h-5 bg-blue-400 dark:bg-blue-500 rounded-full shrink-0" />
         )}
+        {isKit && !isChild && (
+          <div className="w-0.5 h-5 bg-purple-400 dark:bg-purple-500 rounded-full shrink-0" />
+        )}
         <span
           className={`truncate ${
             isChild
@@ -605,6 +679,14 @@ function HierarchyTableRow({ row }: { row: HierarchyRow }) {
             className="text-[10px] px-1.5 py-0 shrink-0 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400"
           >
             composito
+          </Badge>
+        )}
+        {isKit && !isChild && (
+          <Badge
+            variant="outline"
+            className="text-[10px] px-1.5 py-0 shrink-0 border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400"
+          >
+            kit
           </Badge>
         )}
       </div>

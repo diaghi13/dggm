@@ -263,7 +263,7 @@ export function ProductForm({
     if (!overrideStandardCost && !vis.isService) {
       setFormData((prev) => ({ ...prev, standard_cost: autoStandardCost }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [autoStandardCost, overrideStandardCost, vis.isService]);
 
   const handleSubmit = (e: React.FormEvent) => {

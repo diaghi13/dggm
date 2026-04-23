@@ -7,10 +7,12 @@ use App\Enums\ProjectExpenseStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class ProjectExpense extends Model
+class ProjectExpense extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
         'project_id',
@@ -27,6 +29,9 @@ class ProjectExpense extends Model
         'approved_at',
         'rejection_reason',
         'notes',
+        'is_budgeted',
+        'budgeted_amount',
+        'billable_to_final_balance',
     ];
 
     protected function casts(): array
@@ -38,7 +43,25 @@ class ProjectExpense extends Model
             'is_billable_to_client' => 'boolean',
             'status' => ProjectExpenseStatus::class,
             'approved_at' => 'datetime',
+            'is_budgeted' => 'boolean',
+            'budgeted_amount' => 'decimal:2',
+            'billable_to_final_balance' => 'boolean',
         ];
+    }
+
+    // ==================== MEDIA ====================
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('receipts')
+            ->useDisk('public')
+            ->singleFile()
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']);
+    }
+
+    public function getReceiptUrlAttribute(): ?string
+    {
+        return $this->getFirstMediaUrl('receipts') ?: null;
     }
 
     // ==================== RELATIONSHIPS ====================
@@ -71,6 +94,11 @@ class ProjectExpense extends Model
             ProjectExpenseStatus::AutoApproved,
             ProjectExpenseStatus::Approved,
         ]);
+    }
+
+    public function getVarianceAttribute(): float
+    {
+        return (float) $this->amount - (float) ($this->budgeted_amount ?? 0);
     }
 
     // ==================== SCOPES ====================

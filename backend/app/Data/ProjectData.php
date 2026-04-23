@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use Spatie\LaravelData\Attributes\WithoutValidation;
 use Spatie\LaravelData\Data;
 
 class ProjectData extends Data
@@ -33,7 +34,44 @@ class ProjectData extends Data
         public ?string $notes,
         public ?string $internal_notes,
         public bool $is_active = true,
+        #[WithoutValidation]
+        public ?CustomerData $customer = null,
     ) {}
+
+    public static function fromModel(\App\Models\Project $project): self
+    {
+        return new self(
+            id: $project->id,
+            code: $project->code,
+            name: $project->name,
+            description: $project->description,
+            customer_id: $project->customer_id,
+            quote_id: $project->quote_id,
+            address: $project->address,
+            city: $project->city,
+            province: $project->province,
+            postal_code: $project->postal_code,
+            country: $project->country,
+            latitude: $project->latitude,
+            longitude: $project->longitude,
+            gps_radius: $project->gps_radius,
+            project_manager_id: $project->project_manager_id,
+            estimated_amount: $project->estimated_amount,
+            actual_cost: $project->actual_cost,
+            invoiced_amount: $project->invoiced_amount,
+            start_date: $project->start_date?->format('Y-m-d'),
+            estimated_end_date: $project->estimated_end_date?->format('Y-m-d'),
+            actual_end_date: $project->actual_end_date?->format('Y-m-d'),
+            status: $project->status instanceof \BackedEnum ? $project->status->value : (string) $project->status,
+            priority: $project->priority instanceof \BackedEnum ? $project->priority->value : $project->priority,
+            notes: $project->notes,
+            internal_notes: $project->internal_notes,
+            is_active: $project->is_active,
+            customer: $project->relationLoaded('customer') && $project->customer
+                ? CustomerData::from($project->customer)
+                : null,
+        );
+    }
 
     public static function rules(): array
     {

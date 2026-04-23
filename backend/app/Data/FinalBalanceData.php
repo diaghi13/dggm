@@ -2,60 +2,75 @@
 
 namespace App\Data;
 
+use App\Enums\FinalBalanceStatus;
+use Spatie\LaravelData\Attributes\DataCollectionOf;
+use Spatie\LaravelData\Attributes\Validation\Max;
+use Spatie\LaravelData\Attributes\Validation\Required;
+use Spatie\LaravelData\Attributes\WithTransformer;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Lazy;
+use Spatie\LaravelData\Optional;
+use Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer;
 
 class FinalBalanceData extends Data
 {
     public function __construct(
-        public int $project_id,
-        public string $project_name,
-        public string $project_code,
-        public ?string $customer_name,
-        public string $currency = 'EUR',
+        public int|Optional $id = new Optional,
 
-        // ── Quote Revenue ──────────────────────────────────────────────
-        // Approved quote totals (what client was quoted)
-        public float $quote_total = 0,
-        public float $quote_labor_total = 0,
-        public float $quote_material_total = 0,
+        #[Required, Max(255)]
+        public string $title = '',
 
-        // ── Extras (beyond quote) ──────────────────────────────────────
-        // Extra labor hours × customer_rate
-        public float $extra_labor_revenue = 0,
-        // Approved billable expenses
-        public float $billable_expenses_revenue = 0,
+        public ?int $project_id = null,
+        public ?int $quote_id = null,
+        public ?int $customer_id = null,
+        public string|Optional $code = new Optional,
+        public ?string $reference_text = null,
+        public ?string $notes = null,
+        public FinalBalanceStatus|Optional $status = new Optional,
+        public bool $is_partial = false,
+        public bool $is_manual_override = false,
+        public float $subtotal = 0,
+        public float $discount_percentage = 0,
+        public float $discount_amount = 0,
+        public float $tax_percentage = 22,
+        public float $tax_amount = 0,
+        public float $total_amount = 0,
 
-        // ── Total Revenue ──────────────────────────────────────────────
-        public float $total_revenue = 0,
+        #[WithTransformer(DateTimeInterfaceTransformer::class, format: 'Y-m-d')]
+        public ?\Carbon\Carbon $issue_date = null,
 
-        // ── Costs ──────────────────────────────────────────────────────
-        // Internal: sum of approved ProjectLaborCost entries
-        public float $labor_cost_total = 0,
-        // External: sum of approved ProjectLaborCost entries (external workers)
-        public float $external_labor_cost = 0,
-        public float $internal_labor_cost = 0,
-        // Material costs (ProjectMaterial × cost_price)
-        public float $material_cost_total = 0,
-        // Approved project expenses
-        public float $approved_expenses_total = 0,
+        public int|Optional|null $created_by_user_id = new Optional,
+        public int|Optional|null $finalized_by_user_id = new Optional,
+        public int|Optional|null $approved_by_user_id = new Optional,
 
-        // ── Total Cost ─────────────────────────────────────────────────
-        public float $total_cost = 0,
+        // Relations (output only)
+        public string|Lazy|Optional $project_name = new Optional,
+        public string|Lazy|Optional $customer_name = new Optional,
 
-        // ── Margin ─────────────────────────────────────────────────────
-        public float $gross_margin = 0,
-        public float $gross_margin_percent = 0,
-
-        // ── Workers Summary ────────────────────────────────────────────
-        /** @var DataCollection<ProjectWorkerData>|null */
-        public ?DataCollection $workers = null,
-
-        // ── Expenses Summary ───────────────────────────────────────────
-        /** @var DataCollection<ProjectExpenseData>|null */
-        public ?DataCollection $expenses = null,
-
-        // ── Timestamps ─────────────────────────────────────────────────
-        public ?string $generated_at = null,
+        #[DataCollectionOf(FinalBalanceItemData::class)]
+        public DataCollection|Lazy|Optional $items = new Optional,
     ) {}
+
+    public static function rules(): array
+    {
+        return [
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'project_id' => ['nullable', 'exists:projects,id'],
+            'quote_id' => ['nullable', 'exists:quotes,id'],
+            'customer_id' => ['nullable', 'exists:customers,id'],
+            'reference_text' => ['nullable', 'string', 'max:500'],
+            'notes' => ['nullable', 'string'],
+            'status' => ['nullable', 'string', 'in:draft,finalized,approved'],
+            'is_partial' => ['nullable', 'boolean'],
+            'is_manual_override' => ['nullable', 'boolean'],
+            'subtotal' => ['nullable', 'numeric', 'min:0'],
+            'discount_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'tax_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'tax_amount' => ['nullable', 'numeric', 'min:0'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
+            'issue_date' => ['nullable', 'date'],
+        ];
+    }
 }

@@ -40,18 +40,17 @@ import { ProjectRoleBadges as SiteRoleBadges } from '@/app/(dashboard)/projects/
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import Link from 'next/link';
 import {
   Briefcase,
-  CheckCircle2,
-  XCircle,
   Package,
   AlertTriangle,
   Building2,
-  UserPlus,
   Clock,
   Plus,
+  Calendar,
 } from 'lucide-react';
-import type { ProjectWorker as SiteWorker, MaterialRequest } from '@/lib/types';
+import type { ProjectWorker as SiteWorker } from '@/lib/types';
 import {MaterialRequestPriorityBadge} from "@/app/(dashboard)/products/_components/material-request-priority-badge";
 import {MaterialRequestStatusBadge} from "@/app/(dashboard)/products/_components/material-request-status-badge";
 import {MaterialRequestDialog} from "@/app/(dashboard)/products/_components/material-request-dialog";
@@ -140,11 +139,6 @@ export default function WorkerDashboardPage() {
       toast.error('Errore durante il rifiuto');
     },
   });
-
-  const openRespondDialog = (assignment: SiteWorker, action: 'accept' | 'reject') => {
-    setRespondDialog({ open: true, assignment, action });
-    setNotes('');
-  };
 
   const closeRespondDialog = () => {
     setRespondDialog({ open: false, assignment: null, action: 'accept' });
@@ -310,23 +304,12 @@ export default function WorkerDashboardPage() {
                         </TableCell>
                         <TableCell>
                           {assignment.status === 'pending' && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => openRespondDialog(assignment, 'accept')}
-                              >
-                                <CheckCircle2 className="h-4 w-4 mr-1" />
-                                Accetta
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openRespondDialog(assignment, 'reject')}
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Rifiuta
-                              </Button>
-                            </div>
+                            <Button size="sm" asChild>
+                              <Link href={`/assignments/${assignment.id}`}>
+                                <Calendar className="h-4 w-4 mr-1" />
+                                Scegli le Giornate
+                              </Link>
+                            </Button>
                           )}
                           {(assignment.status === 'active' || assignment.status === 'accepted') && (
                             <Button

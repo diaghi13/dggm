@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Enums\ProjectWorkerStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class ProjectWorker extends Pivot
+class ProjectWorker extends Model
 {
     use HasFactory;
 
@@ -95,14 +96,23 @@ class ProjectWorker extends Pivot
         return $this->belongsTo(QuoteItem::class, 'quote_item_id');
     }
 
-    public function schedules(): HasMany
+    public function schedules(): Builder
     {
-        return $this->hasMany(ProjectWorkerSchedule::class);
+        return ProjectWorkerSchedule::query()
+            ->where('project_id', $this->project_id)
+            ->where('worker_id', $this->worker_id);
     }
 
     public function laborLogs(): HasMany
     {
         return $this->hasMany(ProjectLaborLog::class);
+    }
+
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(ProjectService::class, 'project_service_workers')
+            ->withPivot(['assigned_hours', 'notes'])
+            ->withTimestamps();
     }
 
     // ==================== SCOPES ====================

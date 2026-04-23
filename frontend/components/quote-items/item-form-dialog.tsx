@@ -257,7 +257,7 @@ export function ItemFormDialog({
   useEffect(() => {
     if (isOpen) {
       setSelectedProductType(editingItem?.product?.product_type ?? null); // eslint-disable-line react-hooks/set-state-in-effect
-      setSelectedIsLaborRole(editingItem?.product?.is_labor_role ?? false); // eslint-disable-line react-hooks/set-state-in-effect
+      setSelectedIsLaborRole(editingItem?.product?.is_labor_role ?? false);  
       setPricingInfo(null);
       setMediaOpen(false);
       // Sync hide_unit_price with global default when not explicitly set per-item

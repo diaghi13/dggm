@@ -51,6 +51,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import Link from "next/link";
 import { CurrencyDisplay } from "@/components/ui/currency-input";
+import { RentalReturnInspection } from "@/app/(dashboard)/ddts/_components/rental-return-inspection";
 
 const ddtTypeLabels: Record<App.Enums.DdtType, string> = {
   incoming: "Carico da Fornitore",
@@ -274,6 +275,15 @@ export default function DdtDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Rental Return Inspection */}
+      {ddt.type === "rental_return" &&
+        (ddt.status === "delivered" || ddt.status === "issued") && (
+          <RentalReturnInspection
+            ddtId={ddtId}
+            projectId={ddt.project_id ?? null}
+          />
+        )}
 
       {/* DDT Information */}
       <div className="grid gap-6 md:grid-cols-2">

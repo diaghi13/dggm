@@ -10,6 +10,7 @@ use App\Enums\ProjectExpenseStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectExpense;
+use App\Queries\Project\GetProjectExpenseSummaryQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -171,6 +172,64 @@ class ProjectExpenseController extends Controller
             'success' => true,
             'data' => ProjectExpenseData::fromModel($expense),
         ]);
+    }
+
+    /**
+     * Return expense totals grouped by category with variance vs budget.
+     */
+    public function summary(Project $project): JsonResponse
+    {
+        $this->authorize('view', $project);
+
+        $summary = app(GetProjectExpenseSummaryQuery::class, ['project' => $project])->execute();
+
+        return response()->json([
+            'success' => true,
+            'data' => $summary,
+        ]);
+    }
+
+    /**
+     * Upload or replace the receipt for an expense.
+     */
+    public function uploadReceipt(Request $request, ProjectExpense $projectExpense): JsonResponse
+    {
+        $this->authorize('update', $projectExpense->project);
+
+        $request->validate([
+            'receipt' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif,pdf'],
+        ]);
+
+        // Replace any existing receipt
+        $projectExpense->clearMediaCollection('receipts');
+        $media = $projectExpense->addMediaFromRequest('receipt')
+            ->toMediaCollection('receipts');
+
+        $projectExpense->update(['receipt_media_id' => $media->id]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'media_id' => $media->id,
+                'receipt_url' => $media->getUrl(),
+                'file_name' => $media->file_name,
+                'mime_type' => $media->mime_type,
+                'size' => $media->size,
+            ],
+        ]);
+    }
+
+    /**
+     * Remove the receipt from an expense.
+     */
+    public function deleteReceipt(ProjectExpense $projectExpense): JsonResponse
+    {
+        $this->authorize('update', $projectExpense->project);
+
+        $projectExpense->clearMediaCollection('receipts');
+        $projectExpense->update(['receipt_media_id' => null]);
+
+        return response()->json(['success' => true]);
     }
 
     /**

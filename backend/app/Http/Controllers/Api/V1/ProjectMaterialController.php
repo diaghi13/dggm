@@ -101,6 +101,10 @@ class ProjectMaterialController extends Controller
             'required_date' => 'nullable|date',
             'delivery_date' => 'nullable|date',
             'notes' => 'nullable|string|max:1000',
+            'subrental_assignments' => 'nullable|array',
+            'subrental_assignments.*.subrental_supplier_entry_id' => 'required|integer|exists:product_subrental_suppliers,id',
+            'subrental_assignments.*.quantity' => 'nullable|numeric|min:0.01',
+            'subrental_assignments.*.quoted_price' => 'nullable|numeric|min:0',
         ]);
 
         $projectMaterial->update($validated);
@@ -409,6 +413,111 @@ class ProjectMaterialController extends Controller
                 'to' => ProjectMaterialData::from($transferredMaterial->load('product')),
             ],
         ]);
+    }
+
+    /**
+     * Add a subrental supplier assignment to a project material.
+     * POST /projects/{project}/materials/{projectMaterial}/subrental-assignments
+     */
+    public function addSubrentalAssignment(Request $request, Project $project, ProjectMaterial $projectMaterial): JsonResponse
+    {
+        $this->authorize('update', $project);
+
+        if ($projectMaterial->project_id !== $project->id) {
+            return response()->json(['success' => false, 'message' => 'Material does not belong to this project'], 404);
+        }
+
+        $validated = $request->validate([
+            'subrental_supplier_entry_id' => 'required|integer|exists:product_subrental_suppliers,id',
+            'quantity' => 'nullable|numeric|min:0.01',
+            'quoted_price' => 'nullable|numeric|min:0',
+        ]);
+
+        $current = $projectMaterial->subrental_assignments ?? [];
+
+        // Avoid duplicates — update if already exists, otherwise append
+        $found = false;
+        $current = array_map(function ($a) use ($validated, &$found) {
+            if ($a['subrental_supplier_entry_id'] === $validated['subrental_supplier_entry_id']) {
+                $found = true;
+
+                return array_merge($a, array_filter($validated, fn ($v) => $v !== null));
+            }
+
+            return $a;
+        }, $current);
+
+        if (! $found) {
+            $current[] = [
+                'subrental_supplier_entry_id' => $validated['subrental_supplier_entry_id'],
+                'quantity' => $validated['quantity'] ?? null,
+                'quoted_price' => $validated['quoted_price'] ?? null,
+            ];
+        }
+
+        $projectMaterial->update(['subrental_assignments' => $current]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $projectMaterial->fresh()->subrental_assignments,
+        ]);
+    }
+
+    /**
+     * Update price/quantity for a specific subrental assignment.
+     * PATCH /projects/{project}/materials/{projectMaterial}/subrental-assignments/{entryId}
+     */
+    public function updateSubrentalAssignment(Request $request, Project $project, ProjectMaterial $projectMaterial, int $entryId): JsonResponse
+    {
+        $this->authorize('update', $project);
+
+        if ($projectMaterial->project_id !== $project->id) {
+            return response()->json(['success' => false, 'message' => 'Material does not belong to this project'], 404);
+        }
+
+        $validated = $request->validate([
+            'quantity' => 'nullable|numeric|min:0.01',
+            'quoted_price' => 'nullable|numeric|min:0',
+        ]);
+
+        $current = $projectMaterial->subrental_assignments ?? [];
+        $updated = array_map(function ($a) use ($entryId, $validated) {
+            if ($a['subrental_supplier_entry_id'] === $entryId) {
+                return array_merge($a, [
+                    'quantity' => array_key_exists('quantity', $validated) ? $validated['quantity'] : ($a['quantity'] ?? null),
+                    'quoted_price' => array_key_exists('quoted_price', $validated) ? $validated['quoted_price'] : ($a['quoted_price'] ?? null),
+                ]);
+            }
+
+            return $a;
+        }, $current);
+
+        $projectMaterial->update(['subrental_assignments' => $updated]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $projectMaterial->fresh()->subrental_assignments,
+        ]);
+    }
+
+    /**
+     * Remove a specific subrental assignment.
+     * DELETE /projects/{project}/materials/{projectMaterial}/subrental-assignments/{entryId}
+     */
+    public function removeSubrentalAssignment(Project $project, ProjectMaterial $projectMaterial, int $entryId): JsonResponse
+    {
+        $this->authorize('update', $project);
+
+        if ($projectMaterial->project_id !== $project->id) {
+            return response()->json(['success' => false, 'message' => 'Material does not belong to this project'], 404);
+        }
+
+        $current = $projectMaterial->subrental_assignments ?? [];
+        $updated = array_values(array_filter($current, fn ($a) => $a['subrental_supplier_entry_id'] !== $entryId));
+
+        $projectMaterial->update(['subrental_assignments' => $updated]);
+
+        return response()->json(['success' => true]);
     }
 
     /**

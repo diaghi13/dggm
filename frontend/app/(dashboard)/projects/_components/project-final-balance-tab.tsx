@@ -70,15 +70,14 @@ export function ProjectFinalBalanceTab({ projectId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-          Final Balance
+          Consuntivi
         </h3>
         <Button
           size="sm"
           onClick={handleLoad}
           disabled={isLoading}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
         >
-          {isLoading ? 'Calcolando...' : balance ? 'Aggiorna' : 'Calcola Final Balance'}
+          {isLoading ? 'Calcolando...' : balance ? 'Aggiorna' : 'Calcola Consuntivo'}
         </Button>
       </div>
 

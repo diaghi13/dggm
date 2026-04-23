@@ -9,6 +9,7 @@ use App\Data\ProductData;
 use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportProductPostRequest;
+use App\Models\KitAssembly;
 use App\Models\Product;
 use App\Queries\Product\GetProductsQuery;
 use App\Services\ImportFieldTransformer;
@@ -179,7 +180,9 @@ class ProductController extends Controller
             ], 422);
         }
 
-        $componentRelations = $product->components()
+        // Use all relations (not just type=component) so that composites with
+        // cable/accessory/other relation types are included in the breakdown.
+        $componentRelations = $product->relations()
             ->with(['relatedProduct.priceListItems' => function ($q) {
                 $q->where('is_active', true)
                     ->whereHas('priceList', fn ($pq) => $pq->where('is_active', true)->where('is_default', true));
@@ -191,7 +194,7 @@ class ProductController extends Controller
         $breakdown = $componentRelations->map(function ($relation) {
             $component = $relation->relatedProduct;
 
-            if (! $component) {
+            if (! $component || $component->is_package) {
                 return null;
             }
 
@@ -228,6 +231,60 @@ class ProductController extends Controller
                 'product_name' => $product->name,
                 'components' => $breakdown,
                 'totals' => $aggregated,
+            ],
+        ]);
+    }
+
+    /**
+     * Get kit product breakdown from the most recent KitAssembly.
+     * Returns the same { components: [...] } shape as compositeBreakdown for frontend compatibility.
+     */
+    public function kitBreakdown(Product $product): JsonResponse
+    {
+        $this->authorize('view', $product);
+
+        if ($product->product_type !== ProductType::KIT) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product is not a kit.',
+            ], 422);
+        }
+
+        $assembly = KitAssembly::where('product_id', $product->id)
+            ->latest()
+            ->with(['items.product'])
+            ->first();
+
+        $components = [];
+
+        if ($assembly) {
+            $components = $assembly->items
+                ->filter(fn ($item) => $item->product && ! $item->product->is_package)
+                ->map(function ($item) {
+                    $component = $item->product;
+
+                    return [
+                        'kit_assembly_item_id' => $item->id,
+                        'component_product_id' => $item->product_id,
+                        'component_code' => $component?->code ?? '—',
+                        'component_name' => $component?->name ?? 'Unknown',
+                        'component_unit' => $component?->unit ?? 'pz',
+                        'quantity' => (float) $item->quantity,
+                        'serial_number' => $item->serial_number,
+                        'notes' => $item->notes,
+                    ];
+                })->values()->all();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'product_id' => $product->id,
+                'product_code' => $product->code,
+                'product_name' => $product->name,
+                'assembly_id' => $assembly?->id,
+                'assembly_status' => $assembly?->status,
+                'components' => $components,
             ],
         ]);
     }

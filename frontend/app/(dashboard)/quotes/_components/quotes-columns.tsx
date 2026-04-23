@@ -10,6 +10,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  AlertCircle,
   Calendar,
   Copy,
   Eye,
@@ -49,6 +55,27 @@ const statusLabels: Record<string, string> = {
   expired: "Scaduto",
   converted: "Convertito",
 };
+
+function getDeleteBlockReason(quote: Quote): string | null {
+  if (
+    !quote.project_id &&
+    !quote.sent_date &&
+    !quote.approved_date &&
+    quote.status === "draft"
+  ) {
+    return null;
+  }
+  if (quote.project_id) {
+    return "Il preventivo è associato a un progetto e non può essere eliminato.";
+  }
+  if (quote.sent_date) {
+    return "Il preventivo è già stato inviato al cliente e non può essere eliminato.";
+  }
+  if (quote.approved_date) {
+    return "Il preventivo è già stato approvato e non può essere eliminato.";
+  }
+  return "Solo i preventivi in bozza possono essere eliminati.";
+}
 
 export const createQuotesColumns = (
   onDelete: (quote: Quote) => void,
@@ -118,6 +145,8 @@ export const createQuotesColumns = (
     cell: ({ row }) => {
       const quote = row.original;
       const canEdit = !["approved", "converted"].includes(quote.status);
+      const deleteBlockReason = getDeleteBlockReason(quote);
+      const canBeDeleted = deleteBlockReason === null;
       return (
         <TooltipProvider>
           <div className="flex justify-end gap-1">
@@ -193,22 +222,50 @@ export const createQuotesColumns = (
               <TooltipContent>Duplica preventivo</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-red-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(quote);
-                  }}
+            {canBeDeleted ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-red-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(quote);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Elimina</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled
+                    className="opacity-50 cursor-not-allowed"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-72 text-sm"
+                  side="top"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Elimina</TooltipContent>
-            </Tooltip>
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                    <p className="text-slate-700 dark:text-slate-300">
+                      {deleteBlockReason}
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         </TooltipProvider>
       );

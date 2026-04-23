@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\ContractorController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DdtController;
 use App\Http\Controllers\Api\V1\EmailAccountOAuthController;
+use App\Http\Controllers\Api\V1\FinalBalanceController;
 use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\InvitationController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Api\V1\ProductRelationController;
 use App\Http\Controllers\Api\V1\ProductRelationTypeController;
 use App\Http\Controllers\Api\V1\ProductSubrentalSupplierController;
 use App\Http\Controllers\Api\V1\ProductUnitTypeController;
+use App\Http\Controllers\Api\V1\ProjectAvailabilityCheckController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ProjectDdtController;
 use App\Http\Controllers\Api\V1\ProjectExpenseController;
@@ -39,6 +41,8 @@ use App\Http\Controllers\Api\V1\PublicQuoteActionController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\RentalAnalyticsController;
 use App\Http\Controllers\Api\V1\RentalProfileController;
+use App\Http\Controllers\Api\V1\RentalReturnInspectionController;
+use App\Http\Controllers\Api\V1\RepairOrderController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SettingController;
 use App\Http\Controllers\Api\V1\StockMovementController;
@@ -280,6 +284,28 @@ Route::prefix('v1')->group(function () {
         // Projects (replaces Sites)
         Route::apiResource('projects', ProjectController::class);
 
+        // Final Balances (Step 10)
+        Route::get('final-balances/next-number', [FinalBalanceController::class, 'nextNumber']);
+        Route::get('final-balances', [FinalBalanceController::class, 'index']);
+        Route::post('final-balances', [FinalBalanceController::class, 'store']);
+        Route::get('final-balances/{finalBalance}', [FinalBalanceController::class, 'show']);
+        Route::put('final-balances/{finalBalance}', [FinalBalanceController::class, 'update']);
+        Route::delete('final-balances/{finalBalance}', [FinalBalanceController::class, 'destroy']);
+        Route::post('final-balances/{finalBalance}/finalize', [FinalBalanceController::class, 'finalize']);
+        Route::post('final-balances/{finalBalance}/approve', [FinalBalanceController::class, 'approve']);
+        Route::post('final-balances/{finalBalance}/items', [FinalBalanceController::class, 'storeItem']);
+        Route::put('final-balance-items/{item}', [FinalBalanceController::class, 'updateItem']);
+        Route::delete('final-balance-items/{item}', [FinalBalanceController::class, 'destroyItem']);
+        Route::patch('final-balance-items/{item}/reorder', [FinalBalanceController::class, 'reorderItem']);
+        Route::get('projects/{project}/final-balances', [FinalBalanceController::class, 'indexByProject']);
+        Route::post('projects/{project}/final-balances/generate', [FinalBalanceController::class, 'generate']);
+
+        // Project Availability Checks (Step 7)
+        Route::post('projects/{project}/availability-check', [ProjectAvailabilityCheckController::class, 'run']);
+        Route::get('projects/{project}/availability-checks', [ProjectAvailabilityCheckController::class, 'index']);
+        Route::get('projects/{project}/availability-checks/latest', [ProjectAvailabilityCheckController::class, 'latest']);
+        Route::patch('project-availability-items/{item}/resolve', [ProjectAvailabilityCheckController::class, 'resolveItem']);
+
         // Suppliers
         Route::apiResource('suppliers', SupplierController::class);
         Route::get('suppliers/{supplier}/workers', [SupplierController::class, 'getWorkers']);
@@ -294,6 +320,7 @@ Route::prefix('v1')->group(function () {
         Route::post('quotes/{quote}/approve', [QuoteController::class, 'approve']);
         Route::post('quotes/{quote}/reject', [QuoteController::class, 'reject']);
         Route::post('quotes/{quote}/send', [QuoteController::class, 'send']);
+        Route::post('quotes/{quote}/mark-as-sent', [QuoteController::class, 'markAsSent']);
 
         // Quote Actions
         Route::post('quotes/{quote}/convert-to-project', [QuoteController::class, 'convertToProject']);
@@ -316,6 +343,7 @@ Route::prefix('v1')->group(function () {
         Route::post('products/import', [ProductController::class, 'import']);
         Route::get('products-needing-reorder', [ProductController::class, 'needingReorder']);
         Route::get('products/{product}/composite-breakdown', [ProductController::class, 'compositeBreakdown']);
+        Route::get('products/{product}/kit-breakdown', [ProductController::class, 'kitBreakdown']);
         Route::get('products/categories/list', [ProductController::class, 'categories']);
         Route::post('products/{product}/calculate-price', [ProductController::class, 'calculatePrice']);
 
@@ -467,6 +495,22 @@ Route::prefix('v1')->group(function () {
             Route::post('ddts/{ddt}/mark-delivered', [DdtController::class, 'markAsDelivered']);
             Route::post('ddts/{ddt}/deliver', [DdtController::class, 'deliver']);
 
+            // Rental Return Inspections (Step 8)
+            Route::post('ddts/{ddt}/inspection', [RentalReturnInspectionController::class, 'start']);
+            Route::get('ddts/{ddt}/inspection', [RentalReturnInspectionController::class, 'show']);
+            Route::patch('inspection-items/{item}', [RentalReturnInspectionController::class, 'completeItem']);
+            Route::post('inspections/{inspection}/finalize', [RentalReturnInspectionController::class, 'finalize']);
+            Route::get('inspections/pending', [RentalReturnInspectionController::class, 'pending']);
+
+            // Repair Orders & Quarantine Management (Step 9)
+            Route::get('inventory/quarantine', [RepairOrderController::class, 'quarantine']);
+            Route::get('repair-orders', [RepairOrderController::class, 'index']);
+            Route::post('repair-orders', [RepairOrderController::class, 'store']);
+            Route::get('repair-orders/{repairOrder}', [RepairOrderController::class, 'show']);
+            Route::put('repair-orders/{repairOrder}', [RepairOrderController::class, 'update']);
+            Route::patch('repair-orders/{repairOrder}/status', [RepairOrderController::class, 'updateStatus']);
+            Route::get('products/{product}/repair-history', [RepairOrderController::class, 'repairHistory']);
+
             // Project DDTs
             Route::get('projects/{project}/ddts', [ProjectDdtController::class, 'index']);
             Route::post('projects/{project}/ddts/{ddt}/confirm', [ProjectDdtController::class, 'confirm']);
@@ -483,6 +527,9 @@ Route::prefix('v1')->group(function () {
             Route::post('projects/{project}/materials/{projectMaterial}/deliver', [ProjectMaterialController::class, 'deliver']);
             Route::post('projects/{project}/materials/{projectMaterial}/return', [ProjectMaterialController::class, 'returnMaterial']);
             Route::post('projects/{project}/materials/{projectMaterial}/transfer', [ProjectMaterialController::class, 'transferToProject']);
+            Route::post('projects/{project}/materials/{projectMaterial}/subrental-assignments', [ProjectMaterialController::class, 'addSubrentalAssignment']);
+            Route::patch('projects/{project}/materials/{projectMaterial}/subrental-assignments/{entryId}', [ProjectMaterialController::class, 'updateSubrentalAssignment']);
+            Route::delete('projects/{project}/materials/{projectMaterial}/subrental-assignments/{entryId}', [ProjectMaterialController::class, 'removeSubrentalAssignment']);
 
             // Material Requests
             Route::get('projects/{project}/material-requests', [MaterialRequestController::class, 'indexByProject']);
@@ -530,6 +577,7 @@ Route::prefix('v1')->group(function () {
 
             // Project Workers (Team Management)
             Route::get('projects/{project}/workers', [ProjectWorkerController::class, 'indexByProject']);
+            Route::post('projects/{project}/workers/slot', [ProjectWorkerController::class, 'storeSlot']);
             Route::post('projects/{project}/workers', [ProjectWorkerController::class, 'store']);
             Route::get('workers/{worker}/projects', [ProjectWorkerController::class, 'indexByWorker']);
             Route::get('project-workers/{project_worker}', [ProjectWorkerController::class, 'show']);
@@ -542,10 +590,14 @@ Route::prefix('v1')->group(function () {
             Route::post('project-workers/{project_worker}/complete', [ProjectWorkerController::class, 'complete']);
             Route::get('project-workers/{project_worker}/conflicts', [ProjectWorkerController::class, 'checkConflicts']);
             Route::get('project-workers/{project_worker}/effective-rate', [ProjectWorkerController::class, 'getEffectiveRate']);
+            Route::post('project-workers/{project_worker}/resend-invite', [ProjectWorkerController::class, 'resendInvite']);
 
             // Project Worker Schedules
             Route::get('project-workers/{projectWorker}/schedules', [ProjectWorkerScheduleController::class, 'index']);
             Route::post('project-workers/{projectWorker}/schedules', [ProjectWorkerScheduleController::class, 'store']);
+            Route::post('project-workers/{projectWorker}/generate-schedule', [ProjectWorkerScheduleController::class, 'generateSchedule']);
+            Route::delete('project-workers/{projectWorker}/schedules', [ProjectWorkerScheduleController::class, 'destroyAll']);
+            Route::get('projects/{project}/schedules', [ProjectController::class, 'workerSchedules']);
             Route::post('project-workers/{projectWorker}/assign-slot', [ProjectWorkerController::class, 'assignSlot']);
             Route::get('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'show']);
             Route::put('project-worker-schedules/{projectWorkerSchedule}', [ProjectWorkerScheduleController::class, 'update']);
@@ -557,8 +609,11 @@ Route::prefix('v1')->group(function () {
             Route::get('projects/{project}/labor-logs', [ProjectLaborLogController::class, 'index']);
             Route::post('project-workers/{projectWorker}/labor-logs', [ProjectLaborLogController::class, 'store']);
             Route::get('project-labor-logs/{projectLaborLog}', [ProjectLaborLogController::class, 'show']);
+            Route::put('project-labor-logs/{projectLaborLog}', [ProjectLaborLogController::class, 'update']);
+            Route::delete('project-labor-logs/{projectLaborLog}', [ProjectLaborLogController::class, 'destroy']);
             Route::post('project-labor-logs/{projectLaborLog}/approve', [ProjectLaborLogController::class, 'approve']);
             Route::post('project-labor-logs/{projectLaborLog}/reject', [ProjectLaborLogController::class, 'reject']);
+            Route::post('project-labor-logs/{projectLaborLog}/change-status', [ProjectLaborLogController::class, 'changeStatus']);
 
             // Project Expenses
             Route::get('projects/{project}/expenses', [ProjectExpenseController::class, 'index']);
@@ -568,9 +623,16 @@ Route::prefix('v1')->group(function () {
             Route::delete('project-expenses/{projectExpense}', [ProjectExpenseController::class, 'destroy']);
             Route::post('project-expenses/{projectExpense}/approve', [ProjectExpenseController::class, 'approve']);
             Route::post('project-expenses/{projectExpense}/reject', [ProjectExpenseController::class, 'reject']);
+            Route::post('project-expenses/{projectExpense}/receipt', [ProjectExpenseController::class, 'uploadReceipt']);
+            Route::delete('project-expenses/{projectExpense}/receipt', [ProjectExpenseController::class, 'deleteReceipt']);
 
             // Final Balance
             Route::get('projects/{project}/final-balance', [ProjectController::class, 'finalBalance']);
+
+            // Project Stock
+            Route::get('projects/{project}/stock', [ProjectController::class, 'projectStock']);
+            Route::get('projects/{project}/stock-summary', [ProjectController::class, 'stockSummary']);
+            Route::get('projects/{project}/order-list', [ProjectController::class, 'orderList']);
 
             // Project Roles
             Route::apiResource('project-roles', ProjectRoleController::class);

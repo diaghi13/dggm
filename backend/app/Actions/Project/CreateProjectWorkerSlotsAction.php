@@ -46,21 +46,25 @@ class CreateProjectWorkerSlotsAction
                     : (float) ($quote->event_days ?? 1);
 
                 for ($i = 1; $i <= $count; $i++) {
-                    $slot = ProjectWorker::create([
-                        'project_id' => $project->id,
-                        'worker_id' => null, // no worker yet
-                        'status' => ProjectWorkerStatus::Slot,
-                        'assigned_by_user_id' => auth()->id(),
-                        'role_name' => $item->description,
-                        'slot_index' => $i,
-                        'quote_item_id' => $item->id,
-                        'estimated_days' => $estimatedDays,
-                        'budget_cost_rate' => $item->cost_price,  // internal budget cost / day
-                        'customer_rate' => $item->unit_price,  // what client is charged / day
-                        'is_external' => false, // unknown yet — updated on worker assignment
-                        'is_scheduled' => $isScheduled,
-                        'is_active' => true,
-                    ]);
+                    [$slot] = ProjectWorker::firstOrCreate(
+                        [
+                            'project_id' => $project->id,
+                            'quote_item_id' => $item->id,
+                            'slot_index' => $i,
+                        ],
+                        [
+                            'worker_id' => null,
+                            'status' => ProjectWorkerStatus::Slot,
+                            'assigned_by_user_id' => auth()->id(),
+                            'role_name' => $item->description,
+                            'estimated_days' => $estimatedDays,
+                            'budget_cost_rate' => $item->cost_price,
+                            'customer_rate' => $item->unit_price,
+                            'is_external' => false,
+                            'is_scheduled' => $isScheduled,
+                            'is_active' => true,
+                        ]
+                    );
 
                     $slots->push($slot);
                 }

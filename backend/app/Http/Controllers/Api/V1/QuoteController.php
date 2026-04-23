@@ -495,7 +495,14 @@ class QuoteController extends Controller
     {
         $this->authorize('delete', $quote);
 
-        $this->deleteAction->execute($quote);
+        try {
+            $this->deleteAction->execute($quote);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -857,6 +864,34 @@ class QuoteController extends Controller
             'data' => QuoteData::from($quote)->include('items', 'items.children'),
             'message' => 'Preventivo inviato al cliente',
             'warning' => $warning,
+        ]);
+    }
+
+    /**
+     * Mark quote as sent without sending email
+     */
+    public function markAsSent(Quote $quote): JsonResponse
+    {
+        $this->authorize('update', $quote);
+
+        if ($quote->status !== 'draft') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solo i preventivi in bozza possono essere segnati come inviati.',
+            ], 422);
+        }
+
+        $quote->update([
+            'status' => 'sent',
+            'sent_date' => now()->toDateString(),
+        ]);
+
+        $quote = GetQuoteByIdQuery::execute($quote->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => QuoteData::from($quote)->include('items', 'items.children'),
+            'message' => 'Preventivo segnato come inviato.',
         ]);
     }
 

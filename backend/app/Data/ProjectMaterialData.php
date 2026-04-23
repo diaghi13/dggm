@@ -31,6 +31,8 @@ class ProjectMaterialData extends Data
         public ?string $notes,
 
         public ?int $kit_assembly_id,
+        public ?bool $is_rental,
+        public ?array $subrental_assignments = null,
 
         // Computed properties (read-only, not stored directly)
         public readonly ?float $remaining_quantity = null,
@@ -70,6 +72,11 @@ class ProjectMaterialData extends Data
             'delivery_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
             'kit_assembly_id' => ['nullable', 'integer', 'exists:kit_assemblies,id'],
+            'is_rental' => ['nullable', 'boolean'],
+            'subrental_assignments' => ['nullable', 'array'],
+            'subrental_assignments.*.subrental_supplier_entry_id' => ['required', 'integer'],
+            'subrental_assignments.*.quantity' => ['nullable', 'numeric', 'min:0'],
+            'subrental_assignments.*.quoted_price' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
@@ -97,6 +104,8 @@ class ProjectMaterialData extends Data
             notes: $projectMaterial->notes,
 
             kit_assembly_id: $projectMaterial->kit_assembly_id,
+            is_rental: $projectMaterial->is_rental,
+            subrental_assignments: $projectMaterial->subrental_assignments,
 
             // Computed properties
             remaining_quantity: $projectMaterial->planned_quantity - ($projectMaterial->used_quantity + $projectMaterial->returned_quantity),

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Data\FinalBalanceData;
 use App\Data\ProjectExpenseData;
+use App\Data\ProjectPnlData;
 use App\Data\ProjectWorkerData;
 use App\Enums\ProjectExpenseStatus;
 use App\Enums\ProjectLogStatus;
@@ -19,7 +19,7 @@ class FinalBalanceService
      * Compute the Final Balance for a project.
      * Reads all necessary relationships — ensure eager-loading at the call site.
      */
-    public function compute(Project $project): FinalBalanceData
+    public function compute(Project $project): ProjectPnlData
     {
         $project->loadMissing([
             'quote.items',
@@ -119,7 +119,7 @@ class FinalBalanceService
             DataCollection::class
         );
 
-        return new FinalBalanceData(
+        return new ProjectPnlData(
             project_id: $project->id,
             project_name: $project->name,
             project_code: $project->code,

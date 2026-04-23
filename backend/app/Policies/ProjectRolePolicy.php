@@ -12,7 +12,9 @@ class ProjectRolePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('project_roles.view');
+        return $user->can('project_roles.view')
+            || $user->can('project_workers.view')
+            || $user->hasRole(['SuperAdmin', 'Admin', 'ProjectManager', 'Foreman', 'super-admin', 'admin', 'project-manager', 'team-leader']);
     }
 
     /**

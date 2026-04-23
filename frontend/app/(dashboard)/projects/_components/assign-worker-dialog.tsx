@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -41,12 +42,12 @@ import { ProjectRoleBadge } from '@/app/(dashboard)/projects/_components/project
 import { toast } from 'sonner';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { ProjectWorker } from '@/lib/types';
+import type { ProjectWorker, Project } from '@/lib/types';
 
 const assignWorkerSchema = z
   .object({
     worker_id: z.number({ message: 'Seleziona un lavoratore' }),
-    role_ids: z.array(z.number()).min(1, 'Seleziona almeno un ruolo'),
+    role_ids: z.array(z.number()),
     assigned_from: z.string({ message: 'Inserisci data inizio' }),
     assigned_to: z.string().optional(),
     response_days: z.number().min(1).max(30),
@@ -73,12 +74,13 @@ type AssignWorkerFormData = z.infer<typeof assignWorkerSchema>;
 
 interface AssignWorkerDialogProps {
   projectId: number;
+  project?: Project | null;
   assignment?: ProjectWorker | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AssignWorkerDialog({ projectId, assignment = null, open, onOpenChange }: AssignWorkerDialogProps) {
+export function AssignWorkerDialog({ projectId, project = null, assignment = null, open, onOpenChange }: AssignWorkerDialogProps) {
   const queryClient = useQueryClient();
   const isEditMode = !!assignment;
   const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
@@ -186,6 +188,20 @@ export function AssignWorkerDialog({ projectId, assignment = null, open, onOpenC
         rate_override_notes: assignment.rate_override_notes || '',
         notes: assignment.notes || '',
       });
+      // Explicitly set role_ids after reset to ensure the field is properly initialised
+      form.setValue('role_ids', roleIds);
+    } else if (open && !isEditMode) {
+      // Pre-fill dates from project when opening in create mode
+      form.reset({
+        role_ids: [],
+        response_days: 3,
+        notes: '',
+        assigned_from: project?.start_date ?? '',
+        assigned_to: project?.estimated_end_date ?? '',
+      });
+      setSelectedRoles([]);
+      setUseRateOverride(false);
+      setRateType('hourly');
     } else if (!open) {
       // Reset form when closing
       form.reset({
@@ -197,7 +213,32 @@ export function AssignWorkerDialog({ projectId, assignment = null, open, onOpenC
       setUseRateOverride(false);
       setRateType('hourly');
     }
-  }, [open, isEditMode, assignment, form]);
+  }, [open, isEditMode, assignment, project, form]);
+
+  // Auto-match role_name to project_roles when roles are loaded
+  useEffect(() => {
+    if (!open || !isEditMode || !assignment || !roles || roles.length === 0) return;
+    // Only auto-match if no roles are currently selected from pivot
+    const existingRoleIds = assignment.roles?.map((r) => r.id) ?? [];
+    if (existingRoleIds.length > 0) return; // already have pivot roles, don't override
+
+    // Try to match each slot's role_name against project_roles names
+    const slotRoleNames = assignment.role_name ? [assignment.role_name] : [];
+    const matched = roles
+      .filter((r) =>
+        slotRoleNames.some(
+          (name) =>
+            name.toLowerCase().includes(r.name.toLowerCase()) ||
+            r.name.toLowerCase().includes(name.toLowerCase())
+        )
+      )
+      .map((r) => r.id);
+
+    if (matched.length > 0) {
+      setSelectedRoles(matched);
+      form.setValue('role_ids', matched);
+    }
+  }, [open, isEditMode, assignment, roles, form]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -271,30 +312,43 @@ export function AssignWorkerDialog({ projectId, assignment = null, open, onOpenC
               name="role_ids"
               render={() => (
                 <FormItem>
-                  <FormLabel>Ruoli *</FormLabel>
-                  <FormDescription>Seleziona uno o più ruoli per questo lavoratore</FormDescription>
+                  <FormLabel>Ruoli</FormLabel>
+                  <FormDescription>Seleziona uno o più ruoli per questo lavoratore (opzionale)</FormDescription>
                   <FormControl>
-                    <div className="flex flex-wrap gap-2 p-4 border rounded-md bg-slate-50 dark:bg-slate-900">
-                      {loadingRoles ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        roles?.map((role) => (
-                          <button
-                            key={role.id}
-                            type="button"
-                            onClick={() => toggleRole(role.id)}
-                            className="transition-opacity hover:opacity-80"
-                          >
-                            <ProjectRoleBadge
-                              role={role}
-                              className={
-                                selectedRoles.includes(role.id)
-                                  ? 'border-2 opacity-100'
-                                  : 'opacity-50'
-                              }
-                            />
-                          </button>
-                        ))
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2 p-4 border rounded-md bg-slate-50 dark:bg-slate-900">
+                        {loadingRoles ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          roles?.map((role) => {
+                            const isSelected = selectedRoles.includes(role.id);
+                            return (
+                              <button
+                                key={role.id}
+                                type="button"
+                                onClick={() => toggleRole(role.id)}
+                                className={cn(
+                                  "transition-all",
+                                  isSelected ? "opacity-100" : "opacity-40 hover:opacity-70"
+                                )}
+                              >
+                                <ProjectRoleBadge
+                                  role={role}
+                                  className={isSelected ? "ring-2 ring-offset-1 ring-primary" : ""}
+                                />
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                      {selectedRoles.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 px-1">
+                          {roles?.filter(r => selectedRoles.includes(r.id)).map(r => (
+                            <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary dark:bg-primary/20">
+                              ✓ {r.name}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </FormControl>
@@ -304,37 +358,36 @@ export function AssignWorkerDialog({ projectId, assignment = null, open, onOpenC
             />
 
             {/* Date Range */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="assigned_from"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data Inizio *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="assigned_to"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data Fine (opzionale)</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormDescription className="text-xs">
-                      Lascia vuoto per assegnazione senza fine
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="assigned_from"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data Inizio *</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="assigned_to"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data Fine (opzionale)</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Lascia vuoto per assegnazione senza fine</p>
             </div>
 
             {/* Response Days for External Workers */}

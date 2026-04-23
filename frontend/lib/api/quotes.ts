@@ -69,6 +69,11 @@ export const quotesApi = {
     return { quote: response.data.data, warning: response.data.warning ?? null };
   },
 
+  async markAsSent(id: number): Promise<{ quote: Quote }> {
+    const response = await apiClient.post(`/quotes/${id}/mark-as-sent`);
+    return { quote: response.data.data };
+  },
+
   async convertToProject(
     id: number,
   ): Promise<{ quote: Quote; project_id: number }> {

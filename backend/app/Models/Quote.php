@@ -180,6 +180,11 @@ class Quote extends Model implements HasMedia
         return $this->hasMany(QuoteDeposit::class)->orderBy('sort_order');
     }
 
+    public function finalBalances(): HasMany
+    {
+        return $this->hasMany(FinalBalance::class);
+    }
+
     // Scopes
     public function scopeOfStatus($query, string $status)
     {
@@ -277,6 +282,29 @@ class Quote extends Model implements HasMedia
         }
     }
 
+    public function canBeHardDeleted(): bool
+    {
+        return $this->status === 'draft'
+            && is_null($this->project_id)
+            && is_null($this->sent_date)
+            && is_null($this->approved_date);
+    }
+
+    public function deletionBlockReason(): string
+    {
+        if (! is_null($this->project_id)) {
+            return 'Il preventivo è associato a un progetto e non può essere eliminato.';
+        }
+        if (! is_null($this->sent_date)) {
+            return 'Il preventivo è già stato inviato al cliente e non può essere eliminato.';
+        }
+        if (! is_null($this->approved_date)) {
+            return 'Il preventivo è già stato approvato e non può essere eliminato.';
+        }
+
+        return 'Solo i preventivi in bozza possono essere eliminati.';
+    }
+
     public function canBeEdited(): bool
     {
         return in_array($this->status, ['draft', 'sent']);
@@ -324,6 +352,8 @@ class Quote extends Model implements HasMedia
             'city' => $this->city,
             'province' => $this->province,
             'postal_code' => $this->postal_code,
+            'start_date' => $this->work_start_date?->format('Y-m-d'),
+            'estimated_end_date' => $this->work_end_date?->format('Y-m-d'),
             'quote_id' => $this->id,
             'status' => 'planned',
             'estimated_amount' => $this->total_amount,
@@ -371,6 +401,7 @@ class Quote extends Model implements HasMedia
                 'actual_unit_cost' => round($unitPrice, 4),
                 'status' => 'planned',
                 'notes' => $item->notes,
+                'is_rental' => in_array($item->billing_unit?->value, ['day', 'hour', 'week', 'month']),
             ]);
         }
     }

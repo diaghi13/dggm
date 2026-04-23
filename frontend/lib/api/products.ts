@@ -52,6 +52,11 @@ export const productsApi = {
     return response.data.data;
   },
 
+  getKitBreakdown: async (id: number) => {
+    const response = await apiClient.get(`/products/${id}/kit-breakdown`);
+    return response.data.data;
+  },
+
   calculatePrice: async (id: number) => {
     const response = await apiClient.post(`/products/${id}/calculate-price`);
     return response.data.data;

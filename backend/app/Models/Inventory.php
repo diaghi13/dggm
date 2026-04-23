@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Inventory extends Model
 {
@@ -22,6 +23,10 @@ class Inventory extends Model
         'minimum_stock',
         'maximum_stock',
         'last_count_date',
+        'quarantine_reason',
+        'quarantine_since',
+        'quarantine_resolved_at',
+        'quarantine_resolved_by',
     ];
 
     protected function casts(): array
@@ -34,10 +39,13 @@ class Inventory extends Model
             'minimum_stock' => 'decimal:2',
             'maximum_stock' => 'decimal:2',
             'last_count_date' => 'date',
+            'quarantine_since' => 'date',
+            'quarantine_resolved_at' => 'date',
         ];
     }
 
     // Relationships
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
@@ -46,6 +54,16 @@ class Inventory extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function repairOrders(): HasMany
+    {
+        return $this->hasMany(RepairOrder::class);
+    }
+
+    public function quarantineResolvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'quarantine_resolved_by');
     }
 
     // Accessors
@@ -134,5 +152,16 @@ class Inventory extends Model
         $this->quantity_quarantine -= $quantity;
 
         return $this->save();
+    }
+
+    public function resolveQuarantine(int $resolvedByUserId, string $outcome): void
+    {
+        // $outcome: 'released' | 'disposed'
+        $this->update([
+            'quarantine_resolved_at' => today(),
+            'quarantine_resolved_by' => $resolvedByUserId,
+            'quarantine_reason' => null,
+            'quarantine_since' => null,
+        ]);
     }
 }

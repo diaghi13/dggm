@@ -2,20 +2,18 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Data\ProjectRoleData;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreProjectRoleRequest;
-use App\Http\Requests\UpdateProjectRoleRequest;
-use App\Http\Resources\ProjectRoleResource;
 use App\Models\ProjectRole;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Request;
 
 class ProjectRoleController extends Controller
 {
     /**
      * Display a listing of project roles.
      */
-    public function index(): AnonymousResourceCollection
+    public function index(): JsonResponse
     {
         $this->authorize('viewAny', ProjectRole::class);
 
@@ -23,29 +21,34 @@ class ProjectRoleController extends Controller
             ->ordered()
             ->get();
 
-        return ProjectRoleResource::collection($roles);
+        return response()->json([
+            'success' => true,
+            'data' => ProjectRoleData::collect($roles),
+        ]);
     }
 
     /**
      * Store a newly created project role.
      */
-    public function store(StoreProjectRoleRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         $this->authorize('create', ProjectRole::class);
 
+        $data = ProjectRoleData::from($request);
+
         $projectRole = ProjectRole::create([
-            'name' => $request->input('name'),
-            'slug' => $request->input('slug'),
-            'description' => $request->input('description'),
-            'color' => $request->input('color', '#3B82F6'),
-            'sort_order' => $request->input('sort_order', 0),
-            'is_active' => $request->input('is_active', true),
+            'name' => $data->name,
+            'slug' => $data->slug,
+            'description' => $data->description,
+            'color' => $data->color ?? '#3B82F6',
+            'sort_order' => $data->sort_order ?? 0,
+            'is_active' => $data->is_active,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Ruolo progetto creato con successo',
-            'data' => new ProjectRoleResource($projectRole),
+            'data' => ProjectRoleData::from($projectRole),
         ], 201);
     }
 
@@ -58,29 +61,31 @@ class ProjectRoleController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => new ProjectRoleResource($projectRole),
+            'data' => ProjectRoleData::from($projectRole),
         ]);
     }
 
     /**
      * Update the specified project role.
      */
-    public function update(UpdateProjectRoleRequest $request, ProjectRole $projectRole): JsonResponse
+    public function update(Request $request, ProjectRole $projectRole): JsonResponse
     {
         $this->authorize('update', $projectRole);
 
-        $projectRole->update($request->only([
-            'name',
-            'description',
-            'color',
-            'sort_order',
-            'is_active',
-        ]));
+        $data = ProjectRoleData::from($request);
+
+        $projectRole->update([
+            'name' => $data->name,
+            'description' => $data->description,
+            'color' => $data->color,
+            'sort_order' => $data->sort_order,
+            'is_active' => $data->is_active,
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Ruolo progetto aggiornato con successo',
-            'data' => new ProjectRoleResource($projectRole),
+            'data' => ProjectRoleData::from($projectRole),
         ]);
     }
 

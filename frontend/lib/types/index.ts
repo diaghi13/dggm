@@ -1052,12 +1052,15 @@ export type ProjectExpenseCategory =
 
 export interface ProjectWorkerSchedule {
   id: number;
-  project_worker_id: number;
+  project_id: number;
+  worker_id: number;
   scheduled_date: string;
   planned_start_time: string | null;
   planned_end_time: string | null;
   planned_hours: number | null;
   effective_planned_hours: number;
+  cost_rate: number | null;
+  customer_rate: number | null;
   status: ProjectScheduleDayStatus;
   accepted_at: string | null;
   rejected_at: string | null;
@@ -1074,17 +1077,28 @@ export interface ProjectLaborLog {
   worker_id: number | null;
   schedule_day_id: number | null;
   log_date: string;
+  clock_in: string | null;
+  clock_out: string | null;
   regular_hours: number;
   overtime_hours: number;
   total_hours: number;
+  break_minutes: number;
+  overtime_rate_type: 'multiplier' | 'direct_rate' | null;
+  overtime_direct_rate: number | null;
+  is_auto_approved: boolean;
   description: string | null;
   submitted_by_user_id: number | null;
   submitted_by_name: string | null;
+  worker_name: string | null;
   status: ProjectLogStatus;
   approved_by_user_id: number | null;
   approved_at: string | null;
   rejection_reason: string | null;
   labor_cost_id: number | null;
+  overtime_cause: string | null;
+  is_billable_to_client: boolean | null;
+  overtime_rate_multiplier: number | null;
+  include_in_final_balance: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -1102,6 +1116,7 @@ export interface ProjectExpense {
   expense_date: string;
   is_billable_to_client: boolean;
   receipt_media_id: number | null;
+  receipt_url: string | null;
   status: ProjectExpenseStatus;
   approved_by_user_id: number | null;
   approved_at: string | null;
@@ -1553,5 +1568,436 @@ export interface KitAssemblyFormData {
     serial_number?: string | null;
     notes?: string | null;
   }[];
+}
+
+// ===== PROJECT STOCK (Step 1) =====
+export interface ProjectStockItem {
+  project_material_id: number;
+  product_id: number;
+  product_name: string;
+  product_code: string;
+  unit: string;
+  is_rentable: boolean;
+  is_consumable: boolean;
+  project_stock: number;
+  delivered_quantity: number;
+  used_quantity: number;
+  returned_quantity: number;
+  required_return_date: string | null;
+}
+
+export interface ProjectStockSummary {
+  total_items_on_site: number;
+  total_value_on_site: number;
+  overdue_rental_items_count: number;
+}
+
+// ===== AVAILABILITY CHECK (Step 2) =====
+export type AvailabilityStatus = 'available' | 'partial' | 'unavailable';
+export type AvailabilityResolution = 'none' | 'reserve_existing' | 'subrental' | 'remove_from_project';
+export type AvailabilityCheckStatus = 'pending' | 'completed' | 'resolved';
+
+export interface ProjectAvailabilityCheckItem {
+  id: number;
+  check_id: number;
+  project_material_id: number;
+  product_name: string;
+  product_code: string;
+  planned_qty: number;
+  available_qty: number;
+  reserved_qty: number;
+  shortage_qty: number;
+  availability_status: AvailabilityStatus;
+  resolution: AvailabilityResolution;
+  subrental_supplier_id: number | null;
+  subrental_estimated_cost: number | null;
+  resolved_at: string | null;
+}
+
+export interface ProjectAvailabilityCheck {
+  id: number;
+  project_id: number;
+  status: AvailabilityCheckStatus;
+  checked_at: string;
+  items: ProjectAvailabilityCheckItem[];
+  available_count: number;
+  partial_count: number;
+  unavailable_count: number;
+  resolved_count: number;
+}
+
+export interface ResolveAvailabilityItemInput {
+  resolution: AvailabilityResolution;
+  subrental_supplier_id?: number | null;
+  subrental_estimated_cost?: number | null;
+  notes?: string | null;
+}
+
+// ===== ORDER LIST (Step 3) =====
+export interface SubrentalAssignment {
+  subrental_supplier_entry_id: number;
+  supplier_id: number | null;
+  supplier_name: string;
+  day_rate: number | null;
+  quantity: number | null;
+  quoted_price: number | null;
+}
+
+export interface SubrentalSupplierEntry {
+  id: number;
+  supplier_id: number;
+  name: string;
+  day_rate: number | null;
+  is_preferred: boolean;
+}
+
+export interface OrderListItem {
+  project_material_id: number;
+  subrental_assignments: SubrentalAssignment[];
+  product_id: number | null;
+  product_name: string;
+  product_code: string | null;
+  is_catalog_item: boolean;
+  planned_qty: number;
+  available_qty: number;
+  reserved_qty: number;
+  to_order_qty: number;
+  unit: string;
+  unit_cost: number;
+  estimated_cost: number;
+  subrental_suppliers: SubrentalSupplierEntry[];
+}
+
+export interface OrderList {
+  generated_at: string;
+  project_id: number;
+  available: OrderListItem[];
+  to_purchase: OrderListItem[];
+  to_subrental: OrderListItem[];
+}
+
+// ===== PROJECT SERVICES (Step 6) =====
+export type ProjectServiceStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';
+export type ProjectServiceBillingUnit = 'hour' | 'day' | 'flat';
+
+export interface ProjectService {
+  id: number;
+  project_id: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  cost_price: number | null;
+  billing_unit: ProjectServiceBillingUnit;
+  is_from_quote: boolean;
+  quote_item_id: number | null;
+  status: ProjectServiceStatus;
+  notes: string | null;
+  total: number;
+  margin: number;
+  margin_percentage: number;
+  workers: Array<{
+    id: number;
+    worker: { id: number; first_name: string; last_name: string };
+    pivot: { assigned_hours: number | null; notes: string | null };
+  }>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateProjectServiceInput {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  cost_price?: number | null;
+  billing_unit: ProjectServiceBillingUnit;
+  status?: ProjectServiceStatus;
+  notes?: string | null;
+  worker_ids?: number[];
+}
+
+export interface UpdateProjectServiceInput extends Partial<CreateProjectServiceInput> {}
+
+export interface AssignWorkerToServiceInput {
+  project_worker_id: number;
+  assigned_hours?: number | null;
+  notes?: string | null;
+}
+
+// ===== MATERIAL INCIDENTS (Step 7) =====
+export type IncidentType = 'missing' | 'broken' | 'damaged' | 'contaminated' | 'lost_by_client' | 'stolen';
+export type DamageSeverity = 'minor' | 'major' | 'write_off';
+export type IncidentStatus = 'open' | 'reviewed' | 'resolved' | 'invoiced';
+
+export interface ProjectMaterialIncident {
+  id: number;
+  project_id: number;
+  project_material_id: number;
+  product_name: string;
+  reported_by_name: string;
+  incident_type: IncidentType;
+  damage_severity: DamageSeverity | null;
+  description: string;
+  incident_date: string;
+  is_chargeable_to_client: boolean;
+  charge_amount: number | null;
+  charge_basis: string | null;
+  status: IncidentStatus;
+  resolution_notes: string | null;
+  resolved_by_name: string | null;
+  resolved_at: string | null;
+  incident_photos_count: number;
+  created_at: string;
+}
+
+export interface ReportIncidentInput {
+  project_material_id: number;
+  incident_type: IncidentType;
+  damage_severity?: DamageSeverity | null;
+  description: string;
+  incident_date: string;
+  charge_amount?: number | null;
+  ddt_item_id?: number | null;
+  quantity?: number;
+}
+
+export interface ResolveIncidentInput {
+  resolution_notes: string;
+  charge_amount?: number | null;
+  is_chargeable_to_client?: boolean;
+}
+
+// ===== RENTAL RETURN INSPECTION (Step 8) =====
+export type ItemCondition = 'good' | 'minor_damage' | 'major_damage' | 'write_off';
+export type InspectionItemAction = 'return_to_stock' | 'quarantine' | 'write_off';
+export type InspectionStatus = 'in_progress' | 'completed';
+
+export interface RentalReturnInspectionItem {
+  id: number;
+  inspection_id: number;
+  ddt_item_id: number;
+  product_id: number;
+  product_name: string;
+  product_code: string;
+  total_quantity: number;
+  quantity_good: number;
+  quantity_damaged: number;
+  quantity_write_off: number;
+  condition: ItemCondition | null;
+  damage_description: string | null;
+  repair_estimate: number | null;
+  action: InspectionItemAction | null;
+  incident_id: number | null;
+  warehouse_id: number | null;
+}
+
+export interface RentalReturnInspection {
+  id: number;
+  ddt_id: number;
+  project_id: number | null;
+  inspected_by_user_id: number;
+  inspection_date: string;
+  status: InspectionStatus;
+  overall_notes: string | null;
+  items: RentalReturnInspectionItem[];
+  total_damage_value: number;
+}
+
+export interface CompleteInspectionItemInput {
+  condition: ItemCondition;
+  quantity_good: number;
+  quantity_damaged: number;
+  quantity_write_off: number;
+  action: InspectionItemAction;
+  warehouse_id: number;
+  damage_description?: string | null;
+  repair_estimate?: number | null;
+}
+
+// ===== REPAIR ORDERS (Step 9) =====
+export type RepairType = 'internal' | 'external';
+export type RepairOrderStatus = 'pending' | 'sent_external' | 'in_repair' | 'completed' | 'unrepairable';
+
+export interface RepairOrder {
+  id: number;
+  product_id: number;
+  product_name: string;
+  inventory_id: number;
+  incident_id: number | null;
+  inspection_item_id: number | null;
+  repair_type: RepairType;
+  supplier_id: number | null;
+  supplier_name: string | null;
+  quantity: number;
+  sent_date: string | null;
+  expected_return_date: string | null;
+  actual_return_date: string | null;
+  repair_cost: number | null;
+  repair_notes: string | null;
+  status: RepairOrderStatus;
+  is_overdue: boolean;
+  created_at: string;
+}
+
+export interface QuarantinedInventoryItem {
+  inventory_id: number;
+  product_id: number;
+  product_name: string;
+  product_code: string;
+  warehouse_id: number;
+  quantity_quarantine: number;
+  quarantine_reason: string | null;
+  quarantine_since: string | null;
+  days_in_quarantine: number | null;
+  repair_order_status: RepairOrderStatus | null;
+  repair_order_id: number | null;
+}
+
+export interface CreateRepairOrderInput {
+  product_id: number;
+  inventory_id: number;
+  quantity: number;
+  repair_type: RepairType;
+  supplier_id?: number | null;
+  incident_id?: number | null;
+  inspection_item_id?: number | null;
+  expected_return_date?: string | null;
+  quarantine_reason?: string | null;
+}
+
+export interface UpdateRepairOrderStatusInput {
+  status: RepairOrderStatus;
+  actual_return_date?: string | null;
+  repair_cost?: number | null;
+  repair_notes?: string | null;
+}
+
+// ===== FINAL BALANCE (Step 10) =====
+export type FinalBalanceStatus = 'draft' | 'finalized' | 'approved';
+export type FinalBalanceItemType =
+  | 'section'
+  | 'material'
+  | 'labor'
+  | 'expense'
+  | 'service'
+  | 'damage'
+  | 'transport'
+  | 'quote_reference'
+  | 'other';
+
+export interface FinalBalanceItem {
+  id: number;
+  final_balance_id: number;
+  parent_id: number | null;
+  quote_item_id: number | null;
+  project_material_id: number | null;
+  project_service_id: number | null;
+  project_expense_id: number | null;
+  incident_id: number | null;
+  type: FinalBalanceItemType;
+  description: string;
+  code: string | null;
+  unit: string | null;
+  quantity: number;
+  unit_price: number;
+  cost_price: number | null;
+  discount_percentage: number;
+  subtotal: number;
+  total: number;
+  is_manual: boolean;
+  sort_order: number;
+  notes: string | null;
+  children?: FinalBalanceItem[];
+}
+
+export interface FinalBalanceDoc {
+  id: number;
+  project_id: number | null;
+  quote_id: number | null;
+  customer_id: number | null;
+  reference_text: string | null;
+  code: string;
+  title: string;
+  status: FinalBalanceStatus;
+  issue_date: string | null;
+  notes: string | null;
+  is_partial: boolean;
+  subtotal: number;
+  discount_percentage: number;
+  discount_amount: number;
+  tax_percentage: number;
+  tax_amount: number;
+  total_amount: number;
+  is_manual_override: boolean;
+  finalized_at: string | null;
+  approved_at: string | null;
+  project_name?: string | null;
+  customer_name?: string | null;
+  items?: FinalBalanceItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GenerateFinalBalanceInput {
+  include_quote_reference?: boolean;
+  include_extra_materials?: boolean;
+  include_services?: boolean;
+  include_expenses?: boolean;
+  include_damages?: boolean;
+  include_overtime?: boolean;
+  is_partial?: boolean;
+  title?: string | null;
+  notes?: string | null;
+  quote_id?: number | null;
+  customer_id?: number | null;
+  tax_percentage?: number;
+  discount_percentage?: number;
+  reference_text?: string | null;
+}
+
+export interface CreateFinalBalanceInput {
+  project_id?: number | null;
+  quote_id?: number | null;
+  customer_id?: number | null;
+  title: string;
+  reference_text?: string | null;
+  notes?: string | null;
+  tax_percentage?: number;
+  discount_percentage?: number;
+  is_partial?: boolean;
+}
+
+export interface UpdateFinalBalanceInput extends Partial<CreateFinalBalanceInput> {
+  is_manual_override?: boolean;
+  issue_date?: string | null;
+}
+
+export interface CreateFinalBalanceItemInput {
+  type: FinalBalanceItemType;
+  description: string;
+  unit?: string | null;
+  quantity?: number;
+  unit_price?: number;
+  cost_price?: number | null;
+  discount_percentage?: number;
+  notes?: string | null;
+  parent_id?: number | null;
+  sort_order?: number;
+}
+
+export interface UpdateFinalBalanceItemInput extends Partial<CreateFinalBalanceItemInput> {}
+
+// ===== OVERTIME SUMMARY =====
+export interface OvertimeSummaryItem {
+  overtime_cause: string;
+  is_billable_to_client: boolean;
+  total_overtime_hours: number;
+  total_overtime_cost: number;
+}
+
+export interface OvertimeSummary {
+  items: OvertimeSummaryItem[];
+  total_billable_hours: number;
+  total_internal_hours: number;
+  total_billable_cost: number;
 }
 

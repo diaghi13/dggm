@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Search, FileText } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
+import { SendQuoteModal } from "@/components/quotes/send-quote-modal";
 import { DataTable } from "@/components/shared/data-table/data-table";
 import { createQuotesColumns } from "@/app/(dashboard)/quotes/_components/quotes-columns";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -38,6 +39,8 @@ export default function QuotesPage() {
   const [page, setPage] = useState(1);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [selectedSendQuote, setSelectedSendQuote] = useState<Quote | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -58,25 +61,20 @@ export default function QuotesPage() {
     duplicateMutation.mutate(quote.id);
   };
 
-  const sendMutation = useMutation({
-    mutationFn: (id: number) => quotesApi.send(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["quotes"] });
-      toast.success("Preventivo inviato");
-    },
-    onError: () => toast.error("Errore nell'invio"),
-  });
-
-  const handleSend = (quote: Quote) => {
-    if (!quote.id) return;
-    sendMutation.mutate(quote.id);
-  };
-
   // Define columns
   const columns = useMemo(
     () =>
       createQuotesColumns(
         (quote) => {
+          // Safety check: non aprire il dialog se il preventivo non può essere eliminato
+          if (
+            quote.status !== "draft" ||
+            quote.sent_date ||
+            quote.approved_date ||
+            quote.project_id
+          ) {
+            return;
+          }
           setSelectedQuote(quote);
           setIsDeleteDialogOpen(true);
         },
@@ -85,7 +83,10 @@ export default function QuotesPage() {
         },
         handleDuplicate,
         (quote) => router.push(`/quotes/${quote.id}/edit`),
-        handleSend,
+        (quote) => {
+          setSelectedSendQuote(quote);
+          setIsSendModalOpen(true);
+        },
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [router],
@@ -201,6 +202,16 @@ export default function QuotesPage() {
           </div>
         </div>
       )}
+
+      <SendQuoteModal
+        quote={selectedSendQuote}
+        open={isSendModalOpen}
+        onOpenChange={setIsSendModalOpen}
+        onSent={() => {
+          queryClient.invalidateQueries({ queryKey: ["quotes"] });
+          setSelectedSendQuote(null);
+        }}
+      />
 
       <AlertDialog
         open={isDeleteDialogOpen}

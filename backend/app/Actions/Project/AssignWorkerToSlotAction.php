@@ -8,7 +8,6 @@ use App\Enums\RateType;
 use App\Enums\WorkerType;
 use App\Models\ProjectWorker;
 use App\Models\Worker;
-use App\Notifications\WorkerAssignedToProject;
 use App\Services\RateCalculationService;
 use Illuminate\Support\Facades\DB;
 
@@ -58,9 +57,15 @@ class AssignWorkerToSlotAction
                     : null,
             ]);
 
-            // Send notification to external workers requiring acceptance
-            if ($status === ProjectWorkerStatus::Pending && $worker->user) {
-                $worker->user->notify(new WorkerAssignedToProject($slot));
+            // Ensure the worker has a tenant account (or create an invitation)
+            [$user, $invitation] = app(EnsureWorkerHasTenantAccountAction::class)->execute($worker, $slot);
+
+            if ($user) {
+                // Worker has account → send assignment notification (choose days)
+                app(NotifyWorkerAssignmentAction::class)->execute($slot, $user);
+            } elseif ($invitation) {
+                // New worker with no account → send project-specific invitation email
+                app(SendProjectInvitationEmailAction::class)->execute($invitation, $slot);
             }
 
             return $slot->fresh()->load(['worker.user', 'project', 'assignedBy']);

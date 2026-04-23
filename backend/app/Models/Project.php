@@ -118,6 +118,26 @@ class Project extends Model implements HasMedia
         return $this->hasMany(ProjectLaborLog::class);
     }
 
+    public function availabilityChecks(): HasMany
+    {
+        return $this->hasMany(ProjectAvailabilityCheck::class);
+    }
+
+    public function services(): HasMany
+    {
+        return $this->hasMany(ProjectService::class);
+    }
+
+    public function incidents(): HasMany
+    {
+        return $this->hasMany(ProjectMaterialIncident::class);
+    }
+
+    public function finalBalances(): HasMany
+    {
+        return $this->hasMany(FinalBalance::class);
+    }
+
     // ==================== SCOPES ====================
 
     public function scopeActive($query)

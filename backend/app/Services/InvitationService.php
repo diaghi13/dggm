@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\ProjectWorkerStatus;
 use App\Enums\WorkerType;
 use App\Models\Landlord\GlobalUser;
 use App\Models\Landlord\TenantMembership;
+use App\Models\ProjectWorker;
 use App\Models\User;
 use App\Models\Worker;
 use App\Models\WorkerInvitation;
@@ -144,6 +146,18 @@ class InvitationService
                 'accepted_at' => now(),
                 'created_user_id' => $user->id,
             ]);
+
+            // Link the newly created worker to the ProjectWorker slot (if any)
+            // The ProjectWorker stays Pending — worker must choose their days on the assignments page
+            $metadata = $invitation->metadata ?? [];
+            if (! empty($metadata['project_worker_id'])) {
+                $projectWorker = ProjectWorker::find($metadata['project_worker_id']);
+                if ($projectWorker && $projectWorker->status === ProjectWorkerStatus::Pending) {
+                    if (! $projectWorker->worker_id) {
+                        $projectWorker->update(['worker_id' => $worker->id]);
+                    }
+                }
+            }
 
             return [
                 'user' => $user,

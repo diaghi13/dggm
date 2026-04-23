@@ -7,6 +7,7 @@ use App\Enums\RateType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkerRate extends Model
 {
@@ -51,6 +52,11 @@ class WorkerRate extends Model
     public function worker(): BelongsTo
     {
         return $this->belongsTo(Worker::class);
+    }
+
+    public function overtimeTiers(): HasMany
+    {
+        return $this->hasMany(WorkerOvertimeTier::class)->orderBy('sort_order')->orderBy('hours_from');
     }
 
     // ==================== SCOPES ====================

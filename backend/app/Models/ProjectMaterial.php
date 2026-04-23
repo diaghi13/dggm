@@ -34,6 +34,10 @@ class ProjectMaterial extends Model
         'delivery_date',
         'notes',
         'kit_assembly_id',
+        'is_consumable',
+        'include_in_final_balance',
+        'is_rental',
+        'subrental_assignments',
     ];
 
     protected function casts(): array
@@ -51,6 +55,10 @@ class ProjectMaterial extends Model
             'actual_unit_cost' => 'decimal:2',
             'required_date' => 'date',
             'delivery_date' => 'date',
+            'is_consumable' => 'boolean',
+            'include_in_final_balance' => 'boolean',
+            'is_rental' => 'boolean',
+            'subrental_assignments' => 'array',
         ];
     }
 
@@ -79,6 +87,18 @@ class ProjectMaterial extends Model
     public function kitAssembly(): BelongsTo
     {
         return $this->belongsTo(KitAssembly::class);
+    }
+
+    // subrentalSupplier() relation removed — replaced by subrental_assignments JSON field
+
+    public function availabilityCheckItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProjectAvailabilityCheckItem::class);
+    }
+
+    public function incidents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProjectMaterialIncident::class);
     }
 
     // ==================== SCOPES ====================
@@ -189,5 +209,10 @@ class ProjectMaterial extends Model
     public function getIsCompleteAttribute(): bool
     {
         return $this->used_quantity >= $this->planned_quantity;
+    }
+
+    public function getProjectStockAttribute(): float
+    {
+        return max(0, ((float) ($this->delivered_quantity ?? 0)) - ((float) ($this->used_quantity ?? 0)) - ((float) ($this->returned_quantity ?? 0)));
     }
 }

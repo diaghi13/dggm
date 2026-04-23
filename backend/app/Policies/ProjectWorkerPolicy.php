@@ -14,7 +14,7 @@ class ProjectWorkerPolicy
     {
         return $user->can('projects.view') ||
             $user->can('project_workers.view') ||
-            $user->hasRole(['SuperAdmin', 'Admin', 'ProjectManager', 'Foreman', 'Worker']);
+            $user->hasRole(['super-admin', 'admin', 'project-manager', 'team-leader', 'worker']);
     }
 
     /**
@@ -22,11 +22,11 @@ class ProjectWorkerPolicy
      */
     public function view(User $user, ProjectWorker $projectWorker): bool
     {
-        if ($user->can('project_workers.view') || $user->hasRole(['SuperAdmin', 'Admin', 'ProjectManager'])) {
+        if ($user->can('project_workers.view') || $user->hasRole(['super-admin', 'admin', 'project-manager'])) {
             return true;
         }
 
-        if ($user->hasRole('Worker') && $user->worker) {
+        if ($user->hasRole('worker') && $user->worker) {
             return $projectWorker->worker_id === $user->worker->id;
         }
 
@@ -39,7 +39,7 @@ class ProjectWorkerPolicy
     public function create(User $user): bool
     {
         return $user->can('project_workers.create') ||
-            $user->hasRole(['SuperAdmin', 'Admin', 'ProjectManager']);
+            $user->hasRole(['super-admin', 'admin', 'project-manager']);
     }
 
     /**
@@ -48,7 +48,7 @@ class ProjectWorkerPolicy
     public function update(User $user, ProjectWorker $projectWorker): bool
     {
         return $user->can('project_workers.update') ||
-            $user->hasRole(['SuperAdmin', 'Admin', 'ProjectManager']);
+            $user->hasRole(['super-admin', 'admin', 'project-manager']);
     }
 
     /**
@@ -57,16 +57,16 @@ class ProjectWorkerPolicy
     public function delete(User $user, ProjectWorker $projectWorker): bool
     {
         return $user->can('project_workers.delete') ||
-            $user->hasRole(['SuperAdmin', 'Admin', 'ProjectManager']);
+            $user->hasRole(['super-admin', 'admin', 'project-manager']);
     }
 
     /**
      * Determine whether the user can respond to an assignment (accept/reject).
-     * Only the worker themselves can respond to their assignment.
+     * PMs and Admins can accept/reject on behalf of workers.
      */
     public function respond(User $user, ProjectWorker $projectWorker): bool
     {
-        if ($user->hasRole(['SuperAdmin', 'Admin'])) {
+        if ($user->hasRole(['super-admin', 'admin', 'project-manager'])) {
             return true;
         }
 
@@ -84,7 +84,7 @@ class ProjectWorkerPolicy
     public function changeStatus(User $user, ProjectWorker $projectWorker): bool
     {
         return $user->can('project_workers.update') ||
-            $user->hasRole(['SuperAdmin', 'Admin', 'ProjectManager']);
+            $user->hasRole(['super-admin', 'admin', 'project-manager']);
     }
 
     /**
@@ -93,7 +93,7 @@ class ProjectWorkerPolicy
     public function restore(User $user, ProjectWorker $projectWorker): bool
     {
         return $user->can('project_workers.delete') ||
-            $user->hasRole(['SuperAdmin', 'Admin']);
+            $user->hasRole(['super-admin', 'admin']);
     }
 
     /**
@@ -102,6 +102,6 @@ class ProjectWorkerPolicy
     public function forceDelete(User $user, ProjectWorker $projectWorker): bool
     {
         return $user->can('project_workers.delete') ||
-            $user->hasRole(['SuperAdmin', 'Admin']);
+            $user->hasRole(['super-admin', 'admin']);
     }
 }
