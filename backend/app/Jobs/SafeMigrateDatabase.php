@@ -42,6 +42,12 @@ class SafeMigrateDatabase implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $timeout = 600;
+
+    public int $tries = 3;
+
+    public $queue = 'migrations';
+
     public function __construct(protected TenantWithDatabase $tenant) {}
 
     public function handle(): void
