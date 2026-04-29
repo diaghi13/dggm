@@ -163,6 +163,10 @@
                     || $quote->items->flatMap(fn ($item) => $item->children->isNotEmpty() ? $item->children : collect([$item]))
                                     ->where('hide_unit_price', false)
                                     ->isNotEmpty();
+
+                $showDiscountCol = $quote->items->flatMap(fn ($item) => $item->children->isNotEmpty() ? $item->children : collect([$item]))
+                                    ->where('discount_percentage', '>', 0)
+                                    ->isNotEmpty();
             @endphp
             @if(!$firstIsSection)
                 <thead>
@@ -175,6 +179,9 @@
                     <th class="py-1 font-bold w-10 text-center">Q.tà</th>
                     @if($showPriceCols)
                         <th class="py-1 font-bold w-24 text-right">Prezzo</th>
+                    @endif
+                    @if($showDiscountCol)
+                        <th class="py-1 font-bold w-16 text-center">Sc.%</th>
                     @endif
                     @if($quote->show_vat || $quote->tax_included)
                         <th class="py-1 font-bold w-10 text-center">IVA</th>
@@ -194,6 +201,7 @@
                         $totalTableColumns = 3;
                         if($quote->show_product_codes) $totalTableColumns++;
                         if($showPriceCols) $totalTableColumns++;
+                        if($showDiscountCol) $totalTableColumns++;
                         if($quote->show_vat || $quote->tax_included) $totalTableColumns++;
                         if($showPriceCols) $totalTableColumns++;
                     @endphp
@@ -227,6 +235,9 @@
                         <th class="py-1 font-bold w-10 text-center">Q.tà</th>
                         @if($showPriceCols)
                             <th class="py-1 font-bold w-24 text-right">Prezzo</th>
+                        @endif
+                        @if($showDiscountCol)
+                            <th class="py-1 font-bold w-16 text-center">Sc.%</th>
                         @endif
                         @if($quote->show_vat || $quote->tax_included)
                             <th class="py-1 font-bold w-10 text-center">IVA</th>
@@ -269,6 +280,9 @@
                                     @endif
                                 </td>
                             @endif
+                            @if($showDiscountCol)
+                                <td class="py-1.5 text-center align-top text-[10px]">{{ $child->discount_percentage > 0 ? number_format($child->discount_percentage, 1) . '%' : '-' }}</td>
+                            @endif
                             @if($quote->show_vat || $quote->tax_included)
                                 <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($child->vat_rate ?? 0, 0) }}%</td>
                             @endif
@@ -283,6 +297,16 @@
                             @endif
                         </tr>
                     @endforeach
+                    @if($quote->show_section_totals)
+                        <tr class="bg-gray-100 border-b border-slate-300">
+                            <td colspan="{{ $totalTableColumns - 1 }}" class="py-1 pl-3 align-middle">
+                                <div class="font-bold text-slate-900 italic text-[10px]">Totale {{ $item->description }}</div>
+                            </td>
+                            <td class="py-1 text-right font-bold text-slate-900 text-[10px] align-middle" style="white-space: nowrap; min-width: 7rem;">
+                                € {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }}
+                            </td>
+                        </tr>
+                    @endif
                 @elseif($item->type === \App\Enums\QuoteItemType::Item)
                     <!-- Non-section item -->
                     <tr class="border-b border-slate-100">
@@ -316,6 +340,9 @@
                                     <span class="text-slate-300">-</span>
                                 @endif
                             </td>
+                        @endif
+                        @if($showDiscountCol)
+                            <td class="py-1.5 text-center align-top text-[10px]">{{ $item->discount_percentage > 0 ? number_format($item->discount_percentage, 1) . '%' : '-' }}</td>
                         @endif
                         @if($quote->show_vat || $quote->tax_included)
                             <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($item->vat_rate ?? 0, 0) }}%</td>
@@ -358,8 +385,8 @@
                     </div>
                 @endforeach
                 <div class="flex justify-between py-3 border-b-2 border-slate-800 mt-2">
-                    <span class="font-bold text-lg text-primary">TOTALE (IVA inclusa)</span>
-                    <span class="font-bold text-lg text-primary">{{ number_format($quote->total_amount, 2, ',', '.') }} €</span>
+                    <span class="font-bold text-md text-primary">TOTALE (IVA inclusa)</span>
+                    <span class="font-bold text-md text-primary">{{ number_format($quote->total_amount, 2, ',', '.') }} €</span>
                 </div>
             @else
                 {{-- IVA NON INCLUSA nei prezzi --}}
@@ -381,13 +408,13 @@
                         </div>
                     @endforeach
                     <div class="flex justify-between py-3 border-b-2 border-slate-800 mt-2">
-                        <span class="font-bold text-lg text-primary">TOTALE IVA INCLUSA</span>
-                        <span class="font-bold text-lg text-primary">{{ number_format($quote->total_amount, 2, ',', '.') }} €</span>
+                        <span class="font-bold text-md text-primary">TOTALE IVA INCLUSA</span>
+                        <span class="font-bold text-md text-primary">{{ number_format($quote->total_amount, 2, ',', '.') }} €</span>
                     </div>
                 @else
                     {{-- IVA non mostrata: solo totale imponibile --}}
                     <div class="flex justify-between py-3 border-b-2 border-slate-800 mt-2">
-                        <span class="font-bold text-lg text-primary">TOTALE
+                        <span class="font-bold text-md text-primary">TOTALE
 {{--                            <span class="text-sm">(esc. IVA)</span>--}}
                             <span class="text-sm">IMPONIBILE</span>
                         </span>
