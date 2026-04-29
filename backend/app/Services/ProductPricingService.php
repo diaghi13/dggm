@@ -65,6 +65,12 @@ class ProductPricingService
      */
     public function generateAutomaticPriceListItem(Product $product, PriceList $priceList): array
     {
+        $productFields = [
+            'name' => $product->name,
+            'code' => $product->code,
+            'unit' => $product->unit,
+        ];
+
         if ($product->product_type === ProductType::COMPOSITE) {
             $compositePrices = $this->calculateCompositePrices($product);
             $salePrice = $this->priceCalculator->applyPriceListAdjustment(
@@ -74,6 +80,7 @@ class ProductPricingService
             );
 
             return [
+                ...$productFields,
                 'sale_price' => $salePrice,
                 'is_manual_price' => false,
                 'rental_hourly' => $compositePrices['rental_hourly'],
@@ -91,6 +98,7 @@ class ProductPricingService
             $salePrice = $this->calculateAutomaticPrice($product, $priceList);
 
             return [
+                ...$productFields,
                 'sale_price' => $salePrice,
                 'is_manual_price' => false,
                 'rental_hourly' => null,
@@ -109,6 +117,7 @@ class ProductPricingService
         $rentalPrices = $this->priceCalculator->calculateRentalPrices($purchasePrice);
 
         return [
+            ...$productFields,
             'sale_price' => $salePrice,
             'is_manual_price' => false,
             'rental_daily' => $rentalPrices['daily'],
@@ -132,13 +141,20 @@ class ProductPricingService
      */
     public function generateManualPriceListItem(Product $product): array
     {
+        $productFields = [
+            'name' => $product->name,
+            'code' => $product->code,
+            'unit' => $product->unit,
+        ];
+
         if ($product->product_type === ProductType::COMPOSITE) {
             $compositePrices = $this->calculateCompositePrices($product);
             $salePrice = $compositePrices['sale_price'];
 
             return [
+                ...$productFields,
                 'sale_price' => $salePrice,
-                'is_manual_price' => true, // Manual mode — user can override
+                'is_manual_price' => true,
                 'rental_hourly' => $compositePrices['rental_hourly'],
                 'rental_half_day' => $compositePrices['rental_half_day'],
                 'rental_daily' => $compositePrices['rental_daily'],
@@ -154,6 +170,7 @@ class ProductPricingService
             $salePrice = $this->priceCalculator->calculateProductSalePrice($product);
 
             return [
+                ...$productFields,
                 'sale_price' => $salePrice,
                 'is_manual_price' => true,
                 'rental_hourly' => null,
@@ -172,8 +189,9 @@ class ProductPricingService
         $rentalPrices = $this->priceCalculator->calculateRentalPrices($purchasePrice);
 
         return [
+            ...$productFields,
             'sale_price' => $salePrice,
-            'is_manual_price' => true, // Manual mode - user can override
+            'is_manual_price' => true,
             'rental_daily' => $rentalPrices['daily'],
             'rental_hourly' => $rentalPrices['hourly'],
             'rental_half_day' => $rentalPrices['half_day'],
