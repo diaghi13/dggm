@@ -660,10 +660,10 @@ export default function ProductDetailPage() {
                   </InfoRow>
 
                   <InfoRow label="Quantità in Noleggio">
-                    {product.quantity_out_on_rental != null &&
-                    product.quantity_out_on_rental > 0 ? (
+                    {product.total_out_on_rental != null &&
+                    product.total_out_on_rental > 0 ? (
                       <span className="font-semibold text-purple-700 dark:text-purple-300">
-                        {formatNumber(product.quantity_out_on_rental)}{" "}
+                        {formatNumber(product.total_out_on_rental)}{" "}
                         <span className="font-normal text-xs text-slate-500 dark:text-slate-400">
                           {product.unit ?? "pz"}
                         </span>
@@ -750,14 +750,14 @@ export default function ProductDetailPage() {
                       </span>
                     </p>
                   </div>
-                  {product.quantity_out_on_rental !== undefined &&
-                    product.quantity_out_on_rental > 0 && (
+                  {product.total_out_on_rental !== undefined &&
+                    product.total_out_on_rental > 0 && (
                       <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
                         <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
                           In Noleggio
                         </p>
                         <p className="mt-1 text-2xl font-bold text-purple-900 dark:text-purple-100">
-                          {formatNumber(product.quantity_out_on_rental)}{" "}
+                          {formatNumber(product.total_out_on_rental)}{" "}
                           <span className="text-lg font-normal text-purple-600 dark:text-purple-400">
                             {product.unit ?? "pz"}
                           </span>

@@ -188,8 +188,8 @@ export const productsApi = {
   },
 
   // Brands
-  getBrands: async () => {
-    const response = await apiClient.get("/product-brands");
+  getBrands: async (params?: { per_page?: number; is_active?: boolean; search?: string }) => {
+    const response = await apiClient.get("/product-brands", { params });
     return response.data.data;
   },
 
@@ -263,6 +263,49 @@ export const productsApi = {
 
   deleteRelationType: async (id: number) => {
     const response = await apiClient.delete(`/product-relation-types/${id}`);
+    return response.data;
+  },
+
+  // Unit Types
+  getUnitTypes: async (all = false) => {
+    const response = await apiClient.get("/product-unit-types", {
+      params: all ? { all: true } : undefined,
+    });
+    return response.data.data;
+  },
+
+  createUnitType: async (data: {
+    code: string;
+    name_it: string;
+    symbol_it: string;
+    name_en: string;
+    symbol_en: string;
+    category?: string;
+    sort_order?: number;
+    is_active?: boolean;
+  }) => {
+    const response = await apiClient.post("/product-unit-types", data);
+    return response.data.data;
+  },
+
+  updateUnitType: async (
+    id: number,
+    data: {
+      name_it?: string;
+      symbol_it?: string;
+      name_en?: string;
+      symbol_en?: string;
+      category?: string;
+      sort_order?: number;
+      is_active?: boolean;
+    },
+  ) => {
+    const response = await apiClient.patch(`/product-unit-types/${id}`, data);
+    return response.data.data;
+  },
+
+  deleteUnitType: async (id: number) => {
+    const response = await apiClient.delete(`/product-unit-types/${id}`);
     return response.data;
   },
 

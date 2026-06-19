@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 
 export const warehousesApi = {
   getAll: async (params?: {
@@ -7,17 +7,19 @@ export const warehousesApi = {
     search?: string;
     per_page?: number;
   }) => {
-    const response = await apiClient.get('/warehouses', { params });
+    const response = await apiClient.get("/warehouses", { params });
     return response.data;
   },
 
-  getById: async (id: number) => {
+  getById: async (
+    id: number,
+  ): Promise<App.Domains.Warehouse.Data.WarehouseData> => {
     const response = await apiClient.get(`/warehouses/${id}`);
     return response.data.data;
   },
 
   create: async (data: any) => {
-    const response = await apiClient.post('/warehouses', data);
+    const response = await apiClient.post("/warehouses", data);
     return response.data.data;
   },
 
@@ -31,11 +33,16 @@ export const warehousesApi = {
     return response.data;
   },
 
-  getInventory: async (id: number, params?: {
-    low_stock?: boolean;
-    search?: string;
-  }) => {
-    const response = await apiClient.get(`/warehouses/${id}/inventory`, { params });
+  getInventory: async (
+    id: number,
+    params?: {
+      low_stock?: boolean;
+      search?: string;
+    },
+  ) => {
+    const response = await apiClient.get(`/warehouses/${id}/inventory`, {
+      params,
+    });
     return response.data.data;
   },
 };

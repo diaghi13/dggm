@@ -34,6 +34,7 @@ import {
   Layout,
   TrendingDown,
   Zap,
+  Ruler,
 } from "lucide-react";
 
 export default function SettingsIndexPage() {
@@ -187,8 +188,19 @@ export default function SettingsIndexPage() {
       href: "/settings/site-roles",
       color: "text-green-600 dark:text-green-400",
       bgColor: "bg-green-100 dark:bg-green-900/20",
-      prefix: null, // Non ha settings
+      prefix: null,
       keywords: ["ruoli", "progetto", "project", "roles"],
+    },
+    {
+      title: "Unità di misura",
+      description:
+        "Gestisci le unità di misura usate nei prodotti (kg, m, pz, …)",
+      icon: Ruler,
+      href: "/settings/unit-types",
+      color: "text-violet-600 dark:text-violet-400",
+      bgColor: "bg-violet-100 dark:bg-violet-900/20",
+      prefix: null,
+      keywords: ["unità", "misura", "unit", "kg", "metro", "pezzi", "simbolo"],
     },
     {
       title: "Motore di Noleggio",

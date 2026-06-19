@@ -579,7 +579,7 @@ export interface Material {
   category: string;
   product_type: MaterialType;
   is_rentable: boolean;
-  quantity_out_on_rental: number;
+  total_out_on_rental: number;
   unit: string;
   standard_cost: number;
   purchase_price: number;

@@ -20,6 +20,7 @@ import {
   Wallet,
   Briefcase,
   Users,
+  Ruler,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +50,7 @@ const iconMap = {
   Wallet,
   Briefcase,
   Users,
+  Ruler,
 };
 
 interface SidebarItem {
@@ -105,6 +107,12 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
         label: "Ruoli Progetto",
         icon: "Briefcase",
         href: "/settings/site-roles",
+      },
+      {
+        key: "unit-types",
+        label: "Unità di misura",
+        icon: "Ruler",
+        href: "/settings/unit-types",
       },
     ],
   },

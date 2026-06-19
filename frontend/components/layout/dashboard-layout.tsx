@@ -232,6 +232,12 @@ const navigationConfig: NavigationItem[] = [
         icon: Wrench,
         permissions: ["warehouse.view"],
       },
+      {
+        name: "Configurazioni",
+        href: "/warehouse/configurations",
+        icon: Settings,
+        permissions: ["warehouse.view"],
+      },
     ],
   },
   {
@@ -289,7 +295,17 @@ const navigationConfig: NavigationItem[] = [
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, globalUser, logout, isAuthChecked, settings, features, currentTenant, availableTenants: allTenants, switchTenant } = useAuthStore();
+  const {
+    user,
+    globalUser,
+    logout,
+    isAuthChecked,
+    settings,
+    features,
+    currentTenant,
+    availableTenants: allTenants,
+    switchTenant,
+  } = useAuthStore();
   // Show all tenants the user has membership for — non-active ones get a status indicator
   const availableTenants = allTenants;
   const { primaryColor } = useThemeSettings();
@@ -410,7 +426,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     if (isAuthChecked && !user) {
       router.replace("/login");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthChecked, user]);
 
   useEffect(() => {
@@ -525,7 +541,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {availableTenants.map((tenant) => {
-                    const isActiveStatus = !tenant.subscription_status || tenant.subscription_status === "active" || tenant.subscription_status === "trial";
+                    const isActiveStatus =
+                      !tenant.subscription_status ||
+                      tenant.subscription_status === "active" ||
+                      tenant.subscription_status === "trial";
                     return (
                       <DropdownMenuItem
                         key={tenant.id}
@@ -535,7 +554,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         <Building2 className="mr-2 h-4 w-4 text-slate-500" />
                         <span className="flex-1 truncate">{tenant.name}</span>
                         {!isActiveStatus && (
-                          <span className="ml-2 w-2 h-2 rounded-full bg-amber-400 shrink-0" title={tenant.subscription_status ?? undefined} />
+                          <span
+                            className="ml-2 w-2 h-2 rounded-full bg-amber-400 shrink-0"
+                            title={tenant.subscription_status ?? undefined}
+                          />
                         )}
                         {tenant.id === currentTenant?.id && (
                           <Check className="ml-1 h-4 w-4 text-green-500 shrink-0" />
@@ -573,7 +595,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {availableTenants.map((tenant) => {
-                    const isActiveStatus = !tenant.subscription_status || tenant.subscription_status === "active" || tenant.subscription_status === "trial";
+                    const isActiveStatus =
+                      !tenant.subscription_status ||
+                      tenant.subscription_status === "active" ||
+                      tenant.subscription_status === "trial";
                     return (
                       <DropdownMenuItem
                         key={tenant.id}
@@ -583,7 +608,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         <Building2 className="mr-2 h-4 w-4 text-slate-500" />
                         <span className="flex-1 truncate">{tenant.name}</span>
                         {!isActiveStatus && (
-                          <span className="ml-2 w-2 h-2 rounded-full bg-amber-400 shrink-0" title={tenant.subscription_status ?? undefined} />
+                          <span
+                            className="ml-2 w-2 h-2 rounded-full bg-amber-400 shrink-0"
+                            title={tenant.subscription_status ?? undefined}
+                          />
                         )}
                         {tenant.id === currentTenant?.id && (
                           <Check className="ml-1 h-4 w-4 text-green-500 shrink-0" />
@@ -708,7 +736,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           {/* Landlord Admin Link */}
           {globalUser?.is_landlord_admin && (
-            <div className={cn("px-3 py-2 border-t border-slate-200 dark:border-slate-800", sidebarCollapsed && "px-2")}>
+            <div
+              className={cn(
+                "px-3 py-2 border-t border-slate-200 dark:border-slate-800",
+                sidebarCollapsed && "px-2",
+              )}
+            >
               <Link
                 href="/central"
                 className={cn(

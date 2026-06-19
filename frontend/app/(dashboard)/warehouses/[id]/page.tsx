@@ -82,7 +82,7 @@ export default function WarehouseDetailPage() {
   const movements = movementsData?.data ?? [];
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<App.Data.WarehouseData>) =>
+    mutationFn: (data: Partial<App.Domains.Warehouse.Data.WarehouseData>) =>
       warehousesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["warehouse", id] });
@@ -101,7 +101,9 @@ export default function WarehouseDetailPage() {
     },
   });
 
-  const handleUpdate = (data: Partial<App.Data.WarehouseData>) => {
+  const handleUpdate = (
+    data: Partial<App.Domains.Warehouse.Data.WarehouseData>,
+  ) => {
     updateMutation.mutate(data);
   };
 
@@ -130,10 +132,10 @@ export default function WarehouseDetailPage() {
   }
 
   const lowStockItems = inventory.filter(
-    (item: App.Data.InventoryData) => item.is_low_stock,
+    (item: App.Domains.Warehouse.Data.InventoryData) => item.is_low_stock,
   );
   const totalValue = inventory.reduce(
-    (sum: number, item: App.Data.InventoryData) => {
+    (sum: number, item: App.Domains.Warehouse.Data.InventoryData) => {
       const quantity = Number(item.quantity_available || 0);
       const price = Number(item.product?.manufacturer_cost_price || 0);
       return sum + quantity * price;
@@ -239,7 +241,7 @@ export default function WarehouseDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      <CurrencyDisplay value={totalValue} />
+                      <CurrencyDisplay value={warehouse.total_value} />
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Valore inventario
