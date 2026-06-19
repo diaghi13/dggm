@@ -2,14 +2,14 @@
 
 namespace App\Listeners;
 
-use App\Enums\ProductType;
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Events\ProductCostUpdated;
+use App\Domains\Product\Models\Product;
+use App\Domains\Warehouse\Models\StockMovement;
 use App\Enums\StockMovementType;
-use App\Events\ProductCostUpdated;
 use App\Events\StockMovementCreated;
 use App\Jobs\RecalculatePriceListItemsForProductJob;
-use App\Models\Product;
 use App\Models\Setting;
-use App\Models\StockMovement;
 use App\Services\PriceCalculatorService;
 use App\Services\RentalEngineService;
 use Illuminate\Contracts\Queue\ShouldQueue;

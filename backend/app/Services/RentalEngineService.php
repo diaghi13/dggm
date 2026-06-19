@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\ProductCategory;
+use App\Domains\Product\Models\ProductCategory;
 use App\Models\RentalProfile;
 use App\Models\Setting;
 

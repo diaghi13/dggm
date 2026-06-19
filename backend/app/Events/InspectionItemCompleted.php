@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\RentalReturnInspectionItem;
+use App\Domains\Warehouse\Models\RentalReturnInspectionItem;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;

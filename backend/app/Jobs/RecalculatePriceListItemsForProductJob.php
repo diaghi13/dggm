@@ -2,10 +2,10 @@
 
 namespace App\Jobs;
 
-use App\Enums\ProductType;
-use App\Models\Product;
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Services\ProductPricingService;
 use App\Services\PriceCalculatorService;
-use App\Services\ProductPricingService;
 use App\Services\RentalEngineService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;

@@ -1,12 +1,11 @@
 <?php
 
+use App\Domains\Product\Models\Product;
+use App\Domains\Project\Models\Project;
+use App\Domains\Quote\Models\Quote;
+use App\Domains\Warehouse\Models\Ddt;
+use App\Domains\Warehouse\Models\StockMovement;
 use App\Models\Contractor;
-use App\Models\Ddt;
-use App\Models\Product;
-use App\Models\Project;
-use App\Models\Quote;
-use App\Models\StockMovement;
-use App\Models\Supplier;
 use App\Models\Worker;
 use App\Services\CodeGeneratorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -163,8 +162,8 @@ test('generates ddt code with year format', function () {
 
 test('generates ddt code with sequential numbers per year', function () {
     // Create DDTs manually
-    $customer = \App\Models\Customer::factory()->create();
-    $warehouse = \App\Models\Warehouse::factory()->create();
+    $customer = \App\Domains\Customer\Models\Customer::factory()->create();
+    $warehouse = \App\Domains\Warehouse\Models\Warehouse::factory()->create();
     $user = \App\Models\User::factory()->create();
 
     Ddt::create([
@@ -207,7 +206,7 @@ test('generates movement code with date format', function () {
 
 test('generates movement code with sequential numbers per day', function () {
     $product = Product::factory()->create();
-    $warehouse = \App\Models\Warehouse::factory()->create();
+    $warehouse = \App\Domains\Warehouse\Models\Warehouse::factory()->create();
     $user = \App\Models\User::factory()->create();
 
     $date = now();
@@ -277,7 +276,7 @@ test('handles year context correctly for year-based codes', function () {
 
 test('handles date context correctly for date-based codes', function () {
     $product = Product::factory()->create();
-    $warehouse = \App\Models\Warehouse::factory()->create();
+    $warehouse = \App\Domains\Warehouse\Models\Warehouse::factory()->create();
     $user = \App\Models\User::factory()->create();
 
     // Use specific dates that won't conflict with other tests

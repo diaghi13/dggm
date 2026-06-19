@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Product;
-use App\Models\Project;
-use App\Models\ProjectMaterial;
+use App\Domains\Product\Models\Product;
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectMaterial;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;

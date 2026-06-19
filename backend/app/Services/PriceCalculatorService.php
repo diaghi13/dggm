@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Enums\ProductType;
-use App\Models\Product;
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Models\Product;
 use App\ValueObjects\Money;
 use Illuminate\Support\Facades\Log;
 

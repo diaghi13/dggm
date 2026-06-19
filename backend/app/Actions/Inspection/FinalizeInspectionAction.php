@@ -2,8 +2,8 @@
 
 namespace App\Actions\Inspection;
 
+use App\Domains\Warehouse\Models\RentalReturnInspection;
 use App\Events\RentalReturnInspectionCompleted;
-use App\Models\RentalReturnInspection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 

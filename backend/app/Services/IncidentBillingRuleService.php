@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Domains\Project\Models\Project;
 use App\Enums\DamageSeverity;
 use App\Enums\IncidentType;
-use App\Models\Project;
 
 /**
  * IncidentBillingRuleService

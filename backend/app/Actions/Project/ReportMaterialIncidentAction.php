@@ -3,10 +3,10 @@
 namespace App\Actions\Project;
 
 use App\Data\ReportIncidentData;
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectMaterial;
+use App\Domains\Project\Models\ProjectMaterialIncident;
 use App\Events\MaterialIncidentReported;
-use App\Models\Project;
-use App\Models\ProjectMaterial;
-use App\Models\ProjectMaterialIncident;
 use App\Services\IncidentBillingRuleService;
 use Illuminate\Support\Facades\DB;
 

@@ -3,8 +3,8 @@
 namespace App\Actions\Project;
 
 use App\Data\ResolveIncidentData;
+use App\Domains\Project\Models\ProjectMaterialIncident;
 use App\Events\MaterialIncidentResolved;
-use App\Models\ProjectMaterialIncident;
 use Illuminate\Support\Facades\DB;
 
 class ResolveIncidentAction

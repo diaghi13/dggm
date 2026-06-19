@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\ProductType;
-use App\Models\Product;
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Models\Product;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 

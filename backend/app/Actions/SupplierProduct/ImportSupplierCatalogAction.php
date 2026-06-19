@@ -2,11 +2,11 @@
 
 namespace App\Actions\SupplierProduct;
 
-use App\Actions\Product\CreateProductAction;
-use App\Actions\Product\UpdateProductAction;
-use App\Data\ProductData;
 use App\Data\SupplierProductData;
-use App\Models\Product;
+use App\Domains\Product\Actions\CreateProductAction;
+use App\Domains\Product\Actions\UpdateProductAction;
+use App\Domains\Product\Data\ProductData;
+use App\Domains\Product\Models\Product;
 use App\Services\ImportFieldTransformer;
 use Illuminate\Support\Facades\DB;
 
@@ -146,7 +146,6 @@ class ImportSupplierCatalogAction
                 'reorder_quantity' => null,
                 'lead_time_days' => null,
                 'is_rentable' => false,
-                'quantity_out_on_rental' => 0,
                 'is_package' => false,
             ], $data));
 
@@ -176,7 +175,7 @@ class ImportSupplierCatalogAction
      */
     private function mapUnit(string $supplierUnit): string
     {
-        $unit = \App\Models\ProductUnitType::findByAlias($supplierUnit);
+        $unit = \App\Domains\Product\Models\ProductUnitType::findByAlias($supplierUnit);
 
         return $unit ? $unit->code : 'pz'; // Default to 'pz' if not found
     }

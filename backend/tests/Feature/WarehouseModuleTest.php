@@ -1,15 +1,21 @@
 <?php
 
-use App\Actions\Ddt\CancelDdtAction;
-use App\Actions\Ddt\ConfirmDdtAction;
-use App\Actions\Ddt\CreateDdtAction;
-use App\Actions\Ddt\DeliverDdtAction;
-use App\Actions\Inventory\AdjustInventoryAction;
-use App\Actions\Inventory\ReleaseInventoryReservationAction;
-use App\Actions\Inventory\ReserveInventoryAction;
-use App\Data\DdtData;
-use App\Data\DdtItemData;
-use App\Data\InventoryData;
+use App\Domains\Product\Models\Product;
+use App\Domains\Warehouse\Actions\Ddt\CancelDdtAction;
+use App\Domains\Warehouse\Actions\Ddt\ConfirmDdtAction;
+use App\Domains\Warehouse\Actions\Ddt\CreateDdtAction;
+use App\Domains\Warehouse\Actions\Ddt\DeliverDdtAction;
+use App\Domains\Warehouse\Actions\Inventory\AdjustInventoryAction;
+use App\Domains\Warehouse\Actions\Inventory\ReleaseInventoryReservationAction;
+use App\Domains\Warehouse\Actions\Inventory\ReserveInventoryAction;
+use App\Domains\Warehouse\Data\DdtData;
+use App\Domains\Warehouse\Data\DdtItemData;
+use App\Domains\Warehouse\Data\InventoryData;
+use App\Domains\Warehouse\Models\Ddt;
+use App\Domains\Warehouse\Models\DdtItem;
+use App\Domains\Warehouse\Models\Inventory;
+use App\Domains\Warehouse\Models\StockMovement;
+use App\Domains\Warehouse\Models\Warehouse;
 use App\Enums\DdtStatus;
 use App\Enums\DdtType;
 use App\Enums\StockMovementType;
@@ -21,14 +27,8 @@ use App\Events\InventoryAdjusted;
 use App\Events\InventoryReservationReleased;
 use App\Events\InventoryReserved;
 use App\Events\StockMovementCreated;
-use App\Models\Ddt;
-use App\Models\DdtItem;
-use App\Models\Inventory;
-use App\Models\Product;
-use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 

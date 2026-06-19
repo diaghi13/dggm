@@ -3,9 +3,9 @@
 namespace App\Actions\Inspection;
 
 use App\Data\CompleteInspectionItemData;
+use App\Domains\Warehouse\Models\Inventory;
+use App\Domains\Warehouse\Models\RentalReturnInspectionItem;
 use App\Events\InspectionItemCompleted;
-use App\Models\Inventory;
-use App\Models\RentalReturnInspectionItem;
 use Illuminate\Support\Facades\DB;
 
 class CompleteInspectionItemAction

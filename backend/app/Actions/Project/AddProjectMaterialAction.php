@@ -2,9 +2,9 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectMaterial;
 use App\Enums\ProjectMaterialStatus;
-use App\Models\Project;
-use App\Models\ProjectMaterial;
 use Illuminate\Support\Facades\DB;
 
 class AddProjectMaterialAction

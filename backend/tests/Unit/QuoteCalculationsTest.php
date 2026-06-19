@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Quote;
-use App\Models\QuoteItem;
+use App\Domains\Quote\Models\Quote;
+use App\Domains\Quote\Models\QuoteItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

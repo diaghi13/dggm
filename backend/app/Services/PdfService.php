@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Quote;
+use App\Domains\Quote\Models\Quote;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
@@ -218,7 +218,7 @@ class PdfService
             return [];
         }
 
-        return \App\Models\Product::with('media')
+        return \App\Domains\Product\Models\Product::with('media')
             ->whereIn('code', $codesNeeded->toArray())
             ->get()
             ->keyBy('code')

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
+use App\Domains\Project\Models\Project;
 use App\Enums\WorkerType;
-use App\Models\Project;
 use App\Models\Worker;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;

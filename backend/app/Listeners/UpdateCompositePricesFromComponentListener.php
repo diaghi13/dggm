@@ -2,7 +2,7 @@
 
 namespace App\Listeners;
 
-use App\Events\ProductCostUpdated;
+use App\Domains\Product\Events\ProductCostUpdated;
 use App\Jobs\RecalculateCompositePricesJob;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;

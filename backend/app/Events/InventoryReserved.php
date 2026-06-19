@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\Inventory;
+use App\Domains\Warehouse\Models\Inventory;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

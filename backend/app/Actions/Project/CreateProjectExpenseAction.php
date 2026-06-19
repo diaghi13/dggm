@@ -2,10 +2,10 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectExpense;
 use App\Enums\ProjectExpenseStatus;
 use App\Events\ProjectExpenseApproved;
-use App\Models\Project;
-use App\Models\ProjectExpense;
 use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 

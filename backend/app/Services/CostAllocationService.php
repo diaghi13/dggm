@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectLaborCost;
 use App\Enums\LaborCostType;
 use App\Models\Contractor;
-use App\Models\Project;
-use App\Models\ProjectLaborCost;
 use App\Models\Worker;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;

@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Domains\Customer\Models\Customer;
+use App\Domains\Project\Models\Project;
+use App\Domains\Quote\Models\Quote;
 use App\Enums\FinalBalanceStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

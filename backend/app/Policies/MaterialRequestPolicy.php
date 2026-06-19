@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
+use App\Domains\Project\Models\Project;
 use App\Models\MaterialRequest;
-use App\Models\Project;
 use App\Models\User;
 
 class MaterialRequestPolicy

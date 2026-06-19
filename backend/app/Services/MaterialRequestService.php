@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Domains\Project\Models\Project;
 use App\Enums\MaterialRequestStatus;
 use App\Models\MaterialRequest;
-use App\Models\Project;
 use App\Models\User;
 use App\Models\Worker;
 use App\Notifications\MaterialRequestApproved;

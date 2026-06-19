@@ -2,6 +2,8 @@
 
 namespace App\Data;
 
+use App\Domains\Product\Data\ProductData;
+use App\Domains\Warehouse\Data\WarehouseData;
 use App\Enums\KitAssemblyStatus;
 use App\Models\KitAssembly;
 use Spatie\LaravelData\Attributes\DataCollectionOf;

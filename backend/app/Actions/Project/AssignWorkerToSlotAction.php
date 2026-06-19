@@ -2,11 +2,11 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\ProjectWorker;
 use App\Enums\ProjectWorkerStatus;
 use App\Enums\RateContext;
 use App\Enums\RateType;
 use App\Enums\WorkerType;
-use App\Models\ProjectWorker;
 use App\Models\Worker;
 use App\Services\RateCalculationService;
 use Illuminate\Support\Facades\DB;

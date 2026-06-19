@@ -2,7 +2,7 @@
 
 namespace App\Queries\Project;
 
-use App\Models\ProjectWorker;
+use App\Domains\Project\Models\ProjectWorker;
 use Illuminate\Database\Eloquent\Collection;
 
 class GetProjectWorkersQuery

@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Domains\Product\Models\Product;
+use App\Domains\Quote\Models\Quote;
 use App\Enums\QuoteItemType;
-use App\Models\Product;
-use App\Models\Quote;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\QuoteItem>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Domains\Quote\Models\QuoteItem>
  */
 class QuoteItemFactory extends Factory
 {

@@ -2,8 +2,8 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\ProjectLaborLog;
 use App\Enums\ProjectLogStatus;
-use App\Models\ProjectLaborLog;
 use Illuminate\Support\Facades\DB;
 
 class RejectLaborLogAction

@@ -190,11 +190,7 @@ class CreateProductAction
 
 namespace App\Actions\Product;
 
-use App\Data\ProductData;
-use App\Events\ProductCreated;
-use App\Models\Product;
-use App\Services\PriceCalculatorService;
-use Illuminate\Support\Facades\DB;
+use App\Domains\Product\Data\ProductData;use App\Domains\Product\Models\Product;use App\Events\ProductCreated;use App\Services\PriceCalculatorService;use Illuminate\Support\Facades\DB;
 
 class CreateProductAction
 {
@@ -251,8 +247,7 @@ class CreateProductAction
 
 namespace App\Queries\Product;
 
-use App\Models\Product;
-use Illuminate\Database\Eloquent\Collection;
+use App\Domains\Product\Models\Product;use Illuminate\Database\Eloquent\Collection;
 
 class GetLowStockProductsQuery
 {
@@ -599,10 +594,7 @@ $distance = $site->coordinates->distanceTo($worker->coordinates);
 
 namespace App\Events;
 
-use App\Models\Product;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
+use App\Domains\Product\Models\Product;use Illuminate\Broadcasting\InteractsWithSockets;use Illuminate\Foundation\Events\Dispatchable;use Illuminate\Queue\SerializesModels;
 
 class ProductCreated
 {

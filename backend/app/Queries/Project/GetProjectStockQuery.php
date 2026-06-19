@@ -2,8 +2,8 @@
 
 namespace App\Queries\Project;
 
-use App\Models\Project;
-use App\Models\ProjectMaterial;
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectMaterial;
 use Illuminate\Database\Eloquent\Collection;
 
 class GetProjectStockQuery

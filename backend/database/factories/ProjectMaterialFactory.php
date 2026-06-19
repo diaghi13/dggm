@@ -5,7 +5,7 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ProjectMaterial>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Domains\Project\Models\ProjectMaterial>
  */
 class ProjectMaterialFactory extends Factory
 {
@@ -21,8 +21,8 @@ class ProjectMaterialFactory extends Factory
         $plannedCost = fake()->randomFloat(2, 10, 500);
 
         return [
-            'project_id' => \App\Models\Project::factory(),
-            'product_id' => \App\Models\Product::factory(),
+            'project_id' => \App\Domains\Project\Models\Project::factory(),
+            'product_id' => \App\Domains\Product\Models\Product::factory(),
             'quote_item_id' => null,
             'planned_quantity' => $plannedQty,
             'allocated_quantity' => 0,

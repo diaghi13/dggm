@@ -2,8 +2,8 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\ProjectExpense;
 use App\Enums\ProjectExpenseStatus;
-use App\Models\ProjectExpense;
 use Illuminate\Support\Facades\DB;
 
 class RejectProjectExpenseAction

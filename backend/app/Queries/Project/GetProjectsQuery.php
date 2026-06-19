@@ -2,7 +2,7 @@
 
 namespace App\Queries\Project;
 
-use App\Models\Project;
+use App\Domains\Project\Models\Project;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class GetProjectsQuery

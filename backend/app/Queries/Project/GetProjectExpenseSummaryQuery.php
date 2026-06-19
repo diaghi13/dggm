@@ -2,8 +2,8 @@
 
 namespace App\Queries\Project;
 
-use App\Models\Project;
-use App\Models\ProjectExpense;
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectExpense;
 
 class GetProjectExpenseSummaryQuery
 {

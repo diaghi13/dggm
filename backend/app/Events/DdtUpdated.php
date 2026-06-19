@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\Ddt;
+use App\Domains\Warehouse\Models\Ddt;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

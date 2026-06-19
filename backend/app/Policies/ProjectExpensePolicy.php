@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\ProjectExpense;
+use App\Domains\Project\Models\ProjectExpense;
 use App\Models\User;
 
 class ProjectExpensePolicy

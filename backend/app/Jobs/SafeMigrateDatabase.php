@@ -46,9 +46,10 @@ class SafeMigrateDatabase implements ShouldQueue
 
     public int $tries = 3;
 
-    public $queue = 'migrations';
-
-    public function __construct(protected TenantWithDatabase $tenant) {}
+    public function __construct(protected TenantWithDatabase $tenant)
+    {
+        $this->onQueue('migrations');
+    }
 
     public function handle(): void
     {

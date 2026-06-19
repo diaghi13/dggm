@@ -5,12 +5,12 @@ require __DIR__.'/vendor/autoload.php';
 $app = require_once __DIR__.'/bootstrap/app.php';
 $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-use App\Enums\ProductRelationQuantityType;
-use App\Enums\ProductType;
-use App\Models\Product;
-use App\Models\ProductCategory;
-use App\Models\ProductRelation;
-use App\Models\ProductRelationType;
+use App\Domains\Product\Enums\ProductRelationQuantityType;
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Models\ProductCategory;
+use App\Domains\Product\Models\ProductRelation;
+use App\Domains\Product\Models\ProductRelationType;
 
 // Get categories
 $electricalCategory = ProductCategory::where('code', 'electrical')->first();

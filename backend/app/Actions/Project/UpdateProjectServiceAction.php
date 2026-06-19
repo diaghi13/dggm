@@ -3,8 +3,8 @@
 namespace App\Actions\Project;
 
 use App\Data\UpdateProjectServiceData;
+use App\Domains\Project\Models\ProjectService;
 use App\Events\ProjectServiceUpdated;
-use App\Models\ProjectService;
 use Illuminate\Support\Facades\DB;
 
 class UpdateProjectServiceAction

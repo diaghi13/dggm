@@ -2,9 +2,9 @@
 
 namespace App\Policies;
 
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectService;
 use App\Enums\ProjectServiceStatus;
-use App\Models\Project;
-use App\Models\ProjectService;
 use App\Models\User;
 
 class ProjectServicePolicy

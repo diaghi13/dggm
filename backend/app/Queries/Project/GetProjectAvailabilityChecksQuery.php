@@ -2,8 +2,8 @@
 
 namespace App\Queries\Project;
 
-use App\Models\Project;
-use App\Models\ProjectAvailabilityCheck;
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectAvailabilityCheck;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class GetProjectAvailabilityChecksQuery

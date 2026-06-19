@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domains\Project\Models\Project;
 use App\Enums\MaterialRequestPriority;
 use App\Enums\MaterialRequestStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

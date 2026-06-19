@@ -2,9 +2,9 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\ProjectWorker;
+use App\Domains\Project\Models\ProjectWorkerSchedule;
 use App\Enums\ProjectScheduleDayStatus;
-use App\Models\ProjectWorker;
-use App\Models\ProjectWorkerSchedule;
 use Illuminate\Support\Facades\DB;
 
 class CreateWorkerScheduleAction

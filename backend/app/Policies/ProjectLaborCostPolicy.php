@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\ProjectLaborCost;
+use App\Domains\Project\Models\ProjectLaborCost;
 use App\Models\User;
 
 class ProjectLaborCostPolicy

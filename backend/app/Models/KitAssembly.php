@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Domains\Product\Models\Product;
+use App\Domains\Warehouse\Models\Warehouse;
 use App\Enums\KitAssemblyStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

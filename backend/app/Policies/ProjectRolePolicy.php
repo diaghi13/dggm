@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\ProjectRole;
+use App\Domains\Project\Models\ProjectRole;
 use App\Models\User;
 
 class ProjectRolePolicy

@@ -250,7 +250,7 @@ class ProductData extends Data
 ### ✅ Il Modo MIGLIORE - Validazione Automatica
 
 ```php
-use App\Data\ProductData;
+use App\Domains\Product\Data\ProductData;
 
 class ProductController extends Controller
 {
@@ -306,7 +306,7 @@ class ProductController extends Controller
 Quando NON puoi usare controller injection (ad esempio in Commands, Jobs, Services).
 
 ```php
-use App\Data\ProductData;
+use App\Domains\Product\Data\ProductData;
 
 class ImportProductsJob implements ShouldQueue
 {
@@ -682,15 +682,7 @@ Quando crei un nuovo Data class:
 
 namespace App\Data;
 
-use App\Enums\ProductType;
-use Spatie\LaravelData\Attributes\Validation\Exists;
-use Spatie\LaravelData\Attributes\Validation\Max;
-use Spatie\LaravelData\Attributes\Validation\Min;
-use Spatie\LaravelData\Attributes\Validation\Required;
-use Spatie\LaravelData\Attributes\Validation\RouteParameterReference;
-use Spatie\LaravelData\Attributes\Validation\Unique;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
+use App\Domains\Product\Enums\ProductType;use Spatie\LaravelData\Attributes\Validation\Exists;use Spatie\LaravelData\Attributes\Validation\Max;use Spatie\LaravelData\Attributes\Validation\Min;use Spatie\LaravelData\Attributes\Validation\Required;use Spatie\LaravelData\Attributes\Validation\RouteParameterReference;use Spatie\LaravelData\Attributes\Validation\Unique;use Spatie\LaravelData\Data;use Spatie\LaravelData\Optional;
 
 class ProductData extends Data
 {
@@ -775,7 +767,7 @@ class UpdateProductData extends Data
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Data\ProductData;use App\Http\Controllers\Controller;use App\Models\Product;use App\Services\ProductService;use Illuminate\Http\JsonResponse;
+use App\Domains\Product\Data\ProductData;use App\Domains\Product\Models\Product;use App\Domains\Product\Services\ProductService;use App\Http\Controllers\Controller;use Illuminate\Http\JsonResponse;
 
 class ProductController extends Controller
 {
@@ -831,7 +823,7 @@ class ProductController extends Controller
 ```php
 <?php
 
-use App\Data\ProductData;use Illuminate\Validation\ValidationException;
+use App\Domains\Product\Data\ProductData;use Illuminate\Validation\ValidationException;
 
 it('validates required fields', function () {
     expect(fn () => ProductData::validateAndCreate([

@@ -27,7 +27,7 @@ class ProductResource extends JsonResource
             'package_volume' => $this->package_volume,
             'package_dimensions' => $this->package_dimensions,
             'is_rentable' => $this->is_rentable,
-            'quantity_out_on_rental' => $this->quantity_out_on_rental,
+            'total_out_on_rental' => $this->total_out_on_rental,
             'unit' => $this->unit,
             'standard_cost' => $this->standard_cost,
             'purchase_price' => $this->purchase_price,
@@ -93,7 +93,7 @@ class ProductResource extends JsonResource
             'total_reserved' => $this->when($request->input('include_totals'), $this->total_reserved),
             'available_stock' => $this->when($request->input('include_totals'), $this->available_stock),
             'composite_total_cost' => $this->when(
-                $this->product_type === \App\Enums\ProductType::COMPOSITE,
+                $this->product_type === \App\Domains\Product\Enums\ProductType::COMPOSITE,
                 $this->composite_total_cost
             ),
         ];

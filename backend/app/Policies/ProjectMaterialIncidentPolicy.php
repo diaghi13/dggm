@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\Project;
-use App\Models\ProjectMaterialIncident;
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectMaterialIncident;
 use App\Models\User;
 
 class ProjectMaterialIncidentPolicy

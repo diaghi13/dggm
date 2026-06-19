@@ -2,7 +2,7 @@
 
 namespace App\Queries\Rental;
 
-use App\Models\Product;
+use App\Domains\Product\Models\Product;
 use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 
@@ -240,7 +240,7 @@ readonly class GetRentalKpiQuery
         $products = Product::query()
             ->where('is_rentable', true)
             ->whereIn('ownership_type', ['owned', 'mixed'])
-            ->select('id', 'name', 'code', 'quantity_out_on_rental')
+            ->select('id', 'name', 'code')
             ->with('inventory')
             ->get();
 
@@ -254,7 +254,7 @@ readonly class GetRentalKpiQuery
             ->map(function (Product $product) use ($scarcityThreshold, $scarcityMultiplier) {
                 $totalStock = $product->total_stock;
                 $availableStock = $product->available_stock;
-                $quantityOut = (float) $product->quantity_out_on_rental;
+                $quantityOut = (float) $product->total_out_on_rental;
                 $safeDenominator = max($totalStock, 1);
                 $availabilityRatio = round($availableStock / $safeDenominator, 4);
 

@@ -2,11 +2,11 @@
 
 namespace App\Actions\Inspection;
 
+use App\Domains\Warehouse\Models\Ddt;
+use App\Domains\Warehouse\Models\RentalReturnInspection;
+use App\Domains\Warehouse\Models\RentalReturnInspectionItem;
 use App\Enums\DdtType;
 use App\Events\RentalReturnInspectionStarted;
-use App\Models\Ddt;
-use App\Models\RentalReturnInspection;
-use App\Models\RentalReturnInspectionItem;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 

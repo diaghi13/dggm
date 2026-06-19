@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\ProjectAvailabilityCheck;
+use App\Domains\Project\Models\ProjectAvailabilityCheck;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;

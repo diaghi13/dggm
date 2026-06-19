@@ -2,8 +2,8 @@
 
 namespace App\Actions\Quote;
 
+use App\Domains\Quote\Models\Quote;
 use App\Events\QuoteDeleted;
-use App\Models\Quote;
 use Illuminate\Support\Facades\DB;
 
 class DeleteQuoteAction

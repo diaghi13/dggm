@@ -440,7 +440,7 @@ Controllers should **validate with DTOs** and **return DTO arrays**.
 ### Example from ProductController
 
 ```php
-use App\Data\ProductData;
+use App\Domains\Product\Data\ProductData;
 
 public function store(Request $request): JsonResponse
 {

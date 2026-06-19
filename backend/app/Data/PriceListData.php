@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use App\Domains\Product\Data\ProductCategoryData;
 use App\Enums\PriceListAdjustmentType;
 use App\Enums\PriceListAppliesTo;
 use App\Enums\PriceListCalculationMode;

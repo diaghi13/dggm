@@ -1,12 +1,11 @@
 <?php
 
-use App\Models\Product;
-use App\Models\ProductBrand;
-use App\Models\ProductCategory;
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Models\ProductBrand;
+use App\Domains\Product\Models\ProductCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
-use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);

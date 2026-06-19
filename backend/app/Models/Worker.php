@@ -2,6 +2,11 @@
 
 namespace App\Models;
 
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectLaborCost;
+use App\Domains\Project\Models\ProjectLaborLog;
+use App\Domains\Project\Models\ProjectWorker;
+use App\Domains\Project\Models\ProjectWorkerSchedule;
 use App\Enums\ContractType;
 use App\Enums\RateContext;
 use App\Enums\RateType;

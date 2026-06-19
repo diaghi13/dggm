@@ -2,7 +2,7 @@
 
 namespace App\Queries\Quote;
 
-use App\Models\Quote;
+use App\Domains\Quote\Models\Quote;
 
 class GetQuoteByIdQuery
 {

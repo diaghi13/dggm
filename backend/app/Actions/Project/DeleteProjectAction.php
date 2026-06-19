@@ -2,7 +2,7 @@
 
 namespace App\Actions\Project;
 
-use App\Models\Project;
+use App\Domains\Project\Models\Project;
 use Illuminate\Support\Facades\DB;
 
 class DeleteProjectAction

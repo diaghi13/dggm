@@ -2,8 +2,8 @@
 
 namespace App\Actions\Project;
 
-use App\Models\Project;
-use App\Models\ProjectLaborCost;
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectLaborCost;
 use Illuminate\Support\Facades\DB;
 
 class AddLaborCostAction

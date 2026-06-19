@@ -2,8 +2,8 @@
 
 namespace App\Actions\Project;
 
-use App\Data\ProjectData;
-use App\Models\Project;
+use App\Domains\Project\Data\ProjectData;
+use App\Domains\Project\Models\Project;
 use Illuminate\Support\Facades\DB;
 
 class UpdateProjectAction

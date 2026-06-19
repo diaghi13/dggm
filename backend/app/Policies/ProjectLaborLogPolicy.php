@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\ProjectLaborLog;
+use App\Domains\Project\Models\ProjectLaborLog;
 use App\Models\User;
 
 class ProjectLaborLogPolicy

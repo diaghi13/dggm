@@ -2,6 +2,11 @@
 
 namespace App\Models;
 
+use App\Domains\Project\Models\ProjectExpense;
+use App\Domains\Project\Models\ProjectMaterial;
+use App\Domains\Project\Models\ProjectMaterialIncident;
+use App\Domains\Project\Models\ProjectService;
+use App\Domains\Quote\Models\QuoteItem;
 use App\Enums\FinalBalanceItemType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

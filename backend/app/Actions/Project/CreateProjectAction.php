@@ -2,9 +2,9 @@
 
 namespace App\Actions\Project;
 
-use App\Data\ProjectData;
+use App\Domains\Project\Data\ProjectData;
+use App\Domains\Project\Models\Project;
 use App\Events\ProjectCreated;
-use App\Models\Project;
 use Illuminate\Support\Facades\DB;
 
 class CreateProjectAction

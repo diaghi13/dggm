@@ -2,11 +2,11 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectAvailabilityCheck;
+use App\Domains\Project\Models\ProjectAvailabilityCheckItem;
+use App\Domains\Warehouse\Queries\Inventory\GetAvailableQuantityForDateRangeQuery;
 use App\Events\ProjectAvailabilityCheckCompleted;
-use App\Models\Inventory;
-use App\Models\Project;
-use App\Models\ProjectAvailabilityCheck;
-use App\Models\ProjectAvailabilityCheckItem;
 use App\Services\AvailabilityCalculatorService;
 use Illuminate\Support\Facades\DB;
 
@@ -31,10 +31,15 @@ class RunProjectAvailabilityCheckAction
                 ->with('product')
                 ->get();
 
+            $startDate = $project->start_date?->format('Y-m-d') ?? now()->format('Y-m-d');
+            $endDate = $project->estimated_end_date?->format('Y-m-d');
+
             foreach ($materials as $material) {
-                // Sum free stock (available - reserved) across ALL warehouses for this product
-                $availableQty = (float) Inventory::where('product_id', $material->product_id)
-                    ->sum(DB::raw('GREATEST(0, quantity_available - quantity_reserved)'));
+                $availableQty = (new GetAvailableQuantityForDateRangeQuery(
+                    productId: $material->product_id,
+                    startDate: $startDate,
+                    endDate: $endDate,
+                ))->execute();
 
                 $shortage = $this->calculator->calculateShortage(
                     (float) $material->planned_quantity,

@@ -1,10 +1,10 @@
 <?php
 
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Models\ProductBrand;
+use App\Domains\Product\Models\ProductCategory;
 use App\Models\DiscountFamily;
 use App\Models\PaymentTerm;
-use App\Models\Product;
-use App\Models\ProductBrand;
-use App\Models\ProductCategory;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;

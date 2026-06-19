@@ -2,9 +2,9 @@
 
 namespace App\Listeners;
 
+use App\Domains\Warehouse\Models\Inventory;
 use App\Events\InventoryLowStock;
 use App\Events\StockMovementCreated;
-use App\Models\Inventory;
 
 /**
  * CheckLowStockAfterMovementListener

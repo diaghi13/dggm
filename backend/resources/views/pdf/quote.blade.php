@@ -1,6 +1,6 @@
 <?php
 /**
- * @var \App\Models\Quote $quote
+ * @var \App\Domains\Quote\Models\Quote $quote
  * @var array $colors
  * @var array $vatBreakdown
  * @var array $company
@@ -75,13 +75,15 @@
             @if($company['logo'])
                 <img src="{{ $company['logo'] }}" alt="Logo" class="h-16 w-auto object-contain mb-4">
             @else
-                <div class="h-16 w-40 bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-4">LOGO</div>
+                <div class="h-16 w-40 bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-4">LOGO
+                </div>
             @endif
             <div class="text-2xl font-bold text-slate-900 tracking-tight">PREVENTIVO</div>
             <div class="text-primary font-medium text-sm mt-0.5">Nr. {{ $quote->code }}</div>
             <div class="text-slate-500 text-xs mt-0.5">Data: {{ $quote->issue_date->translatedFormat('d F Y') }}</div>
             @if($quote->valid_until)
-                <div class="text-[10px] text-slate-400 mt-0.5">Valido fino al: {{ $quote->valid_until->translatedFormat('d F Y') }}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">Valido fino
+                    al: {{ $quote->valid_until->translatedFormat('d F Y') }}</div>
             @endif
         </div>
         <div class="w-1/2 text-right">
@@ -91,10 +93,13 @@
                     {{ $company['address'] }}<br>
                 @endif
                 @if($company['postal_code'] || $company['city'] || $company['province'])
-                    {{ implode(' ', array_filter([$company['postal_code'], $company['city'], $company['province'] ? '('.$company['province'].')' : null])) }}<br>
+                    {{ implode(' ', array_filter([$company['postal_code'], $company['city'], $company['province'] ? '('.$company['province'].')' : null])) }}
+                    <br>
                 @endif
                 @if($company['vat'])
-                    P.IVA: {{ $company['vat'] }}@if($company['fiscal_code']) | C.F.: {{ $company['fiscal_code'] }}@endif<br>
+                    P.IVA: {{ $company['vat'] }}@if($company['fiscal_code'])
+                        | C.F.: {{ $company['fiscal_code'] }}
+                    @endif<br>
                 @elseif($company['fiscal_code'])
                     C.F.: {{ $company['fiscal_code'] }}<br>
                 @endif
@@ -111,8 +116,10 @@
     <!-- Clients Info -->
     <div class="flex justify-between gap-8 mb-6">
         <div class="flex-1">
-            <h3 class="text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5 border-b border-slate-100 pb-0.5">Spett.le Cliente</h3>
-            <div class="text-slate-900 font-semibold text-sm">{{ $quote->customer->business_name ?? $quote->customer->display_name }}</div>
+            <h3 class="text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5 border-b border-slate-100 pb-0.5">
+                Spett.le Cliente</h3>
+            <div
+                class="text-slate-900 font-semibold text-sm">{{ $quote->customer->business_name ?? $quote->customer->display_name }}</div>
             <div class="text-slate-600 mt-0.5 text-xs leading-snug">
                 @if($quote->customer->contact_person)
                     <div class="font-medium">{{ $quote->customer->contact_person }}</div>
@@ -129,7 +136,8 @@
             </div>
         </div>
         <div class="flex-1">
-            <h3 class="text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5 border-b border-slate-100 pb-0.5">Dettagli</h3>
+            <h3 class="text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5 border-b border-slate-100 pb-0.5">
+                Dettagli</h3>
             @if($quote->title)
                 <div class="mb-1.5">
                     <span class="block text-[10px] text-slate-400">Oggetto</span>
@@ -139,7 +147,8 @@
             @if($quote->description)
                 <div class="mb-1.5">
                     <span class="block text-[10px] text-slate-400">Descrizione</span>
-                    <span class="font-medium text-slate-900 text-xs">{{ \Illuminate\Support\Str::limit($quote->description, 100) }}</span>
+                    <span
+                        class="font-medium text-slate-900 text-xs">{{ \Illuminate\Support\Str::limit($quote->description, 100) }}</span>
                 </div>
             @endif
             @if($quote->address && $quote->city)
@@ -208,17 +217,20 @@
                     <tr class="bg-gray-300 border-b border-slate-400">
                         @if($quote->show_section_totals)
                             <td colspan="{{ $totalTableColumns - 1 }}" class="py-1 pl-3 align-middle">
-                                <div class="font-bold text-slate-900 uppercase text-[10px]">{{ $item->description }}</div>
+                                <div
+                                    class="font-bold text-slate-900 uppercase text-[10px]">{{ $item->description }}</div>
                                 @if($item->notes)
                                     <div class="text-[9px] text-slate-500 italic leading-tight">{{ $item->notes }}</div>
                                 @endif
                             </td>
-                            <td class="py-1 text-right font-bold text-slate-900 text-[10px] align-middle" style="white-space: nowrap; min-width: 7rem;">
+                            <td class="py-1 text-right font-bold text-slate-900 text-[10px] align-middle"
+                                style="white-space: nowrap; min-width: 7rem;">
                                 € {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }}
                             </td>
                         @else
                             <td colspan="{{ $totalTableColumns }}" class="py-1 pl-3 align-middle">
-                                <div class="font-bold text-slate-900 uppercase text-[10px]">{{ $item->description }}</div>
+                                <div
+                                    class="font-bold text-slate-900 uppercase text-[10px]">{{ $item->description }}</div>
                                 @if($item->notes)
                                     <div class="text-[9px] text-slate-500 italic leading-tight">{{ $item->notes }}</div>
                                 @endif
@@ -253,9 +265,11 @@
                                 <td class="py-1.5 font-mono text-[10px] text-slate-500 align-top">{{ $child->code ?? ($child->product ? $child->product->code : '') }}</td>
                             @endif
                             <td class="py-1.5 align-top">
-                                <div class="font-medium text-slate-800 leading-snug whitespace-pre-wrap">{{ $child->description }}</div>
+                                <div
+                                    class="font-medium text-slate-800 leading-snug whitespace-pre-wrap">{{ $child->description }}</div>
                                 @if($child->notes)
-                                    <div class="text-[9px] mt-0.5 text-slate-500 whitespace-pre-line leading-tight">{{ $child->notes }}</div>
+                                    <div
+                                        class="text-[9px] mt-0.5 text-slate-500 whitespace-pre-line leading-tight">{{ $child->notes }}</div>
                                 @endif
                                 @if($child->billing_unit && !in_array($child->billing_unit->value, ['unit', 'flat']))
                                     @php
@@ -264,8 +278,11 @@
                                         $dur = $child->duration ?? ($quote->effective_event_days ?? null);
                                     @endphp
                                     <div style="font-size: 9px; color: #6b7280; margin-top: 1px;">
-                                        {{ $child->quantity }} × {{ number_format($child->unit_price, 2, ',', '.') }} €/{{ $unitLabel }}
-                                        @if($dur) × curva({{ $dur }} {{ $unitLabel }}) @endif
+                                        {{ $child->quantity }} × {{ number_format($child->unit_price, 2, ',', '.') }}
+                                        €/{{ $unitLabel }}
+                                        @if($dur)
+                                            × curva({{ $dur }} {{ $unitLabel }})
+                                        @endif
                                     </div>
                                 @endif
                             </td>
@@ -284,10 +301,13 @@
                                 <td class="py-1.5 text-center align-top text-[10px]">{{ $child->discount_percentage > 0 ? number_format($child->discount_percentage, 1) . '%' : '-' }}</td>
                             @endif
                             @if($quote->show_vat || $quote->tax_included)
-                                <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($child->vat_rate ?? 0, 0) }}%</td>
+                                <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($child->vat_rate ?? 0, 0) }}
+                                    %
+                                </td>
                             @endif
                             @if($showPriceCols)
-                                <td class="py-1.5 text-right font-semibold text-slate-900 align-top" style="white-space: nowrap;">
+                                <td class="py-1.5 text-right font-semibold text-slate-900 align-top"
+                                    style="white-space: nowrap;">
                                     @if(!$child->hide_unit_price)
                                         € {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $child->total_with_vat : $child->total, 2, ',', '.') }}
                                     @else
@@ -300,9 +320,11 @@
                     @if($quote->show_section_totals)
                         <tr class="bg-gray-100 border-b border-slate-300">
                             <td colspan="{{ $totalTableColumns - 1 }}" class="py-1 pl-3 align-middle">
-                                <div class="font-bold text-slate-900 italic text-[10px]">Totale {{ $item->description }}</div>
+                                <div class="font-bold text-slate-900 italic text-[10px]">
+                                    Totale {{ $item->description }}</div>
                             </td>
-                            <td class="py-1 text-right font-bold text-slate-900 text-[10px] align-middle" style="white-space: nowrap; min-width: 7rem;">
+                            <td class="py-1 text-right font-bold text-slate-900 text-[10px] align-middle"
+                                style="white-space: nowrap; min-width: 7rem;">
                                 € {{ number_format($item->children->sum(($quote->vat_included_in_prices || $quote->tax_included) ? 'total_with_vat' : 'total'), 2, ',', '.') }}
                             </td>
                         </tr>
@@ -314,9 +336,11 @@
                             <td class="py-1.5 font-mono text-[10px] text-slate-500 align-top">{{ $item->code ?? ($item->product ? $item->product->code : '') }}</td>
                         @endif
                         <td class="py-1.5 align-top">
-                            <div class="font-medium text-slate-900 leading-snug whitespace-pre-wrap">{{ $item->description }}</div>
+                            <div
+                                class="font-medium text-slate-900 leading-snug whitespace-pre-wrap">{{ $item->description }}</div>
                             @if($item->notes)
-                                <div class="text-[9px] mt-0.5 text-slate-500 whitespace-pre-line leading-tight">{{ $item->notes }}</div>
+                                <div
+                                    class="text-[9px] mt-0.5 text-slate-500 whitespace-pre-line leading-tight">{{ $item->notes }}</div>
                             @endif
                             @if($item->billing_unit && !in_array($item->billing_unit->value, ['unit', 'flat']))
                                 @php
@@ -325,8 +349,11 @@
                                     $dur = $item->duration ?? ($quote->effective_event_days ?? null);
                                 @endphp
                                 <div style="font-size: 9px; color: #6b7280; margin-top: 1px;">
-                                    {{ $item->quantity }} × {{ number_format($item->unit_price, 2, ',', '.') }} €/{{ $unitLabel }}
-                                    @if($dur) × curva({{ $dur }} {{ $unitLabel }}) @endif
+                                    {{ $item->quantity }} × {{ number_format($item->unit_price, 2, ',', '.') }}
+                                    €/{{ $unitLabel }}
+                                    @if($dur)
+                                        × curva({{ $dur }} {{ $unitLabel }})
+                                    @endif
                                 </div>
                             @endif
                         </td>
@@ -345,10 +372,13 @@
                             <td class="py-1.5 text-center align-top text-[10px]">{{ $item->discount_percentage > 0 ? number_format($item->discount_percentage, 1) . '%' : '-' }}</td>
                         @endif
                         @if($quote->show_vat || $quote->tax_included)
-                            <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($item->vat_rate ?? 0, 0) }}%</td>
+                            <td class="py-1.5 text-center align-top text-[10px]">{{ number_format($item->vat_rate ?? 0, 0) }}
+                                %
+                            </td>
                         @endif
                         @if($showPriceCols)
-                            <td class="py-1.5 text-right font-semibold text-slate-900 align-top" style="white-space: nowrap;">
+                            <td class="py-1.5 text-right font-semibold text-slate-900 align-top"
+                                style="white-space: nowrap;">
                                 @if(!$item->hide_unit_price)
                                     € {{ number_format(($quote->vat_included_in_prices || $quote->tax_included) ? $item->total_with_vat : $item->total, 2, ',', '.') }}
                                 @else
@@ -428,33 +458,38 @@
                     <h4 class="font-bold text-slate-700 text-[10px] mb-2 uppercase tracking-wider">Piano Pagamenti</h4>
                     <table class="w-full text-[10px]">
                         <thead>
-                            <tr class="border-b border-slate-200">
-                                <th class="text-left py-1 text-slate-500 font-medium">Descrizione</th>
-                                <th class="text-right py-1 text-slate-500 font-medium w-16">%</th>
-                                <th class="text-right py-1 text-slate-500 font-medium w-24">Importo</th>
-                            </tr>
+                        <tr class="border-b border-slate-200">
+                            <th class="text-left py-1 text-slate-500 font-medium">Descrizione</th>
+                            <th class="text-right py-1 text-slate-500 font-medium w-16">%</th>
+                            <th class="text-right py-1 text-slate-500 font-medium w-24">Importo</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            @foreach($quote->deposits as $deposit)
+                        @foreach($quote->deposits as $deposit)
                             <tr class="border-b border-slate-100">
                                 <td class="py-1 text-slate-700">
                                     {{ $deposit->description }}
-                                    @if($deposit->due_event) <span class="text-slate-400"> — {{ $deposit->due_event }}</span>@endif
-                                    @if($deposit->due_date) <span class="text-slate-400"> ({{ $deposit->due_date->format('d/m/Y') }})</span>@endif
+                                    @if($deposit->due_event)
+                                        <span class="text-slate-400"> — {{ $deposit->due_event }}</span>
+                                    @endif
+                                    @if($deposit->due_date)
+                                        <span class="text-slate-400"> ({{ $deposit->due_date->format('d/m/Y') }})</span>
+                                    @endif
                                 </td>
                                 <td class="text-right py-1 text-slate-600">{{ $deposit->percentage ? number_format($deposit->percentage, 1).'%' : '—' }}</td>
-                                <td class="text-right py-1 text-slate-700 font-medium">€ {{ number_format($deposit->amount, 2, ',', '.') }}</td>
+                                <td class="text-right py-1 text-slate-700 font-medium">
+                                    € {{ number_format($deposit->amount, 2, ',', '.') }}</td>
                             </tr>
-                            @endforeach
-                            <tr class="border-t-2 border-slate-300">
-                                <td class="py-1 font-bold text-slate-700">{{ $quote->balance_label ?? 'Saldo finale' }}</td>
-                                <td class="text-right py-1 text-slate-500">
-                                    {{ number_format(100 - $quote->deposits->sum('percentage'), 1) }}%
-                                </td>
-                                <td class="text-right py-1 font-bold text-slate-700">
-                                    € {{ number_format($quote->total_amount - $quote->deposits->sum('amount'), 2, ',', '.') }}
-                                </td>
-                            </tr>
+                        @endforeach
+                        <tr class="border-t-2 border-slate-300">
+                            <td class="py-1 font-bold text-slate-700">{{ $quote->balance_label ?? 'Saldo finale' }}</td>
+                            <td class="text-right py-1 text-slate-500">
+                                {{ number_format(100 - $quote->deposits->sum('percentage'), 1) }}%
+                            </td>
+                            <td class="text-right py-1 font-bold text-slate-700">
+                                € {{ number_format($quote->total_amount - $quote->deposits->sum('amount'), 2, ',', '.') }}
+                            </td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>
@@ -543,21 +578,21 @@
                     @endif
                 </div>
                 @if($quote->work_start_description || $quote->work_start_date || $quote->work_duration_description || $quote->work_end_date)
-                <div>
-                    <h4 class="font-bold text-slate-900 mb-2">Tempi di Esecuzione</h4>
-                    @if($quote->work_start_description || $quote->work_start_date)
-                        <div class="mb-2">
-                            <span class="block font-semibold text-slate-700 text-[10px]">INIZIO LAVORI</span>
-                            <span>{{ $quote->work_start_description ?? $quote->work_start_date?->format('d/m/Y') }}</span>
-                        </div>
-                    @endif
-                    @if($quote->work_duration_description)
-                        <div>
-                            <span class="block font-semibold text-slate-700 text-[10px]">DURATA LAVORI</span>
-                            <span>{{ $quote->work_duration_description }}</span>
-                        </div>
-                    @endif
-                </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 mb-2">Tempi di Esecuzione</h4>
+                        @if($quote->work_start_description || $quote->work_start_date)
+                            <div class="mb-2">
+                                <span class="block font-semibold text-slate-700 text-[10px]">INIZIO LAVORI</span>
+                                <span>{{ $quote->work_start_description ?? $quote->work_start_date?->format('d/m/Y') }}</span>
+                            </div>
+                        @endif
+                        @if($quote->work_duration_description)
+                            <div>
+                                <span class="block font-semibold text-slate-700 text-[10px]">DURATA LAVORI</span>
+                                <span>{{ $quote->work_duration_description }}</span>
+                            </div>
+                        @endif
+                    </div>
                 @endif
             </div>
         @endif

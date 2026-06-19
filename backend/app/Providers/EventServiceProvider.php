@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Domains\Product\Events\ProductCostUpdated;
 use App\Events\AvailabilityItemResolved;
 use App\Events\BulkProductPricesUpdated;
 use App\Events\DdtCancelled;
@@ -30,7 +31,6 @@ use App\Events\PasswordReset;
 use App\Events\PasswordResetRequested;
 use App\Events\PriceListGenerated;
 use App\Events\PriceListItemsGenerationCompleted;
-use App\Events\ProductCostUpdated;
 use App\Events\ProjectAvailabilityCheckCompleted;
 use App\Events\ProjectServiceCreated;
 use App\Events\ProjectServiceDeleted;

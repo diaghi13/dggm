@@ -2,8 +2,8 @@
 
 namespace App\Events;
 
-use App\Models\ProjectLaborCost;
-use App\Models\ProjectLaborLog;
+use App\Domains\Project\Models\ProjectLaborCost;
+use App\Domains\Project\Models\ProjectLaborLog;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;

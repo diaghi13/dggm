@@ -2,11 +2,11 @@
 
 namespace App\Listeners;
 
-use App\Actions\Warehouse\CreateRepairOrderAction;
 use App\Data\CreateRepairOrderData;
+use App\Domains\Warehouse\Actions\Warehouse\CreateRepairOrderAction;
+use App\Domains\Warehouse\Models\Inventory;
 use App\Enums\InspectionItemAction;
 use App\Events\RentalReturnInspectionCompleted;
-use App\Models\Inventory;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 

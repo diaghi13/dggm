@@ -2,10 +2,10 @@
 
 namespace App\Listeners;
 
+use App\Domains\Product\Models\Product;
 use App\Events\PriceListGenerated;
 use App\Events\PriceListItemsGenerationCompleted;
 use App\Jobs\ProcessPriceListItemsJob;
-use App\Models\Product;
 use Illuminate\Bus\Batch;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;

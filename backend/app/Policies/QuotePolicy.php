@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\Quote;
+use App\Domains\Quote\Models\Quote;
 use App\Models\User;
 
 class QuotePolicy

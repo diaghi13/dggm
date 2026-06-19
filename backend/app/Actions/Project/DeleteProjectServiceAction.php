@@ -2,8 +2,8 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\ProjectService;
 use App\Events\ProjectServiceDeleted;
-use App\Models\ProjectService;
 use Illuminate\Support\Facades\DB;
 
 class DeleteProjectServiceAction

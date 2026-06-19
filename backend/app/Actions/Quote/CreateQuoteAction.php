@@ -2,9 +2,9 @@
 
 namespace App\Actions\Quote;
 
-use App\Data\QuoteData;
+use App\Domains\Quote\Data\QuoteData;
+use App\Domains\Quote\Models\Quote;
 use App\Events\QuoteCreated;
-use App\Models\Quote;
 use App\Models\Setting;
 use App\Services\QuoteTermsService;
 use Illuminate\Support\Facades\DB;

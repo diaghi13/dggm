@@ -2,8 +2,8 @@
 
 namespace App\Queries\Inspection;
 
+use App\Domains\Warehouse\Models\Ddt;
 use App\Enums\DdtType;
-use App\Models\Ddt;
 use Illuminate\Database\Eloquent\Collection;
 
 /**

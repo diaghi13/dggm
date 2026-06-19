@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\ProjectAvailabilityCheck;
+use App\Domains\Project\Models\ProjectAvailabilityCheck;
 use App\Models\User;
 
 class ProjectAvailabilityCheckPolicy

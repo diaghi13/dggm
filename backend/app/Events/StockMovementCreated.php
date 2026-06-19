@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\StockMovement;
+use App\Domains\Warehouse\Models\StockMovement;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

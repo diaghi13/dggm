@@ -1,11 +1,11 @@
 <?php
 
-use App\Enums\ProductRelationQuantityType;
-use App\Enums\ProductType;
-use App\Models\Product;
-use App\Models\ProductCategory;
-use App\Models\ProductRelation;
-use App\Models\ProductRelationType;
+use App\Domains\Product\Enums\ProductRelationQuantityType;
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Models\ProductCategory;
+use App\Domains\Product\Models\ProductRelation;
+use App\Domains\Product\Models\ProductRelationType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

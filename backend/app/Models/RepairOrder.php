@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Domains\Product\Models\Product;
+use App\Domains\Project\Models\ProjectMaterialIncident;
+use App\Domains\Warehouse\Models\Inventory;
+use App\Domains\Warehouse\Models\RentalReturnInspectionItem;
 use App\Enums\RepairOrderStatus;
 use App\Enums\RepairType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

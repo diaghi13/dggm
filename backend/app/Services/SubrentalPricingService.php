@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Product;
-use App\Models\ProductSubrentalSupplier;
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Models\ProductSubrentalSupplier;
 use App\Models\Setting;
 use Illuminate\Support\Collection;
 

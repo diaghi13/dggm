@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domains\Product\Models\ProductCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 

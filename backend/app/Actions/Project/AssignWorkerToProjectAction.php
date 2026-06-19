@@ -2,10 +2,10 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectWorker;
 use App\Enums\ProjectWorkerStatus;
 use App\Enums\WorkerType;
-use App\Models\Project;
-use App\Models\ProjectWorker;
 use App\Models\Worker;
 use App\Notifications\WorkerAssignedToProject;
 use Illuminate\Support\Facades\DB;

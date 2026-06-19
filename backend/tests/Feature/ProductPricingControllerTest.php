@@ -1,14 +1,14 @@
 <?php
 
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Models\ProductBrand;
+use App\Domains\Product\Models\ProductCategory;
 use App\Enums\PriceListAdjustmentType;
 use App\Enums\PriceListAppliesTo;
 use App\Enums\PriceListCalculationMode;
 use App\Events\BulkProductPricesUpdated;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
-use App\Models\Product;
-use App\Models\ProductBrand;
-use App\Models\ProductCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;

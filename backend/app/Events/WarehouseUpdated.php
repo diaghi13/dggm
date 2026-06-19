@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\Warehouse;
+use App\Domains\Warehouse\Models\Warehouse;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;

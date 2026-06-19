@@ -2,11 +2,11 @@
 
 namespace App\Queries\Project;
 
-use App\Enums\ProductType;
-use App\Models\Inventory;
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectMaterial;
+use App\Domains\Warehouse\Models\Inventory;
 use App\Models\KitAssembly;
-use App\Models\Project;
-use App\Models\ProjectMaterial;
 use App\Services\OrderListCalculatorService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +47,7 @@ class GetProjectOrderListQuery
         // Build entry_id → {supplier_id, name, day_rate} map
         $entryInfoMap = [];
         if (! empty($allEntryIds)) {
-            \App\Models\ProductSubrentalSupplier::whereIn('id', $allEntryIds)
+            \App\Domains\Product\Models\ProductSubrentalSupplier::whereIn('id', $allEntryIds)
                 ->with('supplier')
                 ->get()
                 ->each(function ($entry) use (&$entryInfoMap) {
@@ -206,7 +206,7 @@ class GetProjectOrderListQuery
     private function explodeComposite(
         Collection $entries,
         ProjectMaterial $material,
-        \App\Models\Product $parent,
+        \App\Domains\Product\Models\Product $parent,
         float $parentQty
     ): void {
         $relations = $parent->relations()->with('relatedProduct.subrentalSuppliers')->get();
@@ -265,7 +265,7 @@ class GetProjectOrderListQuery
     private function explodeKit(
         Collection $entries,
         ProjectMaterial $material,
-        \App\Models\Product $parent,
+        \App\Domains\Product\Models\Product $parent,
         float $parentQty
     ): void {
         $assembly = KitAssembly::where('product_id', $parent->id)

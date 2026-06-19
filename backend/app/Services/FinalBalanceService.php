@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\Data\ProjectExpenseData;
-use App\Data\ProjectPnlData;
-use App\Data\ProjectWorkerData;
+use App\Domains\Project\Data\ProjectExpenseData;
+use App\Domains\Project\Data\ProjectPnlData;
+use App\Domains\Project\Data\ProjectWorkerData;
+use App\Domains\Project\Models\Project;
 use App\Enums\ProjectExpenseStatus;
 use App\Enums\ProjectLogStatus;
 use App\Enums\QuoteItemType;
-use App\Models\Project;
 use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use Spatie\LaravelData\DataCollection;

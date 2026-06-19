@@ -2,9 +2,9 @@
 
 namespace App\Actions\Quote;
 
+use App\Domains\Quote\Models\Quote;
+use App\Domains\Quote\Models\QuoteItem;
 use App\Events\QuoteDuplicated;
-use App\Models\Quote;
-use App\Models\QuoteItem;
 use Illuminate\Support\Facades\DB;
 
 class DuplicateQuoteAction

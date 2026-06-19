@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\Quote;
+use App\Domains\Quote\Models\Quote;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;

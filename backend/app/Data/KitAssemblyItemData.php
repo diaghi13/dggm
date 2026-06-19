@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use App\Domains\Product\Data\ProductData;
 use App\Models\KitAssemblyItem;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Min;

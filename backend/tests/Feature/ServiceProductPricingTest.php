@@ -1,16 +1,16 @@
 <?php
 
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Services\ProductPricingService;
 use App\Enums\PriceListAdjustmentType;
 use App\Enums\PriceListAppliesTo;
 use App\Enums\PriceListCalculationMode;
-use App\Enums\ProductType;
 use App\Jobs\RecalculatePriceListItemsForProductJob;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
-use App\Models\Product;
 use App\Models\User;
 use App\Services\PriceCalculatorService;
-use App\Services\ProductPricingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\Sanctum;
@@ -207,7 +207,7 @@ it('RecalculatePriceListItemsForProductJob sets rental fields to NULL for SERVIC
 
     (new RecalculatePriceListItemsForProductJob($service->id))->handle(
         app(\App\Services\PriceCalculatorService::class),
-        app(\App\Services\ProductPricingService::class),
+        app(\App\Domains\Product\Services\ProductPricingService::class),
         app(\App\Services\RentalEngineService::class)
     );
 

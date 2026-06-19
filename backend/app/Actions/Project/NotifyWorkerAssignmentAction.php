@@ -2,10 +2,10 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\ProjectWorker;
 use App\Enums\DocumentType;
 use App\Mail\WorkerAssignedToProjectMail;
 use App\Models\EmailAccount;
-use App\Models\ProjectWorker;
 use App\Models\User;
 use App\Notifications\WorkerAssignedToProject;
 use App\Services\TenantMailService;

@@ -5,7 +5,7 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Project>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Domains\Project\Models\Project>
  */
 class ProjectFactory extends Factory
 {
@@ -21,7 +21,7 @@ class ProjectFactory extends Factory
         return [
             'code' => 'PROJ-'.str_pad($counter++, 4, '0', STR_PAD_LEFT),
             'name' => fake()->words(3, true).' Project',
-            'customer_id' => \App\Models\Customer::factory(),
+            'customer_id' => \App\Domains\Customer\Models\Customer::factory(),
             'project_manager_id' => \App\Models\User::factory(),
             'status' => fake()->randomElement(['draft', 'planned', 'in_progress', 'on_hold', 'completed', 'cancelled']),
             'description' => fake()->paragraph(),

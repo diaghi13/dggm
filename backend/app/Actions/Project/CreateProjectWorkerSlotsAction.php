@@ -2,11 +2,11 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectWorker;
+use App\Domains\Quote\Models\Quote;
 use App\Enums\ProjectWorkerStatus;
 use App\Enums\QuoteItemType;
-use App\Models\Project;
-use App\Models\ProjectWorker;
-use App\Models\Quote;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 

@@ -2,7 +2,7 @@
 
 namespace App\Actions\Quote;
 
-use App\Models\Quote;
+use App\Domains\Quote\Models\Quote;
 use App\Services\PdfService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 

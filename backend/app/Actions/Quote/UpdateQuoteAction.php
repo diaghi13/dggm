@@ -2,10 +2,10 @@
 
 namespace App\Actions\Quote;
 
-use App\Data\QuoteData;
+use App\Domains\Quote\Data\QuoteData;
+use App\Domains\Quote\Models\Quote;
+use App\Domains\Quote\Models\QuoteItem;
 use App\Events\QuoteUpdated;
-use App\Models\Quote;
-use App\Models\QuoteItem;
 use Illuminate\Support\Facades\DB;
 
 class UpdateQuoteAction

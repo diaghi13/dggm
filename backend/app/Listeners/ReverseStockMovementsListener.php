@@ -2,12 +2,11 @@
 
 namespace App\Listeners;
 
+use App\Domains\Warehouse\Models\Inventory;
 use App\Enums\DdtType;
 use App\Enums\KitAssemblyStatus;
 use App\Enums\StockMovementType;
 use App\Events\DdtCancelled;
-use App\Models\Inventory;
-use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -92,27 +91,21 @@ class ReverseStockMovementsListener
             return;
         }
 
-        // Reverse based on movement type
-        if ($movement->type->isIncoming()) {
-            // Was added, now remove
+        // Modello B: RENTAL movements don't touch quantity_available — only quantity_out_on_rental
+        if ($movement->type === StockMovementType::RENTAL_OUT) {
+            // Was rented out, now undo — decrement out_on_rental on inventory
+            $inventory->decrement('quantity_out_on_rental', $movement->quantity);
+        } elseif ($movement->type === StockMovementType::RENTAL_RETURN) {
+            // Was returned, now undo — increment out_on_rental back on inventory
+            $inventory->increment('quantity_out_on_rental', $movement->quantity);
+        } elseif ($movement->type->isIncoming()) {
+            // Was added to fleet, now remove
             $inventory->quantity_available -= $movement->quantity;
+            $inventory->save();
         } elseif ($movement->type->isOutgoing()) {
-            // Was removed, now add back
+            // Was removed from fleet, now add back
             $inventory->quantity_available += $movement->quantity;
-        }
-
-        $inventory->save();
-
-        // Reverse quantity_out_on_rental tracking
-        $product = Product::find($movement->product_id);
-        if ($product) {
-            if ($movement->type === StockMovementType::RENTAL_OUT) {
-                // Was rented out, now undo — decrement
-                $product->decrement('quantity_out_on_rental', $movement->quantity);
-            } elseif ($movement->type === StockMovementType::RENTAL_RETURN) {
-                // Was returned, now undo — increment back
-                $product->increment('quantity_out_on_rental', $movement->quantity);
-            }
+            $inventory->save();
         }
     }
 }

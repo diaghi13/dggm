@@ -2,9 +2,9 @@
 
 namespace App\Actions\Quote;
 
+use App\Domains\Quote\Models\Quote;
+use App\Domains\Quote\Models\QuoteToken;
 use App\Events\QuoteSent;
-use App\Models\Quote;
-use App\Models\QuoteToken;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 

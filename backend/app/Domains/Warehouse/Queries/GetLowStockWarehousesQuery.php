@@ -2,7 +2,7 @@
 
 namespace App\Domains\Warehouse\Queries;
 
-use App\Models\Warehouse;
+use App\Domains\Warehouse\Models\Warehouse;
 use Illuminate\Database\Eloquent\Collection;
 
 /**

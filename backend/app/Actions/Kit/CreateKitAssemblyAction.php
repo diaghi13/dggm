@@ -2,11 +2,11 @@
 
 namespace App\Actions\Kit;
 
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Models\Product;
 use App\Enums\KitAssemblyStatus;
-use App\Enums\ProductType;
 use App\Events\KitAssembled;
 use App\Models\KitAssembly;
-use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 

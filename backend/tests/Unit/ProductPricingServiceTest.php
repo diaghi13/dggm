@@ -1,12 +1,12 @@
 <?php
 
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Services\ProductPricingService;
 use App\Enums\PriceListAdjustmentType;
 use App\Enums\PriceListAppliesTo;
 use App\Enums\PriceListCalculationMode;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
-use App\Models\Product;
-use App\Services\ProductPricingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

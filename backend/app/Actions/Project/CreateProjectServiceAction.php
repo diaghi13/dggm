@@ -3,9 +3,9 @@
 namespace App\Actions\Project;
 
 use App\Data\CreateProjectServiceData;
+use App\Domains\Project\Models\Project;
+use App\Domains\Project\Models\ProjectService;
 use App\Events\ProjectServiceCreated;
-use App\Models\Project;
-use App\Models\ProjectService;
 use Illuminate\Support\Facades\DB;
 
 class CreateProjectServiceAction

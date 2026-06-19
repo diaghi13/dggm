@@ -2,10 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Services\ProductPricingService;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
-use App\Models\Product;
-use App\Services\ProductPricingService;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;

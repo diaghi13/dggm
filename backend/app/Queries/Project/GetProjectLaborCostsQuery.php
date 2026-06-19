@@ -2,7 +2,7 @@
 
 namespace App\Queries\Project;
 
-use App\Models\ProjectLaborCost;
+use App\Domains\Project\Models\ProjectLaborCost;
 use Illuminate\Database\Eloquent\Collection;
 
 class GetProjectLaborCostsQuery

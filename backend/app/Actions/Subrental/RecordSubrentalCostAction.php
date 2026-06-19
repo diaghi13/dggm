@@ -2,7 +2,7 @@
 
 namespace App\Actions\Subrental;
 
-use App\Models\Quote;
+use App\Domains\Quote\Models\Quote;
 use App\Models\SubrentalCostHistory;
 use Illuminate\Support\Facades\DB;
 

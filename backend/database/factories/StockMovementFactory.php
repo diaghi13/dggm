@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
+use App\Domains\Product\Models\Product;
+use App\Domains\Warehouse\Models\Warehouse;
 use App\Enums\StockMovementType;
-use App\Models\Product;
 use App\Models\User;
-use App\Models\Warehouse;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\StockMovement>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Domains\Warehouse\Models\StockMovement>
  */
 class StockMovementFactory extends Factory
 {

@@ -1,18 +1,18 @@
 <?php
 
+use App\Domains\Product\Enums\ProductRelationQuantityType;
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Models\ProductRelationType;
+use App\Domains\Product\Services\ProductPricingService;
 use App\Enums\PriceListAdjustmentType;
 use App\Enums\PriceListAppliesTo;
 use App\Enums\PriceListCalculationMode;
-use App\Enums\ProductRelationQuantityType;
-use App\Enums\ProductType;
 use App\Jobs\RecalculateCompositePricesJob;
 use App\Jobs\RecalculatePriceListItemsForProductJob;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
-use App\Models\Product;
-use App\Models\ProductRelationType;
 use App\Models\User;
-use App\Services\ProductPricingService;
 use App\Services\RentalEngineService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -375,7 +375,7 @@ it('ProductCostUpdated event queues UpdateCompositePricesFromComponentListener',
     Queue::fake();
 
     $component = makeTestArticle();
-    \App\Events\ProductCostUpdated::dispatch($component, ['trigger' => 'test']);
+    \App\Domains\Product\Events\ProductCostUpdated::dispatch($component, ['trigger' => 'test']);
 
     // ShouldQueue listeners are pushed as CallQueuedListener jobs internally.
     // Use Queue::listenersPushed() to assert the queued listener was dispatched.
@@ -402,7 +402,7 @@ it('UpdateProductAction does NOT delete relations when payload omits the relatio
 
     // Simulate "Apply Calculated Price" from the frontend:
     // payload only contains code, name, product_type, standard_cost — NO relations key.
-    $data = \App\Data\ProductData::from([
+    $data = \App\Domains\Product\Data\ProductData::from([
         'id' => $composite->id,
         'code' => $composite->code,
         'name' => $composite->name,
@@ -410,7 +410,7 @@ it('UpdateProductAction does NOT delete relations when payload omits the relatio
         'standard_cost' => 99.0,
     ]);
 
-    $action = app(\App\Actions\Product\UpdateProductAction::class);
+    $action = app(\App\Domains\Product\Actions\UpdateProductAction::class);
     $action->execute($composite, $data);
 
     // Relations must still exist after the partial update
@@ -498,7 +498,7 @@ it('UpdateProductAction recalculates standard_cost when composite relations are 
 
     $componentType = ProductRelationType::where('code', 'component')->firstOrFail();
 
-    $data = \App\Data\ProductData::from([
+    $data = \App\Domains\Product\Data\ProductData::from([
         'code' => $composite->code,
         'name' => $composite->name,
         'product_type' => 'composite',
@@ -520,7 +520,7 @@ it('UpdateProductAction recalculates standard_cost when composite relations are 
         ],
     ]);
 
-    $action = app(\App\Actions\Product\UpdateProductAction::class);
+    $action = app(\App\Domains\Product\Actions\UpdateProductAction::class);
     $updated = $action->execute($composite, $data);
 
     // standard_cost = 80 × 2 = 160

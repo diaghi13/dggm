@@ -146,15 +146,13 @@ public function store(StoreWarehouseRequest $request): JsonResponse
 - ❌ Contenere logica HTTP (authorization, validation)
 
 **Template Action:**
+
 ```php
 <?php
 
 namespace App\Actions\Warehouse;
 
-use App\Data\WarehouseData;
-use App\Events\WarehouseCreated;
-use App\Models\Warehouse;
-use Illuminate\Support\Facades\DB;
+use App\Domains\Warehouse\Data\WarehouseData;use App\Domains\Warehouse\Models\Warehouse;use App\Events\WarehouseCreated;use Illuminate\Support\Facades\DB;
 
 class CreateWarehouseAction
 {
@@ -199,13 +197,13 @@ class CreateWarehouseAction
 - ❌ Query usate una sola volta → metti nel Controller
 
 **Template Query Class:**
+
 ```php
 <?php
 
 namespace App\Queries;
 
-use App\Models\Warehouse;
-use Illuminate\Database\Eloquent\Collection;
+use App\Domains\Warehouse\Models\Warehouse;use Illuminate\Database\Eloquent\Collection;
 
 class GetWarehousesWithLowStockQuery
 {
@@ -730,15 +728,13 @@ $distance = $site->coordinates->distanceTo($worker->coordinates);
 - ✅ implements ShouldQueue per listener async
 
 **Template Event:**
+
 ```php
 <?php
 
 namespace App\Events;
 
-use App\Models\Warehouse;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
+use App\Domains\Warehouse\Models\Warehouse;use Illuminate\Broadcasting\InteractsWithSockets;use Illuminate\Foundation\Events\Dispatchable;use Illuminate\Queue\SerializesModels;
 
 class WarehouseCreated
 {

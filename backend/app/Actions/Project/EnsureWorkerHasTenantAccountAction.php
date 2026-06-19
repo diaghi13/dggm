@@ -2,9 +2,9 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\ProjectWorker;
 use App\Models\Landlord\GlobalUser;
 use App\Models\Landlord\TenantMembership;
-use App\Models\ProjectWorker;
 use App\Models\User;
 use App\Models\Worker;
 use App\Models\WorkerInvitation;

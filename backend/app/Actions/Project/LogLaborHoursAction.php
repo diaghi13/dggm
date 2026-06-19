@@ -2,9 +2,9 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\ProjectLaborLog;
+use App\Domains\Project\Models\ProjectWorker;
 use App\Enums\ProjectLogStatus;
-use App\Models\ProjectLaborLog;
-use App\Models\ProjectWorker;
 use Illuminate\Support\Facades\DB;
 
 class LogLaborHoursAction

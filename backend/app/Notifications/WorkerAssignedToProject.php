@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\ProjectWorker;
+use App\Domains\Project\Models\ProjectWorker;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;

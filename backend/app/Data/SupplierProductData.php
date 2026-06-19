@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use App\Domains\Product\Data\ProductData;
 use Spatie\LaravelData\Attributes\Validation\Between;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\Max;

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\QuoteToken;
+use App\Domains\Quote\Models\QuoteToken;
 use Illuminate\Console\Command;
 
 class PruneExpiredQuoteTokens extends Command

@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\ProjectRole;
+use App\Domains\Project\Models\ProjectRole;
 use Illuminate\Database\Seeder;
 
 class ProjectRoleSeeder extends Seeder

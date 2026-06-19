@@ -2,9 +2,9 @@
 
 namespace App\Actions\Quote;
 
+use App\Domains\Project\Models\Project;
+use App\Domains\Quote\Models\Quote;
 use App\Events\QuoteConvertedToProject;
-use App\Models\Project;
-use App\Models\Quote;
 use Illuminate\Support\Facades\DB;
 
 class ConvertQuoteToProjectAction

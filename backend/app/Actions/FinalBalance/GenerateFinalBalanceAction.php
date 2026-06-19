@@ -3,11 +3,11 @@
 namespace App\Actions\FinalBalance;
 
 use App\Data\GenerateFinalBalanceData;
+use App\Domains\Project\Models\Project;
+use App\Domains\Quote\Models\Quote;
 use App\Events\FinalBalanceGenerated;
 use App\Models\FinalBalance;
 use App\Models\FinalBalanceItem;
-use App\Models\Project;
-use App\Models\Quote;
 use App\Services\CodeGeneratorService;
 use App\Services\FinalBalanceCalculatorService;
 use Illuminate\Support\Facades\DB;

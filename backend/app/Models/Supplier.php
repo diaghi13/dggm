@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Data\SupplierData;
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Models\ProductSubrentalSupplier;
+use App\Domains\Project\Models\ProjectLaborCost;
 use App\Enums\PersonnelType;
 use App\Enums\SupplierType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

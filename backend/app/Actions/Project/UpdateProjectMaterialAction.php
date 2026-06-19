@@ -2,7 +2,7 @@
 
 namespace App\Actions\Project;
 
-use App\Models\ProjectMaterial;
+use App\Domains\Project\Models\ProjectMaterial;
 use Illuminate\Support\Facades\DB;
 
 class UpdateProjectMaterialAction

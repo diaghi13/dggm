@@ -1,13 +1,13 @@
 <?php
 
-use App\Enums\ProductType;
+use App\Domains\Product\Enums\ProductType;
+use App\Domains\Product\Models\Product;
+use App\Domains\Warehouse\Models\StockMovement;
+use App\Domains\Warehouse\Models\Warehouse;
 use App\Enums\StockMovementType;
 use App\Events\StockMovementCreated;
 use App\Listeners\UpdateProductStandardCostListener;
-use App\Models\Product;
-use App\Models\StockMovement;
 use App\Models\Supplier;
-use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

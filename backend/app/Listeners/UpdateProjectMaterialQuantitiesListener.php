@@ -2,10 +2,10 @@
 
 namespace App\Listeners;
 
+use App\Domains\Project\Models\ProjectMaterial;
 use App\Enums\DdtType;
 use App\Enums\ProjectMaterialStatus;
 use App\Events\DdtDelivered;
-use App\Models\ProjectMaterial;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\ProjectWorker;
+use App\Domains\Project\Models\ProjectWorker;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AssignWorkerToProjectRequest extends FormRequest

@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\ProjectWorker;
+use App\Domains\Project\Models\ProjectWorker;
 use App\Models\WorkerInvitation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;

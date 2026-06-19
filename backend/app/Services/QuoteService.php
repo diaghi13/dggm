@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Quote;
+use App\Domains\Quote\Models\Quote;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 

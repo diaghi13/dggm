@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Product;
+use App\Domains\Product\Models\Product;
 use App\Models\Supplier;
 use App\Services\PriceCalculatorService;
 use App\ValueObjects\Money;

@@ -2,11 +2,11 @@
 
 namespace App\Actions\Project;
 
+use App\Domains\Project\Models\ProjectLaborCost;
+use App\Domains\Project\Models\ProjectLaborLog;
 use App\Enums\LaborCostType;
 use App\Enums\ProjectLogStatus;
 use App\Events\LaborLogApproved;
-use App\Models\ProjectLaborCost;
-use App\Models\ProjectLaborLog;
 use Illuminate\Support\Facades\DB;
 
 class ApproveLaborLogAction

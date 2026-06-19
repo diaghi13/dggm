@@ -2,7 +2,7 @@
 
 namespace App\Queries\FinalBalance;
 
-use App\Models\Project;
+use App\Domains\Project\Models\Project;
 use Illuminate\Database\Eloquent\Collection;
 
 class GetProjectFinalBalancesQuery

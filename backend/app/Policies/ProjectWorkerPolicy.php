@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\ProjectWorker;
+use App\Domains\Project\Models\ProjectWorker;
 use App\Models\User;
 
 class ProjectWorkerPolicy

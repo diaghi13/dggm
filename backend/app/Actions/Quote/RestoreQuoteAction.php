@@ -2,8 +2,8 @@
 
 namespace App\Actions\Quote;
 
+use App\Domains\Quote\Models\Quote;
 use App\Events\QuoteRestored;
-use App\Models\Quote;
 
 class RestoreQuoteAction
 {

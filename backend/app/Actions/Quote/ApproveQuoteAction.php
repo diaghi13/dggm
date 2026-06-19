@@ -2,8 +2,8 @@
 
 namespace App\Actions\Quote;
 
+use App\Domains\Quote\Models\Quote;
 use App\Events\QuoteApproved;
-use App\Models\Quote;
 
 class ApproveQuoteAction
 {

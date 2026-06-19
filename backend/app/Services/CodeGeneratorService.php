@@ -174,11 +174,11 @@ class CodeGeneratorService
     private function getModelClass(string $entity): ?string
     {
         return match ($entity) {
-            'quote' => \App\Models\Quote::class,
-            'product' => \App\Models\Product::class,
-            'ddt' => \App\Models\Ddt::class,
-            'movement' => \App\Models\StockMovement::class,
-            'project' => \App\Models\Project::class,
+            'quote' => \App\Domains\Quote\Models\Quote::class,
+            'product' => \App\Domains\Product\Models\Product::class,
+            'ddt' => \App\Domains\Warehouse\Models\Ddt::class,
+            'movement' => \App\Domains\Warehouse\Models\StockMovement::class,
+            'project' => \App\Domains\Project\Models\Project::class,
             'final_balance' => \App\Models\FinalBalance::class,
             'supplier' => \App\Models\Supplier::class,
             'worker' => \App\Models\Worker::class,

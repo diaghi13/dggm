@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\Quote;
+use App\Domains\Quote\Models\Quote;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;

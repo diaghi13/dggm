@@ -62,23 +62,26 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Role::class, \App\Policies\RolePolicy::class);
         Gate::policy(Permission::class, \App\Policies\PermissionPolicy::class);
 
+        // Product domain
+        Gate::policy(\App\Domains\Product\Models\ProductUnitType::class, \App\Domains\Product\Policies\ProductUnitTypePolicy::class);
+
         // Email
         Gate::policy(\App\Models\EmailAccount::class, \App\Policies\EmailAccountPolicy::class);
 
         // Project Availability Check
-        Gate::policy(\App\Models\ProjectAvailabilityCheck::class, \App\Policies\ProjectAvailabilityCheckPolicy::class);
+        Gate::policy(\App\Domains\Project\Models\ProjectAvailabilityCheck::class, \App\Policies\ProjectAvailabilityCheckPolicy::class);
 
         // Project Services
-        Gate::policy(\App\Models\ProjectService::class, \App\Policies\ProjectServicePolicy::class);
+        Gate::policy(\App\Domains\Project\Models\ProjectService::class, \App\Policies\ProjectServicePolicy::class);
 
         // Project Material Incidents
-        Gate::policy(\App\Models\ProjectMaterialIncident::class, \App\Policies\ProjectMaterialIncidentPolicy::class);
+        Gate::policy(\App\Domains\Project\Models\ProjectMaterialIncident::class, \App\Policies\ProjectMaterialIncidentPolicy::class);
 
         // Rental Return Inspections
-        Gate::policy(\App\Models\RentalReturnInspection::class, \App\Policies\RentalReturnInspectionPolicy::class);
+        Gate::policy(\App\Domains\Warehouse\Models\RentalReturnInspection::class, \App\Domains\Warehouse\Policies\RentalReturnInspectionPolicy::class);
 
         // Repair Orders
-        Gate::policy(\App\Models\RepairOrder::class, \App\Policies\RepairOrderPolicy::class);
+        Gate::policy(\App\Models\RepairOrder::class, \App\Domains\Warehouse\Policies\RepairOrderPolicy::class);
 
         // Final Balances
         Gate::policy(\App\Models\FinalBalance::class, \App\Policies\FinalBalancePolicy::class);

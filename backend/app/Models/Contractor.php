@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domains\Project\Models\ProjectLaborCost;
 use App\Enums\ContractorType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

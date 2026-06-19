@@ -1,6 +1,6 @@
 <?php
 /**
- * @var \App\Models\Quote $quote
+ * @var \App\Domains\Quote\Models\Quote $quote
  * @var array $colors
  * @var array $vatBreakdown
  * @var array $company
@@ -94,7 +94,7 @@
                                 ->where('hide_unit_price', false)
                                 ->isNotEmpty();
         @endphp
-        <!-- Header row -->
+            <!-- Header row -->
         <div class="border-b-2 border-black mb-2 pb-1 flex font-bold text-xs uppercase">
             @if($quote->show_product_codes)
                 <div style="width: 80px; flex-shrink: 0;">Cod.</div>
@@ -144,8 +144,11 @@
                                     $dur = $child->duration ?? ($quote->effective_event_days ?? null);
                                 @endphp
                                 <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">
-                                    {{ $child->quantity }} × {{ number_format($child->unit_price, 2, ',', '.') }} €/{{ $unitLabel }}
-                                    @if($dur) × curva({{ $dur }} {{ $unitLabel }}) @endif
+                                    {{ $child->quantity }} × {{ number_format($child->unit_price, 2, ',', '.') }}
+                                    €/{{ $unitLabel }}
+                                    @if($dur)
+                                        × curva({{ $dur }} {{ $unitLabel }})
+                                    @endif
                                 </div>
                             @endif
                         </div>
@@ -191,8 +194,11 @@
                                 $dur = $item->duration ?? ($quote->effective_event_days ?? null);
                             @endphp
                             <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">
-                                {{ $item->quantity }} × {{ number_format($item->unit_price, 2, ',', '.') }} €/{{ $unitLabel }}
-                                @if($dur) × curva({{ $dur }} {{ $unitLabel }}) @endif
+                                {{ $item->quantity }} × {{ number_format($item->unit_price, 2, ',', '.') }}
+                                €/{{ $unitLabel }}
+                                @if($dur)
+                                    × curva({{ $dur }} {{ $unitLabel }})
+                                @endif
                             </div>
                         @endif
                     </div>
@@ -251,33 +257,38 @@
                     <h4 class="font-bold text-[10px] mb-2 uppercase tracking-wider">Piano Pagamenti</h4>
                     <table class="w-full text-[10px]">
                         <thead>
-                            <tr class="border-b border-black">
-                                <th class="text-left py-1 font-medium">Descrizione</th>
-                                <th class="text-right py-1 font-medium w-16">%</th>
-                                <th class="text-right py-1 font-medium w-24">Importo</th>
-                            </tr>
+                        <tr class="border-b border-black">
+                            <th class="text-left py-1 font-medium">Descrizione</th>
+                            <th class="text-right py-1 font-medium w-16">%</th>
+                            <th class="text-right py-1 font-medium w-24">Importo</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            @foreach($quote->deposits as $deposit)
+                        @foreach($quote->deposits as $deposit)
                             <tr class="border-b border-slate-200">
                                 <td class="py-1">
                                     {{ $deposit->description }}
-                                    @if($deposit->due_event) <span class="text-slate-500"> — {{ $deposit->due_event }}</span>@endif
-                                    @if($deposit->due_date) <span class="text-slate-500"> ({{ $deposit->due_date->format('d/m/Y') }})</span>@endif
+                                    @if($deposit->due_event)
+                                        <span class="text-slate-500"> — {{ $deposit->due_event }}</span>
+                                    @endif
+                                    @if($deposit->due_date)
+                                        <span class="text-slate-500"> ({{ $deposit->due_date->format('d/m/Y') }})</span>
+                                    @endif
                                 </td>
                                 <td class="text-right py-1">{{ $deposit->percentage ? number_format($deposit->percentage, 1).'%' : '—' }}</td>
-                                <td class="text-right py-1 font-medium">€ {{ number_format($deposit->amount, 2, ',', '.') }}</td>
+                                <td class="text-right py-1 font-medium">
+                                    € {{ number_format($deposit->amount, 2, ',', '.') }}</td>
                             </tr>
-                            @endforeach
-                            <tr class="border-t-2 border-black">
-                                <td class="py-1 font-bold">{{ $quote->balance_label ?? 'Saldo finale' }}</td>
-                                <td class="text-right py-1">
-                                    {{ number_format(100 - $quote->deposits->sum('percentage'), 1) }}%
-                                </td>
-                                <td class="text-right py-1 font-bold">
-                                    € {{ number_format($quote->total_amount - $quote->deposits->sum('amount'), 2, ',', '.') }}
-                                </td>
-                            </tr>
+                        @endforeach
+                        <tr class="border-t-2 border-black">
+                            <td class="py-1 font-bold">{{ $quote->balance_label ?? 'Saldo finale' }}</td>
+                            <td class="text-right py-1">
+                                {{ number_format(100 - $quote->deposits->sum('percentage'), 1) }}%
+                            </td>
+                            <td class="text-right py-1 font-bold">
+                                € {{ number_format($quote->total_amount - $quote->deposits->sum('amount'), 2, ',', '.') }}
+                            </td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>

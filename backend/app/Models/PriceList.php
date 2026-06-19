@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Data\PriceListData;
+use App\Domains\Product\Models\Product;
+use App\Domains\Product\Models\ProductCategory;
 use App\Enums\PriceListAdjustmentType;
 use App\Enums\PriceListAppliesTo;
 use App\Enums\PriceListCalculationMode;

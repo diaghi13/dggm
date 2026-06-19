@@ -37,7 +37,7 @@ class WorkerOverviewController extends Controller
                     return null;
                 }
 
-                $projectsCount = \App\Models\ProjectWorker::where('worker_id', $worker->id)->count();
+                $projectsCount = \App\Domains\Project\Models\ProjectWorker::where('worker_id', $worker->id)->count();
 
                 return [
                     'worker_id' => $worker->id,
@@ -93,7 +93,7 @@ class WorkerOverviewController extends Controller
                     return [];
                 }
 
-                return \App\Models\ProjectWorker::where('worker_id', $worker->id)
+                return \App\Domains\Project\Models\ProjectWorker::where('worker_id', $worker->id)
                     ->with('project:id,name,code,status,start_date,estimated_end_date,actual_end_date')
                     ->get()
                     ->map(fn ($pw) => [

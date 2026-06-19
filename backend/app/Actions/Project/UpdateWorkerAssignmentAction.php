@@ -2,7 +2,7 @@
 
 namespace App\Actions\Project;
 
-use App\Models\ProjectWorker;
+use App\Domains\Project\Models\ProjectWorker;
 use Illuminate\Support\Facades\DB;
 
 class UpdateWorkerAssignmentAction
