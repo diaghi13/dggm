@@ -231,6 +231,9 @@ class Quote extends Model implements HasMedia
 
         $this->subtotal = $items->sum('subtotal');
 
+        // Subtotale dopo sconti riga (ogni riga calcola già il proprio total = subtotal - row_discount)
+        $subtotalAfterRowDiscounts = $items->sum('total');
+
         // Use discount_amount as source of truth (set by frontend from user input).
         // Rederive discount_percentage from it to avoid precision loss caused by
         // the percentage round-trip (e.g. 4000 / 78000 → 5.13% → 4001.40).
@@ -241,12 +244,13 @@ class Quote extends Model implements HasMedia
             $this->discount_amount = round(($this->subtotal * $this->discount_percentage) / 100, 2);
         }
 
-        $totalImponibile = $this->subtotal - $this->discount_amount;
+        // Imponibile = totale righe già scontate per riga, meno lo sconto globale documento
+        $totalImponibile = $subtotalAfterRowDiscounts - $this->discount_amount;
 
-        // IVA: somma vat_amount delle righe scalata per lo sconto documento
-        // (ogni riga calcola IVA sul proprio totale; lo sconto documento riduce proporzionalmente)
+        // IVA: le vat_amount delle righe sono già calcolate sui totali post-sconto-riga.
+        // Il discountFactor corregge solo per lo sconto documento globale.
         $rawVat = $items->sum('vat_amount');
-        $discountFactor = $this->subtotal > 0 ? ($totalImponibile / $this->subtotal) : 1;
+        $discountFactor = $subtotalAfterRowDiscounts > 0 ? ($totalImponibile / $subtotalAfterRowDiscounts) : 1;
         $this->tax_amount = round($rawVat * $discountFactor, 2);
         $this->total_amount = $totalImponibile + $this->tax_amount;
 
