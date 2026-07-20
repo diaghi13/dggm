@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { CheckCheck, Loader2, Send, X } from "lucide-react";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,12 +38,8 @@ export function SendQuoteModal({
       onOpenChange(false);
       onSent();
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore nell'invio", {
-        description:
-          err.response?.data?.message || "Impossibile inviare il preventivo",
-      });
+    onError: (error) => {
+      handleMutationError(error, "Impossibile inviare il preventivo");
     },
   });
 
@@ -53,13 +50,8 @@ export function SendQuoteModal({
       onOpenChange(false);
       onSent();
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore", {
-        description:
-          err.response?.data?.message ||
-          "Impossibile aggiornare lo stato del preventivo",
-      });
+    onError: (error) => {
+      handleMutationError(error, "Impossibile aggiornare lo stato del preventivo");
     },
   });
 

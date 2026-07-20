@@ -1103,29 +1103,49 @@ export default function QuoteDetailPage() {
                   <CardTitle className="text-lg">Riepilogo Importi</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 pt-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-slate-400">
-                      Imponibile
-                    </span>
-                    <span className="font-semibold text-lg">
-                      <CurrencyDisplay value={quote.subtotal} />
-                    </span>
-                  </div>
-                  {quote.discount_percentage > 0 && (
-                    <div className="flex justify-between items-center py-2 border-y border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-600 dark:text-slate-400">
-                        Sconto ({quote.discount_percentage}%)
-                      </span>
-                      <span className="font-semibold text-lg text-red-600 dark:text-red-400">
-                        -<CurrencyDisplay value={quote.discount_amount} showCurrency={false} />
+                  {/* Sconti su righe — visibili solo se presenti */}
+                  {(quote.items_discount ?? 0) > 0 && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600 dark:text-slate-400">Totale lordo</span>
+                        <span className="font-semibold">
+                          <CurrencyDisplay value={quote.gross_total ?? 0} />
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm text-green-600 dark:text-green-400">
+                        <span>Sconti su righe</span>
+                        <span>-<CurrencyDisplay value={quote.items_discount ?? 0} showCurrency={false} /></span>
+                      </div>
+                    </>
+                  )}
+                  {/* Subtotale — visibile se c'è almeno uno sconto */}
+                  {((quote.items_discount ?? 0) > 0 || (quote.discount_amount ?? 0) > 0) && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600 dark:text-slate-400">Subtotale</span>
+                      <span className="font-semibold">
+                        <CurrencyDisplay value={quote.subtotal} />
                       </span>
                     </div>
                   )}
-                  <div className="py-2 space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-600 dark:text-slate-400">
-                        IVA Totale
+                  {/* Sconto documento globale */}
+                  {(quote.discount_amount ?? 0) > 0 && (
+                    <div className="flex justify-between items-center text-sm text-green-600 dark:text-green-400">
+                      <span>
+                        Sconto{quote.discount_percentage > 0 ? ` (${quote.discount_percentage}%)` : ""}
                       </span>
+                      <span>-<CurrencyDisplay value={quote.discount_amount} showCurrency={false} /></span>
+                    </div>
+                  )}
+                  {/* Imponibile — sempre visibile */}
+                  <div className="flex justify-between items-center py-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Imponibile</span>
+                    <span className="font-semibold text-lg">
+                      <CurrencyDisplay value={quote.taxable_amount ?? quote.subtotal} />
+                    </span>
+                  </div>
+                  <div className="py-1 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600 dark:text-slate-400">IVA Totale</span>
                       <span className="font-semibold text-lg text-blue-600 dark:text-blue-400">
                         <CurrencyDisplay value={quote.tax_amount} />
                       </span>

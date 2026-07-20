@@ -90,6 +90,12 @@ class QuoteData extends Data
         // Importi (with defaults)
         public float $subtotal = 0,
 
+        public readonly float $gross_total = 0,
+
+        public readonly float $items_discount = 0,
+
+        public readonly float $taxable_amount = 0,
+
         public float $discount_percentage = 0,
 
         public float $discount_amount = 0,
@@ -215,6 +221,21 @@ class QuoteData extends Data
             'notes' => ['nullable', 'string'],
             'terms_and_conditions' => ['nullable', 'string'],
             'footer_text' => ['nullable', 'string', 'max:1000'],
+        ];
+    }
+
+    public static function messages(): array
+    {
+        return [
+            'code.unique' => 'Questo codice preventivo è già in uso.',
+            'code.max' => 'Il codice non può superare 50 caratteri.',
+            'title.required' => 'Il titolo del preventivo è obbligatorio.',
+            'title.max' => 'Il titolo non può superare 255 caratteri.',
+            'customer_id.required' => 'Il cliente è obbligatorio.',
+            'customer_id.exists' => 'Il cliente selezionato non esiste.',
+            'expiry_date.after_or_equal' => 'La data di scadenza deve essere uguale o successiva alla data di emissione.',
+            'work_end_date.after_or_equal' => 'La data di fine lavori deve essere uguale o successiva alla data di inizio.',
+            'status.in' => 'Lo stato selezionato non è valido.',
         ];
     }
 }

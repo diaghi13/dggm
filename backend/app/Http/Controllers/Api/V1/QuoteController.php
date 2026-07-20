@@ -431,7 +431,7 @@ class QuoteController extends Controller
             ['id' => $quote->id] // Ensure ID is set for validation context
         );
 
-        $data = QuoteData::from($mergedData);
+        $data = QuoteData::validateAndCreate($mergedData);
 
         $quote = $this->updateAction->execute($quote, $data);
 

@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { QuoteFormData, QuoteItem } from "@/lib/types";
 import { sanitizeOrphanedChildren } from "@/components/quote-items/utils";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useFieldErrors } from "@/lib/hooks/use-field-errors";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import { useSetting } from "@/hooks/use-settings";
 import { useDefaultPriceList } from "@/hooks/use-price-lists";
 import { QuoteForm } from "@/components/quotes/quote-form";
@@ -115,17 +117,10 @@ export default function NewQuotePage() {
       });
       router.push(`/quotes/${data.id}`);
     },
-    onError: (error: any) => {
-      const apiErrors = error.response?.data?.errors;
-      const description = apiErrors
-        ? (Object.values(apiErrors) as string[][])
-            .flat()
-            .slice(0, 4)
-            .join(" • ")
-        : (error.response?.data?.message ?? "Impossibile creare il preventivo");
-      toast.error("Errore di validazione", { description });
-    },
+    onError: (error: unknown) => handleMutationError(error, "Impossibile creare il preventivo"),
   });
+
+  const fieldErrors = useFieldErrors(createMutation.error);
 
   const handleInputChange = useCallback(
     (field: keyof QuoteFormData, value: any) => {
@@ -232,6 +227,7 @@ export default function NewQuotePage() {
         formData={formData}
         onChange={handleInputChange}
         onItemsChange={handleItemsChange}
+        fieldError={fieldErrors}
       />
     </div>
       )}

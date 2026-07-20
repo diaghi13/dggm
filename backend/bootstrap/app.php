@@ -39,7 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Skip "normal" HTTP exceptions that are not bugs
             $skipClasses = [
-                \Illuminate\Validation\ValidationException::class,
+                // \Illuminate\Validation\ValidationException::class,
                 \Illuminate\Auth\AuthenticationException::class,
                 \Illuminate\Auth\Access\AuthorizationException::class,
                 \Illuminate\Database\Eloquent\ModelNotFoundException::class,

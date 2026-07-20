@@ -131,10 +131,10 @@ export const createQuotesColumns = (
     ),
   },
   {
-    accessorKey: "subtotal",
+    accessorKey: "taxable_amount",
     header: () => <div className="text-right">Imponibile</div>,
     size: 130,
-    cell: ({ row }) => <MoneyCell amount={row.original.subtotal ?? 0} />,
+    cell: ({ row }) => <MoneyCell amount={row.original.taxable_amount ?? 0} />,
   },
   {
     accessorKey: "tax_amount",

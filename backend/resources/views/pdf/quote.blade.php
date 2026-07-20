@@ -418,7 +418,7 @@
 {{--                            <span class="text-sm">(esc. IVA)</span>--}}
                             <span class="text-sm">IMPONIBILE</span>
                         </span>
-                        <span class="font-bold text-lg text-primary">{{ number_format($quote->subtotal - $quote->discount_amount, 2, ',', '.') }} €</span>
+                        <span class="font-bold text-lg text-primary">{{ number_format($quote->taxable_amount, 2, ',', '.') }} €</span>
                     </div>
                 @endif
             @endif
@@ -469,7 +469,7 @@
                     @if($quote->tax_included)
                         <span>{{ number_format($quote->total_amount - $quote->deposit_amount, 2, ',', '.') }} €</span>
                     @else
-                        <span>{{ number_format($quote->subtotal - $quote->deposit_amount, 2, ',', '.') }} €</span>
+                        <span>{{ number_format($quote->taxable_amount - $quote->deposit_amount, 2, ',', '.') }} €</span>
                     @endif
                 </div>
             @endif

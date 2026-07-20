@@ -293,7 +293,7 @@
                         @if($quote->tax_included)
                             {{ number_format($quote->total_amount - $quote->deposit_amount, 2, ',', '.') }} €
                         @else
-                            {{ number_format($quote->subtotal - $quote->deposit_amount, 2, ',', '.') }} €
+                            {{ number_format($quote->taxable_amount - $quote->deposit_amount, 2, ',', '.') }} €
                         @endif
                     </span>
                 </div>

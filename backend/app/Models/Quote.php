@@ -36,6 +36,9 @@ class Quote extends Model implements HasMedia
         'sent_date',
         'approved_date',
         'subtotal',
+        'gross_total',
+        'items_discount',
+        'taxable_amount',
         'discount_percentage',
         'discount_amount',
         'tax_percentage',
@@ -86,6 +89,9 @@ class Quote extends Model implements HasMedia
             'work_start_date' => 'date:Y-m-d',
             'work_end_date' => 'date:Y-m-d',
             'subtotal' => 'decimal:2',
+            'gross_total' => 'decimal:2',
+            'items_discount' => 'decimal:2',
+            'taxable_amount' => 'decimal:2',
             'discount_percentage' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'tax_percentage' => 'decimal:2',
@@ -229,8 +235,9 @@ class Quote extends Model implements HasMedia
         // Reuse already-loaded collection (avoid second DB query)
         $items = $parentItems;
 
-        // subtotal = somma dei totali riga post-sconto-riga (base imponibile prima dello sconto documento)
-        $this->subtotal = $items->sum('total');
+        $this->gross_total = $items->sum('subtotal');      // lordo pre-tutti-sconti
+        $this->items_discount = $items->sum('discount_amount'); // somma sconti riga
+        $this->subtotal = $items->sum('total');          // base post-sconti-riga, pre-sconto-documento
 
         // Use discount_amount as source of truth (set by frontend from user input).
         // Rederive discount_percentage from it to avoid precision loss caused by
@@ -242,15 +249,15 @@ class Quote extends Model implements HasMedia
             $this->discount_amount = round(($this->subtotal * $this->discount_percentage) / 100, 2);
         }
 
-        // Imponibile = subtotal (post-sconti-riga) meno sconto globale documento
-        $totalImponibile = $this->subtotal - $this->discount_amount;
+        // Imponibile reale = base post-sconti-riga meno sconto globale documento
+        $this->taxable_amount = $this->subtotal - $this->discount_amount;
 
         // IVA: le vat_amount delle righe sono già calcolate sui totali post-sconto-riga.
         // Il discountFactor corregge solo per lo sconto documento globale.
         $rawVat = $items->sum('vat_amount');
-        $discountFactor = $this->subtotal > 0 ? ($totalImponibile / $this->subtotal) : 1;
+        $discountFactor = $this->subtotal > 0 ? ($this->taxable_amount / $this->subtotal) : 1;
         $this->tax_amount = round($rawVat * $discountFactor, 2);
-        $this->total_amount = $totalImponibile + $this->tax_amount;
+        $this->total_amount = $this->taxable_amount + $this->tax_amount;
 
         // Calcola acconto se percentuale presente
         if ($this->deposit_percentage > 0) {

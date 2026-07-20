@@ -18,16 +18,10 @@ class CreateQuoteAction
     public function execute(QuoteData $data): Quote
     {
         return DB::transaction(function () use ($data) {
-            $quoteArray = $data->except('id', 'items', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType', 'project', 'full_address')->toArray();
-            $quoteArray = $this->applySettingDefaults($quoteArray);
-            $quote = Quote::create($quoteArray);
+            $quote = $this->createQuoteFromData($data);
 
             // Create items if provided (with hierarchy support)
-            if ($data->items instanceof \Spatie\LaravelData\DataCollection) {
-                foreach ($data->items as $itemData) {
-                    $this->createItemWithChildren($quote, $itemData);
-                }
-            }
+            $this->createItems($data, $quote);
 
             // Recalculate totals
             $quote->calculateTotals();
@@ -74,6 +68,22 @@ class CreateQuoteAction
 
             return $quote->fresh(['items.children', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType', 'deposits']);
         });
+    }
+
+    private function createQuoteFromData(QuoteData $data): Quote
+    {
+        $quoteArray = $data->except('id', 'items', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType', 'project', 'full_address')->toArray();
+        $quoteArray = $this->applySettingDefaults($quoteArray);
+        return Quote::query()->create($quoteArray);
+    }
+
+    private function createItems(QuoteData $data, Quote $quote)
+    {
+        if ($data->items instanceof \Spatie\LaravelData\DataCollection) {
+            foreach ($data->items as $itemData) {
+                $this->createItemWithChildren($quote, $itemData);
+            }
+        }
     }
 
     /**

@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { QuoteFormData, QuoteItem } from "@/lib/types";
 import { sanitizeOrphanedChildren } from "@/components/quote-items/utils";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useFieldErrors } from "@/lib/hooks/use-field-errors";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import { QuoteForm } from "@/components/quotes/quote-form";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -91,7 +93,7 @@ export default function EditQuotePage() {
     enabled: !!quoteId,
   });
 
-  const updateMutation = useMutation({
+  const updateMutation = useMutation<unknown, unknown, QuoteFormData>({
     mutationFn: (data: QuoteFormData) => quotesApi.update(quoteId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
@@ -102,18 +104,10 @@ export default function EditQuotePage() {
       });
       router.push(`/quotes/${quoteId}`);
     },
-    onError: (error: any) => {
-       
-      const apiErrors = error.response?.data?.errors;
-      const description = apiErrors
-        ? (Object.values(apiErrors) as string[][])
-            .flat()
-            .slice(0, 4)
-            .join(" • ")
-        : (error.response?.data?.message ?? "Impossibile salvare le modifiche");
-      toast.error("Errore di validazione", { description });
-    },
+    onError: (error: unknown) => handleMutationError(error, "Impossibile salvare le modifiche"),
   });
+
+  const fieldErrors = useFieldErrors(updateMutation.error);
 
   // Inizializza formData quando il preventivo viene caricato
    
@@ -272,6 +266,7 @@ export default function EditQuotePage() {
         onChange={handleInputChange}
         onItemsChange={handleItemsChange}
         quoteId={quoteId}
+        fieldError={fieldErrors}
       />
     </div>
   );
