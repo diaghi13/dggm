@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Quote;
 use App\Models\QuoteToken;
 use App\Models\Setting;
+use App\Queries\Quote\GetQuoteRevisionsQuery;
+use App\Services\PdfService;
 use Illuminate\Http\JsonResponse;
 use Stancl\Tenancy\Exceptions\TenantCouldNotBeIdentifiedById;
 
@@ -32,12 +34,28 @@ class PublicQuoteActionController extends Controller
                 ? rtrim(config('app.url'), '/').'/'.ltrim($companyLogo, '/')
                 : null;
 
+            $revisions = GetQuoteRevisionsQuery::execute($quote)
+                ->sortByDesc('version')
+                ->values()
+                ->map(fn ($r) => [
+                    'id' => $r->id,
+                    'version' => $r->version,
+                    'status' => $r->status,
+                    'issue_date' => $r->issue_date?->format('Y-m-d'),
+                    'total_amount' => $r->total_amount,
+                    'revision_notes' => $r->revision_notes,
+                    'is_current_version' => $r->is_current_version,
+                ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'token_valid' => $quote->isCustomerTokenValid(),
                     'quote' => [
+                        'id' => $quote->id,
                         'code' => $quote->code,
+                        'version' => $quote->version,
+                        'is_current_version' => $quote->is_current_version,
                         'title' => $quote->title,
                         'status' => $quote->status,
                         'total_amount' => $quote->total_amount,
@@ -45,6 +63,7 @@ class PublicQuoteActionController extends Controller
                         'notes' => $quote->notes,
                         'customer_name' => $this->resolveCustomerName($quote),
                     ],
+                    'revisions' => $revisions->count() > 1 ? $revisions : [],
                     'company' => [
                         'name' => Setting::get('company.name') ?? '',
                         'logo_url' => $logoUrl,
@@ -84,6 +103,14 @@ class PublicQuoteActionController extends Controller
                 ], 410);
             }
 
+            if (! $quote->is_current_version) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'obsolete_revision',
+                    'message' => "Questo preventivo è stato sostituito da una revisione più recente. Contatta l'azienda per visualizzare il preventivo aggiornato.",
+                ], 422);
+            }
+
             if ($quote->status !== 'sent') {
                 return response()->json([
                     'success' => false,
@@ -117,6 +144,41 @@ class PublicQuoteActionController extends Controller
                 'code' => $quote->code,
                 'message' => 'Preventivo rifiutato.',
             ]);
+        } finally {
+            tenancy()->end();
+        }
+    }
+
+    public function downloadRevisionPdf(string $token, int $quoteId): \Illuminate\Http\Response|JsonResponse
+    {
+        $error = $this->initializeTenantFromToken($token);
+        if ($error) {
+            return $error;
+        }
+
+        try {
+            // Resolve the current quote from token to get the original_quote_id
+            $currentQuote = Quote::where('customer_token', $token)->first();
+
+            if (! $currentQuote) {
+                return response()->json(['success' => false, 'message' => 'Token non valido.'], 404);
+            }
+
+            $originalId = $currentQuote->original_quote_id ?? $currentQuote->id;
+
+            // Verify the requested revision belongs to the same quote family
+            $revision = Quote::where('id', $quoteId)
+                ->where(function ($q) use ($originalId) {
+                    $q->where('id', $originalId)
+                        ->orWhere('original_quote_id', $originalId);
+                })
+                ->first();
+
+            if (! $revision) {
+                return response()->json(['success' => false, 'message' => 'Revisione non trovata.'], 404);
+            }
+
+            return app(PdfService::class)->downloadQuotePdf($revision);
         } finally {
             tenancy()->end();
         }

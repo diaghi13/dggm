@@ -6,6 +6,17 @@ import {
   PaginatedResponse,
 } from "@/lib/types";
 
+export interface QuoteRevision {
+  id: number;
+  code: string;
+  version: number;
+  status: string;
+  issue_date: string | null;
+  total_amount: number;
+  revision_notes: string | null;
+  is_current_version: boolean;
+}
+
 interface GetQuotesParams {
   page?: number;
   per_page?: number;
@@ -133,5 +144,17 @@ export const quotesApi = {
 
   async deleteMedia(mediaId: number): Promise<void> {
     await apiClient.delete(`/media/${mediaId}`);
+  },
+
+  async revise(id: number, revisionNotes?: string): Promise<Quote> {
+    const response = await apiClient.post(`/quotes/${id}/revise`, {
+      revision_notes: revisionNotes,
+    });
+    return response.data.data;
+  },
+
+  async getRevisions(id: number): Promise<QuoteRevision[]> {
+    const response = await apiClient.get(`/quotes/${id}/revisions`);
+    return response.data.data;
   },
 };

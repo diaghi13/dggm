@@ -32,6 +32,7 @@ import {
   StatusBadgeCell,
   TextCell,
 } from "@/components/table-cells";
+import { Badge } from "@/components/ui/badge";
 
 const statusColors: Record<string, string> = {
   draft:
@@ -87,11 +88,21 @@ export const createQuotesColumns = (
   {
     accessorKey: "code",
     header: "Codice",
-    size: 150,
+    size: 165,
     enableHiding: false,
-    cell: ({ row }) => (
-      <AvatarTextCell icon={FileText} primaryText={row.original.code ?? ""} />
-    ),
+    cell: ({ row }) => {
+      const quote = row.original;
+      return (
+        <div className="flex items-center gap-1.5">
+          <AvatarTextCell icon={FileText} primaryText={quote.code ?? ""} />
+          {(quote.version ?? 1) > 1 && (
+            <Badge variant="outline" className="ml-1.5 text-xs font-normal shrink-0">
+              Rev {quote.version}
+            </Badge>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "title",

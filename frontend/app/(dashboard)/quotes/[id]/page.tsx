@@ -37,7 +37,19 @@ import {
   Loader2,
   Copy,
   RotateCcw,
+  GitBranch,
+  ChevronDown,
+  Check,
+  GitMerge,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CreateRevisionModal } from "@/components/quotes/create-revision-modal";
+import { RevisionHistoryTab } from "@/components/quotes/revision-history-tab";
 import {
   Tooltip,
   TooltipContent,
@@ -297,10 +309,17 @@ export default function QuoteDetailPage() {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
 
   const { data: quote, isLoading } = useQuery({
     queryKey: ["quote", quoteId],
     queryFn: () => quotesApi.getById(quoteId),
+    enabled: !!quoteId,
+  });
+
+  const { data: revisions } = useQuery({
+    queryKey: ["quote-revisions", quoteId],
+    queryFn: () => quotesApi.getRevisions(quoteId),
     enabled: !!quoteId,
   });
 
@@ -501,7 +520,7 @@ export default function QuoteDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <span>{quote.code}</span>
             <Badge
               className={`${statusColors[quote.status]} font-medium text-xs border`}
@@ -522,6 +541,41 @@ export default function QuoteDetailPage() {
               >
                 🏗️ {quote.project?.code}
               </Badge>
+            )}
+            {/* Version selector — only when multiple revisions exist */}
+            {revisions && revisions.length > 1 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                    <GitMerge className="h-3.5 w-3.5" />
+                    Rev {quote.version ?? 1}
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                  {revisions.map((rev) => (
+                    <DropdownMenuItem
+                      key={rev.id}
+                      className="flex items-center justify-between gap-3 cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      onClick={() => {
+                        if (rev.id !== quoteId) {
+                          router.push(`/quotes/${rev.id}`);
+                        }
+                      }}
+                    >
+                      <span className="text-sm">
+                        Rev {rev.version}{" "}
+                        <span className="text-slate-500 dark:text-slate-400">
+                          — {statusLabels[rev.status] ?? rev.status}
+                        </span>
+                      </span>
+                      {rev.id === quoteId && (
+                        <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         }
@@ -642,6 +696,22 @@ export default function QuoteDetailPage() {
                 <TooltipContent>Duplica preventivo</TooltipContent>
               </Tooltip>
 
+              {!["approved", "converted"].includes(quote.status) && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsRevisionModalOpen(true)}
+                      className="text-primary border-primary/30 hover:bg-primary/5"
+                    >
+                      <GitBranch className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Crea Revisione</TooltipContent>
+                </Tooltip>
+              )}
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -673,6 +743,12 @@ export default function QuoteDetailPage() {
             <Eye className="mr-2 h-4 w-4" />
             Anteprima PDF
           </TabsTrigger>
+          {revisions && revisions.length > 1 && (
+            <TabsTrigger value="revisions">
+              <GitBranch className="mr-2 h-4 w-4" />
+              Revisioni ({revisions.length})
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
@@ -1394,6 +1470,22 @@ export default function QuoteDetailPage() {
             </Card>
           )}
         </TabsContent>
+
+        {revisions && revisions.length > 1 && (
+          <TabsContent value="revisions" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <GitBranch className="h-5 w-5" />
+                  Storico Revisioni
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RevisionHistoryTab quoteId={quoteId} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
@@ -1479,6 +1571,16 @@ export default function QuoteDetailPage() {
         onSent={() => {
           queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
           queryClient.invalidateQueries({ queryKey: ["quotes"] });
+        }}
+      />
+
+      <CreateRevisionModal
+        quote={quote}
+        open={isRevisionModalOpen}
+        onOpenChange={setIsRevisionModalOpen}
+        onSuccess={(newQuote) => {
+          queryClient.invalidateQueries({ queryKey: ["quotes"] });
+          router.push(`/quotes/${newQuote.id}/edit`);
         }}
       />
     </div>

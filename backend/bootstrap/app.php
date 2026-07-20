@@ -31,10 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->report(function (\Throwable $e): false {
-            // Only log within an initialized tenant context
+        $exceptions->report(function (\Throwable $e): bool {
+            // Outside tenant context: let Laravel handle default logging
             if (! app()->bound('tenancy') || ! tenancy()->initialized()) {
-                return false;
+                return true;
             }
 
             // Skip "normal" HTTP exceptions that are not bugs
@@ -89,7 +89,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Never throw from exception handler
             }
 
-            return false;
+            // Return true so Laravel also writes to laravel.log as fallback
+            return true;
         });
     })
     ->create();

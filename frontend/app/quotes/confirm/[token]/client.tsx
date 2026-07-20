@@ -3,9 +3,19 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { Loader2, CheckCircle2, XCircle, AlertCircle, FileText, Ban } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, AlertCircle, FileText, Ban, Download } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+interface PublicQuoteRevision {
+  id: number;
+  version: number;
+  status: string;
+  issue_date: string | null;
+  total_amount: number;
+  revision_notes: string | null;
+  is_current_version: boolean;
+}
 
 type QuoteData = {
   token_valid: boolean;
@@ -22,6 +32,7 @@ type QuoteData = {
     name: string;
     logo_url: string | null;
   };
+  revisions: PublicQuoteRevision[];
 };
 
 type ActionResult = {
@@ -35,6 +46,7 @@ type ActionResult = {
 type PageState =
   | 'loading'
   | 'invalid'
+  | 'obsolete'
   | 'already_actioned'
   | 'pending'
   | 'confirming'
@@ -53,6 +65,51 @@ const formatDate = (date: string): string =>
 
 const ALREADY_ACTIONED_STATUSES = ['accepted', 'rejected', 'expired', 'cancelled'];
 
+const revisionStatusBadge = (revision: PublicQuoteRevision): { label: string; className: string } => {
+  if (revision.is_current_version) {
+    return {
+      label: 'Revisione corrente',
+      className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    };
+  }
+  const map: Record<string, { label: string; className: string }> = {
+    approved: {
+      label: 'Approvata',
+      className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+    },
+    accepted: {
+      label: 'Accettata',
+      className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+    },
+    rejected: {
+      label: 'Rifiutata',
+      className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+    },
+    expired: {
+      label: 'Scaduta',
+      className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+    },
+    sent: {
+      label: 'Inviata',
+      className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    },
+    draft: {
+      label: 'Bozza',
+      className: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+    },
+    converted: {
+      label: 'Convertita',
+      className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+    },
+  };
+  return (
+    map[revision.status] ?? {
+      label: 'Obsoleta',
+      className: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
+    }
+  );
+};
+
 export default function QuoteConfirmClient() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -65,6 +122,7 @@ export default function QuoteConfirmClient() {
   const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(
     actionParam ?? null
   );
+  const [downloadingRevisionId, setDownloadingRevisionId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -84,6 +142,12 @@ export default function QuoteConfirmClient() {
 
         if (!data.token_valid) {
           setPageState('invalid');
+          return;
+        }
+
+        if (!data.quote.is_current_version) {
+          setQuoteData(data);
+          setPageState('obsolete');
           return;
         }
 
@@ -130,6 +194,30 @@ export default function QuoteConfirmClient() {
 
   const handleCancel = () => {
     setSelectedAction(null);
+  };
+
+  const handleRevisionPdfDownload = async (revision: PublicQuoteRevision) => {
+    if (downloadingRevisionId !== null) return;
+    setDownloadingRevisionId(revision.id);
+    try {
+      const response = await fetch(
+        `${API_BASE}/public/quotes/${token}/revisions/${revision.id}/pdf`
+      );
+      if (!response.ok) throw new Error('Errore nel download del PDF');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `preventivo-${quoteData?.quote.code ?? 'rev'}-rev${revision.version}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently ignore — user can retry
+    } finally {
+      setDownloadingRevisionId(null);
+    }
   };
 
   const statusLabel = (status: string): string => {
@@ -189,6 +277,25 @@ export default function QuoteConfirmClient() {
             <p className="text-slate-500 text-sm leading-relaxed">
               Il link che hai utilizzato non è più attivo. Contatta l&apos;azienda per ricevere
               un nuovo preventivo.
+            </p>
+          </div>
+        )}
+
+        {/* Obsolete revision */}
+        {pageState === 'obsolete' && quoteData && (
+          <div className="bg-white rounded-2xl shadow-sm border border-amber-200 p-8 text-center">
+            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-amber-50 mx-auto mb-4">
+              <AlertCircle className="w-7 h-7 text-amber-500" />
+            </div>
+            <h1 className="text-xl font-semibold text-slate-900 mb-2">
+              Preventivo non più valido
+            </h1>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              Il preventivo <span className="font-medium text-slate-700">{quoteData.quote.code} — Rev {quoteData.quote.version}</span> è stato
+              sostituito da una revisione più recente.
+            </p>
+            <p className="text-slate-500 text-sm leading-relaxed mt-2">
+              Contatta l&apos;azienda per ricevere il link aggiornato.
             </p>
           </div>
         )}
@@ -273,6 +380,67 @@ export default function QuoteConfirmClient() {
                 )}
               </div>
             </div>
+
+            {/* Storico Revisioni */}
+            {quoteData.revisions && quoteData.revisions.length > 0 && (
+              <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700">
+                <h2 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-3">
+                  Storico Revisioni
+                </h2>
+                <div className="space-y-3">
+                  {quoteData.revisions.map((revision) => {
+                    const badge = revisionStatusBadge(revision);
+                    const isDownloading = downloadingRevisionId === revision.id;
+                    return (
+                      <div
+                        key={revision.id}
+                        className="flex flex-col gap-1.5 pb-3 border-b border-slate-50 dark:border-slate-800 last:border-0 last:pb-0"
+                      >
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 w-10 flex-shrink-0">
+                            Rev {revision.version}
+                          </span>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badge.className}`}
+                          >
+                            {badge.label}
+                          </span>
+                          {revision.issue_date && (
+                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                              {new Date(revision.issue_date).toLocaleDateString('it-IT', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                              })}
+                            </span>
+                          )}
+                          <span className="text-sm font-medium text-slate-800 dark:text-slate-100 ml-auto">
+                            {formatCurrency(revision.total_amount)}
+                          </span>
+                          <button
+                            onClick={() => handleRevisionPdfDownload(revision)}
+                            disabled={downloadingRevisionId !== null}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                          >
+                            {isDownloading ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Download className="w-3 h-3" />
+                            )}
+                            {isDownloading ? 'Scaricamento...' : `Scarica Rev ${revision.version}`}
+                          </button>
+                        </div>
+                        {revision.revision_notes && (
+                          <p className="text-xs text-slate-400 dark:text-slate-500 pl-12 italic">
+                            &ldquo;{revision.revision_notes}&rdquo;
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Action section */}
             <div className="p-6">

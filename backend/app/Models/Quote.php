@@ -32,7 +32,6 @@ class Quote extends Model implements HasMedia
         'status',
         'issue_date',
         'expiry_date',
-        'valid_until',
         'sent_date',
         'approved_date',
         'subtotal',
@@ -74,6 +73,11 @@ class Quote extends Model implements HasMedia
         'include_terms_and_conditions',
         'customer_token',
         'customer_token_expires_at',
+        // Versioning
+        'version',
+        'original_quote_id',
+        'is_current_version',
+        'revision_notes',
     ];
 
     protected function casts(): array
@@ -83,7 +87,6 @@ class Quote extends Model implements HasMedia
             'event_days' => 'integer',
             'issue_date' => 'date:Y-m-d',
             'expiry_date' => 'date:Y-m-d',
-            'valid_until' => 'date:Y-m-d',
             'sent_date' => 'date:Y-m-d',
             'approved_date' => 'date:Y-m-d',
             'work_start_date' => 'date:Y-m-d',
@@ -107,6 +110,9 @@ class Quote extends Model implements HasMedia
             'vat_included_in_prices' => 'boolean',
             'include_terms_and_conditions' => 'boolean',
             'customer_token_expires_at' => 'datetime',
+            'version' => 'integer',
+            'original_quote_id' => 'integer',
+            'is_current_version' => 'boolean',
         ];
     }
 
@@ -184,6 +190,16 @@ class Quote extends Model implements HasMedia
     public function deposits(): HasMany
     {
         return $this->hasMany(QuoteDeposit::class)->orderBy('sort_order');
+    }
+
+    public function originalQuote(): BelongsTo
+    {
+        return $this->belongsTo(Quote::class, 'original_quote_id');
+    }
+
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(Quote::class, 'original_quote_id')->orderBy('version');
     }
 
     public function finalBalances(): HasMany

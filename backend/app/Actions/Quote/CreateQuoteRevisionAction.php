@@ -2,17 +2,25 @@
 
 namespace App\Actions\Quote;
 
-use App\Events\QuoteDuplicated;
+use App\Events\QuoteRevisionCreated;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use Illuminate\Support\Facades\DB;
 
-class DuplicateQuoteAction
+class CreateQuoteRevisionAction
 {
-    public function execute(Quote $quote): Quote
+    public function execute(Quote $quote, ?string $revisionNotes = null): Quote
     {
-        return DB::transaction(function () use ($quote) {
-            $newQuote = Quote::create([
+        return DB::transaction(function () use ($quote, $revisionNotes) {
+            $originalId = $quote->original_quote_id ?? $quote->id;
+
+            $newRevision = Quote::create([
+                'code' => $quote->code,
+                'version' => $quote->version + 1,
+                'original_quote_id' => $originalId,
+                'is_current_version' => true,
+                'revision_notes' => $revisionNotes,
+                // Quote fields
                 'quote_type' => $quote->quote_type,
                 'event_days' => $quote->event_days,
                 'title' => $quote->title,
@@ -52,23 +60,44 @@ class DuplicateQuoteAction
                 'vat_included_in_prices' => $quote->vat_included_in_prices,
                 'include_terms_and_conditions' => $quote->include_terms_and_conditions,
                 'tax_percentage' => $quote->tax_percentage,
+                'balance_label' => $quote->balance_label,
             ]);
 
-            // Copy items recursively (root items first, then their children)
+            // Copy items recursively
             $rootItems = $quote->items()->with('children')->whereNull('parent_id')->orderBy('sort_order')->get();
-
             foreach ($rootItems as $rootItem) {
-                $this->copyItemWithChildren($newQuote, $rootItem, null);
+                $this->copyItemWithChildren($newRevision, $rootItem, null);
             }
 
-            $newQuote->calculateTotals();
+            // Copy deposits
+            foreach ($quote->deposits as $deposit) {
+                $newRevision->deposits()->create([
+                    'sort_order' => $deposit->sort_order,
+                    'description' => $deposit->description,
+                    'percentage' => $deposit->percentage,
+                    'amount' => $deposit->amount,
+                    'is_fixed_amount' => $deposit->is_fixed_amount,
+                    'due_date' => $deposit->due_date,
+                    'due_event' => $deposit->due_event,
+                ]);
+            }
 
-            QuoteDuplicated::dispatch($newQuote, $quote, [
+            $newRevision->calculateTotals();
+
+            // Mark previous version as obsolete
+            $quote->update(['is_current_version' => false]);
+
+            // Also ensure the original is marked obsolete if this is v3+
+            if ($quote->original_quote_id) {
+                Quote::where('id', $originalId)->update(['is_current_version' => false]);
+            }
+
+            QuoteRevisionCreated::dispatch($newRevision, $quote, [
                 'user_id' => auth()->id(),
                 'ip_address' => request()->ip(),
             ]);
 
-            return $newQuote->fresh(['items.children', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType']);
+            return $newRevision->fresh(['items.children', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType']);
         });
     }
 

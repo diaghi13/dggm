@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Actions\Quote\ApproveQuoteAction;
 use App\Actions\Quote\ConvertQuoteToProjectAction;
 use App\Actions\Quote\CreateQuoteAction;
+use App\Actions\Quote\CreateQuoteRevisionAction;
 use App\Actions\Quote\DeleteQuoteAction;
 use App\Actions\Quote\DuplicateQuoteAction;
 use App\Actions\Quote\RejectQuoteAction;
@@ -17,6 +18,7 @@ use App\Enums\DocumentType;
 use App\Http\Controllers\Controller;
 use App\Models\Quote;
 use App\Queries\Quote\GetQuoteByIdQuery;
+use App\Queries\Quote\GetQuoteRevisionsQuery;
 use App\Queries\Quote\GetQuotesQuery;
 use App\Services\TenantMailService;
 use Illuminate\Http\JsonResponse;
@@ -36,7 +38,8 @@ class QuoteController extends Controller
         private readonly ConvertQuoteToProjectAction $convertAction,
         private readonly SaveQuotePdfAction $savePdfAction,
         private readonly DuplicateQuoteAction $duplicateAction,
-        private readonly RestoreQuoteAction $restoreAction
+        private readonly RestoreQuoteAction $restoreAction,
+        private readonly CreateQuoteRevisionAction $revisionAction
     ) {}
 
     /**
@@ -642,6 +645,35 @@ class QuoteController extends Controller
             'data' => QuoteData::from($newQuote)->include('items', 'items.children'),
             'message' => 'Preventivo duplicato con successo',
         ], 201);
+    }
+
+    public function revise(Request $request, Quote $quote): JsonResponse
+    {
+        $this->authorize('create', Quote::class);
+
+        $request->validate([
+            'revision_notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $newRevision = $this->revisionAction->execute($quote, $request->input('revision_notes'));
+
+        return response()->json([
+            'success' => true,
+            'data' => QuoteData::from($newRevision)->include('items', 'items.children'),
+            'message' => 'Revisione creata con successo',
+        ], 201);
+    }
+
+    public function revisions(Quote $quote): JsonResponse
+    {
+        $this->authorize('view', $quote);
+
+        $revisions = GetQuoteRevisionsQuery::execute($quote);
+
+        return response()->json([
+            'success' => true,
+            'data' => $revisions,
+        ]);
     }
 
     /**

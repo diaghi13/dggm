@@ -169,6 +169,15 @@ class QuoteData extends Data
 
         // Computed attributes
         public string|Optional $full_address = new Optional,
+
+        // Versioning (output only)
+        public readonly int $version = 1,
+
+        public readonly ?int $original_quote_id = null,
+
+        public readonly bool $is_current_version = true,
+
+        public readonly ?string $revision_notes = null,
     ) {}
 
     public static function rules(ValidationContext $context): array
@@ -177,7 +186,7 @@ class QuoteData extends Data
         $isUpdate = $quoteId !== null;
 
         return [
-            'code' => ['nullable', 'string', 'max:50', Rule::unique('quotes', 'code')->ignore($quoteId)],
+            'code' => ['nullable', 'string', 'max:50'],
             'title' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
             'customer_id' => [$isUpdate ? 'sometimes' : 'required', 'exists:customers,id'],
             'project_manager_id' => ['nullable', 'exists:users,id'],

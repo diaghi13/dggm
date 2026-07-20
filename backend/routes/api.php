@@ -215,6 +215,8 @@ Route::prefix('v1')->group(function () {
         ->name('public.quotes.accept');
     Route::get('public/quotes/{token}/reject', [PublicQuoteActionController::class, 'reject'])
         ->name('public.quotes.reject');
+    Route::get('public/quotes/{token}/revisions/{quoteId}/pdf', [PublicQuoteActionController::class, 'downloadRevisionPdf'])
+        ->name('public.quotes.revision.pdf');
 
     // Protected routes (require authentication)
     Route::middleware('auth:sanctum')->group(function () {
@@ -327,6 +329,8 @@ Route::prefix('v1')->group(function () {
         Route::post('quotes/{quote}/save-pdf', [QuoteController::class, 'savePdf']);
         Route::post('quotes/{quote}/refresh-terms', [QuoteController::class, 'refreshTerms']);
         Route::post('quotes/{quote}/duplicate', [QuoteController::class, 'duplicate']);
+        Route::post('quotes/{quote}/revise', [QuoteController::class, 'revise']);
+        Route::get('quotes/{quote}/revisions', [QuoteController::class, 'revisions']);
 
         // Quote PDF
         Route::get('quotes/{quote}/pdf/download', [QuoteController::class, 'downloadPdf']);

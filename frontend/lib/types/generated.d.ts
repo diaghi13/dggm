@@ -943,6 +943,10 @@ project?: App.Data.ProjectData;
 items?: Array<App.Data.QuoteItemData>;
 deposits?: Array<App.Data.QuoteDepositData>;
 full_address?: string;
+version: number;
+original_quote_id: number | null;
+is_current_version: boolean;
+revision_notes: string | null;
 };
 export type QuoteDepositData = {
 id?: number;

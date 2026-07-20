@@ -17,6 +17,11 @@ class GetQuotesQuery
         $query = Quote::query()
             ->with(['customer', 'projectManager', 'priceList', 'paymentTerm', 'financialResource', 'warrantyType']);
 
+        // By default show only current versions; pass all_versions=true to bypass
+        if (empty($filters['all_versions'])) {
+            $query->where('is_current_version', true);
+        }
+
         // Filter by status
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
