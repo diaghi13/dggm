@@ -101,6 +101,7 @@ interface WorkerFormProps {
   onSubmit: (data: WorkerFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  serverErrors?: (field: string) => string | undefined;
 }
 
 export function WorkerForm({
@@ -108,6 +109,7 @@ export function WorkerForm({
   onSubmit,
   onCancel,
   isLoading,
+  serverErrors,
 }: WorkerFormProps) {
   const {
     register,
@@ -347,13 +349,8 @@ export function WorkerForm({
               disabled={isLoading}
               placeholder="Mario"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
+              error={serverErrors?.("first_name") ?? errors.first_name}
             />
-            {errors.first_name && (
-              <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">⚠</span>{" "}
-                {errors.first_name.message}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <Label
@@ -368,13 +365,8 @@ export function WorkerForm({
               disabled={isLoading}
               placeholder="Rossi"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
+              error={serverErrors?.("last_name") ?? errors.last_name}
             />
-            {errors.last_name && (
-              <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">⚠</span>{" "}
-                {errors.last_name.message}
-              </p>
-            )}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -391,6 +383,7 @@ export function WorkerForm({
               disabled={isLoading}
               placeholder="RSSMRA80A01H501A"
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500 font-mono"
+              error={serverErrors?.("tax_code")}
             />
           </div>
           {workerType === "freelancer" && (
@@ -407,13 +400,8 @@ export function WorkerForm({
                 disabled={isLoading}
                 placeholder="IT12345678901"
                 className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500 font-mono"
+                error={serverErrors?.("vat_number") ?? errors.vat_number}
               />
-              {errors.vat_number && (
-                <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                  <span className="text-red-500">⚠</span>{" "}
-                  {errors.vat_number.message}
-                </p>
-              )}
             </div>
           )}
         </div>
@@ -507,13 +495,8 @@ export function WorkerForm({
               {...register("hire_date")}
               disabled={isLoading}
               className="h-11 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
+              error={serverErrors?.("hire_date") ?? errors.hire_date}
             />
-            {errors.hire_date && (
-              <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">⚠</span>{" "}
-                {errors.hire_date.message}
-              </p>
-            )}
           </div>
           {watch("contract_type") === "fixed_term" && (
             <div className="space-y-2">
@@ -562,13 +545,9 @@ export function WorkerForm({
                 disabled={isLoading}
                 placeholder="email@esempio.it"
                 className="h-11 pl-10 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500"
+                error={serverErrors?.("email") ?? errors.email}
               />
             </div>
-            {errors.email && (
-              <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.email.message}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <Label

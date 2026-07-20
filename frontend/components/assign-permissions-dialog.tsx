@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { Shield, Check } from 'lucide-react';
 
 import {
@@ -49,8 +50,8 @@ export function AssignPermissionsDialog({
       toast.success('Permessi aggiornati con successo');
       onOpenChange(false);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Errore durante l\'aggiornamento dei permessi');
+    onError: (error) => {
+      handleMutationError(error, 'Errore durante l\'aggiornamento dei permessi');
     },
   });
 

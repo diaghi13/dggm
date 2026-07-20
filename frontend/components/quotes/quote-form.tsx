@@ -62,6 +62,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import { QuoteDeposit, QuoteFormData, QuoteItem } from "@/lib/types";
 import { CustomerForm } from "@/components/customer-form";
 import { QuoteItemsBuilder } from "@/components/quote-items";
@@ -75,6 +76,8 @@ interface QuoteFormProps {
   onChange: (field: keyof QuoteFormData, value: unknown) => void;
   onItemsChange: (items: QuoteItem[]) => void;
   quoteId?: number;
+  /** Getter function (field) => error string | undefined — from useFieldErrors hook */
+  fieldError?: (field: string) => string | undefined;
 }
 
 // Helper per convertire date ISO 8601 a formato yyyy-MM-dd per input date
@@ -89,6 +92,7 @@ export function QuoteForm({
   onChange,
   onItemsChange,
   quoteId,
+  fieldError,
 }: QuoteFormProps) {
   const queryClient = useQueryClient();
   const [isCreateCustomerDialogOpen, setIsCreateCustomerDialogOpen] =
@@ -321,12 +325,8 @@ export function QuoteForm({
         description: `${newCustomer.display_name} è stato aggiunto`,
       });
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore", {
-        description:
-          err.response?.data?.message || "Impossibile creare il cliente",
-      });
+    onError: (error) => {
+      handleMutationError(error, "Impossibile creare il cliente");
     },
   });
 
@@ -399,24 +399,29 @@ export function QuoteForm({
                       <Hash className="h-4 w-4" />
                       Codice Preventivo
                     </Label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-start gap-2">
                       {/* Prefisso completo (readonly) */}
-                      <div className="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 font-mono text-sm text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 font-mono text-sm text-slate-600 dark:text-slate-400 mt-0.5">
                         {codePrefix || "..."}
                       </div>
-                      {/* Progressivo (editabile) */}
-                      <Input
-                        id="progressive"
-                        value={progressive}
-                        onChange={(e) => setProgressive(e.target.value)}
-                        placeholder="0001"
-                        className="font-mono text-sm w-32 flex-1"
-                        maxLength={20}
-                      />
+                      {/* Progressivo (editabile) — wrapper div isola l'errore dal flex */}
+                      <div className="flex-1">
+                        <Input
+                          id="progressive"
+                          value={progressive}
+                          onChange={(e) => setProgressive(e.target.value)}
+                          placeholder="0001"
+                          className="font-mono text-sm w-full"
+                          maxLength={20}
+                          error={fieldError?.("code")}
+                        />
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500">
-                      Solo il progressivo è editabile
-                    </p>
+                    {!fieldError?.("code") && (
+                      <p className="text-xs text-slate-500">
+                        Solo il progressivo è editabile
+                      </p>
+                    )}
                   </div>
 
                   {/* Oggetto (ex Titolo) */}
@@ -430,6 +435,7 @@ export function QuoteForm({
                       onChange={(e) => onChange("title", e.target.value)}
                       placeholder="es. Ristrutturazione Appartamento"
                       className="text-base font-medium"
+                      error={fieldError?.("title")}
                     />
                   </div>
 
@@ -456,6 +462,7 @@ export function QuoteForm({
                         type="date"
                         value={formatDateForInput(formData.issue_date)}
                         onChange={(e) => onChange("issue_date", e.target.value)}
+                        error={fieldError?.("issue_date")}
                       />
                     </div>
 
@@ -468,6 +475,7 @@ export function QuoteForm({
                         onChange={(e) =>
                           onChange("expiry_date", e.target.value)
                         }
+                        error={fieldError?.("expiry_date")}
                       />
                       {defaultValidityDays && (
                         <p className="text-xs text-slate-500">
@@ -524,6 +532,7 @@ export function QuoteForm({
                       searchPlaceholder="Cerca cliente..."
                       emptyText="Nessun cliente trovato"
                       loading={isLoadingCustomers}
+                      error={fieldError?.("customer_id")}
                     />
                   </div>
 
@@ -654,6 +663,7 @@ export function QuoteForm({
                       searchPlaceholder="Cerca listino..."
                       emptyText="Nessun listino trovato"
                       loading={isLoadingPriceLists}
+                      error={fieldError?.("price_list_id")}
                     />
                     {!quoteId && defaultPriceList === null && (
                       <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -754,6 +764,7 @@ export function QuoteForm({
                     value={formData.address || ""}
                     onChange={(e) => onChange("address", e.target.value)}
                     placeholder="Via/Piazza"
+                    error={fieldError?.("address")}
                   />
                 </div>
 
@@ -765,6 +776,7 @@ export function QuoteForm({
                       value={formData.city || ""}
                       onChange={(e) => onChange("city", e.target.value)}
                       placeholder="Città"
+                      error={fieldError?.("city")}
                     />
                   </div>
 
@@ -775,6 +787,7 @@ export function QuoteForm({
                       value={formData.postal_code || ""}
                       onChange={(e) => onChange("postal_code", e.target.value)}
                       placeholder="00000"
+                      error={fieldError?.("postal_code")}
                     />
                   </div>
 
@@ -787,6 +800,7 @@ export function QuoteForm({
                       placeholder="PR"
                       maxLength={2}
                       className="uppercase"
+                      error={fieldError?.("province")}
                     />
                   </div>
                 </div>
@@ -899,6 +913,7 @@ export function QuoteForm({
                       searchPlaceholder="Cerca termine..."
                       emptyText="Nessun termine trovato"
                       loading={isLoadingPaymentTerms}
+                      error={fieldError?.("payment_term_id")}
                     />
                     {formData.payment_term_id &&
                       (() => {

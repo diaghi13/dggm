@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { warehousesApi } from "@/lib/api/warehouses";
 import { stockMovementsApi } from "@/lib/api/stock-movements";
 import { WarehouseForm } from "@/components/warehouse-form";
+import { useFieldErrors } from "@/lib/hooks/use-field-errors";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -100,6 +101,8 @@ export default function WarehouseDetailPage() {
       });
     },
   });
+
+  const updateFieldErrors = useFieldErrors(updateMutation.error);
 
   const handleUpdate = (data: Partial<App.Data.WarehouseData>) => {
     updateMutation.mutate(data);
@@ -210,6 +213,7 @@ export default function WarehouseDetailPage() {
               initialData={warehouse}
               onSubmit={handleUpdate}
               isLoading={updateMutation.isPending}
+              serverErrors={updateFieldErrors}
             />
           ) : (
             <>

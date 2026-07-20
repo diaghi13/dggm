@@ -135,6 +135,7 @@ interface CustomerFormProps {
   customer?: Customer;
   onSubmit: (data: CustomerFormData) => void;
   isLoading?: boolean;
+  serverErrors?: (field: string) => string | undefined;
 }
 
 export function CustomerForm({
@@ -142,6 +143,7 @@ export function CustomerForm({
   customer,
   onSubmit,
   isLoading,
+  serverErrors,
 }: CustomerFormProps) {
   const {
     register,
@@ -299,13 +301,8 @@ export function CustomerForm({
                 disabled={isLoading}
                 placeholder="Mario"
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                error={serverErrors?.("first_name") ?? errors.first_name}
               />
-              {errors.first_name && (
-                <p className="text-sm text-red-600 flex items-center gap-1">
-                  <span className="text-red-500">⚠</span>{" "}
-                  {errors.first_name.message}
-                </p>
-              )}
             </div>
             <div className="space-y-2">
               <Label
@@ -320,13 +317,8 @@ export function CustomerForm({
                 disabled={isLoading}
                 placeholder="Rossi"
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                error={serverErrors?.("last_name") ?? errors.last_name}
               />
-              {errors.last_name && (
-                <p className="text-sm text-red-600 flex items-center gap-1">
-                  <span className="text-red-500">⚠</span>{" "}
-                  {errors.last_name.message}
-                </p>
-              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mt-4">
@@ -343,13 +335,8 @@ export function CustomerForm({
                 disabled={isLoading}
                 placeholder="IT12345678901"
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                error={serverErrors?.("vat_number") ?? errors.vat_number}
               />
-              {errors.vat_number && (
-                <p className="text-sm text-red-600 flex items-center gap-1">
-                  <span className="text-red-500">⚠</span>{" "}
-                  {errors.vat_number.message}
-                </p>
-              )}
               <p className="text-xs text-slate-500">Opzionale per privati</p>
             </div>
             <div className="space-y-2">
@@ -365,13 +352,8 @@ export function CustomerForm({
                 disabled={isLoading}
                 placeholder="RSSMRA80A01H501U"
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                error={serverErrors?.("tax_code") ?? errors.tax_code}
               />
-              {errors.tax_code && (
-                <p className="text-sm text-red-600 flex items-center gap-1">
-                  <span className="text-red-500">⚠</span>{" "}
-                  {errors.tax_code.message}
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -401,13 +383,8 @@ export function CustomerForm({
               disabled={isLoading}
               placeholder="Acme S.r.l."
               className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+              error={serverErrors?.("company_name") ?? errors.company_name}
             />
-            {errors.company_name && (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <span className="text-red-500">⚠</span>{" "}
-                {errors.company_name.message}
-              </p>
-            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -423,13 +400,8 @@ export function CustomerForm({
                 disabled={isLoading}
                 placeholder="IT12345678901"
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                error={serverErrors?.("vat_number") ?? errors.vat_number}
               />
-              {errors.vat_number && (
-                <p className="text-sm text-red-600 flex items-center gap-1">
-                  <span className="text-red-500">⚠</span>{" "}
-                  {errors.vat_number.message}
-                </p>
-              )}
             </div>
             <div className="space-y-2">
               <Label
@@ -444,13 +416,8 @@ export function CustomerForm({
                 disabled={isLoading}
                 placeholder="12345678901"
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                error={serverErrors?.("tax_code") ?? errors.tax_code}
               />
-              {errors.tax_code && (
-                <p className="text-sm text-red-600 flex items-center gap-1">
-                  <span className="text-red-500">⚠</span>{" "}
-                  {errors.tax_code.message}
-                </p>
-              )}
               <p className="text-xs text-slate-500">Opzionale per aziende</p>
             </div>
           </div>
@@ -484,13 +451,9 @@ export function CustomerForm({
                 disabled={isLoading}
                 placeholder="email@esempio.it"
                 className="h-11 pl-10 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                error={serverErrors?.("email") ?? errors.email}
               />
             </div>
-            {errors.email && (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.email.message}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <Label
@@ -586,13 +549,8 @@ export function CustomerForm({
               placeholder="MI"
               maxLength={2}
               className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
+              error={serverErrors?.("province") ?? errors.province}
             />
-            {errors.province && (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <span className="text-red-500">⚠</span>{" "}
-                {errors.province.message}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <Label
@@ -624,12 +582,8 @@ export function CustomerForm({
             placeholder="IT"
             maxLength={2}
             className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
+            error={serverErrors?.("country") ?? errors.country}
           />
-          {errors.country && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <span className="text-red-500">⚠</span> {errors.country.message}
-            </p>
-          )}
           <p className="text-xs text-slate-500">
             Codice ISO a 2 caratteri (es. IT, FR, DE)
           </p>

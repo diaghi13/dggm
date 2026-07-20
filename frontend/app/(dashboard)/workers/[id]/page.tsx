@@ -34,10 +34,12 @@ import {
   Building2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import Link from "next/link";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { WorkerForm } from "@/components/worker-form";
+import { useFieldErrors } from "@/lib/hooks/use-field-errors";
 import { WorkerRateForm } from "@/components/worker-rate-form";
 import type { WorkerFormData } from "@/lib/types";
 import { CurrencyDisplay, formatCurrency } from "@/components/ui/currency-input";
@@ -137,6 +139,8 @@ export default function WorkerDetailPage() {
     },
   });
 
+  const updateFieldErrors = useFieldErrors(updateMutation.error);
+
   const createRateMutation = useMutation({
     mutationFn: (data: any) => workersApi.createRate(workerId, data),
     onSuccess: () => {
@@ -145,13 +149,10 @@ export default function WorkerDetailPage() {
       setEditingRate(null);
       toast.success("Tariffa creata con successo");
     },
-    onError: (error: any) => {
-      toast.error("Errore", {
-        description:
-          error.response?.data?.message || "Impossibile creare la tariffa",
-      });
-    },
+    onError: (error: unknown) => handleMutationError(error, "Impossibile creare la tariffa"),
   });
+
+  const rateFieldErrors = useFieldErrors(createRateMutation.error);
 
   const deleteRateMutation = useMutation({
     mutationFn: (rateId: number) => workersApi.deleteRate(workerId, rateId),
@@ -316,6 +317,7 @@ export default function WorkerDetailPage() {
                   }}
                   onCancel={() => setEditMode(false)}
                   isLoading={updateMutation.isPending}
+                  serverErrors={updateFieldErrors}
                 />
               </CardContent>
             </Card>
@@ -927,6 +929,7 @@ export default function WorkerDetailPage() {
               setEditingRate(null);
             }}
             isLoading={createRateMutation.isPending}
+            serverErrors={rateFieldErrors}
           />
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
             <Button

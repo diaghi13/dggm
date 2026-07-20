@@ -70,6 +70,7 @@ import {
   Cloud,
 } from "lucide-react";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 
 // ─── Zod Schema ───────────────────────────────────────────────────────────────
 
@@ -476,7 +477,7 @@ function DocumentSendersCard({ accounts }: DocumentSendersCardProps) {
       setHasChanges(false);
       queryClient.invalidateQueries({ queryKey: ["settings", "email-senders"] });
     },
-    onError: () => toast.error("Errore nel salvataggio mittenti"),
+    onError: (error) => handleMutationError(error, "Errore nel salvataggio mittenti"),
   });
 
   const currentSenders = { ...(senderSettings ?? {}), ...localSenders };
@@ -597,7 +598,7 @@ function SignatureSettingsCard({
         queryKey: ["settings", "email.signature"],
       });
     },
-    onError: () => toast.error("Errore nel salvataggio"),
+    onError: (error) => handleMutationError(error, "Errore nel salvataggio"),
   });
 
   return (
@@ -703,7 +704,7 @@ export function EmailAccountsSection() {
       queryClient.invalidateQueries({ queryKey: ["email-accounts"] });
       setDialogOpen(false);
     },
-    onError: () => toast.error("Errore nella creazione account"),
+    onError: (error) => handleMutationError(error, "Errore nella creazione account"),
   });
 
   const updateMutation = useMutation({
@@ -714,7 +715,7 @@ export function EmailAccountsSection() {
       queryClient.invalidateQueries({ queryKey: ["email-accounts"] });
       setDialogOpen(false);
     },
-    onError: () => toast.error("Errore nell'aggiornamento account"),
+    onError: (error) => handleMutationError(error, "Errore nell'aggiornamento account"),
   });
 
   const deleteMutation = useMutation({
@@ -724,7 +725,7 @@ export function EmailAccountsSection() {
       queryClient.invalidateQueries({ queryKey: ["email-accounts"] });
       setDeleteTarget(null);
     },
-    onError: () => toast.error("Errore nell'eliminazione account"),
+    onError: (error) => handleMutationError(error, "Errore nell'eliminazione account"),
   });
 
   const setDefaultMutation = useMutation({
@@ -733,7 +734,7 @@ export function EmailAccountsSection() {
       toast.success("Account predefinito aggiornato");
       queryClient.invalidateQueries({ queryKey: ["email-accounts"] });
     },
-    onError: () => toast.error("Errore nell'impostare account predefinito"),
+    onError: (error) => handleMutationError(error, "Errore nell'impostare account predefinito"),
   });
 
   // ── Form ──

@@ -62,6 +62,11 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth-storage');
       }
+      toast.error('Sessione scaduta', {
+        description: 'Effettua nuovamente il login per continuare.',
+        duration: 6000,
+      });
+      (error as AxiosError & { _handled?: boolean })._handled = true;
       return Promise.reject(error);
     }
 
@@ -76,25 +81,31 @@ apiClient.interceptors.response.use(
     // Handle 403 Forbidden - user doesn't have permission
     if (error.response?.status === 403) {
       const message = (error.response.data as any)?.message || 'Non hai i permessi per eseguire questa azione';
-
       toast.error('Accesso negato', {
         description: message,
         duration: 5000,
       });
-
-      console.error('Access forbidden:', error.response.data);
+      (error as AxiosError & { _handled?: boolean })._handled = true;
     }
 
-    // Handle 422 Validation errors
+    // Handle 422 Validation errors — show field-level detail in toast
     if (error.response?.status === 422) {
-      console.error('Validation error:', error.response.data);
-      // Validation errors are typically handled by form components
+      const data = error.response.data as { errors?: Record<string, string[]>; message?: string };
+      const fieldErrors = data?.errors;
+      const description = fieldErrors
+        ? Object.values(fieldErrors).flat().slice(0, 4).join(' • ')
+        : (data?.message || 'Controlla i dati inseriti e riprova.');
+      toast.error('Dati non validi', { description, duration: 7000 });
+      (error as AxiosError & { _handled?: boolean })._handled = true;
     }
 
     // Handle 500 Server errors
     if (error.response?.status === 500) {
-      console.error('Server error:', error.response.data);
-      // You could show a generic error toast here
+      toast.error('Errore del server', {
+        description: 'Si è verificato un errore interno. Riprova tra qualche istante.',
+        duration: 6000,
+      });
+      (error as AxiosError & { _handled?: boolean })._handled = true;
     }
 
     return Promise.reject(error);

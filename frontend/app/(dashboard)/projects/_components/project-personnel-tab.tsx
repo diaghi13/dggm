@@ -53,6 +53,7 @@ import { ComboboxSelect } from '@/components/combobox-select';
 import { WorkerSchedulePanel } from './worker-schedule-panel';
 import { CurrencyDisplay, CurrencyInput, formatCurrency } from '@/components/ui/currency-input';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { format, parseISO } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -387,7 +388,7 @@ export function ProjectPersonnelTab({ projectId, project }: Props) {
         );
       }
     },
-    onError: () => toast.error("Errore durante l'assegnazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'assegnazione"),
   });
 
   const createSlotMutation = useMutation({
@@ -424,47 +425,44 @@ export function ProjectPersonnelTab({ projectId, project }: Props) {
       setNewWorkerRateAutoFilled(false);
       toast.success(workerAssigned ? 'Slot creato e collaboratore assegnato' : 'Slot creato');
     },
-    onError: (error: unknown) => {
-      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? 'Errore durante la creazione dello slot');
-    },
+    onError: (error) => handleMutationError(error, 'Errore durante la creazione dello slot'),
   });
 
   const deleteSlotMutation = useMutation({
     mutationFn: (id: number) => projectWorkersApi.removeWorker(id),
     onSuccess: () => { invalidate(); toast.success('Slot eliminato'); },
-    onError: () => toast.error("Errore durante l'eliminazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'eliminazione"),
   });
 
   const acceptMutation = useMutation({
     mutationFn: (id: number) => projectWorkersApi.acceptAssignment(id),
     onSuccess: () => { invalidate(); toast.success('Assegnazione accettata'); },
-    onError: () => toast.error("Errore"),
+    onError: (error) => handleMutationError(error, 'Errore'),
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: number) => projectWorkersApi.rejectAssignment(id),
     onSuccess: () => { invalidate(); toast.success('Assegnazione rifiutata'); },
-    onError: () => toast.error('Errore'),
+    onError: (error) => handleMutationError(error, 'Errore'),
   });
 
   const resendInviteMutation = useMutation({
     mutationFn: (id: number) => projectWorkersApi.resendInvite(id),
     onSuccess: () => toast.success('Invito re-inviato con successo'),
-    onError: () => toast.error('Errore durante il re-invio'),
+    onError: (error) => handleMutationError(error, 'Errore durante il re-invio'),
   });
 
   const changeStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
       projectWorkersApi.changeStatus(id, { status: status as ProjectWorkerStatus }),
     onSuccess: () => { invalidate(); toast.success('Stato aggiornato'); },
-    onError: () => toast.error("Errore"),
+    onError: (error) => handleMutationError(error, 'Errore'),
   });
 
   const removeMutation = useMutation({
     mutationFn: (id: number) => projectWorkersApi.removeWorker(id),
     onSuccess: () => { invalidate(); toast.success('Lavoratore rimosso'); },
-    onError: () => toast.error('Errore'),
+    onError: (error) => handleMutationError(error, 'Errore'),
   });
 
   const acceptAllConvocazioniMutation = useMutation({
@@ -479,7 +477,7 @@ export function ProjectPersonnelTab({ projectId, project }: Props) {
       queryClient.invalidateQueries({ queryKey: ['project-schedules', projectId] });
       toast.success(`${count} convocazion${count === 1 ? 'e accettata' : 'i accettate'}`);
     },
-    onError: () => toast.error("Errore durante l'accettazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'accettazione"),
   });
 
   const acceptScheduleMutation = useMutation({
@@ -488,7 +486,7 @@ export function ProjectPersonnelTab({ projectId, project }: Props) {
       queryClient.invalidateQueries({ queryKey: ['project-schedules', projectId] });
       toast.success('Convocazione accettata');
     },
-    onError: () => toast.error("Errore durante l'accettazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'accettazione"),
   });
 
   if (isLoading) {

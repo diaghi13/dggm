@@ -81,7 +81,7 @@ class ProductData extends Data
         public ?float $estimated_base_day,
 
         #[Min(0)]
-        public int|Optional $quantity_out_on_rental,
+        public int|null|Optional $quantity_out_on_rental,
 
         #[Max(20)]
         public ?string $unit,

@@ -9,6 +9,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Image from '@tiptap/extension-image'
 import { Bold, Italic, Underline as UnderlineIcon, Link2, List, ListOrdered, Undo, Redo, Image as ImageIcon, Building2, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { resolveError, type ErrorProp } from '@/lib/utils/resolve-error'
 
 interface RichTextEditorProps {
   value?: string | null
@@ -18,6 +19,7 @@ interface RichTextEditorProps {
   minHeight?: string
   companyLogoUrl?: string | null
   onImageUpload?: (file: File) => Promise<string>
+  error?: ErrorProp
 }
 
 interface ToolbarButtonProps {
@@ -55,7 +57,9 @@ export function RichTextEditor({
   minHeight = '120px',
   companyLogoUrl,
   onImageUpload,
+  error,
 }: RichTextEditorProps) {
+  const errorMsg = resolveError(error);
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
 
@@ -99,9 +103,11 @@ export function RichTextEditor({
   }, [value]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
+    <>
     <div
       className={cn(
-        'border rounded-md overflow-hidden border-input dark:border-slate-700',
+        'border rounded-md overflow-hidden',
+        errorMsg ? 'border-destructive' : 'border-input dark:border-slate-700',
         className,
       )}
     >
@@ -239,5 +245,9 @@ export function RichTextEditor({
         <EditorContent editor={editor} />
       </div>
     </div>
+    {errorMsg && (
+      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errorMsg}</p>
+    )}
+    </>
   )
 }

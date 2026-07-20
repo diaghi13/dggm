@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { Loader2, PackagePlus, Info } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -81,12 +82,8 @@ export function ReturnMaterialDialog({
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       handleClose();
     },
-    onError: (error: any) => {
-      toast.error('Errore', {
-        description:
-          error.response?.data?.message ||
-          'Impossibile rientrare il materiale',
-      });
+    onError: (error) => {
+      handleMutationError(error, 'Impossibile rientrare il materiale');
     },
   });
 

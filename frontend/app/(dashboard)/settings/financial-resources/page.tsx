@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/data-table/data-table";
 import { createFinancialResourcesColumns } from "@/components/financial-resources-columns";
 import { FinancialResourceForm } from "@/components/financial-resource-form";
+import { useFieldErrors } from "@/lib/hooks/use-field-errors";
 import {
   Dialog,
   DialogContent,
@@ -135,6 +136,9 @@ export default function FinancialResourcesPage() {
     }
   };
 
+  const createFieldErrors = useFieldErrors(createMutation.error);
+  const updateFieldErrors = useFieldErrors(updateMutation.error);
+
   const columns = createFinancialResourcesColumns(handleEdit, handleDelete);
 
   return (
@@ -181,6 +185,7 @@ export default function FinancialResourcesPage() {
             onSubmit={handleCreate}
             onCancel={() => setIsCreateOpen(false)}
             isLoading={createMutation.isPending}
+            serverErrors={createFieldErrors}
           />
         </DialogContent>
       </Dialog>
@@ -203,6 +208,7 @@ export default function FinancialResourcesPage() {
                 setSelectedResource(null);
               }}
               isLoading={updateMutation.isPending}
+              serverErrors={updateFieldErrors}
             />
           )}
         </DialogContent>

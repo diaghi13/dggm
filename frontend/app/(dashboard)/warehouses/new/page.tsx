@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useFieldErrors } from '@/lib/hooks/use-field-errors';
 
 export default function NewWarehousePage() {
   const router = useRouter();
@@ -26,6 +27,8 @@ export default function NewWarehousePage() {
       });
     },
   });
+
+  const fieldErrors = useFieldErrors(createMutation.error);
 
   const handleSubmit = (data: any) => {
     createMutation.mutate(data);
@@ -47,7 +50,7 @@ export default function NewWarehousePage() {
       </div>
 
       {/* Form */}
-      <WarehouseForm onSubmit={handleSubmit} isLoading={createMutation.isPending} />
+      <WarehouseForm onSubmit={handleSubmit} isLoading={createMutation.isPending} serverErrors={fieldErrors} />
     </div>
   );
 }

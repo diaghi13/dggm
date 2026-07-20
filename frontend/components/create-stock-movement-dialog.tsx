@@ -29,6 +29,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
+import { useFieldErrors } from '@/lib/hooks/use-field-errors';
 import { ComboboxSelect } from '@/components/combobox-select';
 import { formatCurrency } from '@/components/ui/currency-input';
 
@@ -208,12 +210,12 @@ export function CreateStockMovementDialog({
       reset();
       onSuccess?.();
     },
-    onError: (error: any) => {
-      toast.error('Errore', {
-        description: error.message || 'Impossibile creare il movimento',
-      });
+    onError: (error) => {
+      handleMutationError(error, 'Impossibile creare il movimento');
     },
   });
+
+  const fieldErrors = useFieldErrors(createMutation.error);
 
   const onSubmit = (data: FormData) => {
     createMutation.mutate(data);
@@ -370,6 +372,7 @@ export function CreateStockMovementDialog({
               placeholder="Cerca prodotto..."
               emptyText="Nessun prodotto trovato"
               loading={isLoadingProducts}
+              error={fieldErrors('product_id')}
               options={products.map((p: App.Data.ProductData) => ({
                 label: `${p.code} - ${p.name}`,
                 value: p.id?.toString() || '',
@@ -384,15 +387,13 @@ export function CreateStockMovementDialog({
               type="number"
               step="0.01"
               min="0.01"
+              error={fieldErrors('quantity') ?? errors.quantity}
               {...register('quantity', {
-                required: true,
-                min: 0.01,
+                required: 'La quantità è obbligatoria',
+                min: { value: 0.01, message: 'La quantità deve essere maggiore di 0' },
                 valueAsNumber: true,
               })}
             />
-            {errors.quantity && (
-              <p className="text-sm text-red-600">La quantità è obbligatoria</p>
-            )}
           </div>
 
           {/* Campi specifici per tipo intake */}

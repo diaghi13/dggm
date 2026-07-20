@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Search, Users } from 'lucide-react';
 import { CustomerForm } from '@/components/customer-form';
 import { PageHeader } from '@/components/layout/page-header';
+import { useFieldErrors } from '@/lib/hooks/use-field-errors';
 import { DataTable } from '@/components/shared/data-table/data-table';
 import { createCustomersColumns } from '@/components/customers-columns';
 import { EmptyState } from '@/components/shared/empty-state';
@@ -78,6 +79,8 @@ export default function CustomersPage() {
       });
     },
   });
+
+  const updateFieldErrors = useFieldErrors(updateMutation.error);
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => customersApi.delete(id),
@@ -192,6 +195,7 @@ export default function CustomersPage() {
                 customer={selectedCustomer}
                 onSubmit={(data) => updateMutation.mutate({ id: selectedCustomer.id, data })}
                 isLoading={updateMutation.isPending}
+                serverErrors={updateFieldErrors}
               />
             )}
           </div>

@@ -21,6 +21,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import type { GenerateFinalBalanceInput } from '@/lib/types';
 
 interface GenerateFinalBalanceDialogProps {
@@ -75,7 +76,7 @@ export function GenerateFinalBalanceDialog({
       onOpenChange(false);
       onGenerated(result.id);
     },
-    onError: () => toast.error('Errore durante la generazione'),
+    onError: (error) => handleMutationError(error, 'Errore durante la generazione'),
   });
 
   function handleSubmit(e: React.FormEvent) {

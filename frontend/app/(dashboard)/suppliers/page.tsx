@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Search, Factory } from 'lucide-react';
 import { SupplierForm } from '@/components/supplier-form';
 import { PageHeader } from '@/components/layout/page-header';
+import { useFieldErrors } from '@/lib/hooks/use-field-errors';
 import { EmptyState } from '@/components/shared/empty-state';
 import { toast } from 'sonner';
 import { DataTable } from "@/components/shared/data-table/data-table";
@@ -81,6 +82,9 @@ export default function SuppliersPage() {
       toast.success('Fornitore aggiornato');
     },
   });
+
+  const createFieldErrors = useFieldErrors(createMutation.error);
+  const updateFieldErrors = useFieldErrors(updateMutation.error);
 
   const deleteMutation = useMutation({
     mutationFn: suppliersApi.delete,
@@ -204,7 +208,7 @@ export default function SuppliersPage() {
             <DialogDescription className="text-slate-600 dark:text-slate-400">Aggiungi un nuovo fornitore</DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto flex-1 px-6 py-6">
-            <SupplierForm onSubmit={(data) => createMutation.mutate(data)} onCancel={() => setIsCreateDialogOpen(false)} isLoading={createMutation.isPending} />
+            <SupplierForm onSubmit={(data) => createMutation.mutate(data)} onCancel={() => setIsCreateDialogOpen(false)} isLoading={createMutation.isPending} serverErrors={createFieldErrors} />
           </div>
           <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50">
             <div className="flex justify-end gap-3">
@@ -228,6 +232,7 @@ export default function SuppliersPage() {
                 onSubmit={(data) => updateMutation.mutate({ id: selectedSupplier.id!, data })}
                 onCancel={() => { setIsEditDialogOpen(false); setSelectedSupplier(null); }}
                 isLoading={updateMutation.isPending}
+                serverErrors={updateFieldErrors}
               />
             )}
           </div>

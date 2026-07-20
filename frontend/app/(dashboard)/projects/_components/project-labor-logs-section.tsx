@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { cn } from '@/lib/utils';
 import type { ProjectLaborLog } from '@/lib/types';
 
@@ -153,7 +154,7 @@ export function ProjectLaborLogsSection({ projectId, plannedHours }: Props) {
       queryClient.invalidateQueries({ queryKey: ['project-labor-logs', projectId] });
       toast.success('Ore approvate');
     },
-    onError: () => toast.error("Errore durante l'approvazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'approvazione"),
   });
 
   const rejectMutation = useMutation({
@@ -165,7 +166,7 @@ export function ProjectLaborLogsSection({ projectId, plannedHours }: Props) {
       setRejectionReason('');
       toast.success('Ore rifiutate');
     },
-    onError: () => toast.error('Errore durante il rifiuto'),
+    onError: (error) => handleMutationError(error, 'Errore durante il rifiuto'),
   });
 
   // Computed hours from clock_in / clock_out in the form, accounting for break
@@ -243,13 +244,7 @@ export function ProjectLaborLogsSection({ projectId, plannedHours }: Props) {
       setLogForm(EMPTY_LOG_FORM);
       toast.success('Ore inviate per approvazione');
     },
-    onError: (error: unknown) => {
-      const msg =
-        (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message
-        ?? (error instanceof Error ? error.message : null)
-        ?? "Errore durante l'invio";
-      toast.error(msg);
-    },
+    onError: (error) => handleMutationError(error, "Errore durante l'invio"),
   });
 
   const deleteMutation = useMutation({
@@ -258,7 +253,7 @@ export function ProjectLaborLogsSection({ projectId, plannedHours }: Props) {
       queryClient.invalidateQueries({ queryKey: ['project-labor-logs', projectId] });
       toast.success('Registrazione eliminata');
     },
-    onError: () => toast.error("Errore durante l'eliminazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'eliminazione"),
   });
 
   const changeStatusMutation = useMutation({
@@ -271,7 +266,7 @@ export function ProjectLaborLogsSection({ projectId, plannedHours }: Props) {
       setLogForm(EMPTY_LOG_FORM);
       toast.success('Ore aggiornate');
     },
-    onError: () => toast.error('Errore durante il cambio stato'),
+    onError: (error) => handleMutationError(error, 'Errore durante il cambio stato'),
   });
 
   const updateMutation = useMutation({
@@ -307,13 +302,9 @@ export function ProjectLaborLogsSection({ projectId, plannedHours }: Props) {
         toast.success('Ore aggiornate');
       }
     },
-    onError: (error: unknown) => {
+    onError: (error) => {
       pendingStatusChange.current = null;
-      const msg =
-        (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message
-        ?? (error instanceof Error ? error.message : null)
-        ?? 'Errore durante la modifica';
-      toast.error(msg);
+      handleMutationError(error, 'Errore durante la modifica');
     },
   });
 

@@ -32,6 +32,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import type {
   ProjectAvailabilityCheckItem,
   AvailabilityResolution,
@@ -106,7 +107,7 @@ export function ProjectAvailabilityTab({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['project-availability', projectId] });
       toast.success('Verifica completata');
     },
-    onError: () => toast.error('Errore durante la verifica'),
+    onError: (error) => handleMutationError(error, 'Errore durante la verifica'),
   });
 
   const resolveMutation = useMutation({
@@ -122,7 +123,7 @@ export function ProjectAvailabilityTab({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['project-availability', projectId] });
       toast.success('Risolto');
     },
-    onError: () => toast.error('Errore durante la risoluzione'),
+    onError: (error) => handleMutationError(error, 'Errore durante la risoluzione'),
   });
 
   const handleReserve = (item: ProjectAvailabilityCheckItem) => {

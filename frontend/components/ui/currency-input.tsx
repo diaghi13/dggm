@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { resolveError, type ErrorProp } from "@/lib/utils/resolve-error";
 
 // ---------------------------------------------------------------------------
 // Locale configuration
@@ -116,6 +117,7 @@ interface CurrencyInputProps
   /** Allow negative values (default false) */
   allowNegative?: boolean;
   className?: string;
+  error?: ErrorProp;
 }
 
 export function CurrencyInput({
@@ -127,8 +129,10 @@ export function CurrencyInput({
   allowNegative = false,
   className,
   disabled,
+  error,
   ...rest
 }: CurrencyInputProps) {
+  const errorMsg = resolveError(error);
   const inputRef = useRef<HTMLInputElement>(null);
   // Display string — initially formatted, then free-form while editing
   const [display, setDisplay] = useState<string>(() =>
@@ -192,39 +196,48 @@ export function CurrencyInput({
   );
 
   return (
-    <div className="relative flex items-center">
-      {showCurrency && (
-        <span
-          className={cn(
-            "absolute left-2.5 text-xs text-slate-400 dark:text-slate-500 pointer-events-none select-none",
-            disabled && "opacity-50",
-          )}
-        >
-          {currency}
-        </span>
-      )}
-      <input
-        ref={inputRef}
-        type="text"
-        inputMode="decimal"
-        value={display}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        disabled={disabled}
-        className={cn(
-          "flex h-9 w-full rounded-md border border-slate-300 dark:border-slate-600",
-          "bg-transparent px-3 py-1 text-sm text-right",
-          "shadow-sm transition-colors",
-          "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          showCurrency && "pl-7",
-          className,
+    <>
+      <div className="relative flex items-center">
+        {showCurrency && (
+          <span
+            className={cn(
+              "absolute left-2.5 text-xs text-slate-400 dark:text-slate-500 pointer-events-none select-none",
+              disabled && "opacity-50",
+            )}
+          >
+            {currency}
+          </span>
         )}
-        {...rest}
-      />
-    </div>
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="decimal"
+          value={display}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          disabled={disabled}
+          aria-invalid={!!errorMsg}
+          className={cn(
+            "flex h-9 w-full rounded-md border",
+            errorMsg
+              ? "border-destructive"
+              : "border-slate-300 dark:border-slate-600",
+            "bg-transparent px-3 py-1 text-sm text-right",
+            "shadow-sm transition-colors",
+            "placeholder:text-slate-400 dark:placeholder:text-slate-500",
+            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            showCurrency && "pl-7",
+            className,
+          )}
+          {...rest}
+        />
+      </div>
+      {errorMsg && (
+        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errorMsg}</p>
+      )}
+    </>
   );
 }

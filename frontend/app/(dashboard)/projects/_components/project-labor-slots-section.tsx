@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { Plus, Trash2, Users } from 'lucide-react';
 import type { ProjectWorker } from '@/lib/types';
 import { CurrencyDisplay, CurrencyInput, formatCurrency } from '@/components/ui/currency-input';
@@ -113,7 +114,7 @@ export function ProjectLaborSlotsSection({ projectId }: Props) {
         );
       }
     },
-    onError: () => toast.error("Errore durante l'assegnazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'assegnazione"),
   });
 
   // Create new slot manually
@@ -136,14 +137,14 @@ export function ProjectLaborSlotsSection({ projectId }: Props) {
       setNewNotes('');
       toast.success('Slot creato');
     },
-    onError: () => toast.error('Errore durante la creazione dello slot'),
+    onError: (error) => handleMutationError(error, 'Errore durante la creazione dello slot'),
   });
 
   // Delete a slot (only unassigned)
   const deleteSlotMutation = useMutation({
     mutationFn: (slotId: number) => projectWorkersApi.removeWorker(slotId),
     onSuccess: () => { invalidate(); toast.success('Slot eliminato'); },
-    onError: () => toast.error("Errore durante l'eliminazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'eliminazione"),
   });
 
   const handleAssign = () => {

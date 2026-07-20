@@ -67,6 +67,7 @@ import {
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Select,
@@ -341,7 +342,7 @@ export default function AdminSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["company-settings"] });
       toast.success("Logo eliminato");
     },
-    onError: () => toast.error("Errore nell'eliminazione del logo"),
+    onError: (error) => handleMutationError(error, "Errore nell'eliminazione del logo"),
   });
 
   const deleteStampMutation = useMutation({
@@ -352,7 +353,7 @@ export default function AdminSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["company-settings"] });
       toast.success("Timbro eliminato");
     },
-    onError: () => toast.error("Errore nell'eliminazione del timbro"),
+    onError: (error) => handleMutationError(error, "Errore nell'eliminazione del timbro"),
   });
 
   const deleteSiglaMutation = useMutation({
@@ -363,7 +364,7 @@ export default function AdminSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["company-settings"] });
       toast.success("Sigla eliminata");
     },
-    onError: () => toast.error("Errore nell'eliminazione della sigla"),
+    onError: (error) => handleMutationError(error, "Errore nell'eliminazione della sigla"),
   });
 
   // Save company settings mutation
@@ -408,7 +409,7 @@ export default function AdminSettingsPage() {
       setSiglaFile(null);
       toast.success("Impostazioni azienda salvate");
     },
-    onError: () => toast.error("Errore nel salvataggio"),
+    onError: (error) => handleMutationError(error, "Errore nel salvataggio"),
   });
 
   // Bulk update settings mutation
@@ -444,11 +445,7 @@ export default function AdminSettingsPage() {
       if (context?.previousSettings) {
         queryClient.setQueryData(["settings", "all"], context.previousSettings);
       }
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore", {
-        description:
-          err.response?.data?.message || "Impossibile salvare le impostazioni",
-      });
+      handleMutationError(error, "Impossibile salvare le impostazioni");
     },
   });
 
@@ -486,12 +483,7 @@ export default function AdminSettingsPage() {
       if (context?.previousFlags) {
         queryClient.setQueryData(["feature-flags"], context.previousFlags);
       }
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore", {
-        description:
-          err.response?.data?.message ||
-          "Impossibile aggiornare la feature flag",
-      });
+      handleMutationError(error, "Impossibile aggiornare la feature flag");
     },
   });
 

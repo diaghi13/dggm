@@ -40,9 +40,10 @@ interface WorkerRateFormProps {
   onSubmit: (data: any) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  serverErrors?: (field: string) => string | undefined;
 }
 
-export function WorkerRateForm({ rate, onSubmit, onCancel, isLoading }: WorkerRateFormProps) {
+export function WorkerRateForm({ rate, onSubmit, onCancel, isLoading, serverErrors }: WorkerRateFormProps) {
   const {
     register,
     handleSubmit,
@@ -123,7 +124,7 @@ export function WorkerRateForm({ rate, onSubmit, onCancel, isLoading }: WorkerRa
               onValueChange={(value) => setValue('context', value as RateContext)}
               disabled={isLoading}
             >
-              <SelectTrigger className="h-11">
+              <SelectTrigger className="h-11" error={serverErrors?.('context') ?? errors.context}>
                 <SelectValue placeholder="Seleziona contesto" />
               </SelectTrigger>
               <SelectContent>
@@ -132,11 +133,6 @@ export function WorkerRateForm({ rate, onSubmit, onCancel, isLoading }: WorkerRa
                 <SelectItem value="payroll">Busta Paga</SelectItem>
               </SelectContent>
             </Select>
-            {errors.context && (
-              <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">!</span> {errors.context.message}
-              </p>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -148,7 +144,7 @@ export function WorkerRateForm({ rate, onSubmit, onCancel, isLoading }: WorkerRa
               onValueChange={(value) => setValue('rate_type', value as RateType)}
               disabled={isLoading}
             >
-              <SelectTrigger className="h-11">
+              <SelectTrigger className="h-11" error={serverErrors?.('rate_type') ?? errors.rate_type}>
                 <SelectValue placeholder="Seleziona tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -159,11 +155,6 @@ export function WorkerRateForm({ rate, onSubmit, onCancel, isLoading }: WorkerRa
                 <SelectItem value="fixed_project">Progetto Fisso</SelectItem>
               </SelectContent>
             </Select>
-            {errors.rate_type && (
-              <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">!</span> {errors.rate_type.message}
-              </p>
-            )}
           </div>
         </div>
       </div>
@@ -181,17 +172,13 @@ export function WorkerRateForm({ rate, onSubmit, onCancel, isLoading }: WorkerRa
                 id="rate_amount"
                 type="number"
                 step="0.01"
+                error={serverErrors?.('rate_amount') ?? errors.rate_amount}
                 {...register('rate_amount', { valueAsNumber: true })}
                 disabled={isLoading}
                 placeholder="25.00"
                 className="h-11 pl-10"
               />
             </div>
-            {errors.rate_amount && (
-              <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <span className="text-red-500">!</span> {errors.rate_amount.message}
-              </p>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -241,15 +228,11 @@ export function WorkerRateForm({ rate, onSubmit, onCancel, isLoading }: WorkerRa
           <Input
             id="valid_from"
             type="date"
+            error={serverErrors?.('valid_from') ?? errors.valid_from}
             {...register('valid_from')}
             disabled={isLoading}
             className="h-11"
           />
-          {errors.valid_from && (
-            <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-              <span className="text-red-500">!</span> {errors.valid_from.message}
-            </p>
-          )}
           <p className="text-xs text-slate-500 dark:text-slate-400">
             La tariffa sara valida da questa data. Le tariffe precedenti verranno chiuse automaticamente.
           </p>

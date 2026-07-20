@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Calendar, MapPin, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { cn } from '@/lib/utils';
 import type { ProjectWorkerSchedule } from '@/lib/types';
 
@@ -51,7 +52,7 @@ export function AssignmentDaysClient({ projectWorkerId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['assignment-schedules', projectWorkerId] });
       toast.success('Giornata accettata');
     },
-    onError: () => toast.error('Errore durante la conferma della giornata'),
+    onError: (error) => handleMutationError(error, 'Errore durante la conferma della giornata'),
   });
 
   const rejectMutation = useMutation({
@@ -60,7 +61,7 @@ export function AssignmentDaysClient({ projectWorkerId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['assignment-schedules', projectWorkerId] });
       toast.success('Giornata rifiutata');
     },
-    onError: () => toast.error('Errore durante il rifiuto della giornata'),
+    onError: (error) => handleMutationError(error, 'Errore durante il rifiuto della giornata'),
   });
 
   const pendingSchedules = (schedules as ProjectWorkerSchedule[]).filter(

@@ -44,6 +44,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import React, { useState, useMemo, useCallback } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
@@ -157,12 +158,7 @@ export default function PriceListDetailPage() {
       setIsRegenerateDialogOpen(false);
       toast.success("Listino rigenerato con successo");
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(
-        err.response?.data?.message || "Errore durante la rigenerazione",
-      );
-    },
+    onError: (error) => handleMutationError(error, "Errore durante la rigenerazione"),
   });
 
   const updateItemMutation = useMutation({
@@ -180,12 +176,7 @@ export default function PriceListDetailPage() {
       setEditingItem(null);
       toast.success("Prodotto aggiornato con successo");
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(
-        err.response?.data?.message || "Errore durante l'aggiornamento",
-      );
-    },
+    onError: (error) => handleMutationError(error, "Errore durante l'aggiornamento"),
   });
 
   const deleteItemMutation = useMutation({
@@ -196,10 +187,7 @@ export default function PriceListDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["price-lists"] });
       toast.success("Prodotto rimosso dal listino");
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Errore durante la rimozione");
-    },
+    onError: (error) => handleMutationError(error, "Errore durante la rimozione"),
   });
 
   const recalculateItemMutation = useMutation({
@@ -209,10 +197,7 @@ export default function PriceListDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["price-list-items", id] });
       toast.success("Prezzi ricalcolati con successo");
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Errore durante il ricalcolo");
-    },
+    onError: (error) => handleMutationError(error, "Errore durante il ricalcolo"),
   });
 
   const addItemMutation = useMutation({
@@ -226,10 +211,7 @@ export default function PriceListDetailPage() {
       setIsAddManualItemDialogOpen(false);
       toast.success("Prodotto aggiunto al listino");
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Errore durante l'aggiunta");
-    },
+    onError: (error) => handleMutationError(error, "Errore durante l'aggiunta"),
   });
 
   const handleRegenerateConfirm = () => {

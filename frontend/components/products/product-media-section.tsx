@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { productMediaApi, type UploadMediaRequest } from "@/lib/api/product-media";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -148,12 +149,8 @@ export function ProductMediaSection({
       queryClient.invalidateQueries({ queryKey: ["product", productId] });
       toast.success("File caricato con successo");
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore upload", {
-        description:
-          err.response?.data?.message || "Impossibile caricare il file",
-      });
+    onError: (error) => {
+      handleMutationError(error, "Impossibile caricare il file");
     },
   });
 
@@ -166,12 +163,8 @@ export function ProductMediaSection({
       setDeleteDialogOpen(false);
       setMediaToDelete(null);
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore", {
-        description:
-          err.response?.data?.message || "Impossibile eliminare il file",
-      });
+    onError: (error) => {
+      handleMutationError(error, "Impossibile eliminare il file");
     },
   });
 

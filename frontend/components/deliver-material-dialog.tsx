@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { Loader2, TruckIcon, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -85,12 +86,8 @@ export function DeliverMaterialDialog({
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       handleClose();
     },
-    onError: (error: any) => {
-      toast.error('Errore', {
-        description:
-          error.response?.data?.message ||
-          'Impossibile consegnare il materiale',
-      });
+    onError: (error) => {
+      handleMutationError(error, 'Impossibile consegnare il materiale');
     },
   });
 

@@ -42,6 +42,7 @@ import {
   Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { CurrencyDisplay, CurrencyInput } from '@/components/ui/currency-input';
 import type {
   ProjectMaterialIncident,
@@ -224,7 +225,7 @@ export function ProjectIncidentsTab({ projectId }: Props) {
         toast.success('Segnalazione creata');
       }
     },
-    onError: () => toast.error('Errore durante la creazione'),
+    onError: (error) => handleMutationError(error, 'Errore durante la creazione'),
   });
 
   const resolveMutation = useMutation({
@@ -241,7 +242,7 @@ export function ProjectIncidentsTab({ projectId }: Props) {
       setResolveForm(EMPTY_RESOLVE_FORM);
       toast.success('Segnalazione risolta');
     },
-    onError: () => toast.error('Errore durante la risoluzione'),
+    onError: (error) => handleMutationError(error, 'Errore durante la risoluzione'),
   });
 
   const handleCreate = () => {

@@ -35,6 +35,7 @@ import { Slider } from '@/components/ui/slider';
 import { invitationsApi } from '@/lib/api/invitations';
 import { suppliersApi } from '@/lib/api/suppliers';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { Loader2 } from 'lucide-react';
 import type { WorkerType, ContractType } from '@/lib/types';
 
@@ -92,8 +93,14 @@ export function CreateInvitationDialog({ open, onOpenChange }: CreateInvitationD
       onOpenChange(false);
       form.reset();
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Errore durante l\'invio dell\'invito');
+    onError: (error) => {
+      handleMutationError(error, 'Errore durante l\'invio dell\'invito');
+      const serverErrors = (error as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors;
+      if (serverErrors) {
+        Object.entries(serverErrors).forEach(([field, messages]) => {
+          form.setError(field as keyof InvitationFormData, { message: messages[0] });
+        });
+      }
     },
   });
 

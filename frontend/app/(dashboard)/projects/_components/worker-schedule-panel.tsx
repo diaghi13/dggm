@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { format, parseISO } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Calendar, Plus, Trash2, RefreshCw, Loader2, Pencil, X as XIcon, Check } from 'lucide-react';
@@ -117,7 +118,7 @@ export function WorkerSchedulePanel({ projectWorker, project }: Props) {
       setGenerateOpen(false);
       toast.success(`${result.meta.generated_count} convocazioni generate`);
     },
-    onError: () => toast.error('Errore nella generazione delle convocazioni'),
+    onError: (error) => handleMutationError(error, 'Errore nella generazione delle convocazioni'),
   });
 
   const addDayMutation = useMutation({
@@ -138,7 +139,7 @@ export function WorkerSchedulePanel({ projectWorker, project }: Props) {
       setNewNotes('');
       toast.success('Giorno aggiunto');
     },
-    onError: () => toast.error('Errore durante il salvataggio'),
+    onError: (error) => handleMutationError(error, 'Errore durante il salvataggio'),
   });
 
   const deleteDayMutation = useMutation({
@@ -148,7 +149,7 @@ export function WorkerSchedulePanel({ projectWorker, project }: Props) {
       queryClient.invalidateQueries({ queryKey: ['project-schedules', projectWorker.project_id] });
       toast.success('Convocazione rimossa');
     },
-    onError: () => toast.error('Errore durante la rimozione'),
+    onError: (error) => handleMutationError(error, 'Errore durante la rimozione'),
   });
 
   const updateDayMutation = useMutation({
@@ -160,7 +161,7 @@ export function WorkerSchedulePanel({ projectWorker, project }: Props) {
       setEditingScheduleId(null);
       toast.success('Convocazione aggiornata');
     },
-    onError: () => toast.error("Errore durante l'aggiornamento"),
+    onError: (error) => handleMutationError(error, "Errore durante l'aggiornamento"),
   });
 
   const hasProjectDates = !!(project?.start_date && project?.estimated_end_date);

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAdjustStock } from '@/hooks/use-inventory';
+import { useFieldErrors } from '@/lib/hooks/use-field-errors';
 import {
   Dialog,
   DialogContent,
@@ -63,6 +64,7 @@ export function InventoryAdjustDialog({
   });
 
   const adjustMutation = useAdjustStock();
+  const fieldErrors = useFieldErrors(adjustMutation.error);
 
   const onSubmit = (data: AdjustFormData) => {
     const finalQuantity = adjustType === 'add' ? data.quantity : -data.quantity;
@@ -144,6 +146,7 @@ export function InventoryAdjustDialog({
                 step="0.01"
                 min="0"
                 placeholder="0"
+                error={fieldErrors('quantity') ?? errors.quantity}
                 {...register('quantity', {
                   required: 'La quantità è obbligatoria',
                   min: { value: 0.01, message: 'La quantità deve essere maggiore di 0' },
@@ -152,9 +155,6 @@ export function InventoryAdjustDialog({
                     : undefined,
                 })}
               />
-              {errors.quantity && (
-                <p className="text-sm text-red-600">{errors.quantity.message}</p>
-              )}
 
               {/* Preview */}
               <div className="text-sm text-slate-600 dark:text-slate-400">

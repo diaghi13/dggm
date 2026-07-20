@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\Lazy;
@@ -35,7 +36,10 @@ class ProjectPnlData extends Data
         public readonly float $gross_margin_percent,
 
         // Details
+        #[DataCollectionOf(ProjectWorkerData::class)]
         public readonly DataCollection|Lazy $workers,
+
+        #[DataCollectionOf(ProjectExpenseData::class)]
         public readonly DataCollection|Lazy $expenses,
         public readonly ?string $generated_at,
     ) {}

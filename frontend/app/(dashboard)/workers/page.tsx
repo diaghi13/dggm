@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/shared/empty-state';
 import { WorkerForm } from '@/components/worker-form';
 import { toast } from 'sonner';
 import { useRouter } from "next/navigation";
+import { useFieldErrors } from '@/lib/hooks/use-field-errors';
 
 export default function WorkersPage() {
   const router = useRouter();
@@ -99,6 +100,9 @@ export default function WorkersPage() {
       });
     },
   });
+
+  const createFieldErrors = useFieldErrors(createMutation.error);
+  const updateFieldErrors = useFieldErrors(updateMutation.error);
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => workersApi.delete(id),
@@ -218,6 +222,7 @@ export default function WorkersPage() {
               onSubmit={(data) => createMutation.mutate(data)}
               onCancel={() => setIsCreateDialogOpen(false)}
               isLoading={createMutation.isPending}
+              serverErrors={createFieldErrors}
             />
           </div>
           <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50">
@@ -260,6 +265,7 @@ export default function WorkersPage() {
                   setSelectedWorker(null);
                 }}
                 isLoading={updateMutation.isPending}
+                serverErrors={updateFieldErrors}
               />
             )}
           </div>

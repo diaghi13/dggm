@@ -20,6 +20,7 @@ import {
   type UpdateMediaRequest,
 } from "@/lib/api/product-media";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 
 interface EditMediaDialogProps {
   productId: number;
@@ -70,12 +71,8 @@ export function EditMediaDialog({
       toast.success("Proprietà aggiornate con successo");
       onSuccess?.();
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore", {
-        description:
-          err.response?.data?.message || "Impossibile aggiornare le proprietà",
-      });
+    onError: (error) => {
+      handleMutationError(error, "Impossibile aggiornare le proprietà");
     },
   });
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import Link from "next/link";
 import {
   Bell,
@@ -136,7 +137,7 @@ function LogMaintenanceSection() {
       queryClient.invalidateQueries({ queryKey: ["landlord-settings"] });
       toast.success("Impostazione salvata");
     },
-    onError: () => toast.error("Errore durante il salvataggio"),
+    onError: (error) => handleMutationError(error, "Errore durante il salvataggio"),
   });
 
   const handleBlur = (key: string, defaultVal: string) => {
@@ -299,7 +300,7 @@ function SubscriptionConfigSection() {
       queryClient.invalidateQueries({ queryKey: ["landlord-settings"] });
       toast.success("Impostazione salvata");
     },
-    onError: () => toast.error("Errore durante il salvataggio"),
+    onError: (error) => handleMutationError(error, "Errore durante il salvataggio"),
   });
 
   const handleBlur = (key: string, field: (typeof SUBSCRIPTION_FIELDS)[number]) => {

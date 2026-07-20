@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { productMediaApi } from "@/lib/api/product-media";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 
 interface UploadMediaDialogProps {
   open: boolean;
@@ -133,12 +134,8 @@ export function UploadMediaDialog({
       onOpenChange(false);
       onSuccess?.();
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error("Errore upload", {
-        description:
-          err.response?.data?.message || "Impossibile caricare il file",
-      });
+    onError: (error) => {
+      handleMutationError(error, "Impossibile caricare il file");
     },
   });
 

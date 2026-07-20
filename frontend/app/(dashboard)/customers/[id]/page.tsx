@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CustomerForm } from "@/components/customer-form";
+import { useFieldErrors } from "@/lib/hooks/use-field-errors";
 import {
   ArrowLeft,
   Edit,
@@ -79,6 +80,8 @@ export default function CustomerDetailPage() {
       });
     },
   });
+
+  const updateFieldErrors = useFieldErrors(updateMutation.error);
 
   if (isLoading) {
     return (
@@ -200,6 +203,7 @@ export default function CustomerDetailPage() {
                   customer={customer}
                   onSubmit={(data) => updateMutation.mutate(data)}
                   isLoading={updateMutation.isPending}
+                  serverErrors={updateFieldErrors}
                 />
                 <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
                   <Button

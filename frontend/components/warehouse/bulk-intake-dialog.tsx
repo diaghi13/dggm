@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Plus, Trash2, PackagePlus } from "lucide-react";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import {
   Table,
   TableBody,
@@ -196,10 +197,8 @@ export function BulkIntakeDialog({
       handleClose();
       onSuccess?.();
     },
-    onError: (error: Error) => {
-      toast.error("Errore", {
-        description: error.message || "Impossibile completare il carico",
-      });
+    onError: (error) => {
+      handleMutationError(error, "Impossibile completare il carico");
     },
   });
 

@@ -50,6 +50,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { CurrencyDisplay, CurrencyInput } from '@/components/ui/currency-input';
 import type {
   FinalBalanceItem,
@@ -381,7 +382,7 @@ function ItemFormDialog({
       onSuccess();
       onOpenChange(false);
     },
-    onError: () => toast.error('Errore durante il salvataggio'),
+    onError: (error) => handleMutationError(error, 'Errore durante il salvataggio'),
   });
 
   const updateMutation = useMutation({
@@ -392,7 +393,7 @@ function ItemFormDialog({
       onSuccess();
       onOpenChange(false);
     },
-    onError: () => toast.error('Errore durante il salvataggio'),
+    onError: (error) => handleMutationError(error, 'Errore durante il salvataggio'),
   });
 
   const isPending = addMutation.isPending || updateMutation.isPending;
@@ -630,7 +631,7 @@ export function FinalBalanceItemsEditor({
       toast.success('Voce eliminata');
       onItemsChange();
     },
-    onError: () => toast.error('Errore durante l\'eliminazione'),
+    onError: (error) => handleMutationError(error, "Errore durante l'eliminazione"),
   });
 
   const handleEdit = useCallback((item: FinalBalanceItem) => {

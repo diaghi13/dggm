@@ -110,6 +110,7 @@ interface FinancialResourceFormProps {
   onSubmit: (data: FinancialResourceFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  serverErrors?: (field: string) => string | undefined;
 }
 
 export function FinancialResourceForm({
@@ -117,6 +118,7 @@ export function FinancialResourceForm({
   onSubmit,
   onCancel,
   isLoading,
+  serverErrors,
 }: FinancialResourceFormProps) {
   const {
     register,
@@ -253,11 +255,8 @@ export function FinancialResourceForm({
               id="name"
               {...register("name")}
               placeholder="es. Conto Corrente Principale"
-              className={errors.name ? "border-red-500" : ""}
+              error={serverErrors?.("name") ?? errors.name}
             />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name.message}</p>
-            )}
           </div>
 
           {/* Descrizione */}
@@ -285,13 +284,8 @@ export function FinancialResourceForm({
                 id="bank_name"
                 {...register("bank_name")}
                 placeholder="es. Intesa Sanpaolo"
-                className={errors.bank_name ? "border-red-500" : ""}
+                error={serverErrors?.("bank_name") ?? errors.bank_name}
               />
-              {errors.bank_name && (
-                <p className="text-sm text-red-500">
-                  {errors.bank_name.message}
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -302,13 +296,8 @@ export function FinancialResourceForm({
                 id="account_holder"
                 {...register("account_holder")}
                 placeholder="es. DGGM S.r.l."
-                className={errors.account_holder ? "border-red-500" : ""}
+                error={serverErrors?.("account_holder") ?? errors.account_holder}
               />
-              {errors.account_holder && (
-                <p className="text-sm text-red-500">
-                  {errors.account_holder.message}
-                </p>
-              )}
             </div>
 
             <div className="space-y-2 md:col-span-2">
@@ -319,13 +308,9 @@ export function FinancialResourceForm({
                 id="iban"
                 {...register("iban")}
                 placeholder="IT60X0542811101000000123456"
-                className={
-                  errors.iban ? "border-red-500 font-mono" : "font-mono"
-                }
+                className="font-mono"
+                error={serverErrors?.("iban") ?? errors.iban}
               />
-              {errors.iban && (
-                <p className="text-sm text-red-500">{errors.iban.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -361,11 +346,8 @@ export function FinancialResourceForm({
               id="location"
               {...register("location")}
               placeholder="es. Sede Principale - Via Roma 123, Milano"
-              className={errors.location ? "border-red-500" : ""}
+              error={serverErrors?.("location") ?? errors.location}
             />
-            {errors.location && (
-              <p className="text-sm text-red-500">{errors.location.message}</p>
-            )}
           </div>
         </FormSection>
       )}
@@ -382,13 +364,8 @@ export function FinancialResourceForm({
                 id="card_type"
                 {...register("card_type")}
                 placeholder="es. Visa, Mastercard"
-                className={errors.card_type ? "border-red-500" : ""}
+                error={serverErrors?.("card_type") ?? errors.card_type}
               />
-              {errors.card_type && (
-                <p className="text-sm text-red-500">
-                  {errors.card_type.message}
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -399,13 +376,8 @@ export function FinancialResourceForm({
                 id="provider"
                 {...register("provider")}
                 placeholder="es. Nexi, SumUp"
-                className={errors.provider ? "border-red-500" : ""}
+                error={serverErrors?.("provider") ?? errors.provider}
               />
-              {errors.provider && (
-                <p className="text-sm text-red-500">
-                  {errors.provider.message}
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">

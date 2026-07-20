@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { projectWorkersApi } from '@/lib/api/project-workers';
 import { ProjectRoleBadge } from '@/app/(dashboard)/projects/_components/project-role-badge';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { Loader2, Users } from 'lucide-react';
 import type { ProjectWorker, ProjectRole } from '@/lib/types';
 
@@ -51,8 +52,8 @@ export function ManageWorkerRolesDialog({
       queryClient.invalidateQueries({ queryKey: ['project-workers', projectId] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Errore durante l\'aggiornamento dei ruoli');
+    onError: (error) => {
+      handleMutationError(error, 'Errore durante l\'aggiornamento dei ruoli');
     },
   });
 

@@ -57,9 +57,10 @@ interface SupplierFormProps {
   onSubmit: (data: SupplierFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  serverErrors?: (field: string) => string | undefined;
 }
 
-export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: SupplierFormProps) {
+export function SupplierForm({ supplier, onSubmit, onCancel, isLoading, serverErrors }: SupplierFormProps) {
   const {
     register,
     handleSubmit,
@@ -129,12 +130,8 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
             disabled={isLoading}
             placeholder="Acme S.r.l."
             className="h-11"
+            error={serverErrors?.('company_name') ?? errors.company_name}
           />
-          {errors.company_name && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <span className="text-red-500">⚠</span> {errors.company_name.message}
-            </p>
-          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -222,6 +219,7 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
               disabled={isLoading}
               placeholder="IT12345678901"
               className="h-11 "
+              error={serverErrors?.('vat_number')}
             />
           </div>
           <div className="space-y-2">
@@ -232,6 +230,7 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
               disabled={isLoading}
               placeholder="12345678901"
               className="h-11 "
+              error={serverErrors?.('tax_code')}
             />
           </div>
         </div>
@@ -258,13 +257,9 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
                 disabled={isLoading}
                 placeholder="info@azienda.it"
                 className="h-11 pl-10 "
+                error={serverErrors?.('email') ?? errors.email}
               />
             </div>
-            {errors.email && (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.email.message}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="website" className="text-sm font-medium text-slate-700">Sito Web</Label>
@@ -276,13 +271,9 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
                 disabled={isLoading}
                 placeholder="https://azienda.it"
                 className="h-11 pl-10 "
+                error={serverErrors?.('website') ?? errors.website}
               />
             </div>
-            {errors.website && (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.website.message}
-              </p>
-            )}
           </div>
         </div>
 
@@ -492,13 +483,9 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
                 disabled={isLoading}
                 placeholder="mario@azienda.it"
                 className="h-11 pl-10 "
+                error={serverErrors?.('contact_email') ?? errors.contact_email}
               />
             </div>
-            {errors.contact_email && (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <span className="text-red-500">⚠</span> {errors.contact_email.message}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="contact_phone" className="text-sm font-medium text-slate-700">Telefono Referente</Label>

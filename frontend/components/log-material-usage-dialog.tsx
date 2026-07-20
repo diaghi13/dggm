@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { Loader2, Package } from 'lucide-react';
 import { CurrencyDisplay, formatCurrency } from '@/components/ui/currency-input';
 
@@ -60,10 +61,8 @@ export function LogMaterialUsageDialog({
       resetForm();
       onOpenChange(false);
     },
-    onError: (error: any) => {
-      toast.error('Errore', {
-        description: error.response?.data?.message || 'Impossibile registrare l\'utilizzo',
-      });
+    onError: (error) => {
+      handleMutationError(error, 'Impossibile registrare l\'utilizzo');
     },
   });
 

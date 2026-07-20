@@ -9,6 +9,7 @@ import { CustomerForm } from '@/components/customer-form';
 import { PageHeader } from '@/components/layout/page-header';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useFieldErrors } from '@/lib/hooks/use-field-errors';
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -34,6 +35,8 @@ export default function NewCustomerPage() {
     },
   });
 
+  const fieldErrors = useFieldErrors(createMutation.error);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -56,6 +59,7 @@ export default function NewCustomerPage() {
           id="customer-form"
           onSubmit={(data) => createMutation.mutate(data)}
           isLoading={createMutation.isPending}
+          serverErrors={fieldErrors}
         />
 
         <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { CurrencyDisplay, CurrencyInput, formatCurrency } from '@/components/ui/currency-input';
 import type { FinalBalanceDoc, UpdateFinalBalanceInput } from '@/lib/types';
 
@@ -68,7 +69,7 @@ export function FinalBalanceMetaPanel({
     onSuccess: () => {
       onUpdate({});
     },
-    onError: () => toast.error('Errore durante il salvataggio'),
+    onError: (error) => handleMutationError(error, 'Errore durante il salvataggio'),
   });
 
   const save = useCallback(

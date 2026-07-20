@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 import {
@@ -329,7 +330,7 @@ export default function RenewalRequestsPage() {
       setApproveTarget(null);
       toast.success("Richiesta approvata con successo");
     },
-    onError: () => toast.error("Errore durante l'approvazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'approvazione"),
   });
 
   const rejectMutation = useMutation({
@@ -341,7 +342,7 @@ export default function RenewalRequestsPage() {
       setRejectTarget(null);
       toast.success("Richiesta rifiutata");
     },
-    onError: () => toast.error("Errore durante il rifiuto"),
+    onError: (error) => handleMutationError(error, "Errore durante il rifiuto"),
   });
 
   const pendingCount = countData?.data?.count ?? 0;

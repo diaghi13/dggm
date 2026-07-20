@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useDebounce } from '@/hooks/use-debounce';
+import { resolveError, type ErrorProp } from '@/lib/utils/resolve-error';
 
 export interface ComboboxOption {
   value: string;
@@ -38,7 +39,8 @@ interface ComboboxSelectProps {
   icon?: React.ReactNode;
   onSearchChange?: (search: string) => void;
   debounceMs?: number;
-  popoverWidth?: string; // Custom width for popover (e.g., "600px", "w-[500px]")
+  popoverWidth?: string;
+  error?: ErrorProp;
 }
 
 export function ComboboxSelect({
@@ -55,6 +57,7 @@ export function ComboboxSelect({
   onSearchChange,
   debounceMs = 300,
   popoverWidth,
+  error,
 }: ComboboxSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -108,18 +111,23 @@ export function ComboboxSelect({
     [value, onValueChange]
   );
 
+  const errorMsg = resolveError(error);
+
   return (
+    <>
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-invalid={!!errorMsg}
           disabled={disabled || loading}
           className={cn(
             'h-11 w-full justify-between font-normal hover:bg-white dark:hover:bg-slate-900',
             !value && 'text-slate-500 dark:text-slate-400',
             icon && 'pl-10',
+            errorMsg && 'border-destructive',
             className
           )}
         >
@@ -193,5 +201,9 @@ export function ComboboxSelect({
         </Command>
       </PopoverContent>
     </Popover>
+    {errorMsg && (
+      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errorMsg}</p>
+    )}
+    </>
   );
 }

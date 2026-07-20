@@ -14,9 +14,10 @@ interface WarehouseFormProps {
   initialData?: any;
   onSubmit: (data: any) => void;
   isLoading?: boolean;
+  serverErrors?: (field: string) => string | undefined;
 }
 
-export function WarehouseForm({ initialData, onSubmit, isLoading }: WarehouseFormProps) {
+export function WarehouseForm({ initialData, onSubmit, isLoading, serverErrors }: WarehouseFormProps) {
   const [formData, setFormData] = useState({
     code: initialData?.code || '',
     name: initialData?.name || '',
@@ -70,6 +71,7 @@ export function WarehouseForm({ initialData, onSubmit, isLoading }: WarehouseFor
                 placeholder="WH-001"
                 required
                 disabled={!!initialData}
+                error={serverErrors?.('code')}
               />
               {initialData && (
                 <p className="text-xs text-slate-500">Il codice non può essere modificato</p>
@@ -86,6 +88,7 @@ export function WarehouseForm({ initialData, onSubmit, isLoading }: WarehouseFor
                 onChange={(e) => handleChange('name', e.target.value)}
                 placeholder="Magazzino Centrale Roma"
                 required
+                error={serverErrors?.('name')}
               />
             </div>
           </div>

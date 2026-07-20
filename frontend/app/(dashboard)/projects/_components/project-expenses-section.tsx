@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Plus, Camera, X, FileImage } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import type { ProjectExpense } from '@/lib/types';
 import { CurrencyDisplay, CurrencyInput } from '@/components/ui/currency-input';
 
@@ -119,7 +120,7 @@ export function ProjectExpensesSection({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['project-expenses', projectId] });
       toast.success('Spesa approvata');
     },
-    onError: () => toast.error("Errore durante l'approvazione"),
+    onError: (error) => handleMutationError(error, "Errore durante l'approvazione"),
   });
 
   const rejectMutation = useMutation({
@@ -131,7 +132,7 @@ export function ProjectExpensesSection({ projectId }: Props) {
       setRejectionReason('');
       toast.success('Spesa rifiutata');
     },
-    onError: () => toast.error('Errore durante il rifiuto'),
+    onError: (error) => handleMutationError(error, 'Errore durante il rifiuto'),
   });
 
   const uploadReceiptMutation = useMutation({
@@ -140,7 +141,7 @@ export function ProjectExpensesSection({ projectId }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-expenses', projectId] });
     },
-    onError: () => toast.error('Errore caricamento ricevuta'),
+    onError: (error) => handleMutationError(error, 'Errore caricamento ricevuta'),
   });
 
   const createMutation = useMutation({
@@ -168,7 +169,7 @@ export function ProjectExpensesSection({ projectId }: Props) {
       setReceiptPreview(null);
       toast.success('Spesa aggiunta');
     },
-    onError: () => toast.error('Errore durante la creazione'),
+    onError: (error) => handleMutationError(error, 'Errore durante la creazione'),
   });
 
   const pending = expenses.filter((e) => e.status === 'submitted');

@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { handleMutationError } from '@/lib/utils/handle-mutation-error';
 import { ProtectedRoute } from '@/components/features/auth/protected-route';
 import { FinalBalanceItemsEditor } from '../_components/final-balance-items-editor';
 import { FinalBalanceMetaPanel } from '../_components/final-balance-meta-panel';
@@ -103,7 +104,7 @@ function FinalBalanceDetailContent() {
       toast.success('Final Balance finalizzato');
       refetchFb();
     },
-    onError: () => toast.error('Errore durante la finalizzazione'),
+    onError: (error) => handleMutationError(error, 'Errore durante la finalizzazione'),
   });
 
   const approveMutation = useMutation({
@@ -112,7 +113,7 @@ function FinalBalanceDetailContent() {
       toast.success('Final Balance approvato');
       refetchFb();
     },
-    onError: () => toast.error('Errore durante l\'approvazione'),
+    onError: (error) => handleMutationError(error, "Errore durante l'approvazione"),
   });
 
   const deleteMutation = useMutation({
@@ -121,7 +122,7 @@ function FinalBalanceDetailContent() {
       toast.success('Final Balance eliminato');
       router.push('/final-balances');
     },
-    onError: () => toast.error('Errore durante l\'eliminazione'),
+    onError: (error) => handleMutationError(error, "Errore durante l'eliminazione"),
   });
 
   const updateMutation = useMutation({
@@ -129,7 +130,7 @@ function FinalBalanceDetailContent() {
     onSuccess: () => {
       refetchFb();
     },
-    onError: () => toast.error('Errore durante il salvataggio'),
+    onError: (error) => handleMutationError(error, 'Errore durante il salvataggio'),
   });
 
   if (isLoading) {
