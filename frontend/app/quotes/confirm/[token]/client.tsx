@@ -17,17 +17,12 @@ interface PublicQuoteRevision {
   is_current_version: boolean;
 }
 
-type QuoteData = {
+type PublicQuoteData = {
   token_valid: boolean;
-  quote: {
-    code: string;
-    title: string;
-    status: string;
-    total_amount: number;
-    expiry_date: string | null;
-    notes: string | null;
-    customer_name: string | null;
-  };
+  quote: Pick<
+    App.Data.QuoteData,
+    'id' | 'code' | 'version' | 'is_current_version' | 'title' | 'status' | 'total_amount' | 'expiry_date' | 'notes'
+  > & { customer_name: string | null };
   company: {
     name: string;
     logo_url: string | null;
@@ -117,7 +112,7 @@ export default function QuoteConfirmClient() {
   const actionParam = searchParams.get('action') as 'accept' | 'reject' | null;
 
   const [pageState, setPageState] = useState<PageState>('loading');
-  const [quoteData, setQuoteData] = useState<QuoteData | null>(null);
+  const [quoteData, setQuoteData] = useState<PublicQuoteData | null>(null);
   const [actionResult, setActionResult] = useState<ActionResult | null>(null);
   const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(
     actionParam ?? null
@@ -138,7 +133,7 @@ export default function QuoteConfirmClient() {
           return;
         }
 
-        const data: QuoteData = json.data;
+        const data: PublicQuoteData = json.data;
 
         if (!data.token_valid) {
           setPageState('invalid');
