@@ -173,7 +173,10 @@ export function DataTable<TData, TValue>({
         }
         const savedPageSize = localStorage.getItem(`${storageKey}-pageSize`);
         if (savedPageSize) {
-          setPageSize(parseInt(savedPageSize, 10));
+          const parsed = parseInt(savedPageSize, 10);
+          if ([10, 20, 30, 50, 100].includes(parsed)) {
+            setPageSize(parsed);
+          }
         }
       } catch (error) {
         console.error("Error loading table state:", error);

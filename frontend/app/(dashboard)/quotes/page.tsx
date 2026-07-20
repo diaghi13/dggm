@@ -31,12 +31,14 @@ import { DataTable } from "@/components/shared/data-table/data-table";
 import { createQuotesColumns } from "@/app/(dashboard)/quotes/_components/quotes-columns";
 import { EmptyState } from "@/components/shared/empty-state";
 import { toast } from "sonner";
+import { handleMutationError } from "@/lib/utils/handle-mutation-error";
 
 export default function QuotesPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -53,7 +55,7 @@ export default function QuotesPage() {
       });
       router.push(`/quotes/${newQuote.id}/edit`);
     },
-    onError: () => toast.error("Errore nella duplicazione"),
+    onError: (error) => handleMutationError(error, "Errore nella duplicazione"),
   });
 
   const handleDuplicate = (quote: Quote) => {
@@ -93,13 +95,13 @@ export default function QuotesPage() {
   );
 
   const { data, isLoading } = useQuery({
-    queryKey: ["quotes", { page, search, status: statusFilter }],
+    queryKey: ["quotes", { page, perPage, search, status: statusFilter }],
     queryFn: () =>
       quotesApi.getAll({
         page,
         search,
         status: statusFilter !== "all" ? statusFilter : undefined,
-        per_page: 15,
+        per_page: perPage,
       }),
   });
 
@@ -162,6 +164,16 @@ export default function QuotesPage() {
         isLoading={isLoading}
         storageKey="quotes-table"
         onRowClick={(quote) => router.push(`/quotes/${quote.id}`)}
+        pagination={{
+          page,
+          perPage,
+          total: data?.meta.total ?? 0,
+          onPageChange: setPage,
+          onPerPageChange: (newPerPage) => {
+            setPerPage(newPerPage);
+            setPage(1);
+          },
+        }}
         emptyState={
           <EmptyState
             icon={FileText}
@@ -172,36 +184,6 @@ export default function QuotesPage() {
           />
         }
       />
-
-      {data && data.meta.last_page > 1 && (
-        <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-slate-600">
-            Mostrando <span className="font-medium">{data.meta.from}</span> a{" "}
-            <span className="font-medium">{data.meta.to}</span> di{" "}
-            <span className="font-medium">{data.meta.total}</span> preventivi
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page - 1)}
-              disabled={page === 1}
-              className="border-slate-300"
-            >
-              Precedente
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page + 1)}
-              disabled={page === data.meta.last_page}
-              className="border-slate-300"
-            >
-              Successiva
-            </Button>
-          </div>
-        </div>
-      )}
 
       <SendQuoteModal
         quote={selectedSendQuote}

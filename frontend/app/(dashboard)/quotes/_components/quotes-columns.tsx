@@ -131,9 +131,21 @@ export const createQuotesColumns = (
     ),
   },
   {
+    accessorKey: "taxable_amount",
+    header: () => <div className="text-right">Imponibile</div>,
+    size: 130,
+    cell: ({ row }) => <MoneyCell amount={row.original.taxable_amount} />,
+  },
+  {
+    accessorKey: "tax_amount",
+    header: () => <div className="text-right">IVA</div>,
+    size: 110,
+    cell: ({ row }) => <MoneyCell amount={row.original.tax_amount} />,
+  },
+  {
     accessorKey: "total_amount",
-    header: () => <div className="text-right">Importo Totale</div>,
-    size: 150,
+    header: () => <div className="text-right">Totale</div>,
+    size: 130,
     cell: ({ row }) => <MoneyCell amount={row.original.total_amount} bold />,
   },
   {
