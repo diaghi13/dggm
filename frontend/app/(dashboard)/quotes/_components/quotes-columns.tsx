@@ -20,6 +20,7 @@ import {
   Copy,
   Eye,
   FileText,
+  MapPin,
   Pencil,
   Send,
   Trash2,
@@ -117,6 +118,21 @@ export const createQuotesColumns = (
     cell: ({ row }) => (
       <IconTextCell icon={User} text={row.original.customer?.display_name} />
     ),
+  },
+  {
+    accessorKey: "address",
+    header: "Indirizzo",
+    size: 220,
+    cell: ({ row }) => {
+      const q = row.original;
+      const parts = [
+        q.address,
+        [q.postal_code, q.city].filter(Boolean).join(" "),
+        q.province ? `(${q.province})` : null,
+      ].filter(Boolean);
+      const fullAddress = parts.join(", ");
+      return <IconTextCell icon={MapPin} text={fullAddress || undefined} />;
+    },
   },
   {
     accessorKey: "status",

@@ -91,6 +91,9 @@
             <div class="text-right">
                 <h3 class="font-bold uppercase text-xs tracking-widest mb-2 text-emerald-900">Dettagli Preventivo</h3>
                 <div class="text-sm"><span class="font-semibold">Nr:</span> {{ $quote->code }}</div>
+                @if(($quote->version ?? 1) > 1)
+                    <div class="text-sm"><span class="font-semibold">Rev:</span> {{ $quote->version }}</div>
+                @endif
                 <div class="text-sm"><span class="font-semibold">Data:</span> {{ $quote->issue_date->format('d/m/Y') }}
                 </div>
                 @if($quote->valid_until)

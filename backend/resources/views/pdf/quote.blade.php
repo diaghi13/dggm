@@ -79,6 +79,9 @@
             @endif
             <div class="text-2xl font-bold text-slate-900 tracking-tight">PREVENTIVO</div>
             <div class="text-primary font-medium text-sm mt-0.5">Nr. {{ $quote->code }}</div>
+            @if(($quote->version ?? 1) > 1)
+                <div class="text-slate-500 text-xs mt-0.5">Rev. {{ $quote->version }}</div>
+            @endif
             <div class="text-slate-500 text-xs mt-0.5">Data: {{ $quote->issue_date->translatedFormat('d F Y') }}</div>
             @if($quote->valid_until)
                 <div class="text-[10px] text-slate-400 mt-0.5">Valido fino al: {{ $quote->valid_until->translatedFormat('d F Y') }}</div>

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
+
 class CodeGeneratorService
 {
     public function __construct(
@@ -113,6 +115,9 @@ class CodeGeneratorService
      *   'monthly'           → count resets each calendar month
      *   'daily'             → count resets each day
      *   'global'            → never resets (lifetime counter)
+     *
+     * Uses a MySQL advisory lock to serialise concurrent calls and prevent
+     * two requests from receiving the same sequential number.
      */
     private function getNextNumber(string $entity, array $context): int
     {
@@ -122,6 +127,27 @@ class CodeGeneratorService
             return 1;
         }
 
+        $reset = $context['reset'] ?? 'yearly';
+        $now = now();
+
+        $lockSuffix = match ($reset) {
+            'monthly' => $now->format('Ym'),
+            'daily' => $now->format('Ymd'),
+            default => $context['year'] ?? $now->year,
+        };
+        $lockName = "code_gen_{$entity}_{$lockSuffix}";
+
+        DB::select('SELECT GET_LOCK(?, 5) as acquired', [$lockName]);
+
+        try {
+            return $this->queryNextNumber($entity, $modelClass, $context, $reset);
+        } finally {
+            DB::select('SELECT RELEASE_LOCK(?)', [$lockName]);
+        }
+    }
+
+    private function queryNextNumber(string $entity, string $modelClass, array $context, string $reset): int
+    {
         // Include soft-deleted records so codes from deleted entities are never reused.
         $usesSoftDeletes = in_array(
             \Illuminate\Database\Eloquent\SoftDeletes::class,
@@ -130,7 +156,6 @@ class CodeGeneratorService
 
         $query = $usesSoftDeletes ? $modelClass::withTrashed() : $modelClass::query();
         $now = now();
-        $reset = $context['reset'] ?? 'yearly';
 
         switch ($reset) {
             case 'monthly':

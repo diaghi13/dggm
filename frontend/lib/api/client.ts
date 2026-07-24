@@ -93,7 +93,10 @@ apiClient.interceptors.response.use(
       const data = error.response.data as { errors?: Record<string, string[]>; message?: string };
       const fieldErrors = data?.errors;
       const description = fieldErrors
-        ? Object.values(fieldErrors).flat().slice(0, 4).join(' • ')
+        ? Object.entries(fieldErrors)
+            .flatMap(([field, messages]) => messages.map((msg) => `${field}: ${msg}`))
+            .slice(0, 4)
+            .join(' • ')
         : (data?.message || 'Controlla i dati inseriti e riprova.');
       toast.error('Dati non validi', { description, duration: 7000 });
       (error as AxiosError & { _handled?: boolean })._handled = true;

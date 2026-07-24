@@ -434,6 +434,11 @@ class QuoteController extends Controller
             ['id' => $quote->id] // Ensure ID is set for validation context
         );
 
+        // Normalize: 0 is not a valid event_days value, treat as null
+        if (isset($mergedData['event_days']) && $mergedData['event_days'] === 0) {
+            $mergedData['event_days'] = null;
+        }
+
         $data = QuoteData::validateAndCreate($mergedData);
 
         $quote = $this->updateAction->execute($quote, $data);

@@ -126,6 +126,7 @@ export default function EditQuotePage() {
       postal_code: quote.postal_code,
       status: quote.status,
       quote_type: quote.quote_type,
+      event_days: quote.event_days ?? null,
       issue_date: quote.issue_date,
       expiry_date: quote.expiry_date,
       price_list_id: quote.price_list_id,

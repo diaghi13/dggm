@@ -22,7 +22,7 @@ class CreateQuoteRevisionAction
                 'revision_notes' => $revisionNotes,
                 // Quote fields
                 'quote_type' => $quote->quote_type,
-                'event_days' => $quote->event_days,
+                'event_days' => $quote->event_days ?: null,
                 'title' => $quote->title,
                 'customer_id' => $quote->customer_id,
                 'project_manager_id' => $quote->project_manager_id,
@@ -103,7 +103,11 @@ class CreateQuoteRevisionAction
 
     private function copyItemWithChildren(Quote $newQuote, QuoteItem $item, ?int $newParentId): void
     {
-        $newItem = $newQuote->items()->create([
+        // Build item without using the relationship helper so we can pre-set the quote
+        // relation before calling calculateTotal(). Without this, Day-billing items would
+        // use duration=1 instead of the quote's effective_event_days.
+        $newItem = new QuoteItem([
+            'quote_id' => $newQuote->id,
             'type' => $item->type,
             'code' => $item->code,
             'description' => $item->description,
@@ -116,7 +120,7 @@ class CreateQuoteRevisionAction
             'quantity' => $item->quantity,
             'unit_price' => $item->unit_price,
             'cost_price' => $item->cost_price,
-            'discount_percentage' => $item->discount_percentage,
+            'discount_percentage' => $item->discount_percentage ?? 0,
             'hide_unit_price' => $item->hide_unit_price,
             'include_image' => $item->include_image,
             'included_media_ids' => $item->included_media_ids,
@@ -126,6 +130,13 @@ class CreateQuoteRevisionAction
             'vat_rate' => $item->vat_rate,
             'parent_id' => $newParentId,
         ]);
+
+        // Pre-set relation so calculateTotal() reads event_days correctly
+        $newItem->setRelation('quote', $newQuote);
+        $newItem->calculateTotal();
+        // saveQuietly skips 'saved' event → prevents intermediate calculateTotals() calls
+        // on the revision while not all items have been copied yet
+        $newItem->saveQuietly();
 
         foreach ($item->children as $child) {
             $this->copyItemWithChildren($newQuote, $child, $newItem->id);

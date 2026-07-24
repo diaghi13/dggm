@@ -7,6 +7,7 @@ use App\Events\QuoteCreated;
 use App\Models\Quote;
 use App\Models\Setting;
 use App\Services\QuoteTermsService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 class CreateQuoteAction
@@ -16,6 +17,31 @@ class CreateQuoteAction
     ) {}
 
     public function execute(QuoteData $data): Quote
+    {
+        $maxAttempts = 3;
+        $lastException = null;
+
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                return $this->attemptCreate($data);
+            } catch (UniqueConstraintViolationException $e) {
+                // Only retry when the code+version unique index is violated.
+                // Any other unique violation (e.g. customer email) should propagate immediately.
+                if (! str_contains($e->getMessage(), 'quotes_code_version_unique')) {
+                    throw $e;
+                }
+                $lastException = $e;
+            }
+        }
+
+        throw new \RuntimeException(
+            'Impossibile generare un codice preventivo univoco dopo '.$maxAttempts.' tentativi.',
+            0,
+            $lastException
+        );
+    }
+
+    private function attemptCreate(QuoteData $data): Quote
     {
         return DB::transaction(function () use ($data) {
             $quote = $this->createQuoteFromData($data);
@@ -74,6 +100,7 @@ class CreateQuoteAction
     {
         $quoteArray = $data->except('id', 'items', 'customer', 'projectManager', 'priceList', 'paymentTerm', 'warrantyType', 'project', 'full_address')->toArray();
         $quoteArray = $this->applySettingDefaults($quoteArray);
+
         return Quote::query()->create($quoteArray);
     }
 

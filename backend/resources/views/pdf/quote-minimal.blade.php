@@ -47,6 +47,9 @@
             <div>
                 <h1 class="text-5xl font-black tracking-tighter">PREVENTIVO.</h1>
                 <div class="text-xl font-bold mt-2">#{{ $quote->code }}</div>
+                @if(($quote->version ?? 1) > 1)
+                    <div class="text-xs mt-1">REV. {{ $quote->version }}</div>
+                @endif
             </div>
             <div class="text-right">
                 <div class="font-bold">{{ $company['name'] }}</div>
